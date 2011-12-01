@@ -41,6 +41,10 @@
 // boost
 #include <boost/make_shared.hpp>
 
+#include <stdio.h>
+#include <iostream>
+
+
 namespace mapnik {
 
 template <typename T>
@@ -82,7 +86,19 @@ void agg_renderer<T>::process(point_symbolizer const& sym,
         box2d<double> label_ext (px0, py0, px1, py1);
         label_ext.expand_to_include(px2, py2);
         label_ext.expand_to_include(px3, py3);
+       
+
+        double angle = 0.0;
+        expression_ptr angle_expr = sym.get_orientation();
+        if (angle_expr)
+        {
+            // apply rotation
+            value_type result = boost::apply_visitor(evaluate<Feature,value_type>(feature),*angle_expr);
+            angle = result.to_double();
+        }
         
+
+
         for (unsigned i=0; i<feature.num_geometries(); ++i)
         {
             geometry_type const& geom = feature.get_geometry(i);
@@ -102,7 +118,7 @@ void agg_renderer<T>::process(point_symbolizer const& sym,
                 detector_->has_placement(label_ext))
             {
                 
-                render_marker(floor(x - 0.5 * w),floor(y - 0.5 * h) ,**marker,tr, sym.get_opacity());
+                render_marker(floor(x - 0.5 * w),floor(y - 0.5 * h) ,**marker,tr, sym.get_opacity(),angle);
 
                 if (!sym.get_ignore_placement())
                     detector_->insert(label_ext);

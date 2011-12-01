@@ -908,7 +908,7 @@ void cairo_renderer_base::process(line_symbolizer const& sym,
     }
 }
 
-void cairo_renderer_base::render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity)
+void cairo_renderer_base::render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity,double angle)
 
 {
     cairo_context context(context_);
@@ -920,6 +920,8 @@ void cairo_renderer_base::render_marker(const int x, const int y, marker &marker
         coord<double,2> c = bbox.center();
         // center the svg marker on '0,0'
         agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
+        //add dynamic rotate
+        mtx.rotate(angle * agg::pi/180.0);
         // apply symbol transformation to get to map space
         mtx *= tr;
         // render the marker at the center of the marker box

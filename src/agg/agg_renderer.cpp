@@ -225,7 +225,7 @@ void agg_renderer<T>::end_layer_processing(layer const&)
 }
 
 template <typename T>
-void agg_renderer<T>::render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity)
+void agg_renderer<T>::render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity, double angle)
 {
     if (marker.is_vector())
     {
@@ -244,6 +244,8 @@ void agg_renderer<T>::render_marker(const int x, const int y, marker &marker, co
         coord<double,2> c = bbox.center();
         // center the svg marker on '0,0'
         agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
+        //add dynamic rotate
+        mtx.rotate(angle * agg::pi / 180.0);
         // apply symbol transformation to get to map space
         mtx *= tr;
         mtx *= agg::trans_affine_scaling(scale_factor_);
@@ -263,7 +265,8 @@ void agg_renderer<T>::render_marker(const int x, const int y, marker &marker, co
 
     }
     else
-    {
+    {   
+
         pixmap_.set_rectangle_alpha2(**marker.get_bitmap_data(), x, y, opacity);
     }
 }

@@ -55,7 +55,9 @@ point_symbolizer::point_symbolizer(point_symbolizer const& rhs)
       symbolizer_base(rhs),
       overlap_(rhs.overlap_),
       point_p_(rhs.point_p_),
-      ignore_placement_(rhs.ignore_placement_) {}
+      ignore_placement_(rhs.ignore_placement_),
+      orientation_(rhs.orientation_)
+{}
 
 void point_symbolizer::set_allow_overlap(bool overlap)
 {
@@ -85,6 +87,16 @@ void point_symbolizer::set_ignore_placement(bool ignore_placement)
 bool point_symbolizer::get_ignore_placement() const
 {
     return ignore_placement_;
+}
+
+expression_ptr point_symbolizer::get_orientation() const
+{
+    return orientation_;
+}
+
+void point_symbolizer::set_orientation(expression_ptr orientation)
+{
+    orientation_ = orientation;
 }
 
 }

@@ -116,7 +116,7 @@ void grid_renderer<T>::end_layer_processing(layer const&)
 }
 
 template <typename T>
-void grid_renderer<T>::render_marker(Feature const& feature, unsigned int step, const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity)
+void grid_renderer<T>::render_marker(Feature const& feature, unsigned int step, const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity, double angle)
 {
     if (marker.is_vector())
     {
@@ -137,6 +137,8 @@ void grid_renderer<T>::render_marker(Feature const& feature, unsigned int step, 
         coord<double,2> c = bbox.center();
         // center the svg marker on '0,0'
         agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
+        //add dynamic rotate
+        mtx.rotate(angle * agg::pi/180.0);
         // apply symbol transformation to get to map space
         mtx *= tr;
         mtx *= agg::trans_affine_scaling(scale_factor_*(1.0/step));

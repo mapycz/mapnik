@@ -846,7 +846,7 @@ void map_parser::parse_point_symbolizer( rule & rule, ptree const & sym )
     try
     {
         std::stringstream s;
-        s << "file,base,allow-overlap,ignore-placement,opacity,placement,transform,meta-writer,meta-output";
+        s << "file,base,allow-overlap,ignore-placement,opacity,placement,transform,meta-writer,meta-output,orientation";
         
         optional<std::string> file =  get_opt_attr<std::string>(sym, "file");
         optional<std::string> base =  get_opt_attr<std::string>(sym, "base");
@@ -858,6 +858,7 @@ void map_parser::parse_point_symbolizer( rule & rule, ptree const & sym )
             get_opt_attr<float>(sym, "opacity");
         
         optional<std::string> transform_wkt = get_opt_attr<std::string>(sym, "transform");
+        optional<std::string> orientation = get_opt_attr<std::string>(sym, "orientation");
 
         if (file)
         {
@@ -884,6 +885,10 @@ void map_parser::parse_point_symbolizer( rule & rule, ptree const & sym )
                 if (opacity)
                 {
                     symbol.set_opacity( * opacity );
+                }
+                if (orientation)
+                {
+                    symbol.set_orientation(parse_expression(*orientation, "utf8"));
                 }
                 if (ignore_placement)
                 {

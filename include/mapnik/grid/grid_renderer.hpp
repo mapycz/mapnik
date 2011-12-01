@@ -66,7 +66,7 @@ public:
     void end_map_processing(Map const& map);
     void start_layer_processing(layer const& lay);
     void end_layer_processing(layer const& lay);
-    void render_marker(Feature const& feature, unsigned int step, const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity);
+    void render_marker(Feature const& feature, unsigned int step, const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity, double angle=0.0);
 
     void process(point_symbolizer const& sym,
                  Feature const& feature,

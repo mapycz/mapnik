@@ -127,7 +127,7 @@ public:
     }
 
 protected:
-    void render_marker(const int x, const int y, marker &marker, const agg::trans_affine & mtx, double opacity=1.0);
+    void render_marker(const int x, const int y, marker &marker, const agg::trans_affine & mtx, double opacity=1.0, double angle=0.0);
 
     Map const& m_;
     Cairo::RefPtr<Cairo::Context> context_;
