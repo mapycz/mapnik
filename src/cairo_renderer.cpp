@@ -921,7 +921,7 @@ void cairo_renderer_base::render_marker(const int x, const int y, marker &marker
         // center the svg marker on '0,0'
         agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
         //add dynamic rotate
-        mtx.rotate(angle * agg::pi/180.0);
+        mtx.rotate(-angle * agg::pi/180.0);
         // apply symbol transformation to get to map space
         mtx *= tr;
         // render the marker at the center of the marker box

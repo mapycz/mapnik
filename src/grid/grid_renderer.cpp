@@ -138,7 +138,7 @@ void grid_renderer<T>::render_marker(Feature const& feature, unsigned int step, 
         // center the svg marker on '0,0'
         agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
         //add dynamic rotate
-        mtx.rotate(angle * agg::pi/180.0);
+        mtx.rotate(-angle * agg::pi/180.0);
         // apply symbol transformation to get to map space
         mtx *= tr;
         mtx *= agg::trans_affine_scaling(scale_factor_*(1.0/step));
