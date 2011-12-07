@@ -390,6 +390,53 @@ void map_parser::parse_map_include( Map & map, ptree const & include )
             }
             datasource_templates_[name] = params;
         }
+        else if (v.first == "Parameters")
+        {
+            std::string name = get_attr(v.second, "name", std::string("Unnamed"));
+            parameters & params = map.get_extra_parameters();
+            ptree::const_iterator paramIter = v.second.begin();
+            ptree::const_iterator endParam = v.second.end();
+            for (; paramIter != endParam; ++paramIter)
+            {
+                ptree const& param = paramIter->second;
+
+                if (paramIter->first == "Parameter")
+                {
+                    std::string name = get_attr<std::string>(param, "name");
+                    bool is_string = true;
+                    boost::optional<std::string> type = get_opt_attr<std::string>(param, "type");
+                    if (type)
+                    {
+                        if (*type == "int")
+                        {
+                            is_string = false;
+                            int value = get_value<int>( param,"parameter");
+                            params[name] = value;
+                        }
+                        else if (*type == "float")
+                        {
+                            is_string = false;
+                            double value = get_value<double>( param,"parameter");
+                            params[name] = value;
+                        }
+                    }
+                    
+                    if (is_string)
+                    {
+                        std::string value = get_value<std::string>( param,
+                                                               "parameter");
+                        params[name] = value;
+                    }
+                }
+                else if( paramIter->first != "<xmlattr>" &&
+                         paramIter->first != "<xmlcomment>" )
+                {
+                    throw config_error(std::string("Unknown child node in ") +
+                                       "'Parameters'. Expected 'Parameter' but got '" +
+                                       paramIter->first + "'");
+                }
+            }
+        }
         else if (v.first != "<xmlcomment>" &&
                  v.first != "<xmlattr>")
         {

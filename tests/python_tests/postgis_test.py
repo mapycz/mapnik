@@ -35,7 +35,7 @@ def psql_can_connect():
         call('psql %s -c "select postgis_version()"' % POSTGIS_TEMPLATE_DBNAME)
         return True
     except RuntimeError, e:
-        print 'Notice: skipping postgis tests as basic auth is not correctly set up. Error was: %s' % e.message
+        print 'Notice: skipping postgis tests (connection)'
         return False
 
 def shp2pgsql_on_path():
@@ -47,7 +47,7 @@ def shp2pgsql_on_path():
         call('shp2pgsql')
         return True
     except RuntimeError, e:
-        print 'Notice: skipping postgis tests because shp2pgsql not found. Error was: %s' % e.message
+        print 'Notice: skipping postgis tests (shp2pgsql)'
         return False
 
 def createdb_and_dropdb_on_path():
@@ -60,7 +60,7 @@ def createdb_and_dropdb_on_path():
         call('dropdb --help')
         return True
     except RuntimeError, e:
-        print 'Notice: skipping postgis tests because createdb or dropdb not found. Error was: %s' % e.message
+        print 'Notice: skipping postgis tests (createdb/dropdb)'
         return False
 
 def postgis_setup():
@@ -128,6 +128,19 @@ if 'postgis' in mapnik.DatasourceCache.instance().plugin_names() \
         fs = ds.featureset()
         feature = fs.next()
         eq_(feature,None)
+
+    @raises(RuntimeError)
+    def test_that_nonexistant_query_field_throws(**kwargs):
+        ds = mapnik.PostGIS(dbname=MAPNIK_TEST_DBNAME,table='empty')
+        eq_(len(ds.fields()),1)
+        eq_(ds.fields(),['key'])
+        eq_(ds.field_types(),['int'])
+        query = mapnik.Query(ds.envelope())
+        for fld in ds.fields():
+            query.add_property_name(fld)
+        # also add an invalid one, triggering throw
+        query.add_property_name('bogus')
+        fs = ds.features(query)
 
 
     atexit.register(postgis_takedown)

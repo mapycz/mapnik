@@ -105,6 +105,7 @@ source = Split(
     """
     color.cpp
     box2d.cpp
+    datasource_cache.cpp
     expression_string.cpp
     filter_factory.cpp
     feature_type_style.cpp
@@ -191,20 +192,6 @@ if env['RENDERING_STATS']:
         source.insert(0,env3.SharedObject(processor_cpp))
 else:
     source.insert(0,processor_cpp);
-
-    
-# add the datasource_cache.cpp with custom LIBTOOL flag if needed
-if env['LIBTOOL_SUPPORTS_ADVISE']:
-    env3 = lib_env.Clone()
-    env3.Append(CXXFLAGS='-DLIBTOOL_SUPPORTS_ADVISE')
-    libmapnik_cxxflags.append('-DLIBTOOL_SUPPORTS_ADVISE')
-    cpp = 'datasource_cache.cpp'
-    if env['LINKING'] == 'static':
-        source.insert(0,env3.StaticObject(cpp))
-    else:
-        source.insert(0,env3.SharedObject(cpp))
-else:
-    source.insert(0,'datasource_cache.cpp')
 
 if env['JPEG']:
     source += Split(
@@ -351,19 +338,23 @@ includes = glob.glob('../include/mapnik/*.hpp')
 svg_includes = glob.glob('../include/mapnik/svg/*.hpp')
 wkt_includes = glob.glob('../include/mapnik/wkt/*.hpp')
 grid_includes = glob.glob('../include/mapnik/grid/*.hpp')
+util_includes = glob.glob('../include/mapnik/util/*.hpp')
 
 inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik')
 svg_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/svg')
 wkt_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/wkt')
 grid_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/grid')
+util_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/util')
 
 if 'uninstall' not in COMMAND_LINE_TARGETS:
     env.Alias(target='install', source=env.Install(inc_target, includes))
     env.Alias(target='install', source=env.Install(svg_inc_target, svg_includes))
     env.Alias(target='install', source=env.Install(wkt_inc_target, wkt_includes))
     env.Alias(target='install', source=env.Install(grid_inc_target, grid_includes))
+    env.Alias(target='install', source=env.Install(util_inc_target, util_includes))
 
 env['create_uninstall_target'](env, inc_target)
 env['create_uninstall_target'](env, svg_inc_target)
 env['create_uninstall_target'](env, wkt_inc_target)
 env['create_uninstall_target'](env, grid_inc_target)
+env['create_uninstall_target'](env, util_inc_target)

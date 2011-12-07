@@ -83,23 +83,12 @@ void export_label_collision_detector();
 #include <mapnik/value_error.hpp>
 #include <mapnik/save_map.hpp>
 #include "python_grid_utils.hpp"
+#include "mapnik_value_converter.hpp"
 
 #if defined(HAVE_CAIRO) && defined(HAVE_PYCAIRO)
 #include <pycairo.h>
 static Pycairo_CAPI_t *Pycairo_CAPI;
 #endif
-
-
-namespace boost { namespace python {
-
-    struct mapnik_value_to_python
-    {
-        static PyObject* convert(mapnik::value const& v)
-        {
-            return boost::apply_visitor(value_converter(),v.base());
-        }
-    };
-    }}
 
 void render(const mapnik::Map& map,
             mapnik::image_32& image,
@@ -340,15 +329,6 @@ void value_error_translator(mapnik::value_error const & ex) {
 unsigned mapnik_version()
 {
     return MAPNIK_VERSION;
-}
-
-unsigned mapnik_svn_revision()
-{
-#if defined(SVN_REVISION)
-    return SVN_REVISION;
-#else
-    return 0;
-#endif
 }
 
 // indicator for jpeg read/write support within libmapnik
@@ -644,12 +624,12 @@ BOOST_PYTHON_MODULE(_mapnik)
 
     def("save_map_to_string", &save_map_to_string, save_map_to_string_overloads());
     def("mapnik_version", &mapnik_version,"Get the Mapnik version number");
-    def("mapnik_svn_revision", &mapnik_svn_revision,"Get the Mapnik svn revision");
     def("has_jpeg", &has_jpeg, "Get jpeg read/write support status");
     def("has_cairo", &has_cairo, "Get cairo library status");
     def("has_pycairo", &has_pycairo, "Get pycairo module status");
 
     register_ptr_to_python<mapnik::expression_ptr>();
     register_ptr_to_python<mapnik::path_expression_ptr>();
+    to_python_converter<mapnik::value_holder,mapnik_param_to_python>();
     to_python_converter<mapnik::value,mapnik_value_to_python>();
 }
