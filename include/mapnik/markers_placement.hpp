@@ -44,6 +44,7 @@ public:
     markers_placement(Locator &locator, box2d<double> size, Detector &detector, double spacing, double max_error, bool allow_overlap);
     void rewind();
     bool get_point(double *x, double *y, double *angle, bool add_to_detector = true);
+    bool get_point2(double *x, double *y, double *angle, bool add_to_detector = true);
 private:
     Locator &locator_;
     box2d<double> size_;
@@ -58,8 +59,10 @@ private:
     double max_error_;
     unsigned marker_nr_;
     bool allow_overlap_;
+    double length;
     box2d<double> perform_transform(double angle, double dx, double dy);
     double find_optimal_spacing(double s);
+    double compute_length();
 };
 
 /** Constructor for markers_placement object.
@@ -74,6 +77,7 @@ template <typename Locator,  typename Detector> markers_placement<Locator, Detec
     Locator &locator, box2d<double> size, Detector &detector, double spacing, double max_error, bool allow_overlap)
     : locator_(locator), size_(size), detector_(detector), max_error_(max_error), allow_overlap_(allow_overlap)
 {
+    length = compute_length();
     if (spacing >= 0)
     {
         spacing_ = spacing;
@@ -82,6 +86,29 @@ template <typename Locator,  typename Detector> markers_placement<Locator, Detec
         spacing_ = find_optimal_spacing(-spacing);
     }
     rewind();
+}
+/** compute lenght */
+template <typename Locator, typename Detector> double markers_placement<Locator, Detector>::compute_length()
+{
+    rewind();
+    //Calculate total path length
+    unsigned cmd = agg::path_cmd_move_to;
+    double length = 0;
+    while (!agg::is_stop(cmd))
+    {
+        double dx = next_x - last_x;
+        double dy = next_y - last_y;
+        length += std::sqrt(dx * dx + dy * dy);
+        last_x = next_x;
+        last_y = next_y;
+        while (agg::is_move_to(cmd = locator_.vertex(&next_x, &next_y)))
+        {
+            //Skip over "move" commands
+            last_x = next_x;
+            last_y = next_y;
+        }
+    }
+    return length;
 }
 
 /** Autmatically chooses spacing. */

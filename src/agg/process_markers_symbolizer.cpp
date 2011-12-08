@@ -88,7 +88,6 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             double y2 = bbox.maxy();
             int w = (*mark)->width();
             int h = (*mark)->height();    
-            
             agg::trans_affine recenter = agg::trans_affine_translation(-0.5*(x1+x2),-0.5*(y1+y2));
             tr.transform(&x1,&y1);
             tr.transform(&x2,&y2);
