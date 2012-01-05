@@ -25,6 +25,7 @@
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/segment.hpp>
+#include <mapnik/expression_evaluator.hpp>
 
 // boost
 #include <boost/scoped_ptr.hpp>
@@ -66,7 +67,13 @@ void agg_renderer<T>::process(building_symbolizer const& sym,
     ras_ptr->reset();
     ras_ptr->gamma(agg::gamma_linear());
     
-    double height = sym.height() * scale_factor_;
+    double height = 0.0;
+    expression_ptr height_expr = sym.height();
+    if (height_expr)
+    {
+        value_type result = boost::apply_visitor(evaluate<Feature,value_type>(feature), *height_expr);
+        height = result.to_double() * scale_factor_;
+    }
     
     for (unsigned i=0;i<feature.num_geometries();++i)
     {
@@ -116,8 +123,8 @@ void agg_renderer<T>::process(building_symbolizer const& sym,
                 frame->move_to(itr->get<0>(),itr->get<1>());
                 frame->line_to(itr->get<0>(),itr->get<1>()+height);
             }
-
             geom.rewind(0);
+            
             for (unsigned j=0;j<geom.num_points();++j)
             {
                 double x,y;
@@ -133,6 +140,8 @@ void agg_renderer<T>::process(building_symbolizer const& sym,
                     roof->line_to(x,y+height);
                 }
             }
+            geom.rewind(0);
+            
             path_type path(t_,*frame,prj_trans);
             agg::conv_stroke<path_type> stroke(path);
             ras_ptr->add_path(stroke);
