@@ -89,9 +89,9 @@ inline std::string boost_version()
     return s.str();
 }
 
+#if BOOST_VERSION >= 104700
 PyObject* to_wkb( geometry_type const& geom, mapnik::util::wkbByteOrder byte_order)
 {
-#if BOOST_VERSION >= 104700
     mapnik::util::wkb_buffer_ptr wkb = mapnik::util::to_wkb(geom,byte_order);
     return
 #if PY_VERSION_HEX >= 0x03000000
@@ -100,16 +100,19 @@ PyObject* to_wkb( geometry_type const& geom, mapnik::util::wkbByteOrder byte_ord
         ::PyString_FromStringAndSize
 #endif
         ((const char*)wkb->buffer(),wkb->size());
+}
 #else
+PyObject* to_wkb( geometry_type const& geom)
+{
     throw std::runtime_error("mapnik::to_wkb() requires at least boost 1.47 while your build was compiled against boost " 
                              + boost_version());
-#endif
 }
+#endif
 
 
+#if BOOST_VERSION >= 104700
 PyObject* to_wkb2( path_type const& p, mapnik::util::wkbByteOrder byte_order)
 {
-#if BOOST_VERSION >= 104700
     mapnik::util::wkb_buffer_ptr wkb = mapnik::util::to_wkb(p,byte_order);
     return
 #if PY_VERSION_HEX >= 0x03000000
@@ -118,11 +121,14 @@ PyObject* to_wkb2( path_type const& p, mapnik::util::wkbByteOrder byte_order)
         ::PyString_FromStringAndSize
 #endif
         ((const char*)wkb->buffer(),wkb->size());
+}
 #else
+PyObject* to_wkb2( path_type const& p)
+{
     throw std::runtime_error("mapnik::to_wkb() requires at least boost 1.47 while your build was compiled against boost " 
                              + boost_version());
-#endif
 }
+#endif
 
 
 std::string to_wkt( geometry_type const& geom)
@@ -168,11 +174,12 @@ void export_geometry()
         .value("Polygon",mapnik::Polygon)
         ;
 
+#if BOOST_VERSION >= 104700
     enum_<mapnik::util::wkbByteOrder>("wkbByteOrder")
         .value("XDR",mapnik::util::wkbXDR)
         .value("NDR",mapnik::util::wkbNDR)
         ;
-    
+#endif
     
     using mapnik::geometry_type;
     class_<geometry_type, std::auto_ptr<geometry_type>, boost::noncopyable>("Geometry2d",no_init)

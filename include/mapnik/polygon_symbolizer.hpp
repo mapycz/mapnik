@@ -27,27 +27,35 @@
 #include <mapnik/color.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/filter_factory.hpp>
+#include <mapnik/enumeration.hpp>
+#include <mapnik/gamma_method.hpp>
+// stl
+#include <string>
 
 namespace mapnik 
 {
+
 struct MAPNIK_DECL polygon_symbolizer : public symbolizer_base
 {
-    explicit polygon_symbolizer() 
+    polygon_symbolizer() 
         : symbolizer_base(),
         fill_(color(128,128,128)),
         opacity_(1.0),
-        gamma_(1.0) {}
-
+        gamma_(1.0),
+        gamma_method_(GAMMA_POWER) {}
+    
     polygon_symbolizer(color const& fill)
         : symbolizer_base(),
         fill_(fill),
         opacity_(1.0),
-        gamma_(1.0) {}
-        
+        gamma_(1.0),
+        gamma_method_(GAMMA_POWER) {}
+    
     color const& get_fill() const
     {
         return fill_;
     }
+    
     void set_fill(color const& fill)
     {
         fill_ = fill;
@@ -68,11 +76,20 @@ struct MAPNIK_DECL polygon_symbolizer : public symbolizer_base
     {
         return gamma_;
     }
+    void set_gamma_method(gamma_method_e gamma_method)
+    {
+        gamma_method_ = gamma_method;
+    }
+    gamma_method_e get_gamma_method() const
+    {
+        return gamma_method_;
+    }
 
 private:
     color fill_;
     double opacity_;
     double gamma_;
+    gamma_method_e gamma_method_;
 }; 
    
 struct MAPNIK_DECL building_symbolizer : public symbolizer_base

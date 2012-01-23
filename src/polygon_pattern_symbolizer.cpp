@@ -34,16 +34,18 @@ static const char * pattern_alignment_strings[] = {
 };
 
 IMPLEMENT_ENUM( pattern_alignment_e, pattern_alignment_strings )
-      
-polygon_pattern_symbolizer::polygon_pattern_symbolizer(path_expression_ptr file)                                                         
+
+polygon_pattern_symbolizer::polygon_pattern_symbolizer(path_expression_ptr file)
     : symbolizer_with_image(file), symbolizer_base(),
       alignment_(LOCAL_ALIGNMENT),
-      gamma_(1.0) {}
+      gamma_(1.0),
+      gamma_method_(GAMMA_POWER) {}
 
 polygon_pattern_symbolizer::polygon_pattern_symbolizer(polygon_pattern_symbolizer const& rhs)
     : symbolizer_with_image(rhs), symbolizer_base(rhs),
       alignment_(rhs.alignment_),
-      gamma_(rhs.gamma_) {}
+      gamma_(rhs.gamma_),
+      gamma_method_(rhs.gamma_method_) {}
 
 pattern_alignment_e polygon_pattern_symbolizer::get_alignment() const
 {
@@ -63,6 +65,16 @@ double polygon_pattern_symbolizer::get_gamma() const
 void polygon_pattern_symbolizer::set_gamma(double gamma)
 {
     gamma_ = gamma;
+}
+
+void polygon_pattern_symbolizer::set_gamma_method(gamma_method_e gamma_method)
+{
+    gamma_method_ = gamma_method;
+}
+
+gamma_method_e polygon_pattern_symbolizer::get_gamma_method() const
+{
+    return gamma_method_;
 }
 
 }

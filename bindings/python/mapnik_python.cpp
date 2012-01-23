@@ -37,6 +37,7 @@ void export_geometry();
 void export_palette();
 void export_image();
 void export_image_view();
+void export_gamma_method();
 void export_grid();
 void export_grid_view();
 void export_map();
@@ -85,6 +86,7 @@ void export_label_collision_detector();
 #include <mapnik/save_map.hpp>
 #include "python_grid_utils.hpp"
 #include "mapnik_value_converter.hpp"
+#include "python_optional.hpp"
 
 #if defined(HAVE_CAIRO) && defined(HAVE_PYCAIRO)
 #include <pycairo.h>
@@ -406,6 +408,7 @@ BOOST_PYTHON_MODULE(_mapnik)
     export_palette();
     export_image();
     export_image_view();
+    export_gamma_method();
     export_grid();
     export_grid_view();
     export_expression();
@@ -630,6 +633,9 @@ BOOST_PYTHON_MODULE(_mapnik)
     def("has_cairo", &has_cairo, "Get cairo library status");
     def("has_pycairo", &has_pycairo, "Get pycairo module status");
 
+    python_optional<mapnik::color> ();
+    python_optional<mapnik::box2d<double> > ();
+    python_optional<mapnik::datasource::geometry_t> ();
     register_ptr_to_python<mapnik::expression_ptr>();
     register_ptr_to_python<mapnik::path_expression_ptr>();
     to_python_converter<mapnik::value_holder,mapnik_param_to_python>();

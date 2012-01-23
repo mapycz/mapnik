@@ -68,17 +68,18 @@ struct stroke_pickle_suite : boost::python::pickle_suite
                                          dashes,
                                          s.get_line_cap(),
                                          s.get_line_join(),
-                                         s.get_gamma());
+                                         s.get_gamma(),
+                                         s.get_gamma_method());
     }
 
     static void
     setstate (stroke& s, boost::python::tuple state)
     {
         using namespace boost::python;
-        if (len(state) != 5)
+        if (len(state) != 6)
         {
             PyErr_SetObject(PyExc_ValueError,
-                            ("expected 5-item tuple in call to __setstate__; got %s"
+                            ("expected 6-item tuple in call to __setstate__; got %s"
                              % state).ptr()
                 );
             throw_error_already_set();
@@ -99,6 +100,7 @@ struct stroke_pickle_suite : boost::python::pickle_suite
         s.set_line_cap(extract<line_cap_e>(state[2]));
         s.set_line_join(extract<line_join_e>(state[3]));
         s.set_gamma(extract<double>(state[4]));
+        s.set_gamma_method(extract<gamma_method_e>(state[5]));
 
     }
 
@@ -124,7 +126,7 @@ void export_stroke ()
         .value("ROUND_JOIN",ROUND_JOIN)
         .value("BEVEL_JOIN",BEVEL_JOIN)
         ;
-
+    
     class_<stroke>("Stroke",init<>(
                        "Creates a new default black stroke with the width of 1.\n"))
         .def(init<color,float>(
@@ -151,6 +153,10 @@ void export_stroke ()
                       &stroke::set_gamma,
                       "Gets or sets the gamma of this stroke.\n"
                       "The value is a float between 0 and 1.\n")
+        .add_property("gamma_method",
+                      &stroke::get_gamma_method,
+                      &stroke::set_gamma_method,
+                      "Set/get the gamma correction method of this stroke")
         .add_property("line_cap",
                       &stroke::get_line_cap,
                       &stroke::set_line_cap,

@@ -25,6 +25,7 @@
 
 // mapnik
 #include <mapnik/color.hpp>
+#include <mapnik/gamma_method.hpp>
 #include <mapnik/enumeration.hpp>
 
 // stl
@@ -60,15 +61,16 @@ enum line_join_enum
 };
 
 DEFINE_ENUM( line_join_e, line_join_enum );
-    
+
 class MAPNIK_DECL stroke
-{       
+{
     color c_;
     double width_;
     double opacity_; // 0.0 - 1.0
     line_cap_e  line_cap_;
     line_join_e line_join_;
     double gamma_;
+    gamma_method_e gamma_method_;
     dash_array dash_;
     double dash_offset_;
 public:
@@ -94,15 +96,18 @@ public:
 
     void set_gamma(double gamma);
     double get_gamma() const;
-        
+
+    void set_gamma_method(gamma_method_e gamma_method);
+    gamma_method_e get_gamma_method() const;
+
     void add_dash(double dash,double gap);
     bool has_dash() const;
 
     void set_dash_offset(double offset);
     double dash_offset() const;
-    
+
     dash_array const& get_dash_array() const;
-        
+
 private:
     void swap(const stroke& other) throw();
 };

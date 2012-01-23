@@ -65,7 +65,7 @@ void agg_renderer<T>::process(building_symbolizer const& sym,
     agg::scanline_u8 sl;
 
     ras_ptr->reset();
-    ras_ptr->gamma(agg::gamma_linear());
+    ras_ptr->gamma(agg::gamma_power());
     
     double height = 0.0;
     expression_ptr height_expr = sym.height();
@@ -85,6 +85,8 @@ void agg_renderer<T>::process(building_symbolizer const& sym,
             std::deque<segment_t> face_segments;
             double x0(0);
             double y0(0);
+
+            geom.rewind(0);
             unsigned cm = geom.vertex(&x0,&y0);
             for (unsigned j=1;j<geom.num_points();++j)
             {
@@ -123,8 +125,8 @@ void agg_renderer<T>::process(building_symbolizer const& sym,
                 frame->move_to(itr->get<0>(),itr->get<1>());
                 frame->line_to(itr->get<0>(),itr->get<1>()+height);
             }
+
             geom.rewind(0);
-            
             for (unsigned j=0;j<geom.num_points();++j)
             {
                 double x,y;
@@ -140,7 +142,6 @@ void agg_renderer<T>::process(building_symbolizer const& sym,
                     roof->line_to(x,y+height);
                 }
             }
-            geom.rewind(0);
             
             path_type path(t_,*frame,prj_trans);
             agg::conv_stroke<path_type> stroke(path);

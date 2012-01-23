@@ -28,6 +28,8 @@
 #include <mapnik/ptree_helpers.hpp>
 #include <mapnik/geom_util.hpp>
 
+#include <gdal_version.h>
+
 using mapnik::datasource;
 using mapnik::parameters;
 
@@ -152,10 +154,15 @@ void gdal_datasource::bind() const
               << tr[4] << "," << tr[5] << std::endl;
 #endif
 
+    // TODO - We should throw for true non-north up images, but the check
+    // below is clearly too restrictive.
+    // https://github.com/mapnik/mapnik/issues/970
+    /*
     if (tr[2] != 0 || tr[4] != 0)
     {
         throw datasource_exception("GDAL Plugin: only 'north up' images are supported");
     }
+    */
 
     dx_ = tr[1];
     dy_ = tr[5];
@@ -192,7 +199,7 @@ gdal_datasource::~gdal_datasource()
 {
 }
 
-int gdal_datasource::type() const
+datasource::datasource_t gdal_datasource::type() const
 {
     return datasource::Raster;
 }
@@ -207,6 +214,11 @@ box2d<double> gdal_datasource::envelope() const
     if (! is_bound_) bind();
 
     return extent_;
+}
+
+boost::optional<mapnik::datasource::geometry_t> gdal_datasource::get_geometry_type() const
+{
+    return boost::optional<mapnik::datasource::geometry_t>();
 }
 
 layer_descriptor gdal_datasource::get_descriptor() const
