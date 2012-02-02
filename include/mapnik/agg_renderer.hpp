@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -45,20 +45,20 @@
 // apps using mapnik do not
 // need agg headers
 namespace agg {
-  struct trans_affine;
+struct trans_affine;
 }
 
 namespace mapnik {
 
 class marker;
-   
+
 struct rasterizer;
-   
+
 template <typename T>
 class MAPNIK_DECL agg_renderer : public feature_style_processor<agg_renderer<T> >,
                                  private boost::noncopyable
 {
-     
+
 public:
     // create with default, empty placement detector
     agg_renderer(Map const& m, T & pixmap, double scale_factor=1.0, unsigned offset_x=0, unsigned offset_y=0);
@@ -73,38 +73,35 @@ public:
     void render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity, double angle=0.0);
 
     void process(point_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(line_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(line_pattern_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(polygon_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(polygon_pattern_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(raster_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(shield_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(text_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(building_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     void process(markers_symbolizer const& sym,
-                 Feature const& feature,
+                 mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
-    void process(glyph_symbolizer const& sym,
-                 Feature const& feature,
-                 proj_transform const& prj_trans);    
     inline bool process(rule::symbolizers const& /*syms*/,
                         Feature const& /*feature*/,
                         proj_transform const& /*prj_trans*/)

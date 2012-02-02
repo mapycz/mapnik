@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -22,10 +22,6 @@
 
 #ifndef MAPNIK_LOAD_MAP_HPP
 #define MAPNIK_LOAD_MAP_HPP
-
-#ifdef HAVE_CONFIG_H
-#include <config.hpp>
-#endif
 
 // mapnik
 #include <mapnik/map.hpp>

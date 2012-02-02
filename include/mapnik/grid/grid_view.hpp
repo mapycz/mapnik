@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -29,6 +29,8 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/global.hpp>
 #include <mapnik/value.hpp>
+#include <mapnik/feature.hpp>
+#include <mapnik/datasource.hpp> // for feature_ptr
 
 // boost
 #include <boost/cstdint.hpp>
@@ -42,28 +44,29 @@
 
 
 namespace mapnik {
-    
+
 template <typename T>
 class hit_grid_view
 {
 public:
     typedef T data_type;
     typedef typename T::pixel_type value_type;
+    typedef typename T::pixel_type pixel_type;
     typedef std::string lookup_type;
     typedef std::map<value_type, lookup_type> feature_key_type;
     typedef std::map<lookup_type, value_type> key_type;
-    typedef std::map<std::string, mapnik::value> feature_properties_type;
-    typedef std::map<std::string, feature_properties_type > feature_type;
-          
-    hit_grid_view(unsigned x, unsigned y, 
-              unsigned width, unsigned height,
-              T const& data,
-              std::string const& key,
-              unsigned resolution,
-              std::set<std::string> const& names,
-              feature_key_type const& f_keys,
-              feature_type const& features
-              )
+    typedef std::map<std::string, mapnik::feature_ptr> feature_type;
+
+    hit_grid_view(unsigned x, unsigned y,
+                  unsigned width, unsigned height,
+                  T const& data,
+                  std::string const& key,
+                  std::string const& id_name,
+                  unsigned resolution,
+                  std::set<std::string> const& names,
+                  feature_key_type const& f_keys,
+                  feature_type const& features
+        )
         : x_(x),
           y_(y),
           width_(width),
@@ -71,19 +74,20 @@ public:
           data_(data),
           key_(key),
           resolution_(resolution),
+          id_name_(id_name),
           names_(names),
           f_keys_(f_keys),
           features_(features)
-          
+
     {
         if (x_ >= data_.width()) x_=data_.width()-1;
         if (y_ >= data_.height()) x_=data_.height()-1;
         if (x_ + width_ > data_.width()) width_= data_.width() - x_;
         if (y_ + height_ > data_.height()) height_= data_.height() - y_;
     }
-        
+
     ~hit_grid_view() {}
-        
+
     hit_grid_view(hit_grid_view<T> const& rhs)
         : x_(rhs.x_),
           y_(rhs.y_),
@@ -92,11 +96,12 @@ public:
           data_(rhs.data_),
           key_(rhs.key_),
           resolution_(rhs.resolution_),
+          id_name_(rhs.id_name_),
           names_(rhs.names_),
           f_keys_(rhs.f_keys_),
           features_(rhs.features_)
-          {}
-        
+    {}
+
     hit_grid_view<T> & operator=(hit_grid_view<T> const& rhs)
     {
         if (&rhs==this) return *this;
@@ -107,11 +112,12 @@ public:
         data_ = rhs.data_;
         key_ = rhs.key_;
         resolution_ = rhs.resolution_;
+        id_name_ = rhs.id_name_;
         names_ = rhs.names_;
         f_keys_ = rhs.f_keys_;
         features_ = rhs.features_;
     }
-        
+
     inline unsigned x() const
     {
         return x_;
@@ -121,7 +127,7 @@ public:
     {
         return y_;
     }
-        
+
     inline unsigned width() const
     {
         return width_;
@@ -131,7 +137,12 @@ public:
     {
         return height_;
     }
-        
+
+    inline std::string const& key_name() const
+    {
+        return id_name_;
+    }
+
     inline const value_type* getRow(unsigned row) const
     {
         return data_.getRow(row + y_) + x_;
@@ -185,6 +196,7 @@ private:
     T const& data_;
     std::string const& key_;
     unsigned int resolution_;
+    std::string const& id_name_;
     std::set<std::string> const& names_;
     feature_key_type const& f_keys_;
     feature_type const& features_;

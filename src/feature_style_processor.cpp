@@ -66,7 +66,7 @@ template <typename Processor>
 struct feature_style_processor<Processor>::symbol_dispatch : public boost::static_visitor<>
 {
     symbol_dispatch (Processor & output,
-                     Feature const& f,
+                     mapnik::feature_ptr const& f,
                      proj_transform const& prj_trans)
         : output_(output),
           f_(f),
@@ -79,7 +79,7 @@ struct feature_style_processor<Processor>::symbol_dispatch : public boost::stati
     }
 
     Processor & output_;
-    Feature const& f_;
+    mapnik::feature_ptr f_;
     proj_transform const& prj_trans_;
 };
 
@@ -127,7 +127,7 @@ void feature_style_processor<Processor>::apply()
     }
 
     p.end_map_processing(m_);
-    
+
 #if defined(RENDERING_STATS)
     t.stop();
     std::clog << "//-- rendering timer stopped...\n\n";
@@ -214,7 +214,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
 
 #if defined(RENDERING_STATS)
     if (!prj_trans.equal())
-        std::clog << "notice: reprojecting layer: '" << lay.name() << "' from/to:\n\t'" 
+        std::clog << "notice: reprojecting layer: '" << lay.name() << "' from/to:\n\t'"
                   << lay.srs() << "'\n\t'"
                   << m_.srs() << "'\n";
 #endif
@@ -233,7 +233,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
     if (prj_trans.forward(map_ext, PROJ_ENVELOPE_POINTS) && map_ext.intersects(layer_ext))
     {
         layer_ext.clip(map_ext);
-    } 
+    }
     // if no intersection and projections are also equal, early return
     else if (prj_trans.equal())
     {
@@ -260,7 +260,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
 #endif
         return;
     }
-    
+
     box2d<double> query_ext = m_.get_current_extent();
     box2d<double> unbuffered_extent = m_.get_current_extent();
     prj_trans.forward(query_ext, PROJ_ENVELOPE_POINTS);
@@ -359,7 +359,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
 
                 while ((feature = features->next()))
                 {
-                    if (prev && prev->props()[group_by] != feature->props()[group_by])
+                    if (prev && prev->get(group_by) != feature->get(group_by))
                     {
                         // We're at a value boundary, so render what we have
                         // up to this point.
@@ -476,13 +476,13 @@ void feature_style_processor<Processor>::render_style(
                 // if the underlying renderer is not able to process the complete set of symbolizers,
                 // process one by one.
 #if defined(SVG_RENDERER)
-                if(!p.process(symbols,*feature,prj_trans))
+                if(!p.process(symbols,feature,prj_trans))
 #endif
                 {
 
                     BOOST_FOREACH (symbolizer const& sym, symbols)
                     {
-                        boost::apply_visitor(symbol_dispatch(p,*feature,prj_trans),sym);
+                        boost::apply_visitor(symbol_dispatch(p,feature,prj_trans),sym);
                     }
                 }
                 if (style->get_filter_mode() == FILTER_FIRST)
@@ -506,12 +506,12 @@ void feature_style_processor<Processor>::render_style(
                 // if the underlying renderer is not able to process the complete set of symbolizers,
                 // process one by one.
 #if defined(SVG_RENDERER)
-                if(!p.process(symbols,*feature,prj_trans))
+                if(!p.process(symbols,feature,prj_trans))
 #endif
                 {
                     BOOST_FOREACH (symbolizer const& sym, symbols)
                     {
-                        boost::apply_visitor(symbol_dispatch(p,*feature,prj_trans),sym);
+                        boost::apply_visitor(symbol_dispatch(p,feature,prj_trans),sym);
                     }
                 }
             }
@@ -530,12 +530,12 @@ void feature_style_processor<Processor>::render_style(
                 // if the underlying renderer is not able to process the complete set of symbolizers,
                 // process one by one.
 #if defined(SVG_RENDERER)
-                if(!p.process(symbols,*feature,prj_trans))
+                if(!p.process(symbols,feature,prj_trans))
 #endif
                 {
                     BOOST_FOREACH (symbolizer const& sym, symbols)
                     {
-                        boost::apply_visitor(symbol_dispatch(p,*feature,prj_trans),sym);
+                        boost::apply_visitor(symbol_dispatch(p,feature,prj_trans),sym);
                     }
                 }
             }
@@ -551,15 +551,15 @@ void feature_style_processor<Processor>::render_style(
 
     // done with style
     std::ostringstream s;
-    if (feature_count > 0) 
+    if (feature_count > 0)
     {
         double perc_processed = ((double)feature_processed_count/(double)feature_count)*100.0;
 
-        s << "percent rendered: " << perc_processed << "% - " << feature_processed_count 
+        s << "percent rendered: " << perc_processed << "% - " << feature_processed_count
           << " rendered for " << feature_count << " queried for ";
         s << std::setw(15 - (int)s.tellp()) << " layer '" << lay.name() << "' and style '" << style_name << "'\n";
-    } 
-    else 
+    }
+    else
     {
         s << "" << std::setw(15) << "- no features returned from query for layer '" << lay.name() << "' and style '" << style_name << "'\n";
     }

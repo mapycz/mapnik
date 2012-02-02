@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -32,7 +32,7 @@
 
 namespace mapnik
 {
- 
+
 #ifdef BOOST_BIG_ENDIAN
 #define MAPNIK_BIG_ENDIAN
 #endif
@@ -72,40 +72,38 @@ typedef boost::uint8_t byte;
         ((byte*) &def_temp)[3]=(M)[0];          \
         (V)=def_temp; } while(0)
 
-    
+
 // read int16_t NDR (little endian)
-inline boost::int16_t& read_int16_ndr(const char* data, boost::int16_t & val)
+inline void read_int16_ndr(const char* data, boost::int16_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     std::memcpy(&val,data,2);
 #else
-    val = (data[0]&0xff) | 
+    val = (data[0]&0xff) |
         ((data[1]&0xff)<<8);
 #endif
-    return val;
 }
-    
+
 // read int32_t NDR (little endian)
-inline boost::int32_t& read_int32_ndr(const char* data, boost::int32_t & val)
+inline void read_int32_ndr(const char* data, boost::int32_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     std::memcpy(&val,data,4);
 #else
-    val = (data[0]&0xff)     | 
-        ((data[1]&0xff)<<8)  | 
-        ((data[2]&0xff)<<16) | 
+    val = (data[0]&0xff)     |
+        ((data[1]&0xff)<<8)  |
+        ((data[2]&0xff)<<16) |
         ((data[3]&0xff)<<24);
 #endif
-    return val;
 }
-    
+
 // read double NDR (little endian)
-inline double& read_double_ndr(const char* data, double & val)
+inline void read_double_ndr(const char* data, double & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     std::memcpy(&val,&data[0],8);
 #else
-    boost::int64_t bits = ((boost::int64_t)data[0] & 0xff) | 
+    boost::int64_t bits = ((boost::int64_t)data[0] & 0xff) |
         ((boost::int64_t)data[1] & 0xff) << 8   |
         ((boost::int64_t)data[2] & 0xff) << 16  |
         ((boost::int64_t)data[3] & 0xff) << 24  |
@@ -115,36 +113,33 @@ inline double& read_double_ndr(const char* data, double & val)
         ((boost::int64_t)data[7] & 0xff) << 56  ;
     std::memcpy(&val,&bits,8);
 #endif
-    return val;
-} 
-    
+}
+
 // read int16_t XDR (big endian)
-inline boost::int16_t& read_int16_xdr(const char* data, boost::int16_t & val)
+inline void read_int16_xdr(const char* data, boost::int16_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     val = (data[3]&0xff) | ((data[2]&0xff)<<8);
 #else
     std::memcpy(&val,data,2);
 #endif
-    return val;
 }
-    
+
 // read int32_t XDR (big endian)
-inline boost::int32_t& read_int32_xdr(const char* data, boost::int32_t & val)
+inline void read_int32_xdr(const char* data, boost::int32_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     val = (data[3]&0xff) | ((data[2]&0xff)<<8) | ((data[1]&0xff)<<16) | ((data[0]&0xff)<<24);
 #else
     std::memcpy(&val,data,4);
 #endif
-    return val;
 }
-    
+
 // read double XDR (big endian)
-inline double& read_double_xdr(const char* data, double & val)
+inline void read_double_xdr(const char* data, double & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
-    boost::int64_t bits = ((boost::int64_t)data[7] & 0xff) | 
+    boost::int64_t bits = ((boost::int64_t)data[7] & 0xff) |
         ((boost::int64_t)data[6] & 0xff) << 8   |
         ((boost::int64_t)data[5] & 0xff) << 16  |
         ((boost::int64_t)data[4] & 0xff) << 24  |
@@ -156,7 +151,6 @@ inline double& read_double_xdr(const char* data, double & val)
 #else
     std::memcpy(&val,&data[0],8);
 #endif
-    return val;
 }
 
 #ifdef _WINDOWS
@@ -169,7 +163,7 @@ inline int rint( double val)
 inline double round (double val)
 {
     return floor(val);
-} 
+}
 
 #define  _USE_MATH_DEFINES
 #ifndef M_PI

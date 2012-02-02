@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -30,25 +30,18 @@
 
 namespace mapnik {
 
-static mapnik::value _null_value;
-
 struct attribute
 {
     std::string name_;
     explicit attribute(std::string const& name)
         : name_(name) {}
-    
+
     template <typename V ,typename F>
-    V value(F const& f) const
+    V const& value(F const& f) const
     {
-        typedef typename F::const_iterator const_iterator;
-        const_iterator itr = f.find(name_);
-        if (itr != f.end())
-        {
-            return itr->second;
-        }
-        return _null_value;
+        return f.get(name_);
     }
+
     std::string const& name() const { return name_;}
 };
 }

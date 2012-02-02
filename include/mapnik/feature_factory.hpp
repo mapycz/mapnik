@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -34,13 +34,13 @@ namespace mapnik
 {
 struct feature_factory
 {
-    static boost::shared_ptr<Feature> create (int fid)
+    static boost::shared_ptr<Feature> create (context_ptr const& ctx, int fid)
     {
         //return boost::allocate_shared<Feature>(boost::pool_allocator<Feature>(),fid);
         //return boost::allocate_shared<Feature>(boost::fast_pool_allocator<Feature>(),fid);
-        return boost::make_shared<Feature>(fid);
+        return boost::make_shared<Feature>(ctx,fid);
     }
-}; 
+};
 }
 
 #endif // MAPNIK_FEATURE_FACTORY_HPP

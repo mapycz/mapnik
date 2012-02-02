@@ -222,10 +222,10 @@ void sqlite_datasource::bind() const
         std::string query = populate_tokens(table_);
         s << "SELECT " << fields_ << " FROM (" << query << ") LIMIT 1";
         found_types_via_subquery = sqlite_utils::detect_types_from_subquery(
-                                       s.str(),
-                                       geometry_field_,
-                                       desc_,
-                                       dataset_);
+            s.str(),
+            geometry_field_,
+            desc_,
+            dataset_);
     }
 
     // TODO - consider removing this
@@ -301,22 +301,22 @@ void sqlite_datasource::bind() const
                       << geometry_table_ << ")";
 
                 /*
-                std::vector<sqlite_utils::rtree_type> rtree_list;
-                {
-                    boost::shared_ptr<sqlite_resultset> rs = dataset_->execute_query(query.str());
-                    sqlite_utils::build_tree(rs,rtree_list);
-                }
-                if (sqlite_utils::create_spatial_index2(index_db,index_table_,rtree_list))
-                {
-                    //extent_initialized_ = true;
-                    has_spatial_index_ = true;
-                    if (boost::filesystem::exists(index_db))
-                    {
-                        dataset_->execute("attach database '" + index_db + "' as " + index_table_);
-                    }
-                }
+                  std::vector<sqlite_utils::rtree_type> rtree_list;
+                  {
+                  boost::shared_ptr<sqlite_resultset> rs = dataset_->execute_query(query.str());
+                  sqlite_utils::build_tree(rs,rtree_list);
+                  }
+                  if (sqlite_utils::create_spatial_index2(index_db,index_table_,rtree_list))
+                  {
+                  //extent_initialized_ = true;
+                  has_spatial_index_ = true;
+                  if (boost::filesystem::exists(index_db))
+                  {
+                  dataset_->execute("attach database '" + index_db + "' as " + index_table_);
+                  }
+                  }
 
-                
+
                 */
                 boost::shared_ptr<sqlite_resultset> rs = dataset_->execute_query(query.str());
                 if (sqlite_utils::create_spatial_index(index_db,index_table_,rs))
@@ -527,7 +527,7 @@ boost::optional<mapnik::datasource::geometry_t> sqlite_datasource::get_geometry_
             }
         }
     }
-    
+
     return result;
 }
 
@@ -547,19 +547,24 @@ featureset_ptr sqlite_datasource::features(query const& q) const
         mapnik::box2d<double> const& e = q.get_bbox();
 
         std::ostringstream s;
+        mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
 
         s << "SELECT " << geometry_field_;
         if (!key_field_.empty())
+        {
             s << "," << key_field_;
+            ctx->push(key_field_);
+        }
         std::set<std::string> const& props = q.property_names();
         std::set<std::string>::const_iterator pos = props.begin();
         std::set<std::string>::const_iterator end = props.end();
-        while (pos != end)
+
+        for ( ;pos != end;++pos)
         {
             // TODO - should we restrict duplicate key query?
             //if (*pos != key_field_)
             s << ",[" << *pos << "]";
-            ++pos;
+            ctx->push(*pos);
         }
 
         s << " FROM ";
@@ -601,6 +606,7 @@ featureset_ptr sqlite_datasource::features(query const& q) const
         boost::shared_ptr<sqlite_resultset> rs(dataset_->execute_query(s.str()));
 
         return boost::make_shared<sqlite_featureset>(rs,
+                                                     ctx,
                                                      desc_.get_encoding(),
                                                      format_,
                                                      using_subquery_);
@@ -619,20 +625,26 @@ featureset_ptr sqlite_datasource::features_at_point(coord2d const& pt) const
         mapnik::box2d<double> const e(pt.x, pt.y, pt.x, pt.y);
 
         std::ostringstream s;
+        mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
+
         s << "SELECT " << geometry_field_;
         if (!key_field_.empty())
+        {
             s << "," << key_field_;
+            ctx->push(key_field_);
+        }
+
         std::vector<attribute_descriptor>::const_iterator itr = desc_.get_descriptors().begin();
         std::vector<attribute_descriptor>::const_iterator end = desc_.get_descriptors().end();
-        while (itr != end)
+
+        for ( ; itr != end; ++itr)
         {
             std::string fld_name = itr->get_name();
             if (fld_name != key_field_)
             {
                 s << ",[" << itr->get_name() << "]";
+                ctx->push(itr->get_name());
             }
-
-            ++itr;
         }
 
         s << " FROM ";
@@ -674,10 +686,11 @@ featureset_ptr sqlite_datasource::features_at_point(coord2d const& pt) const
         boost::shared_ptr<sqlite_resultset> rs(dataset_->execute_query(s.str()));
 
         return boost::make_shared<sqlite_featureset>(rs,
+                                                     ctx,
                                                      desc_.get_encoding(),
                                                      format_,
                                                      using_subquery_);
     }
-    
+
     return featureset_ptr();
 }

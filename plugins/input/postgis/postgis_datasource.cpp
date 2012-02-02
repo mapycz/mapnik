@@ -444,6 +444,7 @@ boost::shared_ptr<IResultSet> postgis_datasource::get_resultset(boost::shared_pt
         */
 
         if (!conn->execute(csql.str()))
+            // TODO - better error
             throw mapnik::datasource_exception("Postgis Plugin: error creating cursor for data select." );
 
         return boost::make_shared<CursorResultSet>(conn, cursor_name, cursor_fetch_size_);
@@ -507,10 +508,13 @@ featureset_ptr postgis_datasource::features(const query& q) const
             std::set<std::string> const& props=q.property_names();
             std::set<std::string>::const_iterator pos=props.begin();
             std::set<std::string>::const_iterator end=props.end();
-            while (pos != end)
+
+            mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
+
+            for ( ;pos != end;++pos)
             {
                 mapnik::sql_utils::quote_attr(s,*pos);
-                ++pos;
+                ctx->push(*pos);
             }
 
             std::string table_with_bbox = populate_tokens(table_,scale_denom,box);
@@ -525,7 +529,7 @@ featureset_ptr postgis_datasource::features(const query& q) const
             unsigned num_attr = props.size();
             if (!key_field_.empty())
                 ++num_attr;
-            return boost::make_shared<postgis_featureset>(rs,desc_.get_encoding(), !key_field_.empty(),num_attr);
+            return boost::make_shared<postgis_featureset>(rs, ctx, desc_.get_encoding(), !key_field_.empty());
         }
         else
         {
@@ -573,14 +577,15 @@ featureset_ptr postgis_datasource::features_at_point(coord2d const& pt) const
             if (!key_field_.empty())
                 mapnik::sql_utils::quote_attr(s,key_field_);
 
+            mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
+
             std::vector<attribute_descriptor>::const_iterator itr = desc_.get_descriptors().begin();
             std::vector<attribute_descriptor>::const_iterator end = desc_.get_descriptors().end();
-            unsigned size=0;
-            while (itr != end)
+
+            for ( ; itr != end; ++itr)
             {
                 mapnik::sql_utils::quote_attr(s,itr->get_name());
-                ++itr;
-                ++size;
+                ctx->push(itr->get_name());
             }
 
             box2d<double> box(pt.x,pt.y,pt.x,pt.y);
@@ -593,7 +598,7 @@ featureset_ptr postgis_datasource::features_at_point(coord2d const& pt) const
             }
 
             boost::shared_ptr<IResultSet> rs = get_resultset(conn, s.str());
-            return boost::make_shared<postgis_featureset>(rs,desc_.get_encoding(), !key_field_.empty(),size);
+            return boost::make_shared<postgis_featureset>(rs, ctx, desc_.get_encoding(), !key_field_.empty());
         }
     }
     return featureset_ptr();
@@ -804,7 +809,7 @@ boost::optional<mapnik::datasource::geometry_t> postgis_datasource::get_geometry
             }
         }
     }
-    
+
     return result;
 }
 

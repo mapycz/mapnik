@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -34,7 +34,7 @@ void symbolizer_base::add_metawriter(std::string const& name, metawriter_propert
 }
 
 void symbolizer_base::add_metawriter(metawriter_ptr writer_ptr, metawriter_properties const& properties,
-                    std::string const& name)
+                                     std::string const& name)
 {
     writer_ptr_ = writer_ptr;
     properties_ = properties;
@@ -72,7 +72,7 @@ metawriter_with_properties symbolizer_base::get_metawriter() const
 
 symbolizer_with_image::symbolizer_with_image(path_expression_ptr file)
     : image_filename_( file ),
-      opacity_(1.0f)
+      image_opacity_(1.0f)
 
 {
     matrix_[0] = 1.0;
@@ -85,19 +85,19 @@ symbolizer_with_image::symbolizer_with_image(path_expression_ptr file)
 
 symbolizer_with_image::symbolizer_with_image( symbolizer_with_image const& rhs)
     : image_filename_(rhs.image_filename_),
-      opacity_(rhs.opacity_),
+      image_opacity_(rhs.image_opacity_),
       matrix_(rhs.matrix_) {}
-   
+
 path_expression_ptr symbolizer_with_image::get_filename() const
 {
     return image_filename_;
 }
 
-void symbolizer_with_image::set_filename(path_expression_ptr image_filename) 
+void symbolizer_with_image::set_filename(path_expression_ptr image_filename)
 {
     image_filename_ = image_filename;
 }
-      
+
 void symbolizer_with_image::set_transform(transform_type const& matrix)
 {
     matrix_ = matrix;
@@ -120,12 +120,12 @@ std::string const symbolizer_with_image::get_transform_string() const
 
 void symbolizer_with_image::set_opacity(float opacity)
 {
-    opacity_ = opacity;
+    image_opacity_ = opacity;
 }
 
 float symbolizer_with_image::get_opacity() const
 {
-    return opacity_;
+    return image_opacity_;
 }
 
 } // end of namespace mapnik

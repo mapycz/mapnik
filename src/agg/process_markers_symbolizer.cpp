@@ -30,6 +30,7 @@
 #include <mapnik/svg/svg_path_adapter.hpp>
 #include <mapnik/markers_placement.hpp>
 #include <mapnik/arrow.hpp>
+#include <mapnik/markers_symbolizer.hpp>
 
 #include "agg_basics.h"
 #include "agg_rendering_buffer.h"
@@ -46,14 +47,14 @@ namespace mapnik {
 
 template <typename T>
 void agg_renderer<T>::process(markers_symbolizer const& sym,
-                              Feature const& feature,
+                              mapnik::feature_ptr const& feature,
                               proj_transform const& prj_trans)
 {
     typedef coord_transform2<CoordTransform,geometry_type> path_type;
     typedef agg::pixfmt_rgba32_plain pixfmt;
     typedef agg::renderer_base<pixfmt> renderer_base;
     typedef agg::renderer_scanline_aa_solid<renderer_base> renderer_solid;
-    
+
     ras_ptr->reset();
     ras_ptr->gamma(agg::gamma_power());
     agg::scanline_u8 sl;
@@ -66,11 +67,11 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
     boost::array<double,6> const& m = sym.get_transform();
     tr.load_from(&m[0]);
     tr = agg::trans_affine_scaling(scale_factor_) * tr;
-    std::string filename = path_processor_type::evaluate(*sym.get_filename(), feature);
+    std::string filename = path_processor_type::evaluate(*sym.get_filename(), *feature);
     marker_placement_e placement_method = sym.get_marker_placement();
     marker_type_e marker_type = sym.get_marker_type();
     metawriter_with_properties writer = sym.get_metawriter();
-    
+
     if (!filename.empty())
     {
         boost::optional<marker_ptr> mark = mapnik::marker_cache::instance()->find(filename, true);
@@ -87,7 +88,8 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             double x2 = bbox.maxx();
             double y2 = bbox.maxy();
             int w = (*mark)->width();
-            int h = (*mark)->height();    
+            int h = (*mark)->height();
+
             agg::trans_affine recenter = agg::trans_affine_translation(-0.5*(x1+x2),-0.5*(y1+y2));
             tr.transform(&x1,&y1);
             tr.transform(&x2,&y2);
@@ -95,14 +97,14 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             using namespace mapnik::svg;
             vertex_stl_adapter<svg_path_storage> stl_storage((*marker)->source());
             svg_path_adapter svg_path(stl_storage);
-            svg_renderer<svg_path_adapter, 
-                         agg::pod_bvector<path_attributes>,
-                         renderer_solid,
-                         agg::pixfmt_rgba32_plain > svg_renderer(svg_path,(*marker)->attributes());
+            svg_renderer<svg_path_adapter,
+                agg::pod_bvector<path_attributes>,
+                renderer_solid,
+                agg::pixfmt_rgba32_plain > svg_renderer(svg_path,(*marker)->attributes());
 
-            for (unsigned i=0; i<feature.num_geometries(); ++i)
+            for (unsigned i=0; i<feature->num_geometries(); ++i)
             {
-                geometry_type const& geom = feature.get_geometry(i);
+                geometry_type const& geom = feature->get_geometry(i);
                 // TODO - merge this code with point_symbolizer rendering
                 if (placement_method == MARKER_POINT_PLACEMENT || geom.num_points() <= 1)
                 {
@@ -113,29 +115,29 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                     prj_trans.backward(x,y,z);
                     t_.forward(&x,&y);
                     extent.re_center(x,y);
-                    
+
                     if (sym.get_allow_overlap() ||
                         detector_->has_placement(extent))
                     {
-                        
+
                         render_marker(floor(x - 0.5 * w),floor(y - 0.5 * h) ,**mark,tr, sym.get_opacity());
-        
+
                         // TODO - impl this for markers?
                         //if (!sym.get_ignore_placement())
                         //    detector_->insert(label_ext);
                         metawriter_with_properties writer = sym.get_metawriter();
-                        if (writer.first) writer.first->add_box(extent, feature, t_, writer.second);
+                        if (writer.first) writer.first->add_box(extent, *feature, t_, writer.second);
                     }
                 }
                 else
                 {
                     path_type path(t_,geom,prj_trans);
-                    markers_placement<path_type, label_collision_detector4> placement(path, extent, *detector_, 
-                                                                                      sym.get_spacing() * scale_factor_, 
-                                                                                      sym.get_max_error(), 
-                                                                                      sym.get_allow_overlap());        
+                    markers_placement<path_type, label_collision_detector4> placement(path, extent, *detector_,
+                                                                                      sym.get_spacing() * scale_factor_,
+                                                                                      sym.get_max_error(),
+                                                                                      sym.get_allow_overlap());
                     double x, y, angle;
-                
+
                     while (placement.get_point(&x, &y, &angle))
                     {
                         agg::trans_affine matrix = recenter * tr *agg::trans_affine_rotation(angle) * agg::trans_affine_translation(x, y);
@@ -164,7 +166,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
         unsigned s_a=col.alpha();
         double w = sym.get_width();
         double h = sym.get_height();
-    
+
         arrow arrow_;
         box2d<double> extent;
 
@@ -181,7 +183,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             tr.transform(&x1,&y1);
             tr.transform(&x2,&y2);
             extent.init(x1,y1,x2,y2);
-            //std::clog << x1 << " " << y1 << " " << x2 << " " << y2 << "\n"; 
+            //std::clog << x1 << " " << y1 << " " << x2 << " " << y2 << "\n";
         }
         else
         {
@@ -192,19 +194,19 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             tr.transform(&x1,&y1);
             tr.transform(&x2,&y2);
             extent.init(x1,y1,x2,y2);
-            //std::clog << x1 << " " << y1 << " " << x2 << " " << y2 << "\n"; 
+            //std::clog << x1 << " " << y1 << " " << x2 << " " << y2 << "\n";
         }
 
-    
+
         double x;
         double y;
         double z=0;
 
         agg::path_storage marker;
 
-        for (unsigned i=0; i<feature.num_geometries(); ++i)
+        for (unsigned i=0; i<feature->num_geometries(); ++i)
         {
-            geometry_type const& geom = feature.get_geometry(i);
+            geometry_type const& geom = feature->get_geometry(i);
             //if (geom.num_points() <= 1) continue;
             if (placement_method == MARKER_POINT_PLACEMENT || geom.num_points() <= 1)
             {
@@ -225,7 +227,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                     // TODO - fill with packed scanlines? agg::scanline_p8
                     // and agg::renderer_outline_aa
                     agg::render_scanlines(*ras_ptr, sl, ren);
-                    
+
                     // outline
                     if (strk_width)
                     {
@@ -233,27 +235,27 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                         agg::conv_stroke<agg::path_storage>  outline(marker);
                         outline.generator().width(strk_width * scale_factor_);
                         ras_ptr->add_path(outline);
-    
+
                         ren.color(agg::rgba8(s_r, s_g, s_b, int(s_a*stroke_.get_opacity())));
                         agg::render_scanlines(*ras_ptr, sl_line, ren);
                     }
                     detector_->insert(label_ext);
-                    if (writer.first) writer.first->add_box(label_ext, feature, t_, writer.second);
+                    if (writer.first) writer.first->add_box(label_ext, *feature, t_, writer.second);
                 }
             }
             else
             {
-                
+
                 if (marker_type == ARROW)
                     marker.concat_path(arrow_);
 
                 path_type path(t_,geom,prj_trans);
-                markers_placement<path_type, label_collision_detector4> placement(path, extent, *detector_, 
-                                                                                  sym.get_spacing() * scale_factor_, 
-                                                                                  sym.get_max_error(), 
-                                                                                  sym.get_allow_overlap());        
+                markers_placement<path_type, label_collision_detector4> placement(path, extent, *detector_,
+                                                                                  sym.get_spacing() * scale_factor_,
+                                                                                  sym.get_max_error(),
+                                                                                  sym.get_allow_overlap());
                 double x_t, y_t, angle;
-            
+
                 while (placement.get_point(&x_t, &y_t, &angle))
                 {
                     agg::trans_affine matrix;
@@ -276,7 +278,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                     }
 
 
-                    // TODO 
+                    // TODO
                     if (writer.first)
                         //writer.first->add_box(label_ext, feature, t_, writer.second);
                         std::clog << "### Warning metawriter not yet supported for LINE placement\n";
@@ -306,6 +308,6 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
 }
 
 template void agg_renderer<image_32>::process(markers_symbolizer const&,
-                                              Feature const&,
+                                              mapnik::feature_ptr const&,
                                               proj_transform const&);
 }

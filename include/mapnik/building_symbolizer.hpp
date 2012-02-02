@@ -19,23 +19,35 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
+
+#ifndef MAPNIK_BUILDING_SYMBOLIZER_HPP
+#define MAPNIK_BUILDING_SYMBOLIZER_HPP
 
 // mapnik
-#include <mapnik/grid/grid_renderer.hpp>
-#include <iostream>
+#include <mapnik/color.hpp>
+#include <mapnik/symbolizer.hpp>
+#include <mapnik/filter_factory.hpp>
 
-namespace mapnik {
-
-template <typename T>
-void grid_renderer<T>::process(glyph_symbolizer const& sym,
-                              Feature const& feature,
-                              proj_transform const& prj_trans)
+namespace mapnik
 {
-    std::clog << "grid_renderer does not yet support glyph_symbolizer\n";
+
+struct MAPNIK_DECL building_symbolizer : public symbolizer_base
+{
+    building_symbolizer();
+    building_symbolizer(color const& fill, expression_ptr height);
+    color const& get_fill() const;
+    void set_fill(color const& fill);
+    expression_ptr height() const;
+    void set_height(expression_ptr height);
+    void set_opacity(double opacity);
+    double get_opacity() const;
+
+private:
+    color fill_;
+    expression_ptr height_;
+    double opacity_;
+};
+
 }
 
-template void grid_renderer<grid>::process(glyph_symbolizer const&,
-                                              Feature const&,
-                                              proj_transform const&);
-}
+#endif // MAPNIK_BUILDING_SYMBOLIZER_HPP

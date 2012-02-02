@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -20,34 +20,33 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_LABEL_PLACEMENT_HPP
-#define MAPNIK_LABEL_PLACEMENT_HPP
+#ifndef CHAR_INFO_HPP
+#define CHAR_INFO_HPP
 
-namespace mapnik
-{
-struct point_
-{
-    double x;
-    double y;
-    point_()
-        : x(0),y(0) {}
-    point_(double x_,double y_)
-        : x(x_),y(y_) {}        
-};
-    
-class label_placement
-{
-private:
-    point_ anchor_;
-    point_ displacement_;
-    double rotation_;
+#include <boost/shared_ptr.hpp>
+
+namespace mapnik {
+struct char_properties;
+
+class char_info {
 public:
-    label_placement() 
-        : anchor_(),
-          displacement_(),
-          rotation_(0.0) {}
-        
+    char_info(unsigned c_, double width_, double ymax_, double ymin_, double line_height_)
+        :  c(c_), width(width_), line_height(line_height_), ymin(ymin_), ymax(ymax_)
+    {
+    }
+    char_info()
+        : c(0), width(0), line_height(0), ymin(0), ymax(0)
+    {
+    }
+
+    unsigned c;
+    double width;
+    double line_height;
+    double ymin;
+    double ymax;
+    double avg_height;
+    char_properties *format;
+    double height() const { return ymax-ymin; }
 };
 }
- 
-#endif // MAPNIK_LABEL_PLACEMENT_HPP
+#endif

@@ -39,24 +39,13 @@ using namespace boost::python;
 
 tuple get_text_displacement(const text_symbolizer& t)
 {
-    position pos = t.get_displacement();
-    return boost::python::make_tuple(boost::get<0>(pos),boost::get<1>(pos));
+    mapnik::position const& pos = t.get_displacement();
+    return boost::python::make_tuple(pos.first, pos.second);
 }
 
 void set_text_displacement(text_symbolizer & t, boost::python::tuple arg)
 {
     t.set_displacement(extract<double>(arg[0]),extract<double>(arg[1]));
-}
-
-tuple get_anchor(const text_symbolizer& t)
-{
-    position pos = t.get_anchor();
-    return boost::python::make_tuple(boost::get<0>(pos),boost::get<1>(pos));
-}
-
-void set_anchor(text_symbolizer & t, boost::python::tuple arg)
-{
-    t.set_anchor(extract<double>(arg[0]),extract<double>(arg[1]));
 }
 
 }
@@ -76,7 +65,6 @@ struct text_symbolizer_pickle_suite : boost::python::pickle_suite
     getstate(const text_symbolizer& t)
     {
         boost::python::tuple disp = get_text_displacement(t);
-        boost::python::tuple anchor = get_anchor(t);
 
         // so we do not exceed max args accepted by make_tuple,
         // lets put the increasing list of parameters in a list
@@ -95,7 +83,7 @@ struct text_symbolizer_pickle_suite : boost::python::pickle_suite
         return boost::python::make_tuple(disp,t.get_label_placement(),
                                          t.get_vertical_alignment(),t.get_halo_radius(),t.get_halo_fill(),t.get_text_ratio(),
                                          t.get_wrap_width(),t.get_label_spacing(),t.get_minimum_distance(),t.get_allow_overlap(),
-                                         anchor,t.get_force_odd_labels(),t.get_max_char_angle_delta(),extras
+                                         t.get_force_odd_labels(),t.get_max_char_angle_delta(),extras
             );
     }
 
@@ -136,15 +124,10 @@ struct text_symbolizer_pickle_suite : boost::python::pickle_suite
 
         t.set_allow_overlap(extract<bool>(state[9]));
 
-        tuple anch = extract<tuple>(state[10]);
-        double x = extract<double>(anch[0]);
-        double y = extract<double>(anch[1]);
-        t.set_anchor(x,y);
+        t.set_force_odd_labels(extract<bool>(state[10]));
 
-        t.set_force_odd_labels(extract<bool>(state[11]));
-
-        t.set_max_char_angle_delta(extract<double>(state[12]));
-        list extras = extract<list>(state[13]);
+        t.set_max_char_angle_delta(extract<double>(state[11]));
+        list extras = extract<list>(state[12]);
         t.set_wrap_char_from_string(extract<std::string>(extras[0]));
         t.set_line_spacing(extract<unsigned>(extras[1]));
         t.set_character_spacing(extract<unsigned>(extras[2]));
@@ -163,38 +146,6 @@ void export_text_symbolizer()
 {
     using namespace boost::python;
 
-    enumeration_<label_placement_e>("label_placement")
-        .value("LINE_PLACEMENT",LINE_PLACEMENT)
-        .value("POINT_PLACEMENT",POINT_PLACEMENT)
-        .value("VERTEX_PLACEMENT",VERTEX_PLACEMENT)
-        .value("INTERIOR_PLACEMENT",INTERIOR_PLACEMENT)
-        ;
-    enumeration_<vertical_alignment_e>("vertical_alignment")
-        .value("TOP",V_TOP)
-        .value("MIDDLE",V_MIDDLE)
-        .value("BOTTOM",V_BOTTOM)
-        .value("AUTO",V_AUTO)
-        ;
-
-    enumeration_<horizontal_alignment_e>("horizontal_alignment")
-        .value("LEFT",H_LEFT)
-        .value("MIDDLE",H_MIDDLE)
-        .value("RIGHT",H_RIGHT)
-        ;
-
-    enumeration_<justify_alignment_e>("justify_alignment")
-        .value("LEFT",J_LEFT)
-        .value("MIDDLE",J_MIDDLE)
-        .value("RIGHT",J_RIGHT)
-        ;
-
-    enumeration_<text_transform_e>("text_transform")
-        .value("NONE",NONE)
-        .value("UPPERCASE",UPPERCASE)
-        .value("LOWERCASE",LOWERCASE)
-        .value("CAPITALIZE",CAPITALIZE)
-        ;
-
     class_<text_symbolizer>("TextSymbolizer",init<expression_ptr,std::string const&, unsigned,color const&>())
         /*
         // todo - all python classes can have kwargs and default constructors
@@ -211,9 +162,6 @@ void export_text_symbolizer()
         */
 
         //.def_pickle(text_symbolizer_pickle_suite())
-        .add_property("anchor",
-                      &get_anchor,
-                      &set_anchor)
         .add_property("allow_overlap",
                       &text_symbolizer::get_allow_overlap,
                       &text_symbolizer::set_allow_overlap,

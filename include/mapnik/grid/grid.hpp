@@ -24,7 +24,6 @@
 #define MAPNIK_GRID_HPP
 
 // mapnik
-#include <mapnik/config.hpp>
 #include <mapnik/image_data.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/grid/grid_view.hpp>
@@ -56,10 +55,8 @@ public:
     // mapping between pixel id and key
     typedef std::map<value_type, lookup_type> feature_key_type;
     typedef std::map<lookup_type, value_type> key_type;
-    typedef std::map<std::string, mapnik::value> feature_properties_type;
-    // note: feature_type is not the same as a mapnik::Feature as it lacks a geometry
-    typedef std::map<std::string, feature_properties_type > feature_type;
-    
+    typedef std::map<std::string, mapnik::feature_ptr> feature_type;
+
 private:
     unsigned width_;
     unsigned height_;
@@ -69,34 +66,38 @@ private:
     data_type data_;
     std::set<std::string> names_;
     unsigned int resolution_;
+    std::string id_name_;
     bool painted_;
-    
+
 public:
 
-    std::string id_name_;
 
     hit_grid(int width, int height, std::string const& key, unsigned int resolution)
         :width_(width),
-         height_(height),
-         key_(key),
-         data_(width,height),
-         resolution_(resolution),
-         id_name_("__id__") {
-             // this only works if each datasource's 
-             // feature count starts at 1
-             f_keys_[0] = "";
-         }
-    
+        height_(height),
+        key_(key),
+        data_(width,height),
+        resolution_(resolution),
+        id_name_("__id__"),
+        painted_(false)
+        {
+            // this only works if each datasource's
+            // feature count starts at 1
+            f_keys_[0] = "";
+        }
+
     hit_grid(const hit_grid<T>& rhs)
         :width_(rhs.width_),
-         height_(rhs.height_),
-         key_(rhs.key_),
-         data_(rhs.data_),
-         resolution_(rhs.resolution_),
-         id_name_("__id__")  {
-             f_keys_[0] = "";     
-         }
-    
+        height_(rhs.height_),
+        key_(rhs.key_),
+        data_(rhs.data_),
+        resolution_(rhs.resolution_),
+        id_name_("__id__"),
+        painted_(rhs.painted_)
+        {
+            f_keys_[0] = "";
+        }
+
     ~hit_grid() {}
 
     inline void painted(bool painted)
@@ -109,57 +110,56 @@ public:
         return painted_;
     }
 
-    inline void add_feature(mapnik::Feature const& feature)
+    inline std::string const& key_name() const
+    {
+        return id_name_;
+    }
+
+    inline void add_feature(mapnik::feature_ptr const& feature)
     {
 
-        // copies feature props
-        std::map<std::string,value> fprops = feature.props();
-        lookup_type lookup_value;
+        // NOTE: currently lookup keys must be strings,
+        // but this should be revisited
+        boost::optional<lookup_type> lookup_value;
         if (key_ == id_name_)
         {
-            // TODO - this will break if lookup_type is not a string
             std::stringstream s;
-            s << feature.id();
+            s << feature->id();
             lookup_value = s.str();
-            // add this as a proper feature so filtering works later on
-            fprops[id_name_] = feature.id();
-            //fprops[id_name_] = tr_->transcode(lookup_value));
         }
         else
         {
-            std::map<std::string,value>::const_iterator const& itr = fprops.find(key_);
-            if (itr != fprops.end())
+            if (feature->has_key(key_))
             {
-                lookup_value = itr->second.to_string();
+                lookup_value = feature->get(key_).to_string();
             }
             else
             {
                 std::clog << "should not get here: key '" << key_ << "' not found in feature properties\n";
-            }    
+            }
         }
 
-        // what good is an empty lookup key?
-        if (!lookup_value.empty())
+        if (lookup_value)
         {
             // TODO - consider shortcutting f_keys if feature_id == lookup_value
             // create a mapping between the pixel id and the feature key
-            f_keys_.insert(std::make_pair(feature.id(),lookup_value));
+            f_keys_.insert(std::make_pair(feature->id(),*lookup_value));
             // if extra fields have been supplied, push them into grid memory
-            if (!names_.empty()) {
-                // TODO - add ability to push WKT/WKB of geometry into grid storage
-                features_.insert(std::make_pair(lookup_value,fprops));
+            if (!names_.empty())
+            {
+                features_.insert(std::make_pair(*lookup_value,feature));
             }
         }
         else
         {
-            std::clog << "### Warning: key '" << key_ << "' was blank for " << feature << "\n";
+            std::clog << "### Warning: key '" << key_ << "' was blank for " << *feature << "\n";
         }
-    } 
-    
+    }
+
     inline void add_property_name(std::string const& name)
     {
         names_.insert(name);
-    } 
+    }
 
     inline std::set<std::string> const& property_names() const
     {
@@ -196,18 +196,6 @@ public:
         key_ = key;
     }
 
-    // compatibility
-    inline const std::string& get_join_field() const
-    {
-        return key_;
-    }
-
-    // compatibility
-    inline unsigned int get_step() const
-    {
-        return resolution_;
-    }
-
     inline unsigned int get_resolution() const
     {
         return resolution_;
@@ -217,12 +205,12 @@ public:
     {
         resolution_ = res;
     }
-        
+
     inline const data_type& data() const
     {
         return data_;
     }
-    
+
     inline data_type& data()
     {
         return data_;
@@ -242,13 +230,12 @@ public:
     {
         return data_.getRow(row);
     }
-    
+
     inline mapnik::grid_view get_view(unsigned x, unsigned y, unsigned w, unsigned h)
     {
         return mapnik::grid_view(x,y,w,h,
-            data_,key_,resolution_,names_,f_keys_,features_);
+                                 data_,key_,id_name_,resolution_,names_,f_keys_,features_);
     }
-    
 
 private:
 
@@ -258,7 +245,7 @@ private:
     }
 
     hit_grid& operator=(const hit_grid&);
-    
+
 public:
     inline void setPixel(int x,int y,value_type feature_id)
     {
@@ -291,7 +278,7 @@ public:
             unsigned a = (int)((rgba1 & 0xff) * opacity) & 0xff; // adjust for desired opacity
 #else
             unsigned a = (int)(((rgba1 >> 24) & 0xff) * opacity) & 0xff; // adjust for desired opacity
-#endif                    
+#endif
             // if the pixel is more than a tenth
             // opaque then burn in the feature id
             if (a >= 25)
@@ -300,7 +287,7 @@ public:
             }
         }
     }
-    
+
     inline void set_rectangle(value_type id,image_data_32 const& data,int x0,int y0)
     {
         box2d<int> ext0(0,0,width_,height_);
@@ -321,7 +308,7 @@ public:
                     unsigned a = rgba & 0xff;
 #else
                     unsigned a = (rgba >> 24) & 0xff;
-#endif                    
+#endif
                     // if the pixel is more than a tenth
                     // opaque then burn in the feature id
                     if (a >= 25)

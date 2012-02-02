@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2011 Artem Pavlenko
@@ -63,15 +63,15 @@ struct unicode_impl
     {
         typedef UnicodeString type;
     };
-    
+
     explicit unicode_impl(mapnik::transcoder const& tr)
         : tr_(tr) {}
-    
+
     UnicodeString operator()(std::string const& str) const
     {
         return tr_.transcode(str.c_str());
     }
-    
+
     mapnik::transcoder const& tr_;
 };
 
@@ -82,10 +82,10 @@ struct regex_match_impl
     {
         typedef expr_node type;
     };
-    
+
     explicit regex_match_impl(mapnik::transcoder const& tr)
         : tr_(tr) {}
-    
+
     template <typename T0,typename T1>
     expr_node operator() (T0 & node, T1 const& pattern) const
     {
@@ -95,7 +95,7 @@ struct regex_match_impl
         return regex_match_node(node,pattern);
 #endif
     }
-    
+
     mapnik::transcoder const& tr_;
 };
 
@@ -106,10 +106,10 @@ struct regex_replace_impl
     {
         typedef expr_node type;
     };
-    
+
     explicit regex_replace_impl(mapnik::transcoder const& tr)
         : tr_(tr) {}
-    
+
     template <typename T0,typename T1,typename T2>
     expr_node operator() (T0 & node, T1 const& pattern, T2 const& format) const
     {
@@ -119,15 +119,15 @@ struct regex_replace_impl
         return regex_replace_node(node,pattern,format);
 #endif
     }
-    
+
     mapnik::transcoder const& tr_;
 };
 
 template <typename Iterator>
 struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
-{    
+{
     typedef qi::rule<Iterator, expr_node(), space_type> rule_type;
-    
+
     explicit expression_grammar(mapnik::transcoder const& tr)
         : expression_grammar::base_type(expr),
           unicode_(unicode_impl(tr)),
@@ -148,23 +148,25 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
         using qi::lit;
         using qi::int_;
         using qi::double_;
+        using qi::hex;
+        using qi::omit;
         using standard_wide::char_;
-        
+
         expr = logical_expr.alias();
-        
-        logical_expr = not_expr [_val = _1] 
+
+        logical_expr = not_expr [_val = _1]
             >>
             *(  (  ( lit("and") | lit("&&")) >> not_expr [_val && _1] )
                 | (( lit("or") | lit("||")) >> not_expr [_val || _1])
                 )
             ;
-        
-        not_expr = 
+
+        not_expr =
             cond_expr [_val = _1 ]
             | ((lit("not") | lit('!')) >> cond_expr [ _val = !_1 ])
             ;
-        
-        cond_expr = equality_expr [_val = _1] | additive_expr [_val = _1] 
+
+        cond_expr = equality_expr [_val = _1] | additive_expr [_val = _1]
             ;
 
         equality_expr =
@@ -173,24 +175,24 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
                    | (( lit("!=") | lit("<>") | lit("neq") ) >> relational_expr [_val != _1])
                 )
             ;
-        
+
         regex_match_expr = lit(".match")
-            >> lit('(') 
-            >> ustring [_val = _1] 
+            >> lit('(')
+            >> ustring [_val = _1]
             >> lit(')')
             ;
-        
-        regex_replace_expr = 
+
+        regex_replace_expr =
             lit(".replace")
-            >> lit('(') 
+            >> lit('(')
             >> ustring           [_a = _1]
-            >> lit(',') 
+            >> lit(',')
             >> ustring           [_b = _1]
             >> lit(')')          [_val = regex_replace_(_r1,_a,_b)]
             ;
-        
-        relational_expr = additive_expr[_val = _1] 
-            >> 
+
+        relational_expr = additive_expr[_val = _1]
+            >>
             *(  (   (lit("<=") | lit("le") ) >> additive_expr [ _val <= _1 ])
                 | ( (lit('<')  | lit("lt") ) >> additive_expr [ _val <  _1 ])
                 | ( (lit(">=") | lit("ge") ) >> additive_expr [ _val >= _1 ])
@@ -202,7 +204,7 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
                      | '-' >> multiplicative_expr[_val -= _1]
                 )
             ;
-        
+
         multiplicative_expr = primary_expr [_val = _1]
             >> *(     '*' >> primary_expr [_val *= _1]
                       | '/' >> primary_expr [_val /= _1]
@@ -211,8 +213,8 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
                       |  regex_replace_expr(_val) [_val = _1]
                 )
             ;
-        
- 
+
+
         primary_expr = strict_double [_val = _1]
             | int_ [_val = _1]
             | lit("true") [_val = true]
@@ -222,17 +224,26 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
             | attr [_val = construct<mapnik::attribute>( _1 ) ]
             | '(' >> expr [_val = _1 ] >> ')'
             ;
-        
-       
+
+        unesc_char.add("\\a", '\a')("\\b", '\b')("\\f", '\f')("\\n", '\n')
+            ("\\r", '\r')("\\t", '\t')("\\v", '\v')("\\\\", '\\')
+            ("\\\'", '\'')("\\\"", '\"')
+            ;
+
+        ustring %= omit[quote_char[_a = _1]]
+            >> *(unesc_char | "\\x" >> hex | (char_ - lit(_a)))
+            >> lit(_a);
+
+        quote_char %= char_('\'') | char_('"');
+
 #if BOOST_VERSION > 104200
-        ustring %= '\'' >> no_skip[*~char_('\'')] >> '\'';
         attr %= '[' >> no_skip[+~char_(']')] >> ']';
 #else
-        ustring %= '\'' >> lexeme[*(char_-'\'')] >> '\'';
         attr %= '[' >> lexeme[+(char_ - ']')] >> ']';
 #endif
+
     }
-    
+
     qi::real_parser<double, qi::strict_real_policies<double> > strict_double;
     boost::phoenix::function<unicode_impl> unicode_;
     boost::phoenix::function<regex_match_impl> regex_match_;
@@ -250,7 +261,9 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
     qi::rule<Iterator, std::string() > regex_match_expr;
     qi::rule<Iterator, expr_node(expr_node), qi::locals<std::string,std::string>, space_type> regex_replace_expr;
     qi::rule<Iterator, std::string() , space_type> attr;
-    qi::rule<Iterator, std::string() > ustring;
+    qi::rule<Iterator, std::string(), qi::locals<char> > ustring;
+    qi::symbols<char const, char const> unesc_char;
+    qi::rule<Iterator, char() > quote_char;
 };
 
 } // namespace

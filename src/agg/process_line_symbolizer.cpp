@@ -24,6 +24,7 @@
 // mapnik
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
+#include <mapnik/line_symbolizer.hpp>
 
 // agg
 #include "agg_basics.h"
@@ -46,7 +47,7 @@ namespace mapnik {
 
 template <typename T>
 void agg_renderer<T>::process(line_symbolizer const& sym,
-                              Feature const& feature,
+                              mapnik::feature_ptr const& feature,
                               proj_transform const& prj_trans)
 {
     typedef agg::renderer_base<agg::pixfmt_rgba32_plain> ren_base;
@@ -58,10 +59,10 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
     unsigned g=col.green();
     unsigned b=col.blue();
     unsigned a=col.alpha();
-    
+
     agg::rendering_buffer buf(pixmap_.raw_data(),width_,height_, width_ * 4);
     agg::pixfmt_rgba32_plain pixf(buf);
-    
+
     if (sym.get_rasterizer() == RASTERIZER_FAST)
     {
         typedef agg::renderer_outline_aa<ren_base> renderer_type;
@@ -77,10 +78,10 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
         rasterizer_type ras(ren);
         ras.line_join(agg::outline_miter_accurate_join);
         ras.round_cap(true);
-   
-        for (unsigned i=0;i<feature.num_geometries();++i)
+
+        for (unsigned i=0;i<feature->num_geometries();++i)
         {
-            geometry_type const& geom = feature.get_geometry(i);
+            geometry_type const& geom = feature->get_geometry(i);
             if (geom.num_points() > 1)
             {
                 path_type path(t_,geom,prj_trans);
@@ -93,39 +94,39 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
         typedef agg::renderer_scanline_aa_solid<ren_base> renderer;
 
         agg::scanline_p8 sl;
-    
+
         ren_base renb(pixf);
         renderer ren(renb);
         ras_ptr->reset();
         switch (stroke_.get_gamma_method())
         {
-            case GAMMA_POWER:
-                ras_ptr->gamma(agg::gamma_power(stroke_.get_gamma()));
-                break;
-            case GAMMA_LINEAR:
-                ras_ptr->gamma(agg::gamma_linear(0.0, stroke_.get_gamma()));
-                break;
-            case GAMMA_NONE:
-                ras_ptr->gamma(agg::gamma_none());
-                break;
-            case GAMMA_THRESHOLD:
-                ras_ptr->gamma(agg::gamma_threshold(stroke_.get_gamma()));
-                break;
-            case GAMMA_MULTIPLY:
-                ras_ptr->gamma(agg::gamma_multiply(stroke_.get_gamma()));
-                break;
-            default:
-                ras_ptr->gamma(agg::gamma_power(stroke_.get_gamma()));
+        case GAMMA_POWER:
+            ras_ptr->gamma(agg::gamma_power(stroke_.get_gamma()));
+            break;
+        case GAMMA_LINEAR:
+            ras_ptr->gamma(agg::gamma_linear(0.0, stroke_.get_gamma()));
+            break;
+        case GAMMA_NONE:
+            ras_ptr->gamma(agg::gamma_none());
+            break;
+        case GAMMA_THRESHOLD:
+            ras_ptr->gamma(agg::gamma_threshold(stroke_.get_gamma()));
+            break;
+        case GAMMA_MULTIPLY:
+            ras_ptr->gamma(agg::gamma_multiply(stroke_.get_gamma()));
+            break;
+        default:
+            ras_ptr->gamma(agg::gamma_power(stroke_.get_gamma()));
         }
-        
+
         metawriter_with_properties writer = sym.get_metawriter();
-        for (unsigned i=0;i<feature.num_geometries();++i)
+        for (unsigned i=0;i<feature->num_geometries();++i)
         {
-            geometry_type const& geom = feature.get_geometry(i);
+            geometry_type const& geom = feature->get_geometry(i);
             if (geom.num_points() > 1)
             {
                 path_type path(t_,geom,prj_trans);
-    
+
                 if (stroke_.has_dash())
                 {
                     agg::conv_dash<path_type> dash(path);
@@ -134,12 +135,12 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
                     dash_array::const_iterator end = d.end();
                     for (;itr != end;++itr)
                     {
-                        dash.add_dash(itr->first * scale_factor_, 
+                        dash.add_dash(itr->first * scale_factor_,
                                       itr->second * scale_factor_);
                     }
-    
+
                     agg::conv_stroke<agg::conv_dash<path_type > > stroke(dash);
-    
+
                     line_join_e join=stroke_.get_line_join();
                     if ( join == MITER_JOIN)
                         stroke.generator().line_join(agg::miter_join);
@@ -149,7 +150,7 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
                         stroke.generator().line_join(agg::round_join);
                     else
                         stroke.generator().line_join(agg::bevel_join);
-    
+
                     line_cap_e cap=stroke_.get_line_cap();
                     if (cap == BUTT_CAP)
                         stroke.generator().line_cap(agg::butt_cap);
@@ -157,11 +158,11 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
                         stroke.generator().line_cap(agg::square_cap);
                     else
                         stroke.generator().line_cap(agg::round_cap);
-    
+
                     stroke.generator().miter_limit(4.0);
                     stroke.generator().width(stroke_.get_width() * scale_factor_);
                     ras_ptr->add_path(stroke);
-    
+
                 }
                 else
                 {
@@ -175,7 +176,7 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
                         stroke.generator().line_join(agg::round_join);
                     else
                         stroke.generator().line_join(agg::bevel_join);
-    
+
                     line_cap_e cap=stroke_.get_line_cap();
                     if (cap == BUTT_CAP)
                         stroke.generator().line_cap(agg::butt_cap);
@@ -183,23 +184,23 @@ void agg_renderer<T>::process(line_symbolizer const& sym,
                         stroke.generator().line_cap(agg::square_cap);
                     else
                         stroke.generator().line_cap(agg::round_cap);
-    
+
                     stroke.generator().miter_limit(4.0);
                     stroke.generator().width(stroke_.get_width() * scale_factor_);
                     ras_ptr->add_path(stroke);
-                    if (writer.first) writer.first->add_line(path, feature, t_, writer.second);
+                    if (writer.first) writer.first->add_line(path, *feature, t_, writer.second);
                 }
             }
         }
         ren.color(agg::rgba8(r, g, b, int(a*stroke_.get_opacity())));
-        agg::render_scanlines(*ras_ptr, sl, ren);    
+        agg::render_scanlines(*ras_ptr, sl, ren);
     }
 }
 
 
 template void agg_renderer<image_32>::process(line_symbolizer const&,
-                                              Feature const&,
+                                              mapnik::feature_ptr const&,
                                               proj_transform const&);
 
 }
- 
+
