@@ -235,6 +235,10 @@ void export_text_symbolizer()
                       &text_symbolizer::get_text_opacity,
                       &text_symbolizer::set_text_opacity,
                       "Set/get the text opacity")
+        .add_property("orientation",
+                      &text_symbolizer::get_orientation,
+                      &text_symbolizer::set_orientation,
+                      "Set/get the text orientation (rotation angle)")
         .add_property("text_transform",
                       &text_symbolizer::get_text_transform,
                       &text_symbolizer::set_text_transform,

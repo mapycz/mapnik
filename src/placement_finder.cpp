@@ -354,6 +354,10 @@ void placement_finder<DetectorT>::find_point_placement(double label_x, double la
 
     adjust_position(current_placement.get(), label_x, label_y);
 
+    // center of rotation relative to the center of text envelope
+    double rx = label_x - current_placement->starting_x;
+    double ry = current_placement->starting_y - label_y;
+
     // presets for first line
     unsigned int line_number = 0;
     unsigned int index_to_wrap_at = line_breaks_[0];
@@ -403,8 +407,8 @@ void placement_finder<DetectorT>::find_point_placement(double label_x, double la
         else
         {
             // place the character relative to the center of the string envelope
-            double dx = x * cosa - y*sina;
-            double dy = x * sina + y*cosa;
+            double dx = rx + (x-rx)*cosa - (y-ry)*sina;
+            double dy = ry + (x-rx)*sina + (y-ry)*cosa;
 
             current_placement->add_node(c, dx, dy, rad, ci.format);
 
