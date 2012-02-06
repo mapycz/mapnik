@@ -93,13 +93,13 @@ void agg_renderer<T>::process(point_symbolizer const& sym,
         if (angle_expr)
         {
             // apply rotation
-            value_type result = boost::apply_visitor(evaluate<Feature,value_type>(feature),*angle_expr);
+            value_type result = boost::apply_visitor(evaluate<Feature,value_type>(*feature),*angle_expr);
             angle = result.to_double();
         }
         
 
 
-        for (unsigned i=0; i<feature.num_geometries(); ++i)
+        for (unsigned i=0; i<feature->num_geometries(); ++i)
         {
             geometry_type const& geom = feature->get_geometry(i);
             double x;
