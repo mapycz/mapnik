@@ -61,7 +61,7 @@ void grid_renderer<T>::process(point_symbolizer const& sym,
         if (angle_expr)
         {
             // apply rotation
-            value_type result = boost::apply_visitor(evaluate<Feature,value_type>(feature),*angle_expr);
+            value_type result = boost::apply_visitor(evaluate<Feature,value_type>(*feature),*angle_expr);
             angle = result.to_double();
         }
 
