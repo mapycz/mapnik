@@ -91,7 +91,7 @@ struct text_symbolizer_properties
     formating::node_ptr format_tree() const;
     /** Get a list of all expressions used in any placement.
      * This function is used to collect attributes. */
-    std::set<expression_ptr> get_all_expressions() const;
+    void add_expressions(expression_set &output) const;
 
     //Per symbolizer options
     expression_ptr orientation;
@@ -117,6 +117,7 @@ struct text_symbolizer_properties
     /** Default values for char_properties. */
     char_properties default_format;
 private:
+    /** A tree of formating::nodes which contain text and formating information. */
     formating::node_ptr tree_;
 };
 
@@ -133,7 +134,7 @@ public:
     };
 public:
     processed_text(face_manager<freetype_engine> & font_manager, double scale_factor);
-    void push_back(processed_expression const& exp);
+    void push_back(char_properties const& properties, UnicodeString const& text);
     unsigned size() const { return expr_list_.size(); }
     unsigned empty() const { return expr_list_.empty(); }
     void clear();
@@ -167,11 +168,6 @@ public:
      */
     virtual bool next()=0;
     virtual ~text_placement_info() {}
-    /** Initialize values used by placement finder. Only has to be done once
-     * per object.
-     */
-    void init(double scale_factor_,
-              unsigned w = 0, unsigned h = 0, bool has_dimensions_ = false);
 
     /** Properties actually used by placement finder and renderer. Values in
      * here are modified each time next() is called. */
@@ -240,7 +236,7 @@ public:
     /** Get a list of all expressions used in any placement.
      * This function is used to collect attributes.
      */
-    virtual std::set<expression_ptr> get_all_expressions();
+    virtual void add_expressions(expression_set &output);
 
     /** Destructor. */
     virtual ~text_placements() {}

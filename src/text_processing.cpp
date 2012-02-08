@@ -75,7 +75,7 @@ node_ptr node::from_xml(boost::property_tree::ptree const& xml)
     }
 }
 
-void node::add_expressions(std::set<expression_ptr> &expressions) const
+void node::add_expressions(expression_set &output) const
 {
     //Do nothing by default
 }
@@ -104,13 +104,13 @@ void list_node::apply(char_properties const& p, Feature const& feature, processe
 }
 
 
-void list_node::add_expressions(std::set<expression_ptr> &expressions) const
+void list_node::add_expressions(expression_set &output) const
 {
     std::vector<node_ptr>::const_iterator itr = children_.begin();
     std::vector<node_ptr>::const_iterator end = children_.end();
     for (;itr != end; itr++)
     {
-        (*itr)->add_expressions(expressions);
+        (*itr)->add_expressions(output);
     }
 }
 
@@ -170,7 +170,7 @@ void text_node::apply(char_properties const& p, Feature const& feature, processe
         text_str = text_str.toTitle(NULL);
     }
     if (text_str.length() > 0) {
-        output.push_back(processed_text::processed_expression(p, text_str));
+        output.push_back(p, text_str);
     } else {
 #ifdef MAPNIK_DEBUG
         std::cerr << "Warning: Empty expression.\n";
@@ -179,9 +179,9 @@ void text_node::apply(char_properties const& p, Feature const& feature, processe
 }
 
 
-void text_node::add_expressions(std::set<expression_ptr> &expressions) const
+void text_node::add_expressions(expression_set &output) const
 {
-    if (text_) expressions.insert(text_);
+    if (text_) output.insert(text_);
 }
 
 
@@ -346,9 +346,9 @@ void format_node::set_halo_radius(optional<double> radius)
 
 /************************************************************/
 
-void processed_text::push_back(processed_expression const& exp)
+void processed_text::push_back(char_properties const& properties, UnicodeString const& text)
 {
-    expr_list_.push_back(exp);
+    expr_list_.push_back(processed_expression(properties, text));
 }
 
 processed_text::expression_list::const_iterator processed_text::begin() const
