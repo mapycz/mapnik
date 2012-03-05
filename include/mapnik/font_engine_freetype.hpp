@@ -28,8 +28,9 @@
 #include <mapnik/utils.hpp>
 #include <mapnik/ctrans.hpp>
 #include <mapnik/geometry.hpp>
-#include <mapnik/text_path.hpp>
 #include <mapnik/font_set.hpp>
+#include <mapnik/char_info.hpp>
+#include <mapnik/pixel_position.hpp>
 
 // freetype2
 extern "C"
@@ -56,9 +57,14 @@ extern "C"
 #include <iostream>
 #include <algorithm>
 
+// uci
+#include <unicode/unistr.h>
+
 namespace mapnik
 {
 class font_face;
+class text_path;
+class string_info;
 
 typedef boost::shared_ptr<font_face> face_ptr;
 
@@ -301,6 +307,10 @@ public:
             if (face_ptr face = get_face(*name))
             {
                 face_set->add(face);
+            } else {
+#ifdef MAPNIK_DEBUG
+                std::cerr << "Failed to find face '" << *name << "' in font set '" << fset.get_name() << "'\n";
+#endif
             }
         }
         return face_set;
@@ -345,8 +355,8 @@ struct text_renderer : private boost::noncopyable
 
     text_renderer (pixmap_type & pixmap, face_manager<freetype_engine> &font_manager_, stroker & s);
     box2d<double> prepare_glyphs(text_path *path);
-    void render(double x0, double y0);
-    void render_id(int feature_id,double x0, double y0, double min_radius=1.0);
+    void render(pixel_position pos);
+    void render_id(int feature_id, pixel_position pos, double min_radius=1.0);
 
 private:
     void render_bitmap(FT_Bitmap *bitmap, unsigned rgba, int x, int y, double opacity)

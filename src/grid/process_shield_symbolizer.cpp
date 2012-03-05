@@ -56,20 +56,18 @@ void  grid_renderer<T>::process(shield_symbolizer const& sym,
     text_renderer<T> ren(pixmap_, font_manager_, *(font_manager_.get_stroker()));
 
     text_placement_info_ptr placement;
-    while ((placement = helper.get_placement())) {
+    while (helper.next()) {
         placement_found = true;
-        for (unsigned int ii = 0; ii < placement->placements.size(); ++ii)
+        placements_type &placements = helper.placements();
+        for (unsigned int ii = 0; ii < placements.size(); ++ii)
         {
-            std::pair<int, int> marker_pos = helper.get_marker_position(placement->placements[ii]);
             render_marker(feature, pixmap_.get_resolution(),
-                          marker_pos.first, marker_pos.second,
+                          helper.get_marker_position(placements[ii]),
                           helper.get_marker(), helper.get_transform(),
                           sym.get_opacity());
 
-            double x = floor(placement->placements[ii].starting_x);
-            double y = floor(placement->placements[ii].starting_y);
-            ren.prepare_glyphs(&(placement->placements[ii]));
-            ren.render_id(feature->id(), x, y, 2);
+            ren.prepare_glyphs(&(placements[ii]));
+            ren.render_id(feature->id(), placements[ii].center, 2);
         }
     }
     if (placement_found)

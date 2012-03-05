@@ -26,11 +26,9 @@
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/unicode.hpp>
-#include <mapnik/placement_finder.hpp>
 #include <mapnik/config_error.hpp>
 #include <mapnik/font_set.hpp>
 #include <mapnik/parse_path.hpp>
-#include <mapnik/text_path.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/svg/svg_converter.hpp>
 #include <mapnik/svg/svg_renderer.hpp>
@@ -75,6 +73,7 @@
 // boost
 #include <boost/utility.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/math/special_functions/round.hpp>
 
 // stl
 #ifdef MAPNIK_DEBUG
@@ -189,8 +188,8 @@ void agg_renderer<T>::start_map_processing(Map const& map)
 #ifdef MAPNIK_DEBUG
     std::clog << "start map processing bbox="
               << map.get_current_extent() << "\n";
-    ras_ptr->clip_box(0,0,width_,height_);
 #endif
+    ras_ptr->clip_box(0,0,width_,height_);
 }
 
 template <typename T>
@@ -223,7 +222,7 @@ void agg_renderer<T>::end_layer_processing(layer const&)
 }
 
 template <typename T>
-void agg_renderer<T>::render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity, double angle)
+void agg_renderer<T>::render_marker(pixel_position const& pos, marker const& marker, agg::trans_affine const& tr, double opacity, double angle)
 {
     if (marker.is_vector())
     {
@@ -248,7 +247,7 @@ void agg_renderer<T>::render_marker(const int x, const int y, marker &marker, co
         mtx *= tr;
         mtx *= agg::trans_affine_scaling(scale_factor_);
         // render the marker at the center of the marker box
-        mtx.translate(x+0.5 * marker.width(), y+0.5 * marker.height());
+        mtx.translate(pos.x+0.5 * marker.width(), pos.y+0.5 * marker.height());
 
         vertex_stl_adapter<svg_path_storage> stl_storage((*marker.get_vector_data())->source());
         svg_path_adapter svg_path(stl_storage);
@@ -264,8 +263,11 @@ void agg_renderer<T>::render_marker(const int x, const int y, marker &marker, co
     }
     else
     {   
-
-        pixmap_.set_rectangle_alpha2(**marker.get_bitmap_data(), x, y, opacity);
+        //TODO: Add subpixel support
+        pixmap_.set_rectangle_alpha2(**marker.get_bitmap_data(),
+                                     boost::math::iround(pos.x),
+                                     boost::math::iround(pos.y),
+                                     opacity);
     }
 }
 

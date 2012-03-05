@@ -30,7 +30,6 @@
 #include <mapnik/feature_style_processor.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/label_collision_detector.hpp>
-#include <mapnik/placement_finder.hpp>
 #include <mapnik/map.hpp>
 //#include <mapnik/marker.hpp>
 
@@ -112,7 +111,7 @@ public:
                  mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     inline bool process(rule::symbolizers const& /*syms*/,
-                        Feature const& /*feature*/,
+                        mapnik::feature_ptr const& /*feature*/,
                         proj_transform const& /*prj_trans*/)
     {
         // cairo renderer doesn't support processing of multiple symbolizers.
@@ -124,7 +123,7 @@ public:
     }
 
 protected:
-    void render_marker(const int x, const int y, marker &marker, const agg::trans_affine & mtx, double opacity=1.0, double angle=0.0);
+    void render_marker(pixel_position const& pos, marker const& marker, const agg::trans_affine & mtx, double opacity=1.0, double angle=0.0);
 
     Map const& m_;
     Cairo::RefPtr<Cairo::Context> context_;

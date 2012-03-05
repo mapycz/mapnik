@@ -27,7 +27,6 @@
 #include <mapnik/cairo_renderer.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/unicode.hpp>
-#include <mapnik/placement_finder.hpp>
 #include <mapnik/markers_placement.hpp>
 #include <mapnik/arrow.hpp>
 #include <mapnik/config_error.hpp>
@@ -40,6 +39,7 @@
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/warp.hpp>
 #include <mapnik/config.hpp>
+#include <mapnik/text_path.hpp>
 
 // cairo
 #include <cairomm/context.h>
@@ -575,24 +575,23 @@ public:
                   cairo_face_manager & manager,
                   face_manager<freetype_engine> &font_manager)
     {
-        double sx = path.starting_x;
-        double sy = path.starting_y;
+        double sx = path.center.x;
+        double sy = path.center.y;
 
         path.rewind();
 
         for (int iii = 0; iii < path.num_nodes(); iii++)
         {
-            int c;
+            char_info_ptr c;
             double x, y, angle;
-            char_properties *format;
 
-            path.vertex(&c, &x, &y, &angle, &format);
+            path.vertex(&c, &x, &y, &angle);
 
-            face_set_ptr faces = font_manager.get_face_set(format->face_name, format->fontset);
-            float text_size = format->text_size;
+            face_set_ptr faces = font_manager.get_face_set(c->format->face_name, c->format->fontset);
+            float text_size = c->format->text_size;
             faces->set_character_sizes(text_size);
 
-            glyph_ptr glyph = faces->get_glyph(c);
+            glyph_ptr glyph = faces->get_glyph(c->c);
 
             if (glyph)
             {
@@ -610,11 +609,11 @@ public:
                 set_font_face(manager, glyph->get_face());
 
                 glyph_path(glyph->get_index(), sx + x, sy - y);
-                set_line_width(format->halo_radius);
+                set_line_width(c->format->halo_radius);
                 set_line_join(ROUND_JOIN);
-                set_color(format->halo_fill);
+                set_color(c->format->halo_fill);
                 stroke();
-                set_color(format->fill);
+                set_color(c->format->fill);
                 show_glyph(glyph->get_index(), sx + x, sy - y);
             }
         }
@@ -885,7 +884,7 @@ void cairo_renderer_base::start_map_processing(Map const& map)
         }
     }
 
-void cairo_renderer_base::render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity,double angle)
+    void cairo_renderer_base::render_marker(pixel_position const& pos, marker const& marker, const agg::trans_affine & tr, double opacity, double angle)
 
     {
         cairo_context context(context_);
@@ -897,12 +896,12 @@ void cairo_renderer_base::render_marker(const int x, const int y, marker &marker
             coord<double,2> c = bbox.center();
             // center the svg marker on '0,0'
             agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
-        //add dynamic rotate
-        mtx.rotate(-angle * agg::pi/180.0);
+            //add dynamic rotate
+            mtx.rotate(-angle * agg::pi/180.0);
             // apply symbol transformation to get to map space
             mtx *= tr;
             // render the marker at the center of the marker box
-            mtx.translate(x+0.5 * marker.width(), y+0.5 * marker.height());
+            mtx.translate(pos.x+0.5 * marker.width(), pos.y+0.5 * marker.height());
 
             typedef coord_transform2<CoordTransform,geometry_type> path_type;
             mapnik::path_ptr vmarker = *marker.get_vector_data();
@@ -984,7 +983,7 @@ void cairo_renderer_base::render_marker(const int x, const int y, marker &marker
         }
         else if (marker.is_bitmap())
         {
-            context.add_image(x, y, **marker.get_bitmap_data(), opacity);
+            context.add_image(pos.x, pos.y, **marker.get_bitmap_data(), opacity);
         }
     }
 
@@ -1034,7 +1033,7 @@ void cairo_renderer_base::render_marker(const int x, const int y, marker &marker
                     boost::array<double,6> const& m = sym.get_transform();
                     mtx.load_from(&m[0]);
 
-                    render_marker(px,py,**marker, mtx, sym.get_opacity());
+                    render_marker(pixel_position(px,py),**marker, mtx, sym.get_opacity());
 
                     if (!sym.get_ignore_placement())
                         detector_.insert(label_ext);
@@ -1061,15 +1060,15 @@ void cairo_renderer_base::render_marker(const int x, const int y, marker &marker
 
         cairo_context context(context_);
 
-        text_placement_info_ptr placement;
-        while ((placement = helper.get_placement())) {
-            for (unsigned int ii = 0; ii < placement->placements.size(); ++ii)
+        while (helper.next()) {
+            placements_type &placements = helper.placements();
+            for (unsigned int ii = 0; ii < placements.size(); ++ii)
             {
-                std::pair<int, int> marker_pos = helper.get_marker_position(placement->placements[ii]);
-                render_marker(marker_pos.first, marker_pos.second,
+                pixel_position marker_pos = helper.get_marker_position(placements[ii]);
+                render_marker(marker_pos,
                               helper.get_marker(), helper.get_transform(),
                               sym.get_opacity());
-                context.add_text(placement->placements[ii], face_manager_, font_manager_);
+                context.add_text(placements[ii], face_manager_, font_manager_);
             }
         }
     }
@@ -1258,11 +1257,12 @@ void cairo_renderer_base::render_marker(const int x, const int y, marker &marker
         text_symbolizer_helper<face_manager<freetype_engine>, label_collision_detector4> helper(sym, *feature, prj_trans, detector_.extent().width(), detector_.extent().height(), 1.0 /*scale_factor*/, t_, font_manager_, detector_);
 
         cairo_context context(context_);
-        text_placement_info_ptr placement;
-        while ((placement = helper.get_placement())) {
-            for (unsigned int ii = 0; ii < placement->placements.size(); ++ii)
+
+        while (helper.next()) {
+            placements_type &placements = helper.placements();
+            for (unsigned int ii = 0; ii < placements.size(); ++ii)
             {
-                context.add_text(placement->placements[ii], face_manager_, font_manager_);
+                context.add_text(placements[ii], face_manager_, font_manager_);
             }
         }
     }

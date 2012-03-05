@@ -28,8 +28,9 @@
 #include <mapnik/expression_string.hpp>
 #include <mapnik/raster_colorizer.hpp>
 #include <mapnik/metawriter_factory.hpp>
-#include <mapnik/text_placements_simple.hpp>
-#include <mapnik/text_placements_list.hpp>
+#include <mapnik/text_placements/simple.hpp>
+#include <mapnik/text_placements/list.hpp>
+#include <mapnik/text_placements/dummy.hpp>
 
 // boost
 #include <boost/algorithm/string.hpp>
@@ -53,7 +54,7 @@ public:
         rule_(r),
         explicit_defaults_(explicit_defaults) {}
 
-    void operator () ( const  point_symbolizer & sym )
+    void operator () ( point_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("PointSymbolizer", ptree()))->second;
@@ -76,7 +77,7 @@ public:
         add_metawriter_attributes(sym_node, sym);
     }
 
-    void operator () ( const line_symbolizer & sym )
+    void operator () ( line_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("LineSymbolizer", ptree()))->second;
@@ -92,7 +93,7 @@ public:
         }
     }
 
-    void operator () ( const line_pattern_symbolizer & sym )
+    void operator () ( line_pattern_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("LinePatternSymbolizer",
@@ -102,7 +103,7 @@ public:
         add_metawriter_attributes(sym_node, sym);
     }
 
-    void operator () ( const polygon_symbolizer & sym )
+    void operator () ( polygon_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("PolygonSymbolizer", ptree()))->second;
@@ -127,7 +128,7 @@ public:
         add_metawriter_attributes(sym_node, sym);
     }
 
-    void operator () ( const polygon_pattern_symbolizer & sym )
+    void operator () ( polygon_pattern_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("PolygonPatternSymbolizer",
@@ -150,7 +151,7 @@ public:
         add_metawriter_attributes(sym_node, sym);
     }
 
-    void operator () ( const raster_symbolizer & sym )
+    void operator () ( raster_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("RasterSymbolizer", ptree()))->second;
@@ -183,7 +184,7 @@ public:
         //Note: raster_symbolizer doesn't support metawriters
     }
 
-    void operator () ( const shield_symbolizer & sym )
+    void operator () ( shield_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("ShieldSymbolizer",
@@ -221,7 +222,7 @@ public:
 
     }
 
-    void operator () ( const text_symbolizer & sym )
+    void operator () ( text_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("TextSymbolizer",
@@ -231,7 +232,7 @@ public:
         add_metawriter_attributes(sym_node, sym);
     }
 
-    void operator () ( const building_symbolizer & sym )
+    void operator () ( building_symbolizer const& sym )
     {
         ptree & sym_node = rule_.push_back(
             ptree::value_type("BuildingSymbolizer", ptree()))->second;
@@ -356,7 +357,7 @@ private:
     void add_font_attributes(ptree & node, const text_symbolizer & sym)
     {
         text_placements_ptr p = sym.get_placement_options();
-        p->properties.to_xml(node, explicit_defaults_);
+        p->defaults.to_xml(node, explicit_defaults_);
         /* Known types:
            - text_placements_dummy: no handling required
            - text_placements_simple: positions string
@@ -365,13 +366,14 @@ private:
         text_placements_simple *simple = dynamic_cast<text_placements_simple *>(p.get());
         text_placements_list *list = dynamic_cast<text_placements_list *>(p.get());
         if (simple) {
-            set_attr(node, "placment-type", "simple");
+            set_attr(node, "placement-type", "simple");
             set_attr(node, "placements", simple->get_positions());
         }
         if (list) {
-            set_attr(node, "placment-type", "list");
+            set_attr(node, "placement-type", "list");
             unsigned i;
-            text_symbolizer_properties *dfl = &(list->properties);
+            //dfl = last properties passed as default so only attributes that change are actually written
+            text_symbolizer_properties *dfl = &(list->defaults);
             for (i=0; i < list->size(); i++) {
                 ptree &placement_node = node.push_back(ptree::value_type("Placement", ptree()))->second;
                 list->get(i).to_xml(placement_node, explicit_defaults_, *dfl);
@@ -501,8 +503,8 @@ void serialize_rule( ptree & style_node, const rule & r, bool explicit_defaults)
 
 void serialize_style( ptree & map_node, Map::const_style_iterator style_it, bool explicit_defaults )
 {
-    const feature_type_style & style = style_it->second;
-    const std::string & name = style_it->first;
+    feature_type_style const& style = style_it->second;
+    std::string const& name = style_it->first;
     filter_mode_e filter_mode = style.get_filter_mode();
 
     ptree & style_node = map_node.push_back(
@@ -527,8 +529,8 @@ void serialize_style( ptree & map_node, Map::const_style_iterator style_it, bool
 
 void serialize_fontset( ptree & map_node, Map::const_fontset_iterator fontset_it )
 {
-    const font_set & fontset = fontset_it->second;
-    const std::string & name = fontset_it->first;
+    font_set const& fontset = fontset_it->second;
+    std::string const& name = fontset_it->first;
 
     ptree & fontset_node = map_node.push_back(
         ptree::value_type("FontSet", ptree()))->second;

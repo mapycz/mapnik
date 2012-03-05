@@ -23,18 +23,32 @@
 #ifndef MAPNIK_PLACEMENT_FINDER_HPP
 #define MAPNIK_PLACEMENT_FINDER_HPP
 
+//mapnik
 #include <mapnik/geometry.hpp>
-#include <mapnik/text_placements.hpp>
+#include <mapnik/text_properties.hpp>
+#include <mapnik/text_placements/base.hpp>
+#include <mapnik/symbolizer_helpers.hpp>
+
+//stl
+#include <queue>
 
 namespace mapnik
 {
+
+class text_placement_info;
+class string_info;
+class text_path;
+
 
 template <typename DetectorT>
 class placement_finder : boost::noncopyable
 {
 public:
-    placement_finder(text_placement_info &p, string_info &info, DetectorT & detector);
-    placement_finder(text_placement_info &p, string_info &info, DetectorT & detector, box2d<double> const& extent);
+    placement_finder(Feature const& feature,
+                     text_placement_info const& placement_info,
+                     string_info const& info,
+                     DetectorT & detector,
+                     box2d<double> const& extent);
 
     /** Try place a single label at the given point. */
     void find_point_placement(double pos_x, double pos_y, double angle=0.0);
@@ -47,9 +61,25 @@ public:
     template <typename T>
     void find_line_placements(T & path);
 
+    /** Add placements to detector. */
     void update_detector();
 
-    void clear();
+    /** Remove old placements. */
+    void clear_placements();
+
+    inline placements_type &get_results() { return placements_; }
+
+    /** Additional boxes to take into account when finding placement.
+     * Used for finding line placements where multiple placements are returned.
+     * Boxes are relative to starting point of current placement.
+     * Only used for point placements!
+     */
+    std::vector<box2d<double> > additional_boxes;
+
+    void set_collect_extents(bool collect) { collect_extents_ = collect; }
+    bool get_collect_extents() const { return collect_extents_; }
+
+    box2d<double> const& get_extents() const { return extents_; }
 
 private:
     ///Helpers for find_line_placement
@@ -85,20 +115,37 @@ private:
     void init_string_size();
     void init_alignment();
     void adjust_position(text_path *current_placement, double label_x, double label_y);
+    void add_line(double width, double height, bool first_line);
 
     ///General Internals
     DetectorT & detector_;
     box2d<double> const& dimensions_;
-    string_info &info_;
-    text_symbolizer_properties &p;
-    text_placement_info &pi;
+    string_info const& info_;
+    text_symbolizer_properties const& p;
+    text_placement_info const& pi;
+    /** Length of the longest line after linebreaks.
+      * Before find_line_breaks() this is the total length of the string.
+      */
     double string_width_;
+    /** Height of the string after linebreaks.
+      * Before find_line_breaks() this is the total length of the string.
+      */
     double string_height_;
+    /** Height of the tallest font in the first line not including line spacing.
+      * Used to determine the correct offset for the first line.
+      */
     double first_line_space_;
     vertical_alignment_e valign_;
     horizontal_alignment_e halign_;
     std::vector<unsigned> line_breaks_;
     std::vector<std::pair<double, double> > line_sizes_;
+    std::queue< box2d<double> > envelopes_;
+    /** Used to return all placements found. */
+    placements_type placements_;
+    /** Bounding box of all texts placed. */
+    box2d<double> extents_;
+    /** Collect a bounding box of all texts placed. */
+    bool collect_extents_;
 };
 }
 

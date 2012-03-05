@@ -28,7 +28,6 @@
 #include <mapnik/feature_style_processor.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/label_collision_detector.hpp>
-#include <mapnik/placement_finder.hpp>
 #include <mapnik/map.hpp>
 //#include <mapnik/marker.hpp>
 
@@ -70,8 +69,8 @@ public:
     void end_map_processing(Map const& map);
     void start_layer_processing(layer const& lay);
     void end_layer_processing(layer const& lay);
-    void render_marker(const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity, double angle=0.0);
-
+    void render_marker(pixel_position const& pos, marker const& marker, agg::trans_affine const& tr, double opacity, double angle=0.0);
+    
     void process(point_symbolizer const& sym,
                  mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
@@ -103,7 +102,7 @@ public:
                  mapnik::feature_ptr const& feature,
                  proj_transform const& prj_trans);
     inline bool process(rule::symbolizers const& /*syms*/,
-                        Feature const& /*feature*/,
+                        mapnik::feature_ptr const& /*feature*/,
                         proj_transform const& /*prj_trans*/)
     {
         // agg renderer doesn't support processing of multiple symbolizers.

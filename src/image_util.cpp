@@ -36,9 +36,7 @@ extern "C"
 #include <mapnik/image_view.hpp>
 #include <mapnik/palette.hpp>
 #include <mapnik/map.hpp>
-
-// boost
-#include <boost/lexical_cast.hpp>
+#include <mapnik/util/conversions.hpp>
 
 // jpeg
 #if defined(HAVE_JPEG)
@@ -72,7 +70,6 @@ extern "C"
 #include "agg_span_interpolator_linear.h"
 #include "agg_trans_affine.h"
 #include "agg_image_filters.h"
-
 
 namespace mapnik
 {
@@ -156,85 +153,68 @@ void handle_png_options(std::string const& type,
             {
                 *use_octree = true;
             }
-            else if (boost::algorithm::istarts_with(t,std::string("c=")))
+            else if (boost::algorithm::starts_with(t, "c="))
             {
-                try
-                {
-                    if (*colors < 0)
-                        throw ImageWriterException("invalid color parameter: unavailable for true color images");
-                    *colors = boost::lexical_cast<int>(t.substr(2));
-                    if (*colors < 0 || *colors > 256)
-                        throw ImageWriterException("invalid color parameter: " + t.substr(2) + " out of bounds");
-                }
-                catch(boost::bad_lexical_cast &)
-                {
+                if (*colors < 0)
+                    throw ImageWriterException("invalid color parameter: unavailable for true color images");
+
+                if (!mapnik::conversions::string2int(t.substr(2),*colors) || *colors < 0 || *colors > 256)
                     throw ImageWriterException("invalid color parameter: " + t.substr(2));
-                }
             }
-            else if (boost::algorithm::istarts_with(t, std::string("t=")))
+            else if (boost::algorithm::starts_with(t, "t="))
             {
-                try
-                {
-                    if (*colors < 0)
-                        throw ImageWriterException("invalid trans_mode parameter: unavailable for true color images");
-                    *trans_mode = boost::lexical_cast<int>(t.substr(2));
-                    if (*trans_mode < 0 || *trans_mode > 2)
-                        throw ImageWriterException("invalid trans_mode parameter: " + t.substr(2) + " out of bounds");
-                }
-                catch(boost::bad_lexical_cast &)
-                {
+                if (*colors < 0)
+                    throw ImageWriterException("invalid trans_mode parameter: unavailable for true color images");
+
+                if (!mapnik::conversions::string2int(t.substr(2),*trans_mode) || *trans_mode < 0 || *trans_mode > 2)
                     throw ImageWriterException("invalid trans_mode parameter: " + t.substr(2));
-                }
             }
-            else if (boost::algorithm::istarts_with(t, std::string("g=")))
+            else if (boost::algorithm::starts_with(t, "g="))
             {
-                try
-                {
-                    if (*colors < 0)
-                        throw ImageWriterException("invalid gamma parameter: unavailable for true color images");
-                    *gamma = boost::lexical_cast<double>(t.substr(2));
-                    if (*gamma < 0)
-                        throw ImageWriterException("invalid gamma parameter: " + t.substr(2) + " out of bounds");
-                }
-                catch(boost::bad_lexical_cast &)
+                if (*colors < 0)
+                    throw ImageWriterException("invalid gamma parameter: unavailable for true color images");
+                if (!mapnik::conversions::string2double(t.substr(2),*gamma) || *gamma < 0)
                 {
                     throw ImageWriterException("invalid gamma parameter: " + t.substr(2));
                 }
             }
-            else if (boost::algorithm::istarts_with(t,std::string("z=")))
+            else if (boost::algorithm::starts_with(t, "z="))
             {
-                try
+                /*
+                  #define Z_NO_COMPRESSION         0
+                  #define Z_BEST_SPEED             1
+                  #define Z_BEST_COMPRESSION       9
+                  #define Z_DEFAULT_COMPRESSION  (-1)
+                */
+                if (!mapnik::conversions::string2int(t.substr(2),*compression)
+                    || *compression < Z_DEFAULT_COMPRESSION
+                    || *compression > Z_BEST_COMPRESSION)
                 {
-                    *compression = boost::lexical_cast<int>(t.substr(2));
-                    /*
-                      #define Z_NO_COMPRESSION         0
-                      #define Z_BEST_SPEED             1
-                      #define Z_BEST_COMPRESSION       9
-                      #define Z_DEFAULT_COMPRESSION  (-1)
-                    */
-                    if (*compression < Z_DEFAULT_COMPRESSION || *compression > Z_BEST_COMPRESSION)
-                        throw ImageWriterException("invalid compression parameter: " + t.substr(2) + " out of bounds (only -1 through 9 are valid)");
-                }
-                catch(boost::bad_lexical_cast &)
-                {
-                    throw ImageWriterException("invalid compression parameter: " + t.substr(2));
+                    throw ImageWriterException("invalid compression parameter: " + t.substr(2) + " (only -1 through 9 are valid)");
                 }
             }
-            else if (boost::algorithm::istarts_with(t,std::string("s=")))
+            else if (boost::algorithm::starts_with(t, "s="))
             {
-                try
+                std::string const& s = t.substr(2);
+                if (s == "default")
                 {
-                    std::string s = boost::lexical_cast<std::string>(t.substr(2));
-                    if (s == "default") *strategy = Z_DEFAULT_STRATEGY;
-                    else if (s == "filtered") *strategy = Z_FILTERED;
-                    else if (s == "huff") *strategy = Z_HUFFMAN_ONLY;
-                    else if (s == "rle") *strategy = Z_RLE;
-                    else
-                        throw ImageWriterException("invalid compression strategy parameter: " + s);
+                    *strategy = Z_DEFAULT_STRATEGY;
                 }
-                catch(boost::bad_lexical_cast &)
+                else if (s == "filtered")
                 {
-                    throw ImageWriterException("invalid compression strategy parameter: " + t.substr(2));
+                    *strategy = Z_FILTERED;
+                }
+                else if (s == "huff")
+                {
+                    *strategy = Z_HUFFMAN_ONLY;
+                }
+                else if (s == "rle")
+                {
+                    *strategy = Z_RLE;
+                }
+                else
+                {
+                    throw ImageWriterException("invalid compression strategy parameter: " + s);
                 }
             }
         }
@@ -247,10 +227,11 @@ void save_to_stream(T const& image,
                     std::string const& type,
                     rgba_palette const& palette)
 {
-    if (stream)
+    if (stream && image.width() > 0 && image.height() > 0)
     {
         //all this should go into image_writer factory
-        if (type == "png" || boost::algorithm::istarts_with(type, std::string("png")))
+        std::string t = boost::algorithm::to_lower_copy(type);
+        if (t == "png" || boost::algorithm::starts_with(t, "png"))
         {
             int colors  = 256;
             int compression = Z_DEFAULT_COMPRESSION;
@@ -259,7 +240,7 @@ void save_to_stream(T const& image,
             double gamma = -1;
             bool use_octree = true;
 
-            handle_png_options(type,
+            handle_png_options(t,
                                &colors,
                                &compression,
                                &strategy,
@@ -276,12 +257,12 @@ void save_to_stream(T const& image,
             else
                 save_as_png8_hex(stream, image, colors, compression, strategy, trans_mode, gamma);
         }
-        else if (boost::algorithm::istarts_with(type, std::string("tif")))
+        else if (boost::algorithm::starts_with(t, "tif"))
         {
             throw ImageWriterException("palettes are not currently supported when writing to tiff format (yet)");
         }
 #if defined(HAVE_JPEG)
-        else if (boost::algorithm::istarts_with(type, std::string("jpeg")))
+        else if (boost::algorithm::starts_with(t, "jpeg"))
         {
             throw ImageWriterException("palettes are not currently supported when writing to jpeg format");
         }
@@ -297,10 +278,11 @@ void save_to_stream(T const& image,
                     std::ostream & stream,
                     std::string const& type)
 {
-    if (stream)
+    if (stream && image.width() > 0 && image.height() > 0)
     {
         //all this should go into image_writer factory
-        if (type == "png" || boost::algorithm::istarts_with(type, std::string("png")))
+        std::string t = boost::algorithm::to_lower_copy(type);
+        if (t == "png" || boost::algorithm::starts_with(t, "png"))
         {
             int colors  = 256;
             int compression = Z_DEFAULT_COMPRESSION;
@@ -309,7 +291,7 @@ void save_to_stream(T const& image,
             double gamma = -1;
             bool use_octree = true;
 
-            handle_png_options(type,
+            handle_png_options(t,
                                &colors,
                                &compression,
                                &strategy,
@@ -324,28 +306,23 @@ void save_to_stream(T const& image,
             else
                 save_as_png8_hex(stream, image, colors, compression, strategy, trans_mode, gamma);
         }
-        else if (boost::algorithm::istarts_with(type, std::string("tif")))
+        else if (boost::algorithm::starts_with(t, "tif"))
         {
             save_as_tiff(stream, image);
         }
 #if defined(HAVE_JPEG)
-        else if (boost::algorithm::istarts_with(type, std::string("jpeg")))
+        else if (boost::algorithm::starts_with(t, "jpeg"))
         {
             int quality = 85;
-            try
+            std::string const& val = t.substr(4);
+            if (!val.empty())
             {
-                if(type.substr(4).length() != 0)
+                if (!mapnik::conversions::string2int(val,quality) || quality < 0 || quality > 100)
                 {
-                    quality = boost::lexical_cast<int>(type.substr(4));
-                    if(quality<0 || quality>100)
-                        throw ImageWriterException("invalid jpeg quality: " + type.substr(4) + " out of bounds");
+                    throw ImageWriterException("invalid jpeg quality: '" + val + "'");
                 }
-                save_as_jpeg(stream, quality, image);
             }
-            catch(boost::bad_lexical_cast &)
-            {
-                throw ImageWriterException("invalid jpeg quality: " + type.substr(4) + " not a number");
-            }
+            save_as_jpeg(stream, quality, image);
         }
 #endif
         else throw ImageWriterException("unknown file type: " + type);

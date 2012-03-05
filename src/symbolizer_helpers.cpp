@@ -1,84 +1,111 @@
+/*****************************************************************************
+ *
+ * This file is part of Mapnik (c++ mapping toolkit)
+ *
+ * Copyright (C) 2011 Artem Pavlenko
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ *****************************************************************************/
+
+// mapnik
 #include <mapnik/symbolizer_helpers.hpp>
+#include <mapnik/label_collision_detector.hpp>
+#include <mapnik/placement_finder.hpp>
 
 namespace mapnik {
 
 template <typename FaceManagerT, typename DetectorT>
-text_placement_info_ptr text_symbolizer_helper<FaceManagerT, DetectorT>::get_placement()
+bool text_symbolizer_helper<FaceManagerT, DetectorT>::next()
 {
-    if (!placement_valid_) return text_placement_info_ptr();
+    if (!placement_valid_) return false;
     if (point_placement_)
-        return get_point_placement();
+        return next_point_placement();
     else
-        return get_line_placement();
+        return next_line_placement();
 }
 
 template <typename FaceManagerT, typename DetectorT>
-text_placement_info_ptr text_symbolizer_helper<FaceManagerT, DetectorT>::get_line_placement()
+bool text_symbolizer_helper<FaceManagerT, DetectorT>::next_line_placement()
 {
-    while (geometries_to_process_.size())
+    while (!geometries_to_process_.empty())
     {
         if (geo_itr_ == geometries_to_process_.end())
         {
             //Just processed the last geometry. Try next placement.
-            if (!next_placement()) return text_placement_info_ptr(); //No more placements
+            if (!next_placement()) return false; //No more placements
             //Start again from begin of list
             geo_itr_ = geometries_to_process_.begin();
             continue; //Reexecute size check
         }
-        //TODO: Avoid calling constructor repeatedly
-        placement_finder<DetectorT> finder(*placement_, *info_, detector_, dims_);
-        typedef  coord_transform2<CoordTransform,geometry_type> path_type;
+        typedef coord_transform2<CoordTransform,geometry_type> path_type;
         path_type path(t_, **geo_itr_, prj_trans_);
-        finder.find_line_placements(path);
-        //Keep reference to current object so we can delete it.
-        std::list<geometry_type*>::iterator current_object = geo_itr_;
-        geo_itr_++;
-        if (placement_->placements.size())
+        finder_->clear_placements();
+        if (points_on_line_) {
+            finder_->find_point_placements(path);
+        } else {
+            finder_->find_line_placements(path);
+        }
+        if (!finder_->get_results().empty())
         {
             //Found a placement
-            geometries_to_process_.erase(current_object);
+            if (points_on_line_)
+            {
+                finder_->update_detector();
+            }
+            geo_itr_ = geometries_to_process_.erase(geo_itr_);
             if (writer_.first) writer_.first->add_text(
-                *placement_, font_manager_,
+                finder_->get_results(), finder_->get_extents(),
                 feature_, t_, writer_.second);
-            return placement_;
+            return true;
         }
         //No placement for this geometry. Keep it in geometries_to_process_ for next try.
+        geo_itr_++;
     }
-    return text_placement_info_ptr();
+    return false;
 }
 
 template <typename FaceManagerT, typename DetectorT>
-text_placement_info_ptr text_symbolizer_helper<FaceManagerT, DetectorT>::get_point_placement()
+bool text_symbolizer_helper<FaceManagerT, DetectorT>::next_point_placement()
 {
-    while (points_.size())
+    while (!points_.empty())
     {
         if (point_itr_ == points_.end())
         {
             //Just processed the last point. Try next placement.
-            if (!next_placement()) return text_placement_info_ptr(); //No more placements
+            if (!next_placement()) return false; //No more placements
             //Start again from begin of list
             point_itr_ = points_.begin();
             continue; //Reexecute size check
         }
-        placement_finder<DetectorT> finder(*placement_, *info_, detector_, dims_);
-        finder.find_point_placement(point_itr_->first, point_itr_->second, angle_);
-        //Keep reference to current object so we can delete it.
-        std::list<position>::iterator current_object = point_itr_;
-        point_itr_++;
-        if (placement_->placements.size())
+        finder_->clear_placements();
+        finder_->find_point_placement(point_itr_->first, point_itr_->second, angle_);
+        if (!finder_->get_results().empty())
         {
             //Found a placement
-            points_.erase(current_object);
+            point_itr_ = points_.erase(point_itr_);
             if (writer_.first) writer_.first->add_text(
-                *placement_, font_manager_,
+                finder_->get_results(), finder_->get_extents(),
                 feature_, t_, writer_.second);
-            finder.update_detector();
-            return placement_;
+            finder_->update_detector();
+            return true;
         }
         //No placement for this point. Keep it in points_ for next try.
-
+        point_itr_++;
     }
-    return text_placement_info_ptr();
+    return false;
 }
 
 struct largest_bbox_first
@@ -199,7 +226,21 @@ bool text_symbolizer_helper<FaceManagerT, DetectorT>::next_placement()
     } else {
         angle_ = 0.0;
     }
+
+
+    finder_ = boost::shared_ptr<placement_finder<DetectorT> >(new placement_finder<DetectorT>(feature_, *placement_, *info_, detector_, dims_));
+//    boost::make_shared<placement_finder<DetectorT> >(feature_, *placement_, *info_, detector_, dims_);
+
+    if (writer_.first) finder_->set_collect_extents(true);
+
+    placement_valid_ = true;
     return true;
+}
+
+template <typename FaceManagerT, typename DetectorT>
+placements_type &text_symbolizer_helper<FaceManagerT, DetectorT>::placements() const
+{
+    return finder_->get_results();
 }
 
 
@@ -207,94 +248,92 @@ bool text_symbolizer_helper<FaceManagerT, DetectorT>::next_placement()
 
 
 template <typename FaceManagerT, typename DetectorT>
-text_placement_info_ptr shield_symbolizer_helper<FaceManagerT, DetectorT>::get_placement()
+bool shield_symbolizer_helper<FaceManagerT, DetectorT>::next()
 {
-    if (!placement_valid_ || !marker_) return text_placement_info_ptr();
+    if (!placement_valid_ || !marker_) return false;
     if (point_placement_)
-        return get_point_placement();
+        return next_point_placement();
     else
-        return get_line_placement();
+        return next_line_placement();
 }
 
 template <typename FaceManagerT, typename DetectorT>
-text_placement_info_ptr shield_symbolizer_helper<FaceManagerT, DetectorT>::get_point_placement()
+bool shield_symbolizer_helper<FaceManagerT, DetectorT>::next_point_placement()
 {
     position const& shield_pos = sym_.get_shield_displacement();
-    while (points_.size())
+    while (!points_.empty())
     {
         if (point_itr_ == points_.end())
         {
             //Just processed the last point. Try next placement.
-            if (!next_placement()) return text_placement_info_ptr(); //No more placements
+            if (!next_placement()) return false; //No more placements
             //Start again from begin of list
             point_itr_ = points_.begin();
             continue; //Reexecute size check
         }
-        position const& pos = placement_->properties.displacement;
+        position const& text_disp = placement_->properties.displacement;
         double label_x = point_itr_->first + shield_pos.first;
         double label_y = point_itr_->second + shield_pos.second;
 
-        placement_finder<DetectorT> finder(*placement_, *info_, detector_, dims_);
-        finder.find_point_placement(label_x, label_y, angle_);
-        //Keep reference to current object so we can delete it.
-        std::list<position>::iterator current_object = point_itr_;
-        point_itr_++;
-        if (!placement_->placements.size())
+        finder_->clear_placements();
+        finder_->find_point_placement(label_x, label_y, angle_);
+        if (finder_->get_results().empty())
         {
             //No placement for this point. Keep it in points_ for next try.
+            point_itr_++;
             continue;
         }
         //Found a label placement but not necessarily also a marker placement
         // check to see if image overlaps anything too, there is only ever 1 placement found for points and verticies
-        double x = floor(placement_->placements[0].starting_x);
-        double y = floor(placement_->placements[0].starting_y);
         if (!sym_.get_unlock_image())
         {
             // center image at text center position
             // remove displacement from image label
-            double lx = x - pos.first;
-            double ly = y - pos.second;
-            marker_x_ = int(floor(lx - (0.5 * marker_w_))) + 1;
-            marker_y_ = int(floor(ly - (0.5 * marker_h_))) + 1;
+            placements_type const& p = finder_->get_results();
+            double lx = p[0].center.x - text_disp.first;
+            double ly = p[0].center.y - text_disp.second;
+            marker_x_ = lx - 0.5 * marker_w_;
+            marker_y_ = ly - 0.5 * marker_h_;
             marker_ext_.re_center(lx, ly);
         }
         else
         {  // center image at reference location
-            marker_x_ = int(floor(label_x - 0.5 * marker_w_));
-            marker_y_ = int(floor(label_y - 0.5 * marker_h_));
+            marker_x_ = label_x - 0.5 * marker_w_;
+            marker_y_ = label_y - 0.5 * marker_h_;
             marker_ext_.re_center(label_x, label_y);
         }
 
         if (placement_->properties.allow_overlap || detector_.has_placement(marker_ext_))
         {
             detector_.insert(marker_ext_);
-            finder.update_detector();
+            finder_->update_detector();
             if (writer_.first) {
                 writer_.first->add_box(marker_ext_, feature_, t_, writer_.second);
-                writer_.first->add_text(*placement_, font_manager_, feature_, t_, writer_.second);
+                writer_.first->add_text(finder_->get_results(), finder_->get_extents(),
+                                        feature_, t_, writer_.second);
             }
-            points_.erase(current_object);
-            return placement_;
+            point_itr_ = points_.erase(point_itr_);
+            return true;
         }
+        //No placement found. Try again
+        point_itr_++;
     }
-    return text_placement_info_ptr();
-
+    return false;
 }
 
 
 template <typename FaceManagerT, typename DetectorT>
-text_placement_info_ptr shield_symbolizer_helper<FaceManagerT, DetectorT>::get_line_placement()
+bool shield_symbolizer_helper<FaceManagerT, DetectorT>::next_line_placement()
 {
     position const& pos = placement_->properties.displacement;
-    placement_->additional_boxes.push_back(
-        /*TODO: I'm not sure this is correct. It's what the old code did, but
-          I think transfroms can make the marker non-centered.
-        */
+    finder_->additional_boxes.clear();
+    //Markers are automatically centered
+    finder_->additional_boxes.push_back(
         box2d<double>(-0.5 * marker_ext_.width()  - pos.first,
                       -0.5 * marker_ext_.height() - pos.second,
                       0.5 * marker_ext_.width()  - pos.first,
                       0.5 * marker_ext_.height() - pos.second));
-    return text_symbolizer_helper<FaceManagerT, DetectorT>::get_line_placement();
+    return text_symbolizer_helper<FaceManagerT, DetectorT>::next_line_placement();
 }
 
 
@@ -335,24 +374,22 @@ void shield_symbolizer_helper<FaceManagerT, DetectorT>::init_marker()
 }
 
 template <typename FaceManagerT, typename DetectorT>
-std::pair<int, int> shield_symbolizer_helper<FaceManagerT, DetectorT>::get_marker_position(text_path &p)
+pixel_position shield_symbolizer_helper<FaceManagerT, DetectorT>::get_marker_position(text_path const& p)
 {
     position const& pos = placement_->properties.displacement;
     if (placement_->properties.label_placement == LINE_PLACEMENT) {
-        double x = floor(p.starting_x);
-        double y = floor(p.starting_y);
-
-        double lx = x - pos.first;
-        double ly = y - pos.second;
-        int px = int(floor(lx - (0.5*marker_w_))) + 1;
-        int py = int(floor(ly - (0.5*marker_h_))) + 1;
+        double lx = p.center.x - pos.first;
+        double ly = p.center.y - pos.second;
+        double px = lx - 0.5*marker_w_;
+        double py = ly - 0.5*marker_h_;
         marker_ext_.re_center(lx, ly);
-//        detector_->insert(label_ext); //TODO: Is this done by placement_finder?
-
+        //label is added to detector by get_line_placement(), but marker isn't
+        detector_.insert(marker_ext_);
         if (writer_.first) writer_.first->add_box(marker_ext_, feature_, t_, writer_.second);
-        return std::make_pair(px, py);
+        return pixel_position(px, py);
     } else {
-        return std::make_pair(marker_x_, marker_y_);
+        //collision_detector is already updated for point placement in get_point_placement()
+        return pixel_position(marker_x_, marker_y_);
     }
 }
 

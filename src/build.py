@@ -104,12 +104,13 @@ else: # Linux and others
 source = Split(
     """
     color.cpp
+    conversions.cpp
     box2d.cpp
     building_symbolizer.cpp
     datasource_cache.cpp
     deepcopy.cpp
     expression_string.cpp
-    filter_factory.cpp
+    expression.cpp
     feature_kv_iterator.cpp
     feature_type_style.cpp 
     font_engine_freetype.cpp
@@ -151,8 +152,6 @@ source = Split(
     markers_symbolizer.cpp
     metawriter.cpp
     raster_colorizer.cpp
-    text_placements.cpp
-    text_processing.cpp
     wkt/wkt_factory.cpp
     metawriter_inmem.cpp
     metawriter_factory.cpp
@@ -163,6 +162,22 @@ source = Split(
     svg_points_parser.cpp 
     svg_transform_parser.cpp
     warp.cpp
+    json/feature_collection_parser.cpp
+    json/geojson_generator.cpp
+    markers_placement.cpp
+    processed_text.cpp
+    formatting/base.cpp
+    formatting/expression.cpp
+    formatting/list.cpp
+    formatting/text.cpp
+    formatting/format.cpp
+    formatting/registry.cpp
+    text_placements/registry.cpp
+    text_placements/base.cpp
+    text_placements/dummy.cpp
+    text_placements/list.cpp
+    text_placements/simple.cpp
+    text_properties.cpp
     """   
     )
 
@@ -355,23 +370,35 @@ includes = glob.glob('../include/mapnik/*.hpp')
 svg_includes = glob.glob('../include/mapnik/svg/*.hpp')
 wkt_includes = glob.glob('../include/mapnik/wkt/*.hpp')
 grid_includes = glob.glob('../include/mapnik/grid/*.hpp')
+json_includes = glob.glob('../include/mapnik/json/*.hpp')
 util_includes = glob.glob('../include/mapnik/util/*.hpp')
+text_placements_includes = glob.glob('../include/mapnik/text_placements/*.hpp')
+formatting_includes = glob.glob('../include/mapnik/formatting/*.hpp')
 
 inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik')
 svg_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/svg')
 wkt_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/wkt')
 grid_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/grid')
+json_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/json')
 util_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/util')
+text_placements_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/text_placements')
+formatting_inc_target = os.path.normpath(env['INSTALL_PREFIX']+'/include/mapnik/formatting')
 
 if 'uninstall' not in COMMAND_LINE_TARGETS:
     env.Alias(target='install', source=env.Install(inc_target, includes))
     env.Alias(target='install', source=env.Install(svg_inc_target, svg_includes))
     env.Alias(target='install', source=env.Install(wkt_inc_target, wkt_includes))
     env.Alias(target='install', source=env.Install(grid_inc_target, grid_includes))
+    env.Alias(target='install', source=env.Install(json_inc_target, json_includes))
     env.Alias(target='install', source=env.Install(util_inc_target, util_includes))
+    env.Alias(target='install', source=env.Install(text_placements_inc_target, text_placements_includes))
+    env.Alias(target='install', source=env.Install(formatting_inc_target, formatting_includes))
 
 env['create_uninstall_target'](env, inc_target)
 env['create_uninstall_target'](env, svg_inc_target)
 env['create_uninstall_target'](env, wkt_inc_target)
 env['create_uninstall_target'](env, grid_inc_target)
+env['create_uninstall_target'](env, json_inc_target)
 env['create_uninstall_target'](env, util_inc_target)
+env['create_uninstall_target'](env, text_placements_inc_target)
+env['create_uninstall_target'](env, formatting_inc_target)

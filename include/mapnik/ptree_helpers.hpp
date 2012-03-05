@@ -27,11 +27,11 @@
 #include <mapnik/enumeration.hpp>
 #include <mapnik/config_error.hpp>
 #include <mapnik/color_factory.hpp>
-
+#include <mapnik/util/conversions.hpp>
 // boost
 #include <boost/property_tree/ptree.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
+#include <boost/lexical_cast.hpp>
 
 // stl
 #include <iostream>
@@ -40,70 +40,50 @@
 namespace mapnik {
 
 template <typename T>
-T get(const boost::property_tree::ptree & node, const std::string & name, bool is_attribute,
-      const T & default_value);
+inline boost::optional<T> fast_cast(std::string const& value);
+
 template <typename T>
-T get(const boost::property_tree::ptree & node, const std::string & name, bool is_attribute);
+T get(boost::property_tree::ptree const& node, std::string const& name, bool is_attribute,
+      T const& default_value);
 template <typename T>
-T get_value(const boost::property_tree::ptree & node, const std::string & name);
+T get(boost::property_tree::ptree const& node, std::string const& name, bool is_attribute);
 template <typename T>
-boost::optional<T> get_optional(const boost::property_tree::ptree & node, const std::string & name,
+T get_value(boost::property_tree::ptree const& node, std::string const& name);
+template <typename T>
+boost::optional<T> get_optional(boost::property_tree::ptree const& node, std::string const& name,
                                 bool is_attribute);
 
 template <typename T>
-boost::optional<T> get_opt_attr( const boost::property_tree::ptree & node,
-                                 const std::string & name)
+boost::optional<T> get_opt_attr( boost::property_tree::ptree const& node,
+                                 std::string const& name)
 {
     return get_optional<T>( node, name, true);
 }
 
 template <typename T>
-boost::optional<T> get_opt_child( const boost::property_tree::ptree & node,
-                                  const std::string & name)
+boost::optional<T> get_opt_child( boost::property_tree::ptree const& node,
+                                  std::string const& name)
 {
     return get_optional<T>( node, name, false);
 }
 
 template <typename T>
-T get_attr( const boost::property_tree::ptree & node, const std::string & name,
-            const T & default_value )
+T get_attr( boost::property_tree::ptree const& node, std::string const& name,
+            T const& default_value )
 {
     return get<T>( node, name, true, default_value);
 }
 
 template <typename T>
-T get_attr( const boost::property_tree::ptree & node, const std::string & name )
+T get_attr( boost::property_tree::ptree const& node, std::string const& name )
 {
     return get<T>( node, name, true );
-}
-
-template <typename T>
-T get_css( const boost::property_tree::ptree & node, const std::string & name )
-{
-    return get_value<T>( node, std::string("CSS parameter '") + name + "'");
-}
-
-// specialization for color type
-template <>
-inline color get_css (boost::property_tree::ptree const& node, std::string const& name)
-{
-    std::string str = get_value<std::string>( node, std::string("CSS parameter '") + name + "'"); ;
-    try
-    {
-        return mapnik::color_factory::from_string(str.c_str());
-    }
-    catch (...)
-    {
-        throw config_error(std::string("Failed to parse ") +
-                           name + "'. Expected CSS color"  +
-                           " but got '" + str + "'");
-    }
 }
 
 
 template <typename charT, typename traits>
 std::basic_ostream<charT, traits> &
-operator << ( std::basic_ostream<charT, traits> & s, const mapnik::color & c )
+operator << ( std::basic_ostream<charT, traits> & s, mapnik::color const& c )
 {
     std::string hex_string( c.to_string() );
     s << hex_string;
@@ -115,13 +95,13 @@ class boolean {
 public:
     boolean() {}
     boolean(bool b) : b_(b) {}
-    boolean(const boolean & b) : b_(b.b_) {}
+    boolean(boolean const& b) : b_(b.b_) {}
 
     operator bool() const
     {
         return b_;
     }
-    boolean & operator = (const boolean & other)
+    boolean & operator = (boolean const& other)
     {
         b_ = other.b_;
         return * this;
@@ -164,37 +144,20 @@ operator >> ( std::basic_istream<charT, traits> & s, boolean & b )
 
 template <typename charT, typename traits>
 std::basic_ostream<charT, traits> &
-operator << ( std::basic_ostream<charT, traits> & s, const boolean & b )
+operator << ( std::basic_ostream<charT, traits> & s, boolean const& b )
 {
     s << ( b ? "true" : "false" );
     return s;
 }
 
 template <typename T>
-void set_attr(boost::property_tree::ptree & pt, const std::string & name, const T & v)
+void set_attr(boost::property_tree::ptree & pt, std::string const& name, T const& v)
 {
     pt.put("<xmlattr>." + name, v);
 }
 
-/*
-  template <>
-  void set_attr<bool>(boost::property_tree::ptree & pt, const std::string & name, const bool & v)
-  {
-  pt.put("<xmlattr>." + name, boolean(v));
-  }
-*/
 
 class boolean;
-
-template <typename T>
-void set_css(boost::property_tree::ptree & pt, const std::string & name, const T & v)
-{
-    boost::property_tree::ptree & css_node = pt.push_back(
-        boost::property_tree::ptree::value_type("CssParameter",
-                                                boost::property_tree::ptree()))->second;
-    css_node.put("<xmlattr>.name", name );
-    css_node.put_value( v );
-}
 
 template <typename T>
 struct name_trait
@@ -210,23 +173,21 @@ struct name_trait
     BOOST_STATIC_ASSERT( sizeof(T) == 0 );
 };
 
-#define DEFINE_NAME_TRAIT_WITH_NAME( type, type_name )                  \
+#define DEFINE_NAME_TRAIT( type, type_name )                  \
     template <>                                                         \
     struct name_trait<type>                                             \
     {                                                                   \
         static std::string name() { return std::string("type ") + type_name; } \
     };
 
-#define DEFINE_NAME_TRAIT( type )               \
-    DEFINE_NAME_TRAIT_WITH_NAME( type, #type )
 
-DEFINE_NAME_TRAIT( double )
-DEFINE_NAME_TRAIT( float )
-DEFINE_NAME_TRAIT( unsigned )
-DEFINE_NAME_TRAIT( boolean )
-DEFINE_NAME_TRAIT_WITH_NAME( int, "integer" )
-DEFINE_NAME_TRAIT_WITH_NAME( std::string, "string" )
-DEFINE_NAME_TRAIT_WITH_NAME( color, "color" )
+DEFINE_NAME_TRAIT( double, "double")
+DEFINE_NAME_TRAIT( float, "float")
+DEFINE_NAME_TRAIT( unsigned, "unsigned")
+DEFINE_NAME_TRAIT( boolean, "boolean")
+DEFINE_NAME_TRAIT( int, "integer" )
+DEFINE_NAME_TRAIT( std::string, "string" )
+DEFINE_NAME_TRAIT( color, "color" )
 
 template <typename ENUM, int MAX>
 struct name_trait< mapnik::enumeration<ENUM, MAX> >
@@ -248,8 +209,43 @@ struct name_trait< mapnik::enumeration<ENUM, MAX> >
 };
 
 template <typename T>
-T get(const boost::property_tree::ptree & node, const std::string & name, bool is_attribute,
-      const T & default_value)
+inline boost::optional<T> fast_cast(std::string const& value)
+{
+    return boost::lexical_cast<T>( value );
+}
+
+template <>
+inline boost::optional<int> fast_cast(std::string const& value)
+{
+    int result;
+    if (mapnik::conversions::string2int(value,result))
+        return boost::optional<int>(result);
+    return boost::optional<int>();
+}
+
+template <>
+inline boost::optional<double> fast_cast(std::string const& value)
+{
+    double result;
+    if (mapnik::conversions::string2double(value,result))
+        return boost::optional<double>(result);
+    return boost::optional<double>();
+}
+
+template <>
+inline boost::optional<float> fast_cast(std::string const& value)
+{
+    float result;
+    if (mapnik::conversions::string2float(value,result))
+        return boost::optional<float>(result);
+    return boost::optional<float>();
+}
+
+template <typename T>
+T get(boost::property_tree::ptree const& node,
+      std::string const& name,
+      bool is_attribute,
+      T const& default_value)
 {
     boost::optional<std::string> str;
     if (is_attribute)
@@ -258,28 +254,34 @@ T get(const boost::property_tree::ptree & node, const std::string & name, bool i
     }
     else
     {
-        str = node.get_optional<std::string>(name+".<xmltext>");
+        str = node.get_optional<std::string>(name + ".<xmltext>");
     }
 
-    if ( str ) {
-        try
+    if ( str )
+    {
+        boost::optional<T> result = fast_cast<T>(*str);
+        if (result)
         {
-            return boost::lexical_cast<T>( * str );
+            return *result;
         }
-        catch (const boost::bad_lexical_cast & )
+        else
         {
             throw config_error(std::string("Failed to parse ") +
                                (is_attribute ? "attribute" : "child node") + " '" +
                                name + "'. Expected " + name_trait<T>::name() +
                                " but got '" + *str + "'");
         }
-    } else {
+    }
+    else
+    {
         return default_value;
     }
 }
 
 template <>
-inline color get(boost::property_tree::ptree const& node, std::string const& name, bool is_attribute,
+inline color get(boost::property_tree::ptree const& node,
+                 std::string const& name,
+                 bool is_attribute,
                  color const& default_value)
 {
     boost::optional<std::string> str;
@@ -289,7 +291,7 @@ inline color get(boost::property_tree::ptree const& node, std::string const& nam
     }
     else
     {
-        str = node.get_optional<std::string>(name+".<xmltext>");
+        str = node.get_optional<std::string>(name + ".<xmltext>");
     }
 
     if ( str )
@@ -313,7 +315,7 @@ inline color get(boost::property_tree::ptree const& node, std::string const& nam
 }
 
 template <typename T>
-T get(const boost::property_tree::ptree & node, const std::string & name, bool is_attribute)
+T get(boost::property_tree::ptree const& node, std::string const& name, bool is_attribute)
 {
     boost::optional<std::string> str;
     if (is_attribute)
@@ -322,19 +324,21 @@ T get(const boost::property_tree::ptree & node, const std::string & name, bool i
     }
     else
     {
-        str = node.get_optional<std::string>(name+".<xmltext>");
+        str = node.get_optional<std::string>(name + ".<xmltext>");
     }
 
-    if ( ! str ) {
+    if ( ! str )
+    {
         throw config_error(std::string("Required ") +
                            (is_attribute ? "attribute " : "child node ") +
                            "'" + name + "' is missing");
     }
-    try
+    boost::optional<T> result = fast_cast<T>(*str);
+    if (result)
     {
-        return boost::lexical_cast<T>( *str );
+        return *result;
     }
-    catch (const boost::bad_lexical_cast & )
+    else
     {
         throw config_error(std::string("Failed to parse ") +
                            (is_attribute ? "attribute" : "child node") + " '" +
@@ -344,7 +348,7 @@ T get(const boost::property_tree::ptree & node, const std::string & name, bool i
 }
 
 template <typename T>
-T get_value(const boost::property_tree::ptree & node, const std::string & name)
+T get_value(boost::property_tree::ptree const& node, std::string const& name)
 {
     try
     {
@@ -370,8 +374,9 @@ T get_value(const boost::property_tree::ptree & node, const std::string & name)
 }
 
 template <typename T>
-boost::optional<T> get_optional(const boost::property_tree::ptree & node, const std::string & name,
-                                bool is_attribute)
+boost::optional<T> get_optional(boost::property_tree::ptree const& node,
+                                                 std::string const& name,
+                                                 bool is_attribute)
 {
     boost::optional<std::string> str;
     if (is_attribute)
@@ -380,17 +385,14 @@ boost::optional<T> get_optional(const boost::property_tree::ptree & node, const 
     }
     else
     {
-        str = node.get_optional<std::string>(name+".<xmltext>");
+        str = node.get_optional<std::string>(name + ".<xmltext>");
     }
 
     boost::optional<T> result;
     if ( str )
     {
-        try
-        {
-            result = boost::lexical_cast<T>( *str );
-        }
-        catch (const boost::bad_lexical_cast &)
+        result = fast_cast<T>(*str);
+        if (!result)
         {
             throw config_error(std::string("Failed to parse ") +
                                (is_attribute ? "attribute" : "child node") + " '" +
@@ -401,11 +403,26 @@ boost::optional<T> get_optional(const boost::property_tree::ptree & node, const 
 
     return result;
 }
-//
 
 template <>
-inline boost::optional<color> get_optional(const boost::property_tree::ptree & node, const std::string & name,
-                                           bool is_attribute)
+inline boost::optional<std::string> get_optional(boost::property_tree::ptree const& node,
+                                                 std::string const& name,
+                                                 bool is_attribute)
+{
+    if (is_attribute)
+    {
+        return node.get_optional<std::string>( std::string("<xmlattr>.") + name);
+    }
+    else
+    {
+        return node.get_optional<std::string>(name + ".<xmltext>");
+    }
+}
+
+template <>
+inline boost::optional<color> get_optional(boost::property_tree::ptree const& node,
+                                                 std::string const& name,
+                                                 bool is_attribute)
 {
     boost::optional<std::string> str;
     if (is_attribute)
@@ -414,7 +431,7 @@ inline boost::optional<color> get_optional(const boost::property_tree::ptree & n
     }
     else
     {
-        str = node.get_optional<std::string>(name+".<xmltext>");
+        str = node.get_optional<std::string>(name + ".<xmltext>");
     }
 
     boost::optional<color> result;
@@ -422,7 +439,6 @@ inline boost::optional<color> get_optional(const boost::property_tree::ptree & n
     {
         try
         {
-            //result = boost::lexical_cast<T>( *str );
             result = mapnik::color_factory::from_string((*str).c_str());
         }
         catch (...)
@@ -435,6 +451,12 @@ inline boost::optional<color> get_optional(const boost::property_tree::ptree & n
     }
 
     return result;
+}
+
+static inline bool has_child(boost::property_tree::ptree const& node, std::string const& name)
+{
+    boost::optional<std::string> str = node.get_optional<std::string>(name);
+    return str;
 }
 
 } // end of namespace mapnik

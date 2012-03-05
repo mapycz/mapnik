@@ -39,7 +39,7 @@
 #include <mapnik/libxml2_loader.hpp>
 #endif
 
-#include <mapnik/filter_factory.hpp>
+#include <mapnik/expression.hpp>
 #include <mapnik/parse_path.hpp>
 #include <mapnik/raster_colorizer.hpp>
 
@@ -47,15 +47,15 @@
 
 #include <mapnik/metawriter_factory.hpp>
 
-#include <mapnik/text_placements_simple.hpp>
-#include <mapnik/text_placements_list.hpp>
-#include <mapnik/text_processing.hpp>
+#include <mapnik/text_placements/registry.hpp>
+#include <mapnik/text_placements/dummy.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/rule.hpp>
 
 // boost
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -87,7 +87,12 @@ public:
         strict_( strict ),
         filename_( filename ),
         relative_to_xml_(true),
-        font_manager_(font_engine_) {}
+        font_manager_(font_engine_),
+        color_grammar_(),
+        // TODO - use xml encoding?
+        tr_("utf8"),
+        expr_grammar_(tr_)
+        {}
 
     void parse_map(Map & map, ptree const & sty, std::string const& base_path="");
 private:
@@ -115,11 +120,14 @@ private:
 
     void parse_raster_colorizer(raster_colorizer_ptr const& rc, ptree const& node );
     void parse_stroke(stroke & strk, ptree const & sym);
+    expression_ptr parse_expr(std::string const& expr);
 
     void ensure_font_face( const std::string & face_name );
 
     std::string ensure_relative_to_xml( boost::optional<std::string> opt_path );
     void ensure_attrs( ptree const& sym, std::string name, std::string attrs);
+    boost::optional<color> get_opt_color_attr(boost::property_tree::ptree const& node,
+                                                      std::string const& name);
 
     bool strict_;
     std::string filename_;
@@ -129,9 +137,33 @@ private:
     face_manager<freetype_engine> font_manager_;
     std::map<std::string,std::string> file_sources_;
     std::map<std::string,font_set> fontsets_;
+    mapnik::css_color_grammar<std::string::const_iterator> color_grammar_;
+    mapnik::transcoder tr_;
+    mapnik::expression_grammar<std::string::const_iterator> expr_grammar_;
 
 };
 
+void remove_empty_text_nodes(ptree &pt)
+{
+    ptree::iterator itr = pt.begin();
+    ptree::iterator end = pt.end();
+    while (itr!=end)
+    {
+        if (itr->first == "<xmltext>") {
+            std::string trimmed = boost::algorithm::trim_copy(itr->second.data());
+            if (trimmed.empty()) {
+                itr = pt.erase(itr);
+            } else {
+                itr++;
+            }
+        } else {
+            remove_empty_text_nodes(itr->second);
+            itr++;
+        }
+    }
+}
+
+//#include <mapnik/internal/dump_xml.hpp>
 void load_map(Map & map, std::string const& filename, bool strict)
 {
     ptree pt;
@@ -140,7 +172,8 @@ void load_map(Map & map, std::string const& filename, bool strict)
 #else
     try
     {
-        read_xml(filename, pt);
+        read_xml(filename, pt, boost::property_tree::xml_parser::no_concat_text|boost::property_tree::xml_parser::no_comments);
+        remove_empty_text_nodes(pt);
     }
     catch (const boost::property_tree::xml_parser_error & ex)
     {
@@ -164,7 +197,8 @@ void load_map_string(Map & map, std::string const& str, bool strict, std::string
     {
         std::istringstream s(str);
         // TODO - support base_path?
-        read_xml(s,pt);
+        read_xml(s, pt, boost::property_tree::xml_parser::no_concat_text|boost::property_tree::xml_parser::no_comments);
+        remove_empty_text_nodes(pt);
     }
     catch (const boost::property_tree::xml_parser_error & ex)
     {
@@ -174,6 +208,40 @@ void load_map_string(Map & map, std::string const& str, bool strict, std::string
 
     map_parser parser( strict, base_path);
     parser.parse_map(map, pt, base_path);
+}
+
+expression_ptr map_parser::parse_expr(std::string const& str)
+{
+    expression_ptr expr(boost::make_shared<expr_node>(true));
+    if (!expression_factory::parse_from_string(expr,str,expr_grammar_))
+    {
+        throw mapnik::config_error( "Failed to parse expression: '" + str + "'" );
+    }
+    return expr;
+
+}
+
+boost::optional<color> map_parser::get_opt_color_attr(boost::property_tree::ptree const& node,
+                                                      std::string const& name)
+{
+
+    boost::optional<std::string> str = node.get_optional<std::string>( std::string("<xmlattr>.") + name);
+    boost::optional<color> result;
+    if (str && !str->empty())
+    {
+        mapnik::color c;
+        if (mapnik::color_factory::parse_from_string(c,*str,color_grammar_))
+        {
+            result.reset(c);
+        }
+        else
+        {
+            throw config_error(std::string("Failed to parse attribute ") +
+                               name + "'. Expected color" +
+                               " but got '" + *str + "'");
+        }
+    }
+    return result;
 }
 
 void map_parser::parse_map( Map & map, ptree const & pt, std::string const& base_path )
@@ -228,7 +296,7 @@ void map_parser::parse_map( Map & map, ptree const & pt, std::string const& base
                 map.set_base_path( base );
             }
 
-            optional<color> bgcolor = get_opt_attr<color>(map_node, "background-color");
+            optional<color> bgcolor = get_opt_color_attr(map_node, "background-color");
             if (bgcolor)
             {
                 map.set_background( * bgcolor );
@@ -384,7 +452,7 @@ void map_parser::parse_map_include( Map & map, ptree const & include )
                     params[name] = value;
                 }
                 else if( paramIter->first != "<xmlattr>" &&
-                         paramIter->first != "<xmlcomment>" )
+                         paramIter->first != "<xmlcomment>")
                 {
                     throw config_error(std::string("Unknown child node in ") +
                                        "'Datasource'. Expected 'Parameter' but got '" +
@@ -770,20 +838,15 @@ void map_parser::parse_rule( feature_type_style & style, ptree const & r )
             get_opt_child<std::string>( r, "Filter");
         if (filter_expr)
         {
-            // TODO - can we use encoding defined for XML document for filter expressions?
-            rule.set_filter(parse_expression(*filter_expr,"utf8"));
+            rule.set_filter(parse_expr(*filter_expr));
         }
 
-        optional<std::string> else_filter =
-            get_opt_child<std::string>(r, "ElseFilter");
-        if (else_filter)
+        if (has_child(r, "ElseFilter"))
         {
             rule.set_else(true);
         }
 
-        optional<std::string> also_filter =
-            get_opt_child<std::string>(r, "AlsoFilter");
-        if (also_filter)
+        if (has_child(r, "AlsoFilter"))
         {
             rule.set_also(true);
         }
@@ -1088,7 +1151,7 @@ void map_parser::parse_markers_symbolizer( rule & rule, ptree const & sym )
             symbol.set_transform(matrix);
         }
 
-        optional<color> c = get_opt_attr<color>(sym, "fill");
+        optional<color> c = get_opt_color_attr(sym, "fill");
         if (c) symbol.set_fill(*c);
         optional<double> spacing = get_opt_attr<double>(sym, "spacing");
         if (spacing) symbol.set_spacing(*spacing);
@@ -1268,46 +1331,16 @@ void map_parser::parse_text_symbolizer( rule & rule, ptree const & sym )
     try
     {
         text_placements_ptr placement_finder;
-        text_placements_list *list = 0;
         optional<std::string> placement_type = get_opt_attr<std::string>(sym, "placement-type");
         if (placement_type) {
-            if (*placement_type == "simple") {
-                placement_finder = text_placements_ptr(
-                    new text_placements_simple(
-                        get_attr<std::string>(sym, "placements", "X")));
-            } else if (*placement_type == "list") {
-                list = new text_placements_list();
-                placement_finder = text_placements_ptr(list);
-            } else if (*placement_type != "dummy" && *placement_type != "") {
-                throw config_error(std::string("Unknown placement type '"+*placement_type+"'"));
-            }
+            placement_finder = placements::registry::instance()->from_xml(*placement_type, sym, fontsets_);
+        } else {
+            placement_finder = text_placements_ptr(boost::make_shared<text_placements_dummy>());
+            placement_finder->defaults.from_xml(sym, fontsets_);
         }
-        if (!placement_finder) {
-            placement_finder = text_placements_ptr(new text_placements_dummy());
-        }
-
-        placement_finder->properties.from_xml(sym, fontsets_);
         if (strict_ &&
-                !placement_finder->properties.default_format.fontset.size())
-            ensure_font_face(placement_finder->properties.default_format.face_name);
-        if (list) {
-            ptree::const_iterator symIter = sym.begin();
-            ptree::const_iterator endSym = sym.end();
-            for( ;symIter != endSym; ++symIter) {
-                if (symIter->first.find('<') != std::string::npos) continue;
-                if (symIter->first != "Placement")
-                {
-//                    throw config_error("Unknown element '" + symIter->first + "'"); TODO
-                    continue;
-                }
-                ensure_attrs(symIter->second, "TextSymbolizer/Placement", s_common.str());
-                text_symbolizer_properties & p = list->add();
-                p.from_xml(symIter->second, fontsets_);
-                if (strict_ &&
-                        !p.default_format.fontset.size())
-                    ensure_font_face(p.default_format.face_name);
-            }
-        }
+                !placement_finder->defaults.format.fontset.size())
+            ensure_font_face(placement_finder->defaults.format.face_name);
 
         text_symbolizer text_symbol = text_symbolizer(placement_finder);
         parse_metawriter_in_symbolizer(text_symbol, sym);
@@ -1341,42 +1374,16 @@ void map_parser::parse_shield_symbolizer( rule & rule, ptree const & sym )
     try
     {
         text_placements_ptr placement_finder;
-        text_placements_list *list = 0;
         optional<std::string> placement_type = get_opt_attr<std::string>(sym, "placement-type");
         if (placement_type) {
-            if (*placement_type == "simple") {
-                placement_finder = text_placements_ptr(
-                    new text_placements_simple(
-                        get_attr<std::string>(sym, "placements", "X")));
-            } else if (*placement_type == "list") {
-                list = new text_placements_list();
-                placement_finder = text_placements_ptr(list);
-            } else if (*placement_type != "dummy" && *placement_type != "") {
-                throw config_error(std::string("Unknown placement type '"+*placement_type+"'"));
-            }
+            placement_finder = placements::registry::instance()->from_xml(*placement_type, sym, fontsets_);
+        } else {
+            placement_finder = text_placements_ptr(boost::make_shared<text_placements_dummy>());
         }
-        if (!placement_finder) {
-            placement_finder = text_placements_ptr(new text_placements_dummy());
-        }
-
-        placement_finder->properties.from_xml(sym, fontsets_);
-        if (strict_) ensure_font_face(placement_finder->properties.default_format.face_name);
-        if (list) {
-            ptree::const_iterator symIter = sym.begin();
-            ptree::const_iterator endSym = sym.end();
-            for( ;symIter != endSym; ++symIter) {
-                if (symIter->first.find('<') != std::string::npos) continue;
-                if (symIter->first != "Placement")
-                {
-//                    throw config_error("Unknown element '" + symIter->first + "'"); TODO
-                    continue;
-                }
-                ensure_attrs(symIter->second, "TextSymbolizer/Placement", s_common);
-                text_symbolizer_properties & p = list->add();
-                p.from_xml(symIter->second, fontsets_);
-                if (strict_) ensure_font_face(p.default_format.face_name);
-            }
-        }
+        placement_finder->defaults.from_xml(sym, fontsets_);
+        if (strict_ &&
+                !placement_finder->defaults.format.fontset.size())
+            ensure_font_face(placement_finder->defaults.format.face_name);
 
         shield_symbolizer shield_symbol = shield_symbolizer(placement_finder);
         /* Symbolizer specific attributes. */
@@ -1470,7 +1477,7 @@ void map_parser::parse_shield_symbolizer( rule & rule, ptree const & sym )
 void map_parser::parse_stroke(stroke & strk, ptree const & sym)
 {
     // stroke color
-    optional<color> c = get_opt_attr<color>(sym, "stroke");
+    optional<color> c = get_opt_color_attr(sym, "stroke");
     if (c) strk.set_color(*c);
 
     // stroke-width
@@ -1580,7 +1587,7 @@ void map_parser::parse_polygon_symbolizer( rule & rule, ptree const & sym )
     {
         polygon_symbolizer poly_sym;
         // fill
-        optional<color> fill = get_opt_attr<color>(sym, "fill");
+        optional<color> fill = get_opt_color_attr(sym, "fill");
         if (fill) poly_sym.set_fill(*fill);
         // fill-opacity
         optional<double> opacity = get_opt_attr<double>(sym, "fill-opacity");
@@ -1611,14 +1618,14 @@ void map_parser::parse_building_symbolizer( rule & rule, ptree const & sym )
         building_symbolizer building_sym;
 
         // fill
-        optional<color> fill = get_opt_attr<color>(sym, "fill");
+        optional<color> fill = get_opt_color_attr(sym, "fill");
         if (fill) building_sym.set_fill(*fill);
         // fill-opacity
         optional<double> opacity = get_opt_attr<double>(sym, "fill-opacity");
         if (opacity) building_sym.set_opacity(*opacity);
         // height
         optional<std::string> height = get_opt_attr<std::string>(sym, "height");
-        if (height) building_sym.set_height(parse_expression(*height, "utf8"));
+        if (height) building_sym.set_height(parse_expr(*height));
 
         parse_metawriter_in_symbolizer(building_sym, sym);
         rule.append(building_sym);
@@ -1705,7 +1712,7 @@ void map_parser::parse_raster_colorizer(raster_colorizer_ptr const& rc,
         rc->set_default_mode( default_mode );
 
         // default colour
-        optional<color> default_color = get_opt_attr<color>(node, "default-color");
+        optional<color> default_color = get_opt_color_attr(node, "default-color");
         if (default_color)
         {
             rc->set_default_color( *default_color );
@@ -1736,7 +1743,7 @@ void map_parser::parse_raster_colorizer(raster_colorizer_ptr const& rc,
             {
                 ensure_attrs(stop_tag.second, "stop", "color,mode,value,label");
                 // colour is optional.
-                optional<color> stopcolor = get_opt_attr<color>(stop, "color");
+                optional<color> stopcolor = get_opt_color_attr(stop, "color");
                 if (!stopcolor) {
                     *stopcolor = *default_color;
                 }
