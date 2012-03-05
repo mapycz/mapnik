@@ -365,8 +365,8 @@ void placement_finder<DetectorT>::find_point_placement(double label_x, double la
     adjust_position(current_placement.get(), label_x, label_y);
 
     // center of rotation relative to the center of text envelope
-    double rx = label_x - current_placement->starting_x;
-    double ry = current_placement->starting_y - label_y;
+    double rx = label_x - current_placement->center.x;
+    double ry = current_placement->center.y - label_y;
 
     // presets for first line
     unsigned int line_number = 0;

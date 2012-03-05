@@ -117,7 +117,7 @@ void grid_renderer<T>::end_layer_processing(layer const&)
 #endif
 }
 
-template <typename T>void grid_renderer<T>::render_marker(mapnik::feature_ptr const& feature, unsigned int step, const int x, const int y, marker &marker, const agg::trans_affine & tr, double opacity, double angle)
+template <typename T>
 void grid_renderer<T>::render_marker(mapnik::feature_ptr const& feature, unsigned int step, pixel_position const& pos, marker const& marker, agg::trans_affine const& tr, double opacity, double angle)
 {
     if (marker.is_vector())
