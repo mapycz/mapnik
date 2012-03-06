@@ -29,7 +29,6 @@
 #include <boost/utility.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/filesystem/operations.hpp>
-#include <boost/algorithm/string/trim.hpp>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -43,6 +42,9 @@ using namespace std;
 
 //#define DEFAULT_OPTIONS (XML_PARSE_NOENT | XML_PARSE_NOBLANKS | XML_PARSE_DTDLOAD | XML_PARSE_NOCDATA)
 #define DEFAULT_OPTIONS (XML_PARSE_NOERROR | XML_PARSE_NOENT | XML_PARSE_NOBLANKS | XML_PARSE_DTDLOAD | XML_PARSE_NOCDATA)
+
+#define isnbsp(s)       ((s)[0] == '\xC2' && (s)[1] == '\xA0')
+
 
 namespace mapnik
 {
@@ -202,10 +204,23 @@ private:
             break;
             case XML_TEXT_NODE:
             {
-                std::string trimmed = boost::algorithm::trim_copy(std::string((char*)cur_node->content));
-                if (trimmed.empty()) break;
+                const char* cnt = (const char*)cur_node->content;
+                const char* end = cnt + strlen(cnt);
+                // trim left
+                while (cnt < end) {
+                    if (isspace(cnt[0])) cnt++;
+                    else if (isnbsp(cnt)) cnt+=2;
+                    else break;
+                }
+                // trim right
+                while (cnt < end) {
+                    if (isspace(end[-1])) end--;
+                    else if (cnt <= end-2 && isnbsp(end-2)) end-=2;
+                    else break;
+                }
+                if (cnt >= end) break;
                 ptree::iterator it = pt.push_back(ptree::value_type("<xmltext>", ptree()));
-                it->second.put_value(trimmed);
+                it->second.put_value(std::string(cnt, end));
             }
             break;
             case XML_COMMENT_NODE:

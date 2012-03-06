@@ -456,7 +456,8 @@ void map_parser::parse_map_include( Map & map, ptree const & include )
                 {
                     throw config_error(std::string("Unknown child node in ") +
                                        "'Datasource'. Expected 'Parameter' but got '" +
-                                       paramIter->first + "'");
+                                       paramIter->first + "': '" +
+                                       paramIter->second.data() + "'");
                 }
             }
             datasource_templates_[name] = params;
@@ -770,7 +771,8 @@ void map_parser::parse_layer( Map & map, ptree const & lay )
                     {
                         throw config_error(std::string("Unknown child node in ") +
                                            "'Datasource'. Expected 'Parameter' but got '" +
-                                           paramIter->first + "'");
+                                           paramIter->first + "': '" +
+                                           paramIter->second.data() + "'");
                     }
                 }
 
