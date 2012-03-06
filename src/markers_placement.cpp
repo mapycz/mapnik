@@ -176,8 +176,11 @@ bool markers_placement<Locator, Detector>::get_point(
         box2d<double> box = perform_transform(*angle, *x, *y);
         if (!allow_overlap_ && !detector_.has_placement(box))
         {
-            //10.0 is the approxmiate number of positions tried and choosen arbitrarily
-            set_spacing_left(spacing_left_ + spacing_ * max_error_ / 10.0); //Only moves forward
+            // advance placement test position;
+            // step must be positive for the loop to eventually break,
+            // but otherwise 0.05 and 0.1 are chosen arbitrarily
+            const double step = std::max(0.05, 0.1 * max_error_);
+            set_spacing_left(spacing_left_ + spacing_ * step); //Only moves forward
             continue;
         }
         if (add_to_detector) detector_.insert(box);
@@ -197,12 +200,19 @@ box2d<double> markers_placement<Locator, Detector>::perform_transform(double ang
     double y1 = size_.miny();
     double y2 = size_.maxy();
 
-    double x1_ = dx + x1 * c - y1 * s;
-    double y1_ = dy + x1 * s + y1 * c;
+    double x0_ = dx + x1 * c - y1 * s;
+    double y0_ = dy + x1 * s + y1 * c;
+    double x1_ = dx + x2 * c - y1 * s;
+    double y1_ = dy + x2 * s + y1 * c;
     double x2_ = dx + x2 * c - y2 * s;
     double y2_ = dy + x2 * s + y2 * c;
+    double x3_ = dx + x1 * c - y2 * s;
+    double y3_ = dy + x1 * s + y2 * c;
 
-    return box2d<double>(x1_, y1_, x2_, y2_);
+    box2d<double> result(x0_, y0_, x2_, y2_);
+    result.expand_to_include(x1_, y1_);
+    result.expand_to_include(x3_, y3_);
+    return result;
 }
 
 template <typename Locator, typename Detector>

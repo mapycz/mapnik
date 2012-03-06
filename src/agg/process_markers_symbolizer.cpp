@@ -83,17 +83,15 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             }
             boost::optional<path_ptr> marker = (*mark)->get_vector_data();
             box2d<double> const& bbox = (*marker)->bounding_box();
-            double x1 = bbox.minx();
-            double y1 = bbox.miny();
-            double x2 = bbox.maxx();
-            double y2 = bbox.maxy();
+            double center_x = 0.5 * (bbox.minx() + bbox.maxx());
+            double center_y = 0.5 * (bbox.miny() + bbox.maxy());
             double w = (*mark)->width();
             double h = (*mark)->height();
 
-            agg::trans_affine recenter = agg::trans_affine_translation(-0.5*(x1+x2),-0.5*(y1+y2));
-            tr.transform(&x1,&y1);
-            tr.transform(&x2,&y2);
-            box2d<double> extent(x1,y1,x2,y2);
+            agg::trans_affine recenter = agg::trans_affine_translation(-center_x, -center_y);
+            agg::trans_affine recenter_tr = recenter * tr;
+            box2d<double> extent = bbox * recenter_tr;
+
             using namespace mapnik::svg;
             vertex_stl_adapter<svg_path_storage> stl_storage((*marker)->source());
             svg_path_adapter svg_path(stl_storage);
@@ -120,7 +118,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                         detector_->has_placement(extent))
                     {
 
-                        render_marker(pixel_position(x - 0.5 * w, y - 0.5 * h) ,**mark, tr, sym.get_opacity());
+                        render_marker(pixel_position(x - 0.5 * w, y - 0.5 * h), **mark, tr, sym.get_opacity());
 
                         // TODO - impl this for markers?
                         //if (!sym.get_ignore_placement())
@@ -140,8 +138,35 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
 
                     while (placement.get_point(&x, &y, &angle))
                     {
-                        agg::trans_affine matrix = recenter * tr *agg::trans_affine_rotation(angle) * agg::trans_affine_translation(x, y);
+                        agg::trans_affine matrix = recenter_tr;
+                        matrix.rotate(angle);
+                        matrix.translate(x, y);
                         svg_renderer.render(*ras_ptr, sl, renb, matrix, sym.get_opacity(),bbox);
+
+                        if (/* DEBUG */ 0) {
+                            // blue outline showing the box used for collision detection
+                            box2d<double> box = extent * agg::trans_affine_rotation(angle);
+                            double tx = 0, ty = 0;
+                            matrix = agg::trans_affine_rotation(angle);
+                            matrix.translate(x, y);
+                            matrix.transform(&tx, &ty);
+                            // prepare path
+                            agg::path_storage pbox;
+                            pbox.start_new_path();
+                            pbox.move_to(tx + box.minx(), ty + box.miny());
+                            pbox.line_to(tx + box.maxx(), ty + box.miny());
+                            pbox.line_to(tx + box.maxx(), ty + box.maxy());
+                            pbox.line_to(tx + box.minx(), ty + box.maxy());
+                            pbox.line_to(tx + box.minx(), ty + box.miny());
+                            // draw outline
+                            agg::conv_stroke<agg::path_storage> sbox(pbox);
+                            sbox.generator().width(1.0 * scale_factor_);
+                            ras_ptr->reset();
+                            ras_ptr->add_path(sbox);
+                            ren.color(agg::rgba8(0x33, 0x33, 0xff, 0xcc));
+                            agg::render_scanlines(*ras_ptr, sl_line, ren);
+                        }
+
                         if (writer.first)
                             //writer.first->add_box(label_ext, feature, t_, writer.second);
                             std::clog << "### Warning metawriter not yet supported for LINE placement\n";
@@ -175,26 +200,14 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
 
         if (marker_type == ARROW)
         {
-            extent = arrow_.extent();
-            double x1 = extent.minx();
-            double y1 = extent.miny();
-            double x2 = extent.maxx();
-            double y2 = extent.maxy();
-            tr.transform(&x1,&y1);
-            tr.transform(&x2,&y2);
-            extent.init(x1,y1,x2,y2);
-            //std::clog << x1 << " " << y1 << " " << x2 << " " << y2 << "\n";
+            extent = arrow_.extent() * tr;
+            //std::clog << extent << "\n";
         }
         else
         {
-            double x1 = -1 *(dx);
-            double y1 = -1 *(dy);
-            double x2 = dx;
-            double y2 = dy;
-            tr.transform(&x1,&y1);
-            tr.transform(&x2,&y2);
-            extent.init(x1,y1,x2,y2);
-            //std::clog << x1 << " " << y1 << " " << x2 << " " << y2 << "\n";
+            extent.init(-dx, -dy, dx, dy);
+            extent *= tr;
+            //std::clog << extent << "\n";
         }
 
 
