@@ -100,6 +100,8 @@ void agg_renderer<T>::process(raster_symbolizer const& sym,
                 pixmap_.template merge_rectangle<HardLight> (target.data_,start_x,start_y, sym.get_opacity());
             } else if (sym.get_mode() == "linear_burn"){
                 pixmap_.template merge_rectangle<LinearBurn> (target.data_,start_x,start_y, sym.get_opacity());
+            } else if (sym.get_mode() == "linear_burn2"){
+                pixmap_.template merge_rectangle<LinearBurn2> (target.data_,start_x,start_y, sym.get_opacity());
             } else {
                 if (sym.get_opacity() == 1.0){
                     pixmap_.set_rectangle(start_x,start_y,target.data_);

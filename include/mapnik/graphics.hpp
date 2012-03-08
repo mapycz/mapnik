@@ -135,6 +135,7 @@ struct MergeGrain2
         if (b1>255) b1=255;
     }
 };
+
 struct LinearBurn
 {
     inline static void mergeRGB(unsigned const &r0, unsigned const &g0, unsigned const &b0,
@@ -145,6 +146,21 @@ struct LinearBurn
         b1 = (b1 + b0 > 255) ? (b1 + b0 - 255) : 0;
     }
 };
+
+struct LinearBurn2
+{
+    inline static void mergeRGB(unsigned const &r0, unsigned const &g0, unsigned const &b0,
+                                unsigned &r1, unsigned &g1, unsigned &b1)
+    {
+        r1 = (r1 + r0 > 128) ? (r1 + r0 - 128) : 0;
+        if (r1 > 255) r1=255;
+        g1 = (g1 + g0 > 128) ? (g1 + g0 - 128) : 0;
+        if (g1 > 255) g1=255;
+        b1 = (b1 + b0 > 128) ? (b1 + b0 - 128) : 0;
+        if (b1 > 255) b1=255;
+    }
+};
+
 
 class MAPNIK_DECL image_32
 {
