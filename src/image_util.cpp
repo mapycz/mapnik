@@ -20,8 +20,6 @@
  *
  *****************************************************************************/
 
-//$Id: image_util.cpp 36 2005-04-05 14:32:18Z pavlenko $
-
 extern "C"
 {
 #include <png.h>
@@ -37,7 +35,7 @@ extern "C"
 #include <mapnik/palette.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/util/conversions.hpp>
-
+#include <mapnik/span_image_filter.hpp>
 // jpeg
 #if defined(HAVE_JPEG)
 #include <mapnik/jpeg_io.hpp>
@@ -45,8 +43,10 @@ extern "C"
 
 #ifdef HAVE_CAIRO
 #include <mapnik/cairo_renderer.hpp>
+#include <cairo-features.h>
 #endif
 
+// boost
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 
@@ -57,7 +57,6 @@ extern "C"
 #include <sstream>
 
 // agg
-//#include "agg_conv_transform.h"
 #include "agg_image_accessors.h"
 #include "agg_pixfmt_rgba.h"
 #include "agg_rasterizer_scanline_aa.h"
@@ -73,6 +72,7 @@ extern "C"
 
 namespace mapnik
 {
+
 
 template <typename T>
 std::string save_to_string(T const& image,
@@ -158,7 +158,7 @@ void handle_png_options(std::string const& type,
                 if (*colors < 0)
                     throw ImageWriterException("invalid color parameter: unavailable for true color images");
 
-                if (!mapnik::conversions::string2int(t.substr(2),*colors) || *colors < 0 || *colors > 256)
+                if (!mapnik::util::string2int(t.substr(2),*colors) || *colors < 0 || *colors > 256)
                     throw ImageWriterException("invalid color parameter: " + t.substr(2));
             }
             else if (boost::algorithm::starts_with(t, "t="))
@@ -166,14 +166,14 @@ void handle_png_options(std::string const& type,
                 if (*colors < 0)
                     throw ImageWriterException("invalid trans_mode parameter: unavailable for true color images");
 
-                if (!mapnik::conversions::string2int(t.substr(2),*trans_mode) || *trans_mode < 0 || *trans_mode > 2)
+                if (!mapnik::util::string2int(t.substr(2),*trans_mode) || *trans_mode < 0 || *trans_mode > 2)
                     throw ImageWriterException("invalid trans_mode parameter: " + t.substr(2));
             }
             else if (boost::algorithm::starts_with(t, "g="))
             {
                 if (*colors < 0)
                     throw ImageWriterException("invalid gamma parameter: unavailable for true color images");
-                if (!mapnik::conversions::string2double(t.substr(2),*gamma) || *gamma < 0)
+                if (!mapnik::util::string2double(t.substr(2),*gamma) || *gamma < 0)
                 {
                     throw ImageWriterException("invalid gamma parameter: " + t.substr(2));
                 }
@@ -186,7 +186,7 @@ void handle_png_options(std::string const& type,
                   #define Z_BEST_COMPRESSION       9
                   #define Z_DEFAULT_COMPRESSION  (-1)
                 */
-                if (!mapnik::conversions::string2int(t.substr(2),*compression)
+                if (!mapnik::util::string2int(t.substr(2),*compression)
                     || *compression < Z_DEFAULT_COMPRESSION
                     || *compression > Z_BEST_COMPRESSION)
                 {
@@ -317,7 +317,7 @@ void save_to_stream(T const& image,
             std::string const& val = t.substr(4);
             if (!val.empty())
             {
-                if (!mapnik::conversions::string2int(val,quality) || quality < 0 || quality > 100)
+                if (!mapnik::util::string2int(val,quality) || quality < 0 || quality > 100)
                 {
                     throw ImageWriterException("invalid jpeg quality: '" + val + "'");
                 }
@@ -372,17 +372,40 @@ void save_to_cairo_file(mapnik::Map const& map,
         unsigned width = map.width();
         unsigned height = map.height();
         if (type == "pdf")
+        {
+#if defined(CAIRO_HAS_PDF_SURFACE)
             surface = Cairo::PdfSurface::create(filename,width,height);
+#else
+            throw ImageWriterException("PDFSurface not supported in the cairo backend");
+#endif
+        }
+#if defined(CAIRO_HAS_SVG_SURFACE)
         else if (type == "svg")
+        {
             surface = Cairo::SvgSurface::create(filename,width,height);
+        }
+#endif
+#if defined(CAIRO_HAS_PS_SURFACE)
         else if (type == "ps")
+        {
             surface = Cairo::PsSurface::create(filename,width,height);
+        }
+#endif
+#if defined(CAIRO_HAS_IMAGE_SURFACE)
         else if (type == "ARGB32")
+        {
             surface = Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32,width,height);
+        }
         else if (type == "RGB24")
+        {
             surface = Cairo::ImageSurface::create(Cairo::FORMAT_RGB24,width,height);
+        }
+#endif
         else
+        {
             throw ImageWriterException("unknown file type: " + type);
+        }
+
         Cairo::RefPtr<Cairo::Context> context = Cairo::Context::create(surface);
 
         // TODO - expose as user option
@@ -666,8 +689,9 @@ void scale_image_bilinear8 (Image& target,const Image& source, double x_off_f, d
 template <typename Image>
 void scale_image_agg (Image& target,const Image& source, scaling_method_e scaling_method, double scale_factor, double x_off_f, double y_off_f, double filter_radius, double ratio)
 {
-    typedef agg::pixfmt_rgba32_plain pixfmt;
-    typedef agg::renderer_base<pixfmt> renderer_base;
+    typedef agg::pixfmt_rgba32 pixfmt;
+    typedef agg::pixfmt_rgba32_pre pixfmt_pre;
+    typedef agg::renderer_base<pixfmt_pre> renderer_base;
 
     // define some stuff we'll use soon
     agg::rasterizer_scanline_aa<> ras;
@@ -678,13 +702,12 @@ void scale_image_agg (Image& target,const Image& source, scaling_method_e scalin
     // initialize source AGG buffer
     agg::rendering_buffer rbuf_src((unsigned char*)source.getBytes(), source.width(), source.height(), source.width() * 4);
     pixfmt pixf_src(rbuf_src);
-
     typedef agg::image_accessor_clone<pixfmt> img_src_type;
     img_src_type img_src(pixf_src);
 
     // initialise destination AGG buffer (with transparency)
     agg::rendering_buffer rbuf_dst((unsigned char*)target.getBytes(), target.width(), target.height(), target.width() * 4);
-    pixfmt pixf_dst(rbuf_dst);
+    pixfmt_pre pixf_dst(rbuf_dst);
     renderer_base rb_dst(pixf_dst);
     rb_dst.clear(agg::rgba(0, 0, 0, 0));
 
@@ -747,9 +770,43 @@ void scale_image_agg (Image& target,const Image& source, scaling_method_e scalin
     case SCALING_BLACKMAN:
         filter.calculate(agg::image_filter_blackman(filter_radius), true); break;
     }
-    typedef agg::span_image_resample_rgba_affine<img_src_type> span_gen_type;
+    typedef mapnik::span_image_resample_rgba_affine<img_src_type> span_gen_type;
     span_gen_type sg(img_src, interpolator, filter);
     agg::render_scanlines_aa(ras, sl, rb_dst, sa, sg);
+}
+
+
+void save_to_file(image_32 const& image,std::string const& file)
+{
+    save_to_file<image_data_32>(image.data(), file);
+}
+
+void save_to_file (image_32 const& image,
+                   std::string const& file,
+                   std::string const& type)
+{
+    save_to_file<image_data_32>(image.data(), file, type);
+}
+
+void save_to_file (image_32 const& image,
+                   std::string const& file,
+                   std::string const& type,
+                   rgba_palette const& palette)
+{
+    save_to_file<image_data_32>(image.data(), file, type, palette);
+}
+
+std::string save_to_string(image_32 const& image,
+                           std::string const& type)
+{
+    return save_to_string<image_data_32>(image.data(), type);
+}
+
+std::string save_to_string(image_32 const& image,
+                           std::string const& type,
+                           rgba_palette const& palette)
+{
+    return save_to_string<image_data_32>(image.data(), type, palette);
 }
 
 template void scale_image_agg<image_data_32> (image_data_32& target,const image_data_32& source, scaling_method_e scaling_method, double scale_factor, double x_off_f, double y_off_f, double filter_radius, double ratio);

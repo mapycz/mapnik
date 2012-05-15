@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
 #include <boost/python.hpp>
 #include "mapnik_enumeration.hpp"
@@ -43,12 +42,10 @@ struct line_symbolizer_pickle_suite : boost::python::pickle_suite
 void export_line_symbolizer()
 {
     using namespace boost::python;
-
     enumeration_<line_rasterizer_e>("line_rasterizer")
         .value("FULL",RASTERIZER_FULL)
         .value("FAST",RASTERIZER_FAST)
         ;
-
     class_<line_symbolizer>("LineSymbolizer",
                             init<>("Default LineSymbolizer - 1px solid black"))
         .def(init<stroke const&>("TODO"))
@@ -62,5 +59,9 @@ void export_line_symbolizer()
                       (&line_symbolizer::get_stroke,
                        return_value_policy<copy_const_reference>()),
                       &line_symbolizer::set_stroke)
+        .add_property("smooth",
+                      &line_symbolizer::smooth,
+                      &line_symbolizer::set_smooth,
+                      "smooth value (0..1.0)")
         ;
 }

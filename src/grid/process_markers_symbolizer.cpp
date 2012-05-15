@@ -19,16 +19,16 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
 // mapnik
+#include <mapnik/debug.hpp>
 #include <mapnik/grid/grid_rasterizer.hpp>
 #include <mapnik/grid/grid_renderer.hpp>
 #include <mapnik/grid/grid_pixfmt.hpp>
 #include <mapnik/grid/grid_pixel.hpp>
 #include <mapnik/grid/grid.hpp>
+#include <mapnik/marker.hpp>
 #include <mapnik/markers_symbolizer.hpp>
-
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/svg/svg_renderer.hpp>
@@ -46,7 +46,6 @@
 
 // stl
 #include <algorithm>
-
 
 
 namespace mapnik {
@@ -70,9 +69,10 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
     ras_ptr->reset();
 
     agg::trans_affine tr;
-    boost::array<double,6> const& m = sym.get_transform();
+    boost::array<double,6> const& m = sym.get_image_transform();
     tr.load_from(&m[0]);
-    tr = agg::trans_affine_scaling(scale_factor_*(1.0/pixmap_.get_resolution())) * tr;
+    unsigned int res = pixmap_.get_resolution();
+    tr = agg::trans_affine_scaling(scale_factor_*(1.0/res)) * tr;
     std::string filename = path_processor_type::evaluate(*sym.get_filename(), *feature);
     marker_placement_e placement_method = sym.get_marker_placement();
     marker_type_e marker_type = sym.get_marker_type();
@@ -88,6 +88,11 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
             double y1 = bbox.miny();
             double x2 = bbox.maxx();
             double y2 = bbox.maxy();
+            double w = (*mark)->width();
+            double h = (*mark)->height();
+            // clamp sizes
+            w = std::max(w,4.0);
+            h = std::max(w,4.0);
 
             agg::trans_affine recenter = agg::trans_affine_translation(-0.5*(x1+x2),-0.5*(y1+y2));
             tr.transform(&x1,&y1);
@@ -104,11 +109,28 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
             bool placed = false;
             for (unsigned i=0; i<feature->num_geometries(); ++i)
             {
-                geometry_type const& geom = feature->get_geometry(i);
-                if (geom.num_points() <= 1)
+                geometry_type & geom = feature->get_geometry(i);
+                if (placement_method == MARKER_POINT_PLACEMENT || geom.num_points() <= 1)
                 {
-                    std::clog << "### Warning svg markers not supported yet for points within markers_symbolizer\n";
-                    continue;
+                    double x;
+                    double y;
+                    double z=0;
+                    geom.label_interior_position(&x, &y);
+                    prj_trans.backward(x,y,z);
+                    t_.forward(&x,&y);
+                    extent.re_center(x,y);
+
+                    if (sym.get_allow_overlap() ||
+                        detector_.has_placement(extent))
+                    {
+
+                        render_marker(feature,
+                                      pixmap_.get_resolution(),
+                                      pixel_position(x - 0.5 * w, y - 0.5 * h),
+                                      **mark,
+                                      tr,
+                                      sym.get_opacity());
+                    }
                 }
 
                 path_type path(t_,geom,prj_trans);
@@ -131,24 +153,27 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
     }
     else
     {
-        stroke const& stroke_ = sym.get_stroke();
-        double strk_width = stroke_.get_width();
 
         double w;
         double h;
-        unsigned int res = pixmap_.get_resolution();
-        if (res != 1) {
-            // clamp to at least 4 px otherwise interactive pixels can be too small
-            double min = static_cast<double>(4/pixmap_.get_resolution());
+        // clamp to at least 4 px otherwise interactive pixels can be too small
+        if (res == 1) {
+            w = std::max(sym.get_width(),4.0);
+            h = std::max(sym.get_height(),4.0);
+        } else {
+            double min = static_cast<double>(4.0/res);
             w = std::max(sym.get_width()/res,min);
             h = std::max(sym.get_height()/res,min);
-        } else {
-            w = sym.get_width()/res;
-            h = sym.get_height()/res;
         }
+
+        double rx = w/2.0;
+        double ry = h/2.0;
 
         arrow arrow_;
         box2d<double> extent;
+
+        stroke const& stroke_ = sym.get_stroke();
+        double strk_width = stroke_.get_width();
 
         double dx = w + (2*strk_width);
         double dy = h + (2*strk_width);
@@ -181,7 +206,7 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
 
         for (unsigned i=0; i<feature->num_geometries(); ++i)
         {
-            geometry_type const& geom = feature->get_geometry(i);
+            geometry_type & geom = feature->get_geometry(i);
             if (placement_method == MARKER_POINT_PLACEMENT || geom.num_points() <= 1)
             {
                 geom.label_position(&x,&y);
@@ -194,7 +219,7 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
                 if (sym.get_allow_overlap() ||
                     detector_.has_placement(label_ext))
                 {
-                    agg::ellipse c(x, y, w, h);
+                    agg::ellipse c(x, y, rx, ry);
                     agg::path_storage marker;
                     marker.concat_path(c);
                     ras_ptr->add_path(marker);
@@ -231,7 +256,7 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
                     if (marker_type == ELLIPSE)
                     {
                         // todo proper bbox - this is buggy
-                        agg::ellipse c(x_t, y_t, w, h);
+                        agg::ellipse c(x_t, y_t, rx, ry);
                         marker.concat_path(c);
                         agg::trans_affine matrix;
                         matrix *= agg::trans_affine_translation(-x_t,-y_t);

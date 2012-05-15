@@ -42,7 +42,7 @@ DEFINE_ENUM( point_placement_e, point_placement_enum );
 struct MAPNIK_DECL point_symbolizer :
         public symbolizer_with_image, public symbolizer_base
 {
-    explicit point_symbolizer();
+    point_symbolizer();
     point_symbolizer(path_expression_ptr file);
     point_symbolizer(point_symbolizer const& rhs);
     void set_allow_overlap(bool overlap);
@@ -51,7 +51,7 @@ struct MAPNIK_DECL point_symbolizer :
     point_placement_e get_point_placement() const;
     void set_ignore_placement(bool ignore_placement);
     bool get_ignore_placement() const;
-    expression_ptr get_orientation() const; // orienation (rotation angle atm)
+    expression_ptr get_orientation() const; // orientation (rotation angle)
     void set_orientation(expression_ptr expr);
 
 private:
@@ -59,7 +59,6 @@ private:
     point_placement_e point_p_;
     bool ignore_placement_;
     expression_ptr orientation_;
-
 };
 }
 

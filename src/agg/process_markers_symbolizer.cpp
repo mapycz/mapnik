@@ -19,12 +19,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
+// mapnik
+#include <mapnik/debug.hpp>
+#include <mapnik/graphics.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/image_util.hpp>
+#include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/svg/svg_renderer.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
@@ -41,7 +44,7 @@
 #include "agg_path_storage.h"
 #include "agg_ellipse.h"
 #include "agg_conv_stroke.h"
-
+#include "agg_conv_clip_polyline.h"
 
 namespace mapnik {
 
@@ -50,8 +53,10 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                               mapnik::feature_ptr const& feature,
                               proj_transform const& prj_trans)
 {
-    typedef coord_transform2<CoordTransform,geometry_type> path_type;
-    typedef agg::pixfmt_rgba32_plain pixfmt;
+    typedef agg::conv_clip_polyline<geometry_type> clipped_geometry_type;
+    typedef coord_transform2<CoordTransform,clipped_geometry_type> path_type;
+
+    typedef agg::pixfmt_rgba32 pixfmt;
     typedef agg::renderer_base<pixfmt> renderer_base;
     typedef agg::renderer_scanline_aa_solid<renderer_base> renderer_solid;
 
@@ -64,7 +69,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
     renderer_base renb(pixf);
     renderer_solid ren(renb);
     agg::trans_affine tr;
-    boost::array<double,6> const& m = sym.get_transform();
+    boost::array<double,6> const& m = sym.get_image_transform();
     tr.load_from(&m[0]);
     tr = agg::trans_affine_scaling(scale_factor_) * tr;
     std::string filename = path_processor_type::evaluate(*sym.get_filename(), *feature);
@@ -77,8 +82,10 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
         boost::optional<marker_ptr> mark = mapnik::marker_cache::instance()->find(filename, true);
         if (mark && *mark)
         {
-            if (!(*mark)->is_vector()) {
-                std::clog << "### Warning only svg markers are supported in the markers_symbolizer\n";
+            if (!(*mark)->is_vector())
+            {
+                MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: markers_symbolizer do not yet support SVG markers";
+
                 return;
             }
             boost::optional<path_ptr> marker = (*mark)->get_vector_data();
@@ -98,11 +105,11 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             svg_renderer<svg_path_adapter,
                 agg::pod_bvector<path_attributes>,
                 renderer_solid,
-                agg::pixfmt_rgba32_plain > svg_renderer(svg_path,(*marker)->attributes());
+                agg::pixfmt_rgba32 > svg_renderer(svg_path,(*marker)->attributes());
 
             for (unsigned i=0; i<feature->num_geometries(); ++i)
             {
-                geometry_type const& geom = feature->get_geometry(i);
+                geometry_type & geom = feature->get_geometry(i);
                 // TODO - merge this code with point_symbolizer rendering
                 if (placement_method == MARKER_POINT_PLACEMENT || geom.num_points() <= 1)
                 {
@@ -129,7 +136,9 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                 }
                 else
                 {
-                    path_type path(t_,geom,prj_trans);
+                    clipped_geometry_type clipped(geom);
+                    clipped.clip_box(query_extent_.minx(),query_extent_.miny(),query_extent_.maxx(),query_extent_.maxy());
+                    path_type path(t_,clipped,prj_trans);
                     markers_placement<path_type, label_collision_detector4> placement(path, extent, *detector_,
                                                                                       sym.get_spacing() * scale_factor_,
                                                                                       sym.get_max_error(),
@@ -168,8 +177,11 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                         }
 
                         if (writer.first)
+                        {
                             //writer.first->add_box(label_ext, feature, t_, writer.second);
-                            std::clog << "### Warning metawriter not yet supported for LINE placement\n";
+
+                            MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: metawriter do not yet supported for line placement";
+                        }
                     }
                 }
             }
@@ -191,6 +203,8 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
         unsigned s_a=col.alpha();
         double w = sym.get_width();
         double h = sym.get_height();
+        double rx = w/2.0;
+        double ry = h/2.0;
 
         arrow arrow_;
         box2d<double> extent;
@@ -201,13 +215,15 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
         if (marker_type == ARROW)
         {
             extent = arrow_.extent() * tr;
-            //std::clog << extent << "\n";
+
+            //MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: " << extent << "\n";
         }
         else
         {
             extent.init(-dx, -dy, dx, dy);
             extent *= tr;
-            //std::clog << extent << "\n";
+
+            //MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: " << extent << "\n";
         }
 
 
@@ -219,7 +235,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
 
         for (unsigned i=0; i<feature->num_geometries(); ++i)
         {
-            geometry_type const& geom = feature->get_geometry(i);
+            geometry_type & geom = feature->get_geometry(i);
             //if (geom.num_points() <= 1) continue;
             if (placement_method == MARKER_POINT_PLACEMENT || geom.num_points() <= 1)
             {
@@ -233,7 +249,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                 if (sym.get_allow_overlap() ||
                     detector_->has_placement(label_ext))
                 {
-                    agg::ellipse c(x, y, w, h);
+                    agg::ellipse c(x, y, rx, ry);
                     marker.concat_path(c);
                     ras_ptr->add_path(marker);
                     ren.color(agg::rgba8(r, g, b, int(a*sym.get_opacity())));
@@ -252,7 +268,8 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                         ren.color(agg::rgba8(s_r, s_g, s_b, int(s_a*stroke_.get_opacity())));
                         agg::render_scanlines(*ras_ptr, sl_line, ren);
                     }
-                    detector_->insert(label_ext);
+                    if (!sym.get_ignore_placement())
+                        detector_->insert(label_ext);
                     if (writer.first) writer.first->add_box(label_ext, *feature, t_, writer.second);
                 }
             }
@@ -262,7 +279,9 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                 if (marker_type == ARROW)
                     marker.concat_path(arrow_);
 
-                path_type path(t_,geom,prj_trans);
+                clipped_geometry_type clipped(geom);
+                clipped.clip_box(query_extent_.minx(),query_extent_.miny(),query_extent_.maxx(),query_extent_.maxy());
+                path_type path(t_,clipped,prj_trans);
                 markers_placement<path_type, label_collision_detector4> placement(path, extent, *detector_,
                                                                                   sym.get_spacing() * scale_factor_,
                                                                                   sym.get_max_error(),
@@ -276,7 +295,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                     if (marker_type == ELLIPSE)
                     {
                         // todo proper bbox - this is buggy
-                        agg::ellipse c(x_t, y_t, w, h);
+                        agg::ellipse c(x_t, y_t, rx, ry);
                         marker.concat_path(c);
                         agg::trans_affine matrix;
                         matrix *= agg::trans_affine_translation(-x_t,-y_t);
@@ -293,8 +312,11 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
 
                     // TODO
                     if (writer.first)
+                    {
                         //writer.first->add_box(label_ext, feature, t_, writer.second);
-                        std::clog << "### Warning metawriter not yet supported for LINE placement\n";
+
+                        MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: metawriter do not yet supported for line placement";
+                    }
 
                     agg::conv_transform<agg::path_storage, agg::trans_affine> trans(marker, matrix);
                     ras_ptr->add_path(trans);

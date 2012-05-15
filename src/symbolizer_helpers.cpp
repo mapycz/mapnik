@@ -24,6 +24,7 @@
 #include <mapnik/symbolizer_helpers.hpp>
 #include <mapnik/label_collision_detector.hpp>
 #include <mapnik/placement_finder.hpp>
+#include "agg_conv_clip_polyline.h"
 
 namespace mapnik {
 
@@ -50,8 +51,12 @@ bool text_symbolizer_helper<FaceManagerT, DetectorT>::next_line_placement()
             geo_itr_ = geometries_to_process_.begin();
             continue; //Reexecute size check
         }
-        typedef coord_transform2<CoordTransform,geometry_type> path_type;
-        path_type path(t_, **geo_itr_, prj_trans_);
+
+        typedef agg::conv_clip_polyline<geometry_type> clipped_geometry_type;
+        typedef coord_transform2<CoordTransform,clipped_geometry_type> path_type;
+        clipped_geometry_type clipped(**geo_itr_);
+        clipped.clip_box(query_extent_.minx(),query_extent_.miny(),query_extent_.maxx(),query_extent_.maxy());
+        path_type path(t_, clipped, prj_trans_);
         finder_->clear_placements();
         if (points_on_line_) {
             finder_->find_point_placements(path);
@@ -136,9 +141,7 @@ void text_symbolizer_helper<FaceManagerT, DetectorT>::initialize_geometries()
             largest_box_only = true;
             if (sym_.get_minimum_path_length() > 0)
             {
-                // TODO - find less costly method than fetching full envelope
                 box2d<double> gbox = t_.forward(geom.envelope(), prj_trans_);
-
                 if (gbox.width() < sym_.get_minimum_path_length())
                 {
                     continue;
@@ -162,10 +165,13 @@ template <typename FaceManagerT, typename DetectorT>
 void text_symbolizer_helper<FaceManagerT, DetectorT>::initialize_points()
 {
     label_placement_enum how_placed = placement_->properties.label_placement;
-    if (how_placed == LINE_PLACEMENT) {
+    if (how_placed == LINE_PLACEMENT)
+    {
         point_placement_ = false;
         return;
-    } else {
+    }
+    else
+    {
         point_placement_ = true;
     }
 
@@ -188,17 +194,20 @@ void text_symbolizer_helper<FaceManagerT, DetectorT>::initialize_points()
                 t_.forward(&label_x, &label_y);
                 points_.push_back(std::make_pair(label_x, label_y));
             }
-        } else {
+        }
+        else
+        {
             if (how_placed == POINT_PLACEMENT)
             {
                 geom.label_position(&label_x, &label_y);
-            } else if (how_placed == INTERIOR_PLACEMENT)
+            }
+            else if (how_placed == INTERIOR_PLACEMENT)
             {
                 geom.label_interior_position(&label_x, &label_y);
-            } else {
-#ifdef MAPNIK_DEBUG
-                std::cerr << "ERROR: Unknown placement type in initialize_points();\n";
-#endif
+            }
+            else
+            {
+                MAPNIK_LOG_ERROR(symbolizer_helpers) << "ERROR: Unknown placement type in initialize_points()";
             }
             prj_trans_.backward(label_x, label_y, z);
             t_.forward(&label_x, &label_y);
@@ -341,8 +350,8 @@ template <typename FaceManagerT, typename DetectorT>
 void shield_symbolizer_helper<FaceManagerT, DetectorT>::init_marker()
 {
     std::string filename = path_processor_type::evaluate(*sym_.get_filename(), this->feature_);
-    boost::array<double,6> const& m = sym_.get_transform();
-    transform_.load_from(&m[0]);
+    boost::array<double,6> const& m = sym_.get_image_transform();
+    image_transform_.load_from(&m[0]);
     marker_.reset();
     if (!filename.empty())
     {
@@ -364,10 +373,10 @@ void shield_symbolizer_helper<FaceManagerT, DetectorT>::init_marker()
     double py2 = py0;
     double px3 = px0;
     double py3 = py1;
-    transform_.transform(&px0,&py0);
-    transform_.transform(&px1,&py1);
-    transform_.transform(&px2,&py2);
-    transform_.transform(&px3,&py3);
+    image_transform_.transform(&px0,&py0);
+    image_transform_.transform(&px1,&py1);
+    image_transform_.transform(&px2,&py2);
+    image_transform_.transform(&px3,&py3);
     marker_ext_.init(px0, py0, px1, py1);
     marker_ext_.expand_to_include(px2, py2);
     marker_ext_.expand_to_include(px3, py3);
@@ -401,9 +410,9 @@ marker& shield_symbolizer_helper<FaceManagerT, DetectorT>::get_marker() const
 }
 
 template <typename FaceManagerT, typename DetectorT>
-agg::trans_affine const& shield_symbolizer_helper<FaceManagerT, DetectorT>::get_transform() const
+agg::trans_affine const& shield_symbolizer_helper<FaceManagerT, DetectorT>::get_image_transform() const
 {
-    return transform_;
+    return image_transform_;
 }
 
 template class text_symbolizer_helper<face_manager<freetype_engine>, label_collision_detector4>;

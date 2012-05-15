@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-// $Id$
 
 // mapnik
 #include <mapnik/save_map.hpp>
@@ -199,7 +198,6 @@ public:
         // repeating the default values here.
         // maybe add a real, explicit default-ctor?
 
-
         shield_symbolizer dfl;
 
         if (sym.get_unlock_image() != dfl.get_unlock_image() || explicit_defaults_)
@@ -265,6 +263,10 @@ public:
         {
             set_attr( sym_node, "allow-overlap", sym.get_allow_overlap() );
         }
+        if (sym.get_ignore_placement() != dfl.get_ignore_placement() || explicit_defaults_)
+        {
+            set_attr( sym_node, "ignore-placement", sym.get_ignore_placement() );
+        }
         if (sym.get_spacing() != dfl.get_spacing() || explicit_defaults_)
         {
             set_attr( sym_node, "spacing", sym.get_spacing() );
@@ -297,10 +299,10 @@ public:
         {
             set_attr( sym_node, "placement", sym.get_marker_placement() );
         }
-        std::string tr_str = sym.get_transform_string();
+        std::string tr_str = sym.get_image_transform_string();
         if (tr_str != "matrix(1, 0, 0, 1, 0, 0)" || explicit_defaults_ )
         {
-            set_attr( sym_node, "transform", tr_str );
+            set_attr( sym_node, "image-transform", tr_str );
         }
 
         const stroke & strk =  sym.get_stroke();
@@ -309,6 +311,15 @@ public:
         add_metawriter_attributes(sym_node, sym);
     }
 
+    template <typename Symbolizer>
+    void operator () ( Symbolizer const& sym)
+    {
+        // not-supported
+#ifdef MAPNIK_DEBUG
+        std::clog << typeid(sym).name() << " is not supported" << std::endl;
+#endif
+    }
+    
 private:
     serialize_symbolizer();
 
@@ -346,13 +357,6 @@ private:
         {
             set_attr( node, "opacity", sym.get_opacity() );
         }
-
-        std::string tr_str = sym.get_transform_string();
-        if (tr_str != "matrix(1, 0, 0, 1, 0, 0)" || explicit_defaults_ )
-        {
-            set_attr( node, "transform", tr_str );
-        }
-
     }
     void add_font_attributes(ptree & node, const text_symbolizer & sym)
     {
@@ -432,7 +436,7 @@ private:
         }
 
     }
-    void add_metawriter_attributes(ptree &node, symbolizer_base const& sym)
+    void add_metawriter_attributes(ptree & node, symbolizer_base const& sym)
     {
         if (!sym.get_metawriter_name().empty() || explicit_defaults_) {
             set_attr(node, "meta-writer", sym.get_metawriter_name());
@@ -440,6 +444,13 @@ private:
         if (!sym.get_metawriter_properties_overrides().empty() || explicit_defaults_) {
             set_attr(node, "meta-output", sym.get_metawriter_properties_overrides().to_string());
         }
+
+        std::string tr_str = sym.get_transform_string();
+        if (tr_str != "matrix(1, 0, 0, 1, 0, 0)" || explicit_defaults_ ) // FIXME !! 
+        {
+            set_attr( node, "transform", tr_str );
+        }
+
     }
 
     ptree & rule_;
@@ -631,9 +642,9 @@ void serialize_layer( ptree & map_node, const layer & layer, bool explicit_defau
         set_attr( layer_node, "srs", layer.srs() );
     }
 
-    if ( !layer.isActive() || explicit_defaults )
+    if ( !layer.active() || explicit_defaults )
     {
-        set_attr/*<bool>*/( layer_node, "status", layer.isActive() );
+        set_attr/*<bool>*/( layer_node, "status", layer.active() );
     }
 
     if ( layer.clear_label_cache() || explicit_defaults )
@@ -641,19 +652,19 @@ void serialize_layer( ptree & map_node, const layer & layer, bool explicit_defau
         set_attr/*<bool>*/( layer_node, "clear-label-cache", layer.clear_label_cache() );
     }
 
-    if ( layer.getMinZoom() )
+    if ( layer.min_zoom() )
     {
-        set_attr( layer_node, "minzoom", layer.getMinZoom() );
+        set_attr( layer_node, "minzoom", layer.min_zoom() );
     }
 
-    if ( layer.getMaxZoom() != std::numeric_limits<double>::max() )
+    if ( layer.max_zoom() != std::numeric_limits<double>::max() )
     {
-        set_attr( layer_node, "maxzoom", layer.getMaxZoom() );
+        set_attr( layer_node, "maxzoom", layer.max_zoom() );
     }
 
-    if ( layer.isQueryable() || explicit_defaults )
+    if ( layer.queryable() || explicit_defaults )
     {
-        set_attr( layer_node, "queryable", layer.isQueryable() );
+        set_attr( layer_node, "queryable", layer.queryable() );
     }
 
     if ( layer.cache_features() || explicit_defaults )
@@ -742,14 +753,6 @@ void serialize_map(ptree & pt, Map const & map, bool explicit_defaults)
         {
             serialize_fontset( map_node, it);
         }
-    }
-
-    parameters extra_attr = map.get_extra_attributes();
-    parameters::const_iterator p_it = extra_attr.begin();
-    parameters::const_iterator p_end = extra_attr.end();
-    for (; p_it != p_end; ++p_it)
-    {
-        set_attr( map_node, p_it->first, p_it->second );
     }
 
     serialize_parameters( map_node, map.get_extra_parameters());

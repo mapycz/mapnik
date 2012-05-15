@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
 // mapnik
 #include <mapnik/grid/grid_rasterizer.hpp>
@@ -29,7 +28,7 @@
 #include <mapnik/grid/grid.hpp>
 #include <mapnik/point_symbolizer.hpp>
 #include <mapnik/expression_evaluator.hpp>
-
+#include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
 
 // stl
@@ -89,13 +88,13 @@ void grid_renderer<T>::process(point_symbolizer const& sym,
                 detector_.has_placement(label_ext))
             {
                 agg::trans_affine tr;
-                boost::array<double,6> const& m = sym.get_transform();
+                boost::array<double,6> const& m = sym.get_image_transform();
                 tr.load_from(&m[0]);
 
                 render_marker(feature, pixmap_.get_resolution(),
                               pixel_position(px, py),
                               **marker, tr,
-                              sym.get_opacity(), angle);
+                              sym.get_opacity());
 
                 if (!sym.get_ignore_placement())
                     detector_.insert(label_ext);

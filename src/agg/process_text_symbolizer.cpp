@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
 // mapnik
 #include <mapnik/agg_renderer.hpp>
@@ -38,11 +37,12 @@ void agg_renderer<T>::process(text_symbolizer const& sym,
             sym, *feature, prj_trans,
             width_, height_,
             scale_factor_,
-            t_, font_manager_, *detector_);
+            t_, font_manager_, *detector_, query_extent_);
 
-    text_renderer<T> ren(pixmap_, font_manager_, *(font_manager_.get_stroker()));
+    text_renderer<T> ren(*current_buffer_, font_manager_, *(font_manager_.get_stroker()),  sym.comp_op());
 
-    while (helper.next()) {
+    while (helper.next()) 
+    {
         placements_type &placements = helper.placements();
         for (unsigned int ii = 0; ii < placements.size(); ++ii)
         {
@@ -57,4 +57,3 @@ template void agg_renderer<image_32>::process(text_symbolizer const&,
                                               proj_transform const&);
 
 }
-

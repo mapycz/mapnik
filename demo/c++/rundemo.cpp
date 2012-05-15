@@ -21,6 +21,7 @@
  *****************************************************************************/
 
 #include <mapnik/map.hpp>
+#include <mapnik/graphics.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/agg_renderer.hpp>
@@ -70,7 +71,7 @@ int main ( int argc , char** argv)
         provpoly_style.add_rule(provpoly_rule_on);
 
         rule provpoly_rule_qc;
-        provpoly_rule_qc.set_filter(parse_expression("[NOM_FR] = 'Québec'"));
+        provpoly_rule_qc.set_filter(parse_expression("[NOM_FR] = 'QuÃ©bec'"));
         provpoly_rule_qc.append(polygon_symbolizer(color(217, 235, 203)));
         provpoly_style.add_rule(provpoly_rule_qc);
 
@@ -175,6 +176,7 @@ int main ( int argc , char** argv)
             parameters p;
             p["type"]="shape";
             p["file"]="../data/boundaries";
+            p["encoding"]="latin1";
 
             layer lyr("Provinces");
             lyr.set_datasource(datasource_cache::instance()->create(p));
@@ -249,11 +251,11 @@ int main ( int argc , char** argv)
         agg_renderer<image_32> ren(m,buf);
         ren.apply();
 
-        save_to_file<image_data_32>(buf.data(),"demo.jpg","jpeg");
-        save_to_file<image_data_32>(buf.data(),"demo.png","png");
-        save_to_file<image_data_32>(buf.data(),"demo256.png","png256");
-        save_to_file<image_data_32>(buf.data(),"demo.tif","tiff");
-
+        save_to_file(buf,"demo.jpg","jpeg");
+        save_to_file(buf,"demo.png","png");
+        save_to_file(buf,"demo256.png","png256");
+        save_to_file(buf,"demo.tif","tiff");
+        
         std::cout << "Three maps have been rendered using AGG in the current directory:\n"
             "- demo.jpg\n"
             "- demo.png\n"

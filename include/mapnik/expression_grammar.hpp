@@ -141,9 +141,8 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
         using qi::_r1;
 #if BOOST_VERSION > 104200
         using qi::no_skip;
-#else
-        using qi::lexeme;
 #endif
+        using qi::lexeme;
         using qi::_val;
         using qi::lit;
         using qi::int_;
@@ -229,7 +228,7 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
             ("\\r", '\r')("\\t", '\t')("\\v", '\v')("\\\\", '\\')
             ("\\\'", '\'')("\\\"", '\"')
             ;
-        
+
 #if BOOST_VERSION > 104500
         quote_char %= char_('\'') | char_('"');
         ustring %= omit[quote_char[_a = _1]]
@@ -237,7 +236,7 @@ struct expression_grammar : qi::grammar<Iterator, expr_node(), space_type>
             >> lit(_a);
         attr %= '[' >> no_skip[+~char_(']')] >> ']';
 #else
-        ustring %= lit('\'') 
+        ustring %= lit('\'')
             >> *(unesc_char | "\\x" >> hex | (char_ - lit('\'')))
             >> lit('\'');
         attr %= '[' >> lexeme[+(char_ - ']')] >> ']';

@@ -19,17 +19,15 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
+// mapnik
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/svg/svg_converter.hpp>
 #include <mapnik/svg/svg_renderer.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
-
 #include <mapnik/symbolizer_helpers.hpp>
-
 
 // boost
 #include <boost/make_shared.hpp>
@@ -46,7 +44,7 @@ void  agg_renderer<T>::process(shield_symbolizer const& sym,
             sym, *feature, prj_trans,
             width_, height_,
             scale_factor_,
-            t_, font_manager_, *detector_);
+            t_, font_manager_, *detector_, query_extent_);
 
     text_renderer<T> ren(pixmap_, font_manager_, *(font_manager_.get_stroker()));
 
@@ -56,7 +54,7 @@ void  agg_renderer<T>::process(shield_symbolizer const& sym,
         {
             render_marker(helper.get_marker_position(placements[ii]),
                           helper.get_marker(),
-                          helper.get_transform(),
+                          helper.get_image_transform(),
                           sym.get_opacity());
 
             ren.prepare_glyphs(&(placements[ii]));

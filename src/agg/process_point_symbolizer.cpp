@@ -19,16 +19,17 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
 // mapnik
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/metawriter.hpp>
+#include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/expression_evaluator.hpp>
 
+// agg
 #include "agg_basics.h"
 #include "agg_rendering_buffer.h"
 #include "agg_pixfmt_rgba.h"
@@ -69,7 +70,7 @@ void agg_renderer<T>::process(point_symbolizer const& sym,
         double w = (*marker)->width();
         double h = (*marker)->height();
         agg::trans_affine tr;
-        boost::array<double,6> const& m = sym.get_transform();
+        boost::array<double,6> const& m = sym.get_image_transform();
         tr.load_from(&m[0]);
         double px0 = - 0.5 * w;
         double py0 = - 0.5 * h;
@@ -118,7 +119,7 @@ void agg_renderer<T>::process(point_symbolizer const& sym,
                 detector_->has_placement(label_ext))
             {
 
-                render_marker(pixel_position(x - 0.5 * w, y - 0.5 * h) ,**marker,tr, sym.get_opacity(), angle);
+                render_marker(pixel_position(x - 0.5 * w, y - 0.5 * h), **marker, tr, sym.get_opacity());
 
                 if (!sym.get_ignore_placement())
                     detector_->insert(label_ext);

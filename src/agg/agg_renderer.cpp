@@ -19,56 +19,28 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
 // mapnik
+#include <mapnik/graphics.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
+#include <mapnik/agg_helpers.hpp>
+#include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/unicode.hpp>
-#include <mapnik/config_error.hpp>
 #include <mapnik/font_set.hpp>
 #include <mapnik/parse_path.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/svg/svg_converter.hpp>
 #include <mapnik/svg/svg_renderer.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
-
-
+#include <mapnik/image_compositing.hpp>
+#include <mapnik/image_filter.hpp>
 // agg
 #define AGG_RENDERING_BUFFER row_ptr_cache<int8u>
 #include "agg_rendering_buffer.h"
 #include "agg_pixfmt_rgba.h"
-#include "agg_rasterizer_scanline_aa.h"
-#include "agg_basics.h"
-#include "agg_scanline_p.h"
 #include "agg_scanline_u.h"
-#include "agg_renderer_scanline.h"
-#include "agg_path_storage.h"
-#include "agg_span_allocator.h"
-#include "agg_span_pattern_rgba.h"
-#include "agg_image_accessors.h"
-#include "agg_conv_stroke.h"
-#include "agg_conv_dash.h"
-#include "agg_conv_contour.h"
-#include "agg_conv_clip_polyline.h"
-#include "agg_vcgen_stroke.h"
-#include "agg_conv_adaptor_vcgen.h"
-#include "agg_conv_smooth_poly1.h"
-#include "agg_conv_marker.h"
-#include "agg_vcgen_markers_term.h"
-#include "agg_renderer_outline_aa.h"
-#include "agg_rasterizer_outline_aa.h"
-#include "agg_rasterizer_outline.h"
-#include "agg_renderer_outline_image.h"
-#include "agg_span_allocator.h"
-#include "agg_span_pattern_rgba.h"
-#include "agg_renderer_scanline.h"
-#include "agg_pattern_filters_rgba.h"
-#include "agg_renderer_outline_image.h"
-#include "agg_vpgen_clip_polyline.h"
-#include "agg_arrowhead.h"
-
 
 // boost
 #include <boost/utility.hpp>
@@ -76,10 +48,6 @@
 #include <boost/math/special_functions/round.hpp>
 
 // stl
-#ifdef MAPNIK_DEBUG
-#include <iostream>
-#endif
-
 #include <cmath>
 
 namespace mapnik
@@ -115,6 +83,9 @@ template <typename T>
 agg_renderer<T>::agg_renderer(Map const& m, T & pixmap, double scale_factor, unsigned offset_x, unsigned offset_y)
     : feature_style_processor<agg_renderer>(m, scale_factor),
       pixmap_(pixmap),
+      internal_buffer_(),
+      current_buffer_(&pixmap),      
+      style_level_compositing_(false),
       width_(pixmap_.width()),
       height_(pixmap_.height()),
       scale_factor_(scale_factor),
@@ -132,6 +103,9 @@ agg_renderer<T>::agg_renderer(Map const& m, T & pixmap, boost::shared_ptr<label_
                               double scale_factor, unsigned offset_x, unsigned offset_y)
     : feature_style_processor<agg_renderer>(m, scale_factor),
       pixmap_(pixmap),
+      internal_buffer_(),
+      current_buffer_(&pixmap),
+      style_level_compositing_(false),
       width_(pixmap_.width()),
       height_(pixmap_.height()),
       scale_factor_(scale_factor),
@@ -174,9 +148,8 @@ void agg_renderer<T>::setup(Map const &m)
             }
         }
     }
-#ifdef MAPNIK_DEBUG
-    std::clog << "scale=" << m.scale() << "\n";
-#endif
+
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Scale=" << m.scale();
 }
 
 template <typename T>
@@ -185,48 +158,101 @@ agg_renderer<T>::~agg_renderer() {}
 template <typename T>
 void agg_renderer<T>::start_map_processing(Map const& map)
 {
-#ifdef MAPNIK_DEBUG
-    std::clog << "start map processing bbox="
-              << map.get_current_extent() << "\n";
-#endif
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start map processing bbox=" << map.get_current_extent();
+
     ras_ptr->clip_box(0,0,width_,height_);
 }
 
 template <typename T>
 void agg_renderer<T>::end_map_processing(Map const& )
 {
-#ifdef MAPNIK_DEBUG
-    std::clog << "end map processing\n";
-#endif
+
+    agg::rendering_buffer buf(current_buffer_->raw_data(),width_,height_, width_ * 4);
+    agg::pixfmt_rgba32 pixf(buf);
+    pixf.demultiply();
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End map processing";
 }
 
 template <typename T>
-void agg_renderer<T>::start_layer_processing(layer const& lay)
+void agg_renderer<T>::start_layer_processing(layer const& lay, box2d<double> const& query_extent)
 {
-#ifdef MAPNIK_DEBUG
-    std::clog << "start layer processing : " << lay.name()  << "\n";
-    std::clog << "datasource = " << lay.datasource().get() << "\n";
-#endif
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start processing layer=" << lay.name();
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: -- datasource=" << lay.datasource().get();
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: -- query_extent=" << query_extent;
+
     if (lay.clear_label_cache())
     {
         detector_->clear();
     }
+    query_extent_ = query_extent;
 }
 
 template <typename T>
 void agg_renderer<T>::end_layer_processing(layer const&)
 {
-#ifdef MAPNIK_DEBUG
-    std::clog << "end layer processing\n";
-#endif
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End layer processing";
 }
 
 template <typename T>
-void agg_renderer<T>::render_marker(pixel_position const& pos, marker const& marker, agg::trans_affine const& tr, double opacity, double angle)
+void agg_renderer<T>::start_style_processing(feature_type_style const& st)
+{
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start processing style";
+    if (st.comp_op()) style_level_compositing_ = true;
+    else style_level_compositing_ = false;
+    
+    if (style_level_compositing_ || st.image_filters().size() > 0)
+    {
+        if (!internal_buffer_)
+            internal_buffer_ = boost::make_shared<buffer_type>(pixmap_.width(),pixmap_.height()); 
+        else
+            internal_buffer_->set_background(color(0,0,0,0)); // fill with transparent colour        
+        current_buffer_ = internal_buffer_.get();
+    }
+    else
+    {
+        current_buffer_ = &pixmap_;
+    }
+}
+
+template <typename T>
+void agg_renderer<T>::end_style_processing(feature_type_style const& st)
+{
+    bool blend_from = false;
+    if (st.image_filters().size() > 0)
+    {
+        blend_from = true;
+        mapnik::filter::filter_visitor<image_32> visitor(*current_buffer_);
+        BOOST_FOREACH(mapnik::filter::filter_type filter_tag, st.image_filters())
+        {
+            boost::apply_visitor(visitor, filter_tag);
+        }         
+    }
+    
+    if (st.comp_op())
+    {
+        composite(pixmap_.data(),current_buffer_->data(), *st.comp_op(), 1.0f, 0, 0, false, false);
+    }   
+    else if (blend_from)
+    {                
+        composite(pixmap_.data(),current_buffer_->data(), src_over, 1.0f, 0, 0, false,false);
+    }
+    
+    // apply any 'direct' image filters    
+    mapnik::filter::filter_visitor<image_32> visitor(pixmap_);
+    BOOST_FOREACH(mapnik::filter::filter_type filter_tag, st.direct_image_filters())
+    {
+        boost::apply_visitor(visitor, filter_tag);
+    }   
+    
+    MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End processing style";
+}
+
+template <typename T>
+void agg_renderer<T>::render_marker(pixel_position const& pos, marker const& marker, agg::trans_affine const& tr, double opacity)
 {
     if (marker.is_vector())
     {
-        typedef agg::pixfmt_rgba32_plain pixfmt;
+        typedef agg::pixfmt_rgba32 pixfmt;
         typedef agg::renderer_base<pixfmt> renderer_base;
         typedef agg::renderer_scanline_aa_solid<renderer_base> renderer_solid;
 
@@ -241,34 +267,36 @@ void agg_renderer<T>::render_marker(pixel_position const& pos, marker const& mar
         coord<double,2> c = bbox.center();
         // center the svg marker on '0,0'
         agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
-        //add dynamic rotate
-        mtx.rotate(-angle * agg::pi / 180.0);
         // apply symbol transformation to get to map space
         mtx *= tr;
         mtx *= agg::trans_affine_scaling(scale_factor_);
         // render the marker at the center of the marker box
         mtx.translate(pos.x+0.5 * marker.width(), pos.y+0.5 * marker.height());
-
+        using namespace mapnik::svg;
         vertex_stl_adapter<svg_path_storage> stl_storage((*marker.get_vector_data())->source());
         svg_path_adapter svg_path(stl_storage);
         svg_renderer<svg_path_adapter,
             agg::pod_bvector<path_attributes>,
             renderer_solid,
-            agg::pixfmt_rgba32_plain> svg_renderer(svg_path,
+            agg::pixfmt_rgba32> svg_renderer(svg_path,
                                                    (*marker.get_vector_data())->attributes());
-
+        
         svg_renderer.render(*ras_ptr, sl, renb, mtx, opacity, bbox);
-
-
     }
     else
-    {   
+    {
         //TODO: Add subpixel support
         pixmap_.set_rectangle_alpha2(**marker.get_bitmap_data(),
                                      boost::math::iround(pos.x),
                                      boost::math::iround(pos.y),
                                      opacity);
     }
+}
+
+template <typename T>
+void agg_renderer<T>::painted(bool painted)
+{
+    pixmap_.painted(painted);
 }
 
 template class agg_renderer<image_32>;

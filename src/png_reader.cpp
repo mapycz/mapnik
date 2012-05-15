@@ -20,8 +20,7 @@
  *
  *****************************************************************************/
 
-//$Id: png_reader.cpp 33 2005-04-04 13:01:03Z pavlenko $
-
+#include <mapnik/debug.hpp>
 #include <mapnik/image_reader.hpp>
 
 extern "C"
@@ -31,10 +30,6 @@ extern "C"
 
 #include <boost/scoped_array.hpp>
 #include <boost/utility.hpp>
-
-#ifdef MAPNIK_DEBUG
-#include <iostream>
-#endif
 
 namespace mapnik
 {
@@ -134,9 +129,9 @@ void png_reader::init()
 
     width_=width;
     height_=height;
-#ifdef MAPNIK_DEBUG
-    std::clog<<"bit_depth="<<bit_depth_<<" color_type="<<color_type_<<std::endl;
-#endif
+
+    MAPNIK_LOG_DEBUG(png_reader) << "png_reader: bit_depth=" << bit_depth_ << ",color_type=" << color_type_;
+
     png_destroy_read_struct(&png_ptr,&info_ptr,0);
     fclose(fp);
 }
@@ -195,22 +190,43 @@ void png_reader::read(unsigned x0, unsigned y0,image_data_32& image)
     if (png_get_gAMA(png_ptr, info_ptr, &gamma))
         png_set_gamma(png_ptr, 2.2, gamma);
 
-    png_read_update_info(png_ptr, info_ptr);
-
-    //START read image rows
-    unsigned w=std::min(unsigned(image.width()),width_);
-    unsigned h=std::min(unsigned(image.height()),height_);
-    unsigned rowbytes=png_get_rowbytes(png_ptr, info_ptr);
-    boost::scoped_array<png_byte> row(new png_byte[rowbytes]);
-    for (unsigned i=0;i<height_;++i)
+    if (x0 == 0 && y0 == 0 && image.width() >= width_ && image.height() >= height_)
     {
-        png_read_row(png_ptr,row.get(),0);
-        if (i>=y0 && i<h)
+
+        if (png_get_interlace_type(png_ptr,info_ptr) == PNG_INTERLACE_ADAM7)
         {
-            image.setRow(i-y0,reinterpret_cast<unsigned*>(&row[x0]),w);
+            png_set_interlace_handling(png_ptr); // FIXME: libpng bug?
+            // according to docs png_read_image
+            // "..automatically handles interlacing,
+            // so you don't need to call png_set_interlace_handling()"
         }
+        png_read_update_info(png_ptr, info_ptr);
+        // we can read whole image at once
+        // alloc row pointers
+        boost::scoped_array<png_byte*> rows(new png_bytep[height_]);
+        for (unsigned i=0; i<height_; ++i)
+            rows[i] = (png_bytep)image.getRow(i);
+        png_read_image(png_ptr, rows.get());
     }
-    //END
+    else
+    {
+        png_read_update_info(png_ptr, info_ptr);
+        unsigned w=std::min(unsigned(image.width()),width_);
+        unsigned h=std::min(unsigned(image.height()),height_);
+        unsigned rowbytes=png_get_rowbytes(png_ptr, info_ptr);
+        boost::scoped_array<png_byte> row(new png_byte[rowbytes]);
+        //START read image rows
+        for (unsigned i=0;i<height_;++i)
+        {
+            png_read_row(png_ptr,row.get(),0);
+            if (i>=y0 && i<h)
+            {
+                image.setRow(i-y0,reinterpret_cast<unsigned*>(&row[x0]),w);
+            }
+        }
+        //END
+    }
+
     png_read_end(png_ptr,0);
     png_destroy_read_struct(&png_ptr, &info_ptr,0);
     fclose(fp);

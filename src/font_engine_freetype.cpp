@@ -21,6 +21,7 @@
  *****************************************************************************/
 
 // mapnik
+#include <mapnik/debug.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/text_properties.hpp>
 #include <mapnik/graphics.hpp>
@@ -30,6 +31,7 @@
 // boost
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/make_shared.hpp>
 #include <sstream>
 
 // icu
@@ -70,11 +72,10 @@ bool freetype_engine::is_font_file(std::string const& file_name)
 
 bool freetype_engine::register_font(std::string const& file_name)
 {
-    if (!boost::filesystem::is_regular_file(file_name) || !is_font_file(file_name)) return false;
 #ifdef MAPNIK_THREADSAFE
     mutex::scoped_lock lock(mutex_);
 #endif
-    FT_Library library;
+    FT_Library library = 0;
     FT_Error error = FT_Init_FreeType(&library);
     if (error)
     {
@@ -82,36 +83,52 @@ bool freetype_engine::register_font(std::string const& file_name)
     }
 
     FT_Face face = 0;
+    int num_faces = 0;
+    bool success = false;
     // some font files have multiple fonts in a file
     // the count is in the 'root' face library[0]
     // see the FT_FaceRec in freetype.h
-    for ( int i = 0; face == 0 || i < face->num_faces; i++ ) {
+    for ( int i = 0; face == 0 || i < num_faces; i++ ) {
         // if face is null then this is the first face
         error = FT_New_Face (library,file_name.c_str(),i,&face);
         if (error)
         {
-            FT_Done_FreeType(library);
-            return false;
+            break;
         }
+        // store num_faces locally, after FT_Done_Face it can not be accessed any more
+        if (!num_faces)
+            num_faces = face->num_faces;
         // some fonts can lack names, skip them
         // http://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#FT_FaceRec
-        if (face->family_name && face->style_name) {
+        if (face->family_name && face->style_name)
+        {
             std::string name = std::string(face->family_name) + " " + std::string(face->style_name);
-            name2file_.insert(std::make_pair(name, std::make_pair(i,file_name)));
-            FT_Done_Face(face);
-            //FT_Done_FreeType(library);
-            //return true;
-        } else {
-            FT_Done_Face(face);
-            FT_Done_FreeType(library);
+            // skip fonts with leading . in name
+            if (!boost::algorithm::starts_with(name,"."))
+            {
+                success = true;
+                name2file_.insert(std::make_pair(name, std::make_pair(i,file_name)));
+            }
+        }
+        else
+        {
             std::ostringstream s;
-            s << "Error: unable to load invalid font file which lacks identifiable family and style name: '"
-              << file_name << "'";
-            throw std::runtime_error(s.str());
+            s << "Warning: unable to load font file '" << file_name << "' ";
+            if (!face->family_name && !face->style_name)
+                s << "which lacks both a family name and style name";
+            else if (face->family_name)
+                s << "which reports a family name of '" << std::string(face->family_name) << "' and lacks a style name";
+            else if (face->style_name)
+                s << "which reports a style name of '" << std::string(face->style_name) << "' and lacks a family name";
+
+            MAPNIK_LOG_DEBUG(font_engine_freetype) << "freetype_engine: " << s.str();
         }
     }
-    FT_Done_FreeType(library);
-    return true;
+    if (face)
+        FT_Done_Face(face);
+    if (library)
+        FT_Done_FreeType(library);
+    return success;
 }
 
 bool freetype_engine::register_fonts(std::string const& dir, bool recurse)
@@ -125,26 +142,34 @@ bool freetype_engine::register_fonts(std::string const& dir, bool recurse)
         return mapnik::freetype_engine::register_font(dir);
 
     boost::filesystem::directory_iterator end_itr;
+    bool success = false;
     for (boost::filesystem::directory_iterator itr(dir); itr != end_itr; ++itr)
     {
+#if (BOOST_FILESYSTEM_VERSION == 3)
+        std::string file_name = itr->path().string();
+#else // v2
+        std::string file_name = itr->string();
+#endif
         if (boost::filesystem::is_directory(*itr) && recurse)
         {
-#if (BOOST_FILESYSTEM_VERSION == 3)
-            if (!register_fonts(itr->path().string(), true)) return false;
-#else // v2
-            if (!register_fonts(itr->string(), true)) return false;
-#endif
+            success = register_fonts(file_name, true);
         }
         else
         {
 #if (BOOST_FILESYSTEM_VERSION == 3)
-            mapnik::freetype_engine::register_font(itr->path().string());
+            std::string base_name = itr->path().filename().string();
 #else // v2
-            mapnik::freetype_engine::register_font(itr->string());
+            std::string base_name = itr->filename();
 #endif
+            if (!boost::algorithm::starts_with(base_name,".") &&
+                     boost::filesystem::is_regular_file(file_name) &&
+                     is_font_file(file_name))
+            {
+                success = mapnik::freetype_engine::register_font(file_name);
+            }
         }
     }
-    return true;
+    return success;
 }
 
 
@@ -178,7 +203,7 @@ face_ptr freetype_engine::create_face(std::string const& family_name)
                                       &face);
         if (!error)
         {
-            return face_ptr (new font_face(face));
+            return boost::make_shared<font_face>(face);
         }
     }
     return face_ptr();
@@ -190,7 +215,7 @@ stroker_ptr freetype_engine::create_stroker()
     FT_Error error = FT_Stroker_New(library_, &s);
     if (!error)
     {
-        return stroker_ptr(new stroker(s));
+        return boost::make_shared<stroker>(s);
     }
     return stroker_ptr();
 }
@@ -290,13 +315,11 @@ void font_face_set::get_string_info(string_info & info, UnicodeString const& ust
 }
 
 template <typename T>
-text_renderer<T>::text_renderer (pixmap_type & pixmap, face_manager<freetype_engine> &font_manager_, stroker & s)
+text_renderer<T>::text_renderer (pixmap_type & pixmap, face_manager<freetype_engine> &font_manager_, stroker & s, composite_mode_e comp_op)
     : pixmap_(pixmap),
       font_manager_(font_manager_),
-      stroker_(s)
-{
-
-}
+      stroker_(s),
+      comp_op_(comp_op) {}
 
 template <typename T>
 box2d<double> text_renderer<T>::prepare_glyphs(text_path *path)
@@ -319,11 +342,9 @@ box2d<double> text_renderer<T>::prepare_glyphs(text_path *path)
 
         path->vertex(&c, &x, &y, &angle);
 
-#ifdef MAPNIK_DEBUG
         // TODO Enable when we have support for setting verbosity
-        //std::clog << "prepare_glyphs: " << c << "," << x <<
-        //    "," << y << "," << angle << std::endl;
-#endif
+        // MAPNIK_LOG_DEBUG(font_engine_freetype) << "text_renderer: prepare_glyphs="
+        //                                        << c << "," << x << "," << y << "," << angle;
 
         FT_BBox glyph_bbox;
         FT_Glyph image;
@@ -379,6 +400,26 @@ box2d<double> text_renderer<T>::prepare_glyphs(text_path *path)
 }
 
 template <typename T>
+void composite_bitmap(T & pixmap, FT_Bitmap *bitmap, unsigned rgba, int x, int y, double opacity, composite_mode_e comp_op)
+{
+    int x_max=x+bitmap->width;
+    int y_max=y+bitmap->rows;
+    int i,p,j,q;
+
+    for (i=x,p=0;i<x_max;++i,++p)
+    {
+        for (j=y,q=0;j<y_max;++j,++q)
+        {
+            unsigned gray=bitmap->buffer[q*bitmap->width+p];
+            if (gray)
+            {
+                pixmap.composite_pixel(comp_op, i, j, rgba, gray, opacity);
+            }
+        }
+    }
+}
+
+template <typename T>
 void text_renderer<T>::render(pixel_position pos)
 {
     FT_Error  error;
@@ -407,9 +448,12 @@ void text_renderer<T>::render(pixel_position pos)
             {
 
                 FT_BitmapGlyph bit = (FT_BitmapGlyph)g;
-                render_bitmap(&bit->bitmap, itr->properties->halo_fill.rgba(),
-                              bit->left,
-                              height - bit->top, itr->properties->text_opacity);
+                composite_bitmap(pixmap_, &bit->bitmap, itr->properties->halo_fill.rgba(),
+                                 bit->left,
+                                 height - bit->top, 
+                                 itr->properties->text_opacity,
+                                 comp_op_
+                    );
             }
         }
         FT_Done_Glyph(g);
@@ -425,9 +469,16 @@ void text_renderer<T>::render(pixel_position pos)
         {
 
             FT_BitmapGlyph bit = (FT_BitmapGlyph)itr->image;
-            render_bitmap(&bit->bitmap, itr->properties->fill.rgba(),
-                          bit->left,
-                          height - bit->top, itr->properties->text_opacity);
+            //render_bitmap(&bit->bitmap, itr->properties->fill.rgba(),
+            //              bit->left,
+            //              height - bit->top, itr->properties->text_opacity);
+            
+            composite_bitmap(pixmap_, &bit->bitmap, itr->properties->fill.rgba(),
+                             bit->left,
+                             height - bit->top, 
+                             itr->properties->text_opacity,
+                             comp_op_
+                );
         }
     }
 }
@@ -474,10 +525,10 @@ boost::mutex freetype_engine::mutex_;
 #endif
 std::map<std::string,std::pair<int,std::string> > freetype_engine::name2file_;
 template void text_renderer<image_32>::render(pixel_position);
-template text_renderer<image_32>::text_renderer(image_32&, face_manager<freetype_engine>&, stroker&);
+template text_renderer<image_32>::text_renderer(image_32&, face_manager<freetype_engine>&, stroker&, composite_mode_e);
 template box2d<double>text_renderer<image_32>::prepare_glyphs(text_path*);
 
-template void text_renderer<grid>::render_id(int, pixel_position, double);
-template text_renderer<grid>::text_renderer(grid&, face_manager<freetype_engine>&, stroker&);
+template void text_renderer<grid>::render_id(int, pixel_position, double );
+template text_renderer<grid>::text_renderer(grid&, face_manager<freetype_engine>&, stroker&, composite_mode_e);
 template box2d<double>text_renderer<grid>::prepare_glyphs(text_path*);
 }

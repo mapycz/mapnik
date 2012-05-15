@@ -24,6 +24,7 @@
 #define MAPNIK_SVG_RENDERER_HPP
 
 // mapnik
+#include <mapnik/debug.hpp>
 #include <mapnik/svg/svg_path_attributes.hpp>
 #include <mapnik/gradient.hpp>
 #include <mapnik/box2d.hpp>
@@ -106,8 +107,8 @@ class svg_renderer : boost::noncopyable
     typedef agg::conv_transform<curved_stroked_type> curved_stroked_trans_type;
     typedef agg::conv_transform<curved_type>         curved_trans_type;
     typedef agg::conv_contour<curved_trans_type>     curved_trans_contour_type;
-    typedef agg::renderer_base<PixelFormat> renderer_base;
-
+    typedef agg::renderer_base<PixelFormat>          renderer_base;
+    
 public:
     svg_renderer(VertexSource & source, AttributeSource const& attributes)
         : source_(source),
@@ -141,11 +142,11 @@ public:
         BOOST_FOREACH ( mapnik::stop_pair const& st, grad.get_stop_array() )
         {
             mapnik::color const& stop_color = st.second;
-            unsigned r= stop_color.red();
-            unsigned g= stop_color.green();
-            unsigned b= stop_color.blue();
-            unsigned a= stop_color.alpha();
-            //std::clog << "r: " << r << " g: " << g << " b: " << b << "a: " << a << "\n";
+            unsigned r = stop_color.red();
+            unsigned g = stop_color.green();
+            unsigned b = stop_color.blue();
+            unsigned a = stop_color.alpha();
+            //MAPNIK_LOG_DEBUG(svg_renderer) << "svg_renderer: r=" << r << ",g=" << g << ",b=" << b << ",a=" << a;
             m_gradient_lut.add_color(st.first, agg::rgba8(r, g, b, int(a * opacity)));
         }
         m_gradient_lut.build_lut();
@@ -268,6 +269,8 @@ public:
 
             transform *= mtx;
             double scl = transform.scale();
+            curved_stroked_trans.transformer(transform);
+            curved_trans.transformer(transform);
             //curved_.approximation_method(curve_inc);
             curved_.approximation_scale(scl);
             curved_.angle_tolerance(0.0);
@@ -278,7 +281,8 @@ public:
             {
                 ras.reset();
 
-                if(fabs(curved_trans_contour.width()) < 0.0001)
+                // https://github.com/mapnik/mapnik/issues/1129
+                if(fabs(curved_trans_contour.width()) <= 1)
                 {
                     ras.add_path(curved_trans, attr.index);
                 }
@@ -373,6 +377,8 @@ public:
 
             transform *= mtx;
             double scl = transform.scale();
+            curved_stroked_trans.transformer(transform);
+            curved_trans.transformer(transform);
             //curved_.approximation_method(curve_inc);
             curved_.approximation_scale(scl);
             curved_.angle_tolerance(0.0);
@@ -383,7 +389,7 @@ public:
             {
                 ras.reset();
 
-                if(fabs(curved_trans_contour.width()) < 0.0001)
+                if(fabs(curved_trans_contour.width()) <= 1)
                 {
                     ras.add_path(curved_trans, attr.index);
                 }

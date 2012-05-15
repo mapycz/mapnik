@@ -19,11 +19,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
+// boost
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
+// mapnik
 #include "mapnik_enumeration.hpp"
 #include <mapnik/feature_type_style.hpp>
 
@@ -101,7 +102,7 @@ void export_style()
         .add_property("filter_mode",
                       &feature_type_style::get_filter_mode,
                       &feature_type_style::set_filter_mode,
-                      "Set/get the placement of the label")
+                      "Set/get the filter mode of the style")
         ;
 
 }
