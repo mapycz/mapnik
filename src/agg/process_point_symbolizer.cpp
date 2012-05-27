@@ -84,18 +84,6 @@ void agg_renderer<T>::process(point_symbolizer const& sym,
         label_ext.expand_to_include(px2, py2);
         label_ext.expand_to_include(px3, py3);
 
-
-        double angle = 0.0;
-        expression_ptr angle_expr = sym.get_orientation();
-        if (angle_expr)
-        {
-            // apply rotation
-            value_type result = boost::apply_visitor(evaluate<Feature,value_type>(*feature),*angle_expr);
-            angle = result.to_double();
-        }
-        
-
-
         for (unsigned i=0; i<feature->num_geometries(); ++i)
         {
             geometry_type const& geom = feature->get_geometry(i);

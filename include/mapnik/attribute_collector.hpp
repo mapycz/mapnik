@@ -106,12 +106,6 @@ struct symbolizer_attributes : public boost::static_visitor<>
         {
             path_processor_type::collect_attributes(*filename_expr,names_);
         }
-        expression_ptr const& orientation_expr = sym.get_orientation();
-        if (orientation_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*orientation_expr);
-        }
         collect_metawriter(sym);
 
     }

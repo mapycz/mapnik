@@ -26,7 +26,6 @@
 // mapnik
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/enumeration.hpp>
-#include <mapnik/filter_factory.hpp>
 
 namespace mapnik
 {
@@ -51,14 +50,11 @@ struct MAPNIK_DECL point_symbolizer :
     point_placement_e get_point_placement() const;
     void set_ignore_placement(bool ignore_placement);
     bool get_ignore_placement() const;
-    expression_ptr get_orientation() const; // orientation (rotation angle)
-    void set_orientation(expression_ptr expr);
 
 private:
     bool overlap_;
     point_placement_e point_p_;
     bool ignore_placement_;
-    expression_ptr orientation_;
 };
 }
 
