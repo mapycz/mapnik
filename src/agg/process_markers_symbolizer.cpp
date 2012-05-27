@@ -73,8 +73,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
     renderer_base renb(pixf);
     renderer_type ren(renb);
     agg::trans_affine tr;
-    boost::array<double,6> const& m = sym.get_image_transform();
-    tr.load_from(&m[0]);
+    evaluate_transform(tr, *feature, sym.get_image_transform());
     tr = agg::trans_affine_scaling(scale_factor_) * tr;
     std::string filename = path_processor_type::evaluate(*sym.get_filename(), *feature);
     marker_placement_e placement_method = sym.get_marker_placement();
@@ -94,13 +93,10 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             }
             boost::optional<path_ptr> marker = (*mark)->get_vector_data();
             box2d<double> const& bbox = (*marker)->bounding_box();
-            double center_x = 0.5 * (bbox.minx() + bbox.maxx());
-            double center_y = 0.5 * (bbox.miny() + bbox.maxy());
-            double w = (*mark)->width();
-            double h = (*mark)->height();
+            coord2d const center = bbox.center();
 
-            agg::trans_affine recenter = agg::trans_affine_translation(-center_x, -center_y);
-            agg::trans_affine recenter_tr = recenter * tr;
+            agg::trans_affine_translation const recenter(-center.x, -center.y);
+            agg::trans_affine const recenter_tr = recenter * tr;
             box2d<double> extent = bbox * recenter_tr;
 
             using namespace mapnik::svg;
@@ -130,7 +126,11 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                         detector_->has_placement(extent))
                     {
 
-                        render_marker(pixel_position(x - 0.5 * w, y - 0.5 * h), **mark, tr, sym.get_opacity(), sym.comp_op());
+                        render_marker(pixel_position(x, y), **mark, tr, sym.get_opacity(), sym.comp_op());
+
+                        if (/* DEBUG */ 0) {
+                            debug_draw_box(buf, extent, 0, 0, 0.0);
+                        }
 
                         // TODO - impl this for markers?
                         //if (!sym.get_ignore_placement())
@@ -158,27 +158,14 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                         svg_renderer.render(*ras_ptr, sl, renb, matrix, sym.get_opacity(),bbox);
 
                         if (/* DEBUG */ 0) {
-                            // blue outline showing the box used for collision detection
-                            box2d<double> box = extent * agg::trans_affine_rotation(angle);
-                            double tx = 0, ty = 0;
-                            matrix = agg::trans_affine_rotation(angle);
-                            matrix.translate(x, y);
-                            matrix.transform(&tx, &ty);
-                            // prepare path
-                            agg::path_storage pbox;
-                            pbox.start_new_path();
-                            pbox.move_to(tx + box.minx(), ty + box.miny());
-                            pbox.line_to(tx + box.maxx(), ty + box.miny());
-                            pbox.line_to(tx + box.maxx(), ty + box.maxy());
-                            pbox.line_to(tx + box.minx(), ty + box.maxy());
-                            pbox.line_to(tx + box.minx(), ty + box.miny());
-                            // draw outline
-                            agg::conv_stroke<agg::path_storage> sbox(pbox);
-                            sbox.generator().width(1.0 * scale_factor_);
-                            ras_ptr->reset();
-                            ras_ptr->add_path(sbox);
-                            ren.color(agg::rgba8(0x33, 0x33, 0xff, 0xcc));
-                            agg::render_scanlines(*ras_ptr, sl_line, ren);
+                            agg::trans_affine_rotation r(angle);
+                            debug_draw_box(buf, extent * r, x, y, 0.0);
+                            // note: debug_draw_box(buf, extent, x, y, angle)
+                            //      would draw a rotated box showing the proper
+                            //      bounds of the marker, while the above will
+                            //      draw the box used for collision detection,
+                            //      which embraces the rotated extent but isn't
+                            //      rotated itself
                         }
 
                         if (writer.first)
