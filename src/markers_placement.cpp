@@ -7,6 +7,7 @@
 // agg
 #include "agg_basics.h"
 #include "agg_conv_clip_polyline.h"
+#include "agg_trans_affine.h"
 // stl
 #include <cmath>
 
@@ -194,24 +195,22 @@ bool markers_placement<Locator, Detector>::get_point(
 template <typename Locator, typename Detector>
 box2d<double> markers_placement<Locator, Detector>::perform_transform(double angle, double dx, double dy)
 {
-    double c = cos(angle), s = sin(angle);
     double x1 = size_.minx();
     double x2 = size_.maxx();
     double y1 = size_.miny();
     double y2 = size_.maxy();
 
-    double x0_ = dx + x1 * c - y1 * s;
-    double y0_ = dy + x1 * s + y1 * c;
-    double x1_ = dx + x2 * c - y1 * s;
-    double y1_ = dy + x2 * s + y1 * c;
-    double x2_ = dx + x2 * c - y2 * s;
-    double y2_ = dy + x2 * s + y2 * c;
-    double x3_ = dx + x1 * c - y2 * s;
-    double y3_ = dy + x1 * s + y2 * c;
+    agg::trans_affine tr = agg::trans_affine_rotation(angle).translate(dx, dy);
 
-    box2d<double> result(x0_, y0_, x2_, y2_);
-    result.expand_to_include(x1_, y1_);
-    result.expand_to_include(x3_, y3_);
+    double xA = x1, yA = y1, xB = x2, yB = y1, xC = x2, yC = y2, xD = x1, yD = y2;
+    tr.transform(&xA, &yA);
+    tr.transform(&xB, &yB);
+    tr.transform(&xC, &yC);
+    tr.transform(&xD, &yD);
+
+    box2d<double> result(xA, yA, xB, yB);
+    result.expand_to_include(xC, yC);
+    result.expand_to_include(xD, yD);
     return result;
 }
 
