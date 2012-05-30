@@ -121,6 +121,7 @@ private:
     void ensure_font_face(std::string const& face_name);
     void find_unused_nodes(xml_node const& root);
     void find_unused_nodes_recursive(xml_node const& node, std::stringstream &error_text);
+    void output_node(xml_node const& node, std::ostream& error_text);
 
 
     std::string ensure_relative_to_xml(boost::optional<std::string> opt_path);
@@ -1667,9 +1668,10 @@ void map_parser::find_unused_nodes(xml_node const& root)
 {
     std::stringstream error_message;
     find_unused_nodes_recursive(root, error_message);
-    if (!error_message.str().empty())
-    {
-        throw config_error("The following nodes or attributes were not processed while parsing the xml file:" + error_message.str());
+    std::string msg = error_message.str();
+    if (!msg.empty()) {
+        msg = "The following nodes or attributes were not processed while parsing the xml file:" + msg;
+        MAPNIK_LOG_ERROR(load_map) << msg;
     }
 }
 
@@ -1680,7 +1682,8 @@ void map_parser::find_unused_nodes_recursive(xml_node const& node, std::stringst
         if (node.is_text()) {
             error_message << "\n* text '" << node.text() << "'";
         } else {
-            error_message << "\n* node '" << node.name() << "' in line " << node.line();
+            error_message << "\n* line " << node.line() << ": node ";
+            output_node(node, error_message);
         }
         return; //All attributes and children are automatically unprocessed, too.
     }
@@ -1701,6 +1704,33 @@ void map_parser::find_unused_nodes_recursive(xml_node const& node, std::stringst
     for (; itr!=end; itr++)
     {
         find_unused_nodes_recursive(*itr, error_message);
+    }
+}
+
+void map_parser::output_node(xml_node const& node, std::ostream& os)
+{
+    // start tag
+    os << "<" << node.name();
+    // attributes
+    BOOST_FOREACH (xml_node::attribute_map::const_reference attr, node.get_attributes())
+    {
+        os << " " << attr.first << "='" << attr.second.value << "'";
+    }
+    if (node.begin() == node.end()) {
+        os << " />";
+    }
+    else {
+        os << ">";
+        // contents
+        BOOST_FOREACH (xml_node const& child, node)
+        {
+            if (child.is_text())
+                os << child.text();
+            else
+                output_node(child, os);
+        }
+        // end tag
+        os << "</" << node.name() << ">";
     }
 }
 
