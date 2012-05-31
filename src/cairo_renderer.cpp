@@ -46,6 +46,7 @@
 #include <cairomm/context.h>
 #include <cairomm/surface.h>
 #include <cairo-ft.h>
+#include <cairo-version.h>
 
 // boost
 #include <boost/utility.hpp>
@@ -860,7 +861,7 @@ void cairo_renderer_base::start_map_processing(Map const& map)
                                       mapnik::feature_ptr const& feature,
                                       proj_transform const& prj_trans)
     {
-        typedef coord_transform2<CoordTransform,geometry_type> path_type;
+        typedef coord_transform<CoordTransform,geometry_type> path_type;
 
         cairo_context context(context_);
         context.set_operator(sym.comp_op());
@@ -870,7 +871,7 @@ void cairo_renderer_base::start_map_processing(Map const& map)
         if (height_expr)
         {
             value_type result = boost::apply_visitor(evaluate<Feature,value_type>(*feature), *height_expr);
-            height = 0.7071 * result.to_double();
+            height = result.to_double(); //scale_factor is always 1.0 atm
         }
 
         for (unsigned i = 0; i < feature->num_geometries(); ++i)
@@ -952,11 +953,11 @@ void cairo_renderer_base::start_map_processing(Map const& map)
                     }
                 }
 
-                path_type path(t_, *frame, prj_trans);
-                context.set_color(128, 128, 128, sym.get_opacity());
-                context.add_path(path);
-                context.stroke();
-
+                //path_type path(t_, *frame, prj_trans);
+                //context.set_color(128, 128, 128, sym.get_opacity());
+                //context.add_path(path);
+                //context.stroke();
+                
                 path_type roof_path(t_, *roof, prj_trans);
                 context.set_color(sym.get_fill(), sym.get_opacity());
                 context.add_path(roof_path);
@@ -1032,7 +1033,7 @@ void cairo_renderer_base::start_map_processing(Map const& map)
                 mtx.translate(pos.x+0.5 * marker.width(), pos.y+0.5 * marker.height());
             }
 
-            typedef coord_transform2<CoordTransform,geometry_type> path_type;
+            typedef coord_transform<CoordTransform,geometry_type> path_type;
             agg::trans_affine transform;
             mapnik::path_ptr vmarker = *marker.get_vector_data();
             using namespace mapnik::svg;
@@ -1081,12 +1082,13 @@ void cairo_renderer_base::start_map_processing(Map const& map)
                     }
                     else if(attr.fill_flag)
                     {
-                        context.set_color(attr.fill_color.r,attr.fill_color.g,attr.fill_color.b,attr.opacity*opacity);
+                        double fill_opacity = attr.opacity * opacity * attr.fill_color.opacity();
+                        context.set_color(attr.fill_color.r,attr.fill_color.g,attr.fill_color.b, fill_opacity);
                         context.fill();
                     }
                 }
 
-                if(attr.stroke_gradient.get_gradient_type() != NO_GRADIENT || attr.stroke_flag)
+                if (attr.stroke_gradient.get_gradient_type() != NO_GRADIENT || attr.stroke_flag)
                 {
                     context.add_agg_path(svg_path,attr.index);
                     if(attr.stroke_gradient.get_gradient_type() != NO_GRADIENT)
@@ -1099,9 +1101,10 @@ void cairo_renderer_base::start_map_processing(Map const& map)
                         context.set_gradient(g,bbox);
                         context.stroke();
                     }
-                    else if(attr.stroke_flag)
+                    else if (attr.stroke_flag)
                     {
-                        context.set_color(attr.stroke_color.r,attr.stroke_color.g,attr.stroke_color.b,attr.opacity*opacity);
+                        double stroke_opacity = attr.opacity * opacity * attr.stroke_color.opacity();
+                        context.set_color(attr.stroke_color.r,attr.stroke_color.g,attr.stroke_color.b, stroke_opacity);
                         context.set_line_width(attr.stroke_width);
                         context.set_line_cap(line_cap_enum(attr.line_cap));
                         context.set_line_join(line_join_enum(attr.line_join));
@@ -1210,7 +1213,7 @@ void cairo_renderer_base::start_map_processing(Map const& map)
                                       proj_transform const& prj_trans)
     {
         typedef agg::conv_clip_polyline<geometry_type> clipped_geometry_type;
-        typedef coord_transform2<CoordTransform,clipped_geometry_type> path_type;
+        typedef coord_transform<CoordTransform,clipped_geometry_type> path_type;
 
         std::string filename = path_processor_type::evaluate( *sym.get_filename(), *feature);
         boost::optional<mapnik::marker_ptr> marker = mapnik::marker_cache::instance()->find(filename,true);
@@ -1375,7 +1378,7 @@ void cairo_renderer_base::start_map_processing(Map const& map)
         double scale_factor_ = 1;
 
         typedef agg::conv_clip_polyline<geometry_type> clipped_geometry_type;
-        typedef coord_transform2<CoordTransform,clipped_geometry_type> path_type;
+        typedef coord_transform<CoordTransform,clipped_geometry_type> path_type;
 
         agg::trans_affine tr;
         evaluate_transform(tr, *feature, sym.get_image_transform());
