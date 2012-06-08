@@ -87,7 +87,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
         {
             if (!(*mark)->is_vector())
             {
-                MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: markers_symbolizer do not yet support SVG markers";
+                MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: markers_symbolizer does not yet support non-SVG markers";
 
                 return;
             }
@@ -204,7 +204,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
         double dx = w + (2*strk_width);
         double dy = h + (2*strk_width);
 
-        if (marker_type == ARROW)
+        if (marker_type == MARKER_ARROW)
         {
             extent = arrow_.extent() * tr;
 
@@ -268,7 +268,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
             else
             {
 
-                if (marker_type == ARROW)
+                if (marker_type == MARKER_ARROW)
                     marker.concat_path(arrow_);
 
                 clipped_geometry_type clipped(geom);
@@ -284,7 +284,7 @@ void agg_renderer<T>::process(markers_symbolizer const& sym,
                 {
                     agg::trans_affine matrix;
 
-                    if (marker_type == ELLIPSE)
+                    if (marker_type == MARKER_ELLIPSE)
                     {
                         // todo proper bbox - this is buggy
                         agg::ellipse c(x_t, y_t, rx, ry);

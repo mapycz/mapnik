@@ -110,8 +110,8 @@ operator << (std::basic_ostream<charT,traits>& out,
     s.copyfmt(out);
     s.width(0);
     s << "box2d(" << std::setprecision(16)
-      << e.minx() << " " << e.miny() << ","
-      << e.maxx() << " " << e.maxy() << ")";
+      << e.minx() << ',' << e.miny() << ','
+      << e.maxx() << ',' << e.maxy() << ')';
     out << s.str();
     return out;
 }

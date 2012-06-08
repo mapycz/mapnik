@@ -324,10 +324,8 @@ struct vertex_converter : private boost::noncopyable
                      proj_trans_type const& prj_trans,
                      affine_trans_type const& affine_trans,
                      double scale_factor)
-        : disp_(args_type(boost::cref(b),
-                          boost::ref(ras),
-                          boost::cref(sym),
-                          boost::cref(tr),
+        : disp_(args_type(boost::cref(b), boost::ref(ras),
+                          boost::cref(sym), boost::cref(tr),
                           boost::cref(prj_trans),
                           boost::cref(affine_trans),
                           scale_factor)) {}
