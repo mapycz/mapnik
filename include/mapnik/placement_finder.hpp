@@ -104,10 +104,25 @@ private:
     //orientation: if set to != 0 the placement will be attempted with the given orientation
     //             otherwise it will autodetect the orientation.
     //             If >= 50% of the characters end up upside down, it will be retried the other way.
-    //             RETURN: 1/-1 depending which way up the string ends up being.
+    //
+    //             If p.label_placement != LINE_PLACEMENT, then the original value of
+    //             orientation is ignored, it's set to either +1 (for LINE_LEFT_PLACEMENT)
+    //             or -1 (for LINE_RIGHT_PLACEMENT) and the opposite value is not retried
+    //             when the text ends upside down.
     std::auto_ptr<text_path> get_placement_offset(std::vector<vertex2d> const& path_positions,
                                                   std::vector<double> const& path_distances,
                                                   int & orientation, unsigned index, double distance);
+
+    /// Tries to find a placement on the given line with a single orientation.
+    // Stores a ptr in 'placement' if it finds a possible placement.
+    // Returns true if it finds an upright placement.
+    // Returns false if it finds an upside-down or no placement.
+    bool try_placement_offset(std::auto_ptr<text_path>& placement,
+                              std::vector<vertex2d> const& path_positions,
+                              std::vector<double> const& path_distances,
+                              int& orientation,
+                              unsigned index,
+                              double distance);
 
     ///Tests whether the given text_path be placed without a collision
     // Returns true if it can
