@@ -37,6 +37,8 @@ namespace mapnik
 static const char * label_placement_strings[] = {
     "point",
     "line",
+    "line-left",
+    "line-right",
     "vertex",
     "interior",
     ""

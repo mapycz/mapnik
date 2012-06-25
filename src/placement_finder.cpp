@@ -715,11 +715,14 @@ void placement_finder<DetectorT>::find_line_placements(PathT & shape_path)
 }
 
 template <typename DetectorT>
-std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::vector<vertex2d> const& path_positions,
-                                                                           std::vector<double> const& path_distances,
-                                                                           int & orientation,
-                                                                           unsigned index,
-                                                                           double distance)
+std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset
+    (
+        std::vector<vertex2d> const& path_positions,
+        std::vector<double> const& path_distances,
+        int& orientation,
+        unsigned index,
+        double distance
+    )
 {
     //Check that the given distance is on the given index and find the correct index and distance if not
     while (distance < 0 && index > 1)
@@ -728,7 +731,7 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
         distance += path_distances[index];
     }
     if (index <= 1 && distance < 0) //We've gone off the start, fail out
-        return std::auto_ptr<text_path>(NULL);
+        return std::auto_ptr<text_path>();
 
     //Same thing, checking if we go off the end
     while (index < path_distances.size() && distance > path_distances[index])
@@ -737,12 +740,53 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
         index++;
     }
     if (index >= path_distances.size())
-        return std::auto_ptr<text_path>(NULL);
+        return std::auto_ptr<text_path>();
 
-    //Keep track of the initial index,distance incase we need to re-call get_placement_offset
-    const unsigned initial_index = index;
-    const double initial_distance = distance;
+    bool orientation_forced = false; // Whether orientation was set by placement attribute
+    if (p.label_placement == LINE_LEFT_PLACEMENT)
+    {
+        orientation = 1;
+        orientation_forced = true;
+    }
+    else if (p.label_placement == LINE_RIGHT_PLACEMENT)
+    {
+        orientation = -1;
+        orientation_forced = true;
+    }
 
+    std::auto_ptr<text_path> current_placement;
+    bool upright = try_placement_offset(current_placement, path_positions, path_distances, orientation, index, distance);
+
+    if (!upright && !orientation_forced)
+    {
+        //if we auto-detected the orientation then retry with the opposite orientation
+        orientation = -orientation;
+        // current_placement need not be reset here,
+        // it will either be re-assigned (upright), or not used (!upright)
+        upright = try_placement_offset(current_placement, path_positions, path_distances, orientation, index, distance);
+        if (!upright)
+        {
+            //Otherwise we have failed to find a placement
+            //MAPNIK_LOG_ERROR(placement_finder) << "FAIL: Double upside-down!";
+            return std::auto_ptr<text_path>();
+        }
+    }
+
+    return current_placement;
+}
+
+template <typename DetectorT>
+bool placement_finder<DetectorT>::try_placement_offset
+    (
+        std::auto_ptr<text_path>& placement,
+        std::vector<vertex2d> const& path_positions,
+        std::vector<double> const& path_distances,
+        int& orientation,
+        unsigned index,
+        double distance
+    )
+{
+    // Caller must guarantee that index and distance are valid
     double old_x = path_positions[index-1].x;
     double old_y = path_positions[index-1].y;
 
@@ -755,7 +799,7 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
     double segment_length = path_distances[index];
     if (segment_length == 0) {
         // Not allowed to place across on 0 length segments or discontinuities
-        return std::auto_ptr<text_path>(NULL);
+        return false;
     }
 
     std::auto_ptr<text_path> current_placement(
@@ -766,8 +810,7 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
 
     double angle = atan2(-dy, dx);
 
-    bool orientation_forced = (orientation != 0); // Whether the orientation was set by the caller
-    if (!orientation_forced)
+    if (orientation == 0)
         orientation = (angle > 0.55*M_PI || angle < -0.45*M_PI) ? -1 : 1;
 
     unsigned upside_down_char_count = 0; //Count of characters that are placed upside down.
@@ -783,7 +826,7 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
         //Coordinates this character will start at
         if (segment_length == 0) {
             // Not allowed to place across on 0 length segments or discontinuities
-            return std::auto_ptr<text_path>(NULL);
+            return false;
         }
         double start_x = old_x + dx*distance/segment_length;
         double start_y = old_y + dy*distance/segment_length;
@@ -811,7 +854,7 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
                 if (index >= path_positions.size()) //Bail out if we run off the end of the shape
                 {
                     //MAPNIK_LOG_ERROR(placement_finder) << "FAIL: Out of space";
-                    return std::auto_ptr<text_path>(NULL);
+                    return false;
                 }
                 new_x = path_positions[index].x;
                 new_y = path_positions[index].y;
@@ -848,7 +891,7 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
             fabs(angle_delta) > p.max_char_angle_delta)
         {
             //MAPNIK_LOG_ERROR(placement_finder) << "FAIL: Too Bendy!";
-            return std::auto_ptr<text_path>(NULL);
+            return false;
         }
 
         double render_angle = angle;
@@ -885,28 +928,15 @@ std::auto_ptr<text_path> placement_finder<DetectorT>::get_placement_offset(std::
             upside_down_char_count++;
     }
 
+    placement = current_placement;
+
     //If we placed too many characters upside down
     if (upside_down_char_count >= info_.num_characters()/2.0)
     {
-        //if we auto-detected the orientation then retry with the opposite orientation
-        if (!orientation_forced)
-        {
-            orientation = -orientation;
-            current_placement = get_placement_offset(path_positions,
-                                                     path_distances,
-                                                     orientation,
-                                                     initial_index,
-                                                     initial_distance);
-        }
-        else
-        {
-            //Otherwise we have failed to find a placement
-            //MAPNIK_LOG_ERROR(placement_finder) << "FAIL: Double upside-down!";
-            return std::auto_ptr<text_path>(NULL);
-        }
+        return false;
     }
 
-    return current_placement;
+    return true;
 }
 
 template <typename DetectorT>

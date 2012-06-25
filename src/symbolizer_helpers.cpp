@@ -165,7 +165,9 @@ template <typename FaceManagerT, typename DetectorT>
 void text_symbolizer_helper<FaceManagerT, DetectorT>::initialize_points()
 {
     label_placement_enum how_placed = placement_->properties.label_placement;
-    if (how_placed == LINE_PLACEMENT)
+    if (how_placed == LINE_PLACEMENT ||
+        how_placed == LINE_LEFT_PLACEMENT ||
+        how_placed == LINE_RIGHT_PLACEMENT)
     {
         point_placement_ = false;
         return;
@@ -385,7 +387,10 @@ template <typename FaceManagerT, typename DetectorT>
 pixel_position shield_symbolizer_helper<FaceManagerT, DetectorT>::get_marker_position(text_path const& p)
 {
     position const& pos = placement_->properties.displacement;
-    if (placement_->properties.label_placement == LINE_PLACEMENT) {
+    if (placement_->properties.label_placement == LINE_PLACEMENT ||
+        placement_->properties.label_placement == LINE_LEFT_PLACEMENT ||
+        placement_->properties.label_placement == LINE_RIGHT_PLACEMENT)
+    {
         double lx = p.center.x - pos.first;
         double ly = p.center.y - pos.second;
         double px = lx - 0.5*marker_w_;
