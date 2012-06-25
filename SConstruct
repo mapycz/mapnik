@@ -102,6 +102,7 @@ PLUGINS = { # plugins with external dependencies
             'shape':   {'default':True,'path':None,'inc':None,'lib':None,'lang':'C++'},
             'csv':     {'default':True,'path':None,'inc':None,'lib':None,'lang':'C++'},
             'raster':  {'default':True,'path':None,'inc':None,'lib':None,'lang':'C++'},
+            'geojson': {'default':True,'path':None,'inc':None,'lib':None,'lang':'C++'},
             'kismet':  {'default':False,'path':None,'inc':None,'lib':None,'lang':'C++'},
             }
 
@@ -265,6 +266,7 @@ opts.AddVariables(
     ('CXX', 'The C++ compiler to use to compile mapnik (defaults to g++).', 'g++'),
     ('CC', 'The C compiler used for configure checks of C libs (defaults to gcc).', 'gcc'),
     ('CUSTOM_CXXFLAGS', 'Custom C++ flags, e.g. -I<include dir> if you have headers in a nonstandard directory <include dir>', ''),
+    ('CUSTOM_CFLAGS', 'Custom C flags, e.g. -I<include dir> if you have headers in a nonstandard directory <include dir> (only used for configure checks)', ''),
     ('CUSTOM_LDFLAGS', 'Custom linker flags, e.g. -L<lib dir> if you have libraries in a nonstandard directory <lib dir>', ''),
     EnumVariable('LINKING', "Set library format for libmapnik",'shared', ['shared','static']),
     EnumVariable('RUNTIME_LINK', "Set preference for linking dependencies",'shared', ['shared','static']),
@@ -371,7 +373,7 @@ opts.AddVariables(
 pickle_store = [# Scons internal variables
         'CC', # compiler user to check if c deps compile during configure
         'CXX', # C++ compiler to compile mapnik
-        'CCFLAGS',
+        'CFLAGS',
         'CPPDEFINES',
         'CPPFLAGS', # c preprocessor flags
         'CPPPATH',
@@ -381,6 +383,7 @@ pickle_store = [# Scons internal variables
         'LINKFLAGS',
         'CUSTOM_LDFLAGS', # user submitted
         'CUSTOM_CXXFLAGS', # user submitted
+        'CUSTOM_CFLAGS', # user submitted
         'MAPNIK_LIB_NAME',
         'LINK',
         'RUNTIME_LINK',
@@ -1011,8 +1014,10 @@ if not preconfigured:
     env['CPPPATH'] = ['#include', '#']
     env['LIBPATH'] = ['#src']
 
-    # set any custom cxxflags to come first
+    # set any custom cxxflags and ldflags to come first
     env.Append(CXXFLAGS = env['CUSTOM_CXXFLAGS'])
+    env.Append(CFLAGS = env['CUSTOM_CFLAGS'])
+    env.Append(LINKFLAGS = env['CUSTOM_LDFLAGS'])
 
     ### platform specific bits
 
@@ -1524,28 +1529,21 @@ if not preconfigured:
 
             if not conf.CheckHeader(header='Python.h',language='C'):
                 color_print(1,'Could not find required header files for the Python language (version %s)' % env['PYTHON_VERSION'])
-                env.Replace(**backup)
                 Exit(1)
-            else:
-                env.Replace(**backup)
 
             if (int(majver), int(minver)) < (2, 2):
                 color_print(1,"Python version 2.2 or greater required")
                 Exit(1)
 
             if env['BOOST_PYTHON_LIB']:
-                env.Append(LIBS='python%s' % env['PYTHON_VERSION'])
                 if not conf.CheckLibWithHeader(libs=[env['BOOST_PYTHON_LIB']], header='boost/python/detail/config.hpp', language='C++'):
                     color_print(1, 'Could not find library %s for boost python' % env['BOOST_PYTHON_LIB'])
-                    env.Replace(**backup)
                     Exit(1)
-                else:
-                    env.Replace(**backup)
 
             color_print(4,'Bindings Python version... %s' % env['PYTHON_VERSION'])
             color_print(4,'Python %s prefix... %s' % (env['PYTHON_VERSION'], env['PYTHON_SYS_PREFIX']))
             color_print(4,'Python bindings will install in... %s' % os.path.normpath(env['PYTHON_INSTALL_LOCATION']))
-
+            env.Replace(**backup)
 
         # if requested, sort LIBPATH and CPPPATH one last time before saving...
         if env['PRIORITIZE_LINKING']:
