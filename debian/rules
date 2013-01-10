@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+
+UPVER := $(shell dpkg-parsechangelog | grep ^Version | cut -d' ' -f2 | cut -d- -f1 | cut -d+ -f1)
+TARNAME := mapnik_$(UPVER)+ds1.orig.tar
+
+# scons flags
+SCONS_FLAGS := INPUT_PLUGINS=gdal,geos,kismet,ogr,osm,postgis,raster,rasterlite,shape,sqlite
+SCONS_FLAGS += PROJ_INCLUDES=/usr/include PROJ_LIBS=/usr/lib
+SCONS_FLAGS += SYSTEM_FONTS=/usr/share/fonts/truetype/ttf-dejavu
+SCONS_FLAGS += XMLPARSER=libxml2
+SCONS_FLAGS += PREFIX=/usr LIB_DIR_NAME=/mapnik/2.0
+
+override_dh_auto_configure:
+	scons $(SCONS_FLAGS) \
+		CCFLAGS="$(CFLAGS)" \
+		configure JOBS=20
+
+override_dh_auto_build:
+	set -e; \
+	for ver in $(shell pyversions -r -v); do \
+		scons $(SCONS_FLAGS) \
+			PYTHON=/usr/bin/python$$ver ; \
+	done
+
+override_dh_prep:
+	dh_prep -Xdebian/tmp
+
+override_dh_auto_install:
+	for ver in $(shell pyversions -r -v); do \
+		scons $(SCONS_FLAGS) \
+			CCFLAGS="$(CFLAGS)" \
+			PYTHON=/usr/bin/python$$ver \
+			DESTDIR=$(CURDIR)/debian/tmp \
+			install ; \
+	done
+
+override_dh_auto_clean:
+	scons --clean $(SCONS_FLAGS)
+	find -name '*.pyc' -exec rm -f {} \;
+	find -name '.sconsign*' -exec rm -f {} \;
+	find -name '*.o' -exec rm -f {} \;
+	rm -rf .sconf_temp config.log bindings/python/mapnik/paths.py \
+		utils/shapeindex/shapeindex config.py config.cache \
+		docs/api_docs/python/*
+	dh_auto_clean
+
+override_dh_installexamples:
+	dh_installexamples -Xdata/new
+	find $(CURDIR)/debian/ -name "*.png" | xargs -r chmod -x
+
+override_dh_auto_test:
+	echo "Skipping tests"
+
+override_dh_installdocs:
+	echo "Skipping installdocs"
+
+#override_dh_shlibdeps:
+#	dh_shlibdeps --exclude=_mapnik.so	# zavisi na libmapnik.so.2.1, ktery se prave buildnul a tudiz neni ve std. cestach a balicich, zatim nevim jak to preprat jinak
+
+%:
+	dh $@ \
+		--with python2

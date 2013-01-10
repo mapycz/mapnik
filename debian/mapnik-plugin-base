@@ -1,0 +1,5 @@
+#!/bin/sh
+
+inputdir=$(mapnik-config --input-plugins)
+
+echo $(dirname $inputdir/../)

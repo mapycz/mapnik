@@ -1,0 +1,53 @@
+.TH MAPNIK-CONFIG 1 "October 4, 2011"
+.SH NAME
+mapnik\-config \- return meta-information about Mapnik
+.SH SYNOPSIS
+.B mapnik\-config
+[ options ]
+.SH DESCRIPTION
+This manual page documents briefly the \fBmapnik\-config\fR command.
+.PP
+\fBmapnik\-config\fP is a program that returns meta-information about the
+installed libmapnik.
+.SH OPTIONS
+This program follows the usual GNU command line syntax, with long
+options starting with two dashes (`-').
+A summary of options is included below.
+.TP
+\fB\-\-prefix, \-\-prefix=\fInew_prefix\fR
+Display Mapnik prefix or, alternatively, temporarily set the Mapnik prefix to \fInew_prefix\fR.
+.TP
+.B \-\-libs
+Print library linking information.
+.TP
+.B \-\-dep\-libs
+Print library linking information for Mapnik depedencies.
+.TP
+.B \-\-ldflags
+Print library paths (\-L) information.
+.TP
+.B \-\-cflags
+Print pre-processor and compiler flags.
+.TP
+.B \-\-fonts
+Print default fonts directory.
+.TP
+.B \-\-input\-plugins
+Print default input plugins directory.
+.TP
+.B \-\-json
+Print all config options as JSON objects.
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-v, \-\-version
+Shows version information.
+.TP
+.B \-\-svn\-revision
+Shows SVN revision information.
+.SH AUTHOR
+This manual page was written by David Paleino <dapal@debian.org>, for the
+Debian project (but may be used by others), and is licensed under the
+terms of the GNU General Public License version 2 or, at your option,
+any later version.
