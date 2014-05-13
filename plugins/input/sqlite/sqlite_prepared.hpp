@@ -24,12 +24,14 @@
 #define MAPNIK_SQLITE_PREPARED_HPP
 
 // mapnik
+#include <mapnik/debug.hpp>
 #include <mapnik/datasource.hpp>
+#include <mapnik/params.hpp>
 #include <mapnik/box2d.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // boost
-#include <boost/shared_ptr.hpp>
-#include <boost/utility.hpp>
+#include <memory>
 
 // stl
 #include <string.h>
@@ -41,11 +43,11 @@ extern "C" {
 #include <sqlite3.h>
 }
 
-class prepared_index_statement : boost::noncopyable
+class prepared_index_statement : mapnik::noncopyable
 {
 
 public:
-    prepared_index_statement(boost::shared_ptr<sqlite_connection> ds, std::string const& sql)
+    prepared_index_statement(std::shared_ptr<sqlite_connection> ds, std::string const& sql)
         : ds_(ds),
           stmt_(0)
     {
@@ -76,11 +78,13 @@ public:
             {
                 if (*(*ds_))
                 {
-                    std::cerr << "ERR:" << sqlite3_errmsg(*(*ds_)) << "\n";
+                    MAPNIK_LOG_ERROR(sqlite) << "~prepared_index_statement:"
+                                             << sqlite3_errmsg(*(*ds_));
                 }
                 else
                 {
-                    std::cerr << "SQLite Plugin: " << res << "\n";
+                    MAPNIK_LOG_ERROR(sqlite) << "~prepared_index_statement:"
+                                             << res;
                 }
             }
         }
@@ -129,7 +133,7 @@ public:
     }
 
 private:
-    boost::shared_ptr<sqlite_connection> ds_;
+    std::shared_ptr<sqlite_connection> ds_;
     sqlite3_stmt * stmt_;
 };
 

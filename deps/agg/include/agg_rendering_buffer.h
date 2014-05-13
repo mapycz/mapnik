@@ -128,7 +128,7 @@ namespace agg
 
     private:
         //--------------------------------------------------------------------
-        T*            m_buf;    // Pointer to renrdering buffer
+        T*            m_buf;    // Pointer to rendering buffer
         T*            m_start;  // Pointer to first pixel depending on stride 
         unsigned      m_width;  // Width in pixels
         unsigned      m_height; // Height in pixels
@@ -186,10 +186,11 @@ namespace agg
 
             T** rows = &m_rows[0];
 
-            while(height--)
+            while(height > 0)
             {
                 *rows++ = row_ptr;
                 row_ptr += stride;
+                --height;
             }
         }
 
@@ -258,7 +259,7 @@ namespace agg
 
     private:
         //--------------------------------------------------------------------
-        T*            m_buf;        // Pointer to renrdering buffer
+        T*            m_buf;        // Pointer to rendering buffer
         pod_array<T*> m_rows;       // Pointers to each row of the buffer
         unsigned      m_width;      // Width in pixels
         unsigned      m_height;     // Height in pixels

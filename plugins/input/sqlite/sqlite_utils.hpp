@@ -26,18 +26,20 @@
 // stl
 #include <string>
 #include <vector>
+#include <algorithm>
 
 // mapnik
+#include <mapnik/debug.hpp>
+#include <mapnik/utils.hpp>
 #include <mapnik/datasource.hpp>
+#include <mapnik/params.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/sql_utils.hpp>
-
+#include <mapnik/util/fs.hpp>
 
 // boost
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
 
 // sqlite
 extern "C" {
@@ -143,7 +145,7 @@ public:
         return false;
     }
 
-    static void get_tables(boost::shared_ptr<sqlite_connection> ds,
+    static void get_tables(std::shared_ptr<sqlite_connection> ds,
                            std::vector<std::string> & tables)
     {
         std::ostringstream sql;
@@ -162,7 +164,7 @@ public:
         const int rc = sqlite3_prepare_v2 (*(*ds), sql.str().c_str(), -1, &stmt, 0);
         if (rc == SQLITE_OK)
         {
-            boost::shared_ptr<sqlite_resultset> rs = boost::make_shared<sqlite_resultset>(stmt);
+            std::shared_ptr<sqlite_resultset> rs = std::make_shared<sqlite_resultset>(stmt);
             while (rs->is_valid() && rs->step_next())
             {
                 const int type_oid = rs->column_type(0);
@@ -178,7 +180,7 @@ public:
         }
     }
 
-    static void query_extent(boost::shared_ptr<sqlite_resultset> rs,
+    static void query_extent(std::shared_ptr<sqlite_resultset> rs,
                              mapnik::box2d<double>& extent)
     {
 
@@ -190,21 +192,22 @@ public:
             if (data)
             {
                 boost::ptr_vector<mapnik::geometry_type> paths;
-                mapnik::geometry_utils::from_wkb(paths, data, size, mapnik::wkbAuto);
-                for (unsigned i=0; i<paths.size(); ++i)
+                if (mapnik::geometry_utils::from_wkb(paths, data, size, mapnik::wkbAuto))
                 {
-                    mapnik::box2d<double> const& bbox = paths[i].envelope();
-
-                    if (bbox.valid())
+                    for (unsigned i=0; i<paths.size(); ++i)
                     {
-                        if (first)
+                        mapnik::box2d<double> const& bbox = paths[i].envelope();
+                        if (bbox.valid())
                         {
-                            first = false;
-                            extent = bbox;
-                        }
-                        else
-                        {
-                            extent.expand_to_include(bbox);
+                            if (first)
+                            {
+                                first = false;
+                                extent = bbox;
+                            }
+                            else
+                            {
+                                extent.expand_to_include(bbox);
+                            }
                         }
                     }
                 }
@@ -214,7 +217,7 @@ public:
 
     static bool create_spatial_index(std::string const& index_db,
                                      std::string const& index_table,
-                                     boost::shared_ptr<sqlite_resultset> rs)
+                                     std::shared_ptr<sqlite_resultset> rs)
     {
         /* TODO
            - speedups
@@ -231,8 +234,8 @@ public:
         int flags;
 #endif
 
-        bool existed = boost::filesystem::exists(index_db);
-        boost::shared_ptr<sqlite_connection> ds = boost::make_shared<sqlite_connection>(index_db,flags);
+        bool existed = mapnik::util::exists(index_db);
+        std::shared_ptr<sqlite_connection> ds = std::make_shared<sqlite_connection>(index_db,flags);
 
         bool one_success = false;
         try
@@ -276,24 +279,24 @@ public:
                 if (data)
                 {
                     boost::ptr_vector<mapnik::geometry_type> paths;
-                    mapnik::geometry_utils::from_wkb(paths, data, size, mapnik::wkbAuto);
                     mapnik::box2d<double> bbox;
-                    for (unsigned i=0; i<paths.size(); ++i)
+                    if (mapnik::geometry_utils::from_wkb(paths, data, size, mapnik::wkbAuto))
                     {
-                        if (i==0)
+                        for (unsigned i=0; i<paths.size(); ++i)
                         {
-                            bbox = paths[i].envelope();
-                        }
-                        else
-                        {
-                            bbox.expand_to_include(paths[i].envelope());
+                            if (i==0)
+                            {
+                                bbox = paths[i].envelope();
+                            }
+                            else
+                            {
+                                bbox.expand_to_include(paths[i].envelope());
+                            }
                         }
                     }
                     if (bbox.valid())
                     {
-
                         ps.bind(bbox);
-
                         const int type_oid = rs->column_type(1);
                         if (type_oid != SQLITE_INTEGER)
                         {
@@ -303,7 +306,6 @@ public:
                                       << "' type was: " << type_oid << "";
                             throw mapnik::datasource_exception(error_msg.str());
                         }
-
                         const sqlite_int64 pkid = rs->column_integer64(1);
                         ps.bind(pkid);
                     }
@@ -314,7 +316,6 @@ public:
                                   << rs->column_name(1) << "' == " << rs->column_integer64(1);
                         throw mapnik::datasource_exception(error_msg.str());
                     }
-
                     ps.step_next();
                     one_success = true;
                 }
@@ -326,8 +327,8 @@ public:
             {
                 try
                 {
-                    boost::filesystem::remove(index_db);
-                }
+                    mapnik::util::remove(index_db);
+                 }
                 catch (...) {};
             }
             throw mapnik::datasource_exception(ex.what());
@@ -342,7 +343,7 @@ public:
         {
             try
             {
-                boost::filesystem::remove(index_db);
+                mapnik::util::remove(index_db);
             }
             catch (...) {};
         }
@@ -354,7 +355,7 @@ public:
         mapnik::box2d<double> bbox;
     } rtree_type;
 
-    static void build_tree(boost::shared_ptr<sqlite_resultset> rs,
+    static void build_tree(std::shared_ptr<sqlite_resultset> rs,
                            std::vector<sqlite_utils::rtree_type> & rtree_list)
     {
 
@@ -365,44 +366,40 @@ public:
             if (data)
             {
                 boost::ptr_vector<mapnik::geometry_type> paths;
-                mapnik::geometry_utils::from_wkb(paths, data, size, mapnik::wkbAuto);
-                for (unsigned i=0; i<paths.size(); ++i)
+                if (mapnik::geometry_utils::from_wkb(paths, data, size, mapnik::wkbAuto))
                 {
-                    mapnik::box2d<double> const& bbox = paths[i].envelope();
-                    if (bbox.valid())
+                    for (unsigned i=0; i<paths.size(); ++i)
                     {
-
-                        const int type_oid = rs->column_type(1);
-                        if (type_oid != SQLITE_INTEGER)
+                        mapnik::box2d<double> const& bbox = paths[i].envelope();
+                        if (bbox.valid())
+                        {
+                            const int type_oid = rs->column_type(1);
+                            if (type_oid != SQLITE_INTEGER)
+                            {
+                                std::ostringstream error_msg;
+                                error_msg << "Sqlite Plugin: invalid type for key field '"
+                                          << rs->column_name(1) << "' when creating index "
+                                          << "type was: " << type_oid << "";
+                                throw mapnik::datasource_exception(error_msg.str());
+                            }
+                            const sqlite_int64 pkid = rs->column_integer64(1);
+                            rtree_type entry = rtree_type();
+                            entry.pkid = pkid;
+                            entry.bbox = bbox;
+                            rtree_list.push_back(entry);
+                        }
+                        else
                         {
                             std::ostringstream error_msg;
-                            error_msg << "Sqlite Plugin: invalid type for key field '"
-                                      << rs->column_name(1) << "' when creating index "
-                                      << "type was: " << type_oid << "";
+                            error_msg << "SQLite Plugin: encountered invalid bbox at '"
+                                      << rs->column_name(1) << "' == " << rs->column_integer64(1);
                             throw mapnik::datasource_exception(error_msg.str());
                         }
-
-                        const sqlite_int64 pkid = rs->column_integer64(1);
-
-                        rtree_type entry = rtree_type();
-                        entry.pkid = pkid;
-                        entry.bbox = bbox;
-                        rtree_list.push_back(entry);
-
-                    }
-                    else
-                    {
-                        std::ostringstream error_msg;
-                        error_msg << "SQLite Plugin: encountered invalid bbox at '"
-                                  << rs->column_name(1) << "' == " << rs->column_integer64(1);
-                        throw mapnik::datasource_exception(error_msg.str());
                     }
                 }
             }
         }
     }
-
-
 
     static bool create_spatial_index2(std::string const& index_db,
                                       std::string const& index_table,
@@ -415,8 +412,9 @@ public:
         int flags;
 #endif
 
-        bool existed = boost::filesystem::exists(index_db);
-        boost::shared_ptr<sqlite_connection> ds = boost::make_shared<sqlite_connection>(index_db,flags);
+        bool existed = mapnik::util::exists(index_db);;
+
+        std::shared_ptr<sqlite_connection> ds = std::make_shared<sqlite_connection>(index_db,flags);
 
         bool one_success = false;
         try
@@ -462,7 +460,7 @@ public:
             {
                 try
                 {
-                    boost::filesystem::remove(index_db);
+                    mapnik::util::remove(index_db);
                 }
                 catch (...) {};
             }
@@ -478,14 +476,14 @@ public:
         {
             try
             {
-                boost::filesystem::remove(index_db);
+                mapnik::util::remove(index_db);
             }
             catch (...) {};
         }
         return false;
     }
 
-    static bool detect_extent(boost::shared_ptr<sqlite_connection> ds,
+    static bool detect_extent(std::shared_ptr<sqlite_connection> ds,
                               bool has_spatial_index,
                               mapnik::box2d<double> & extent,
                               std::string const& index_table,
@@ -496,13 +494,30 @@ public:
                               std::string const& table
         )
     {
-        if (has_spatial_index)
+        if (! metadata.empty())
+        {
+            std::ostringstream s;
+            s << "SELECT xmin, ymin, xmax, ymax FROM " << metadata;
+            s << " WHERE LOWER(f_table_name) = LOWER('" << geometry_table << "')";
+            MAPNIK_LOG_DEBUG(sqlite) << "sqlite_datasource: executing: '" << s.str() << "'";
+            std::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
+            if (rs->is_valid() && rs->step_next())
+            {
+                double xmin = rs->column_double(0);
+                double ymin = rs->column_double(1);
+                double xmax = rs->column_double(2);
+                double ymax = rs->column_double(3);
+                extent.init (xmin, ymin, xmax, ymax);
+                return true;
+            }
+        }
+        else if (has_spatial_index)
         {
             std::ostringstream s;
             s << "SELECT MIN(xmin), MIN(ymin), MAX(xmax), MAX(ymax) FROM "
               << index_table;
-
-            boost::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
+            MAPNIK_LOG_DEBUG(sqlite) << "sqlite_datasource: executing: '" << s.str() << "'";
+            std::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
             if (rs->is_valid() && rs->step_next())
             {
                 if (! rs->column_isnull(0))
@@ -516,41 +531,27 @@ public:
                 }
             }
         }
-        else if (! metadata.empty())
-        {
-            std::ostringstream s;
-            s << "SELECT xmin, ymin, xmax, ymax FROM " << metadata;
-            s << " WHERE LOWER(f_table_name) = LOWER('" << geometry_table << "')";
-            boost::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
-            if (rs->is_valid() && rs->step_next())
-            {
-                double xmin = rs->column_double(0);
-                double ymin = rs->column_double(1);
-                double xmax = rs->column_double(2);
-                double ymax = rs->column_double(3);
-                extent.init (xmin, ymin, xmax, ymax);
-                return true;
-            }
-        }
+
         else if (! key_field.empty())
         {
             std::ostringstream s;
             s << "SELECT " << geometry_field << "," << key_field
               << " FROM (" << table << ")";
-            boost::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
+            MAPNIK_LOG_DEBUG(sqlite) << "sqlite_datasource: executing: '" << s.str() << "'";
+            std::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
             sqlite_utils::query_extent(rs,extent);
             return true;
         }
         return false;
     }
 
-    static bool has_rtree(std::string const& index_table,boost::shared_ptr<sqlite_connection> ds)
+    static bool has_rtree(std::string const& index_table,std::shared_ptr<sqlite_connection> ds)
     {
         try
         {
             std::ostringstream s;
             s << "SELECT pkid,xmin,xmax,ymin,ymax FROM " << index_table << " LIMIT 1";
-            boost::shared_ptr<sqlite_resultset> rs = ds->execute_query(s.str());
+            std::shared_ptr<sqlite_resultset> rs = ds->execute_query(s.str());
             if (rs->is_valid() && rs->step_next())
             {
                 return true;
@@ -558,7 +559,7 @@ public:
         }
         catch (std::exception const& ex)
         {
-            //std::clog << "no: " << ex.what() << "\n";
+            MAPNIK_LOG_DEBUG(sqlite) << "has_rtree returned:" <<  ex.what();
             return false;
         }
         return false;
@@ -567,10 +568,10 @@ public:
     static bool detect_types_from_subquery(std::string const& query,
                                            std::string & geometry_field,
                                            mapnik::layer_descriptor & desc,
-                                           boost::shared_ptr<sqlite_connection> ds)
+                                           std::shared_ptr<sqlite_connection> ds)
     {
         bool found = false;
-        boost::shared_ptr<sqlite_resultset> rs(ds->execute_query(query));
+        std::shared_ptr<sqlite_resultset> rs(ds->execute_query(query));
         if (rs->is_valid() && rs->step_next())
         {
             for (int i = 0; i < rs->column_count(); ++i)
@@ -611,9 +612,7 @@ public:
                     break;
 
                 default:
-#ifdef MAPNIK_DEBUG
-                    std::clog << "Sqlite Plugin: unknown type_oid=" << type_oid << std::endl;
-#endif
+                    MAPNIK_LOG_DEBUG(sqlite) << "detect_types_from_subquery: unknown type_oid=" << type_oid;
                     break;
                 }
             }
@@ -627,7 +626,7 @@ public:
                            std::string & field,
                            std::string & table,
                            mapnik::layer_descriptor & desc,
-                           boost::shared_ptr<sqlite_connection> ds)
+                           std::shared_ptr<sqlite_connection> ds)
     {
 
         // http://www.sqlite.org/pragma.html#pragma_table_info
@@ -636,7 +635,7 @@ public:
         // if the subquery-based type detection failed
         std::ostringstream s;
         s << "PRAGMA table_info(" << table << ")";
-        boost::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
+        std::shared_ptr<sqlite_resultset> rs(ds->execute_query(s.str()));
         bool found_table = false;
         bool found_pk = false;
         while (rs->is_valid() && rs->step_next())
@@ -644,9 +643,8 @@ public:
             found_table = true;
             const char* fld_name = rs->column_text(1);
             std::string fld_type(rs->column_text(2));
-            int fld_pk = rs->column_integer(5);
-            boost::algorithm::to_lower(fld_type);
-
+            sqlite_int64 fld_pk = rs->column_integer64(5);
+            std::transform(fld_type.begin(), fld_type.end(), fld_type.begin(), ::tolower);
             // TODO - how to handle primary keys on multiple columns ?
             if (key_field.empty() && ! found_pk && fld_pk != 0)
             {
@@ -694,20 +692,22 @@ public:
                         desc.add_descriptor(mapnik::attribute_descriptor(fld_name, mapnik::String));
                     }
                 }
-#ifdef MAPNIK_DEBUG
                 else
                 {
                     // "Column Affinity" says default to "Numeric" but for now we pass..
                     //desc_.add_descriptor(attribute_descriptor(fld_name,mapnik::Double));
 
-                    // TODO - this should not fail when we specify geometry_field in XML file
-
-                    std::clog << "Sqlite Plugin: column '"
-                              << std::string(fld_name)
-                              << "' unhandled due to unknown type: "
-                              << fld_type << std::endl;
-                }
+#ifdef MAPNIK_LOG
+                    // Do not fail when we specify geometry_field in XML file
+                    if (field.empty())
+                    {
+                        MAPNIK_LOG_DEBUG(sqlite) << "Column '"
+                                                 << std::string(fld_name)
+                                                 << "' unhandled due to unknown type: "
+                                                 << fld_type;
+                    }
 #endif
+                }
             }
         }
 

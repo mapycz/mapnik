@@ -28,8 +28,7 @@
 #include <mapnik/transform_expression.hpp>
 
 // spirit
-#include <boost/spirit/home/phoenix/object/construct.hpp>
-#include <boost/spirit/home/qi.hpp>
+#include <boost/spirit/include/qi.hpp>
 
 namespace mapnik {
 
@@ -39,81 +38,26 @@ namespace mapnik {
     struct transform_expression_grammar
         : qi::grammar<Iterator, transform_list(), space_type>
     {
-        explicit transform_expression_grammar(expression_grammar<Iterator> const& g)
-            : transform_expression_grammar::base_type(start)
-        {
-            using boost::phoenix::construct;
-            using qi::_a; using qi::_1; using qi::_4;
-            using qi::_b; using qi::_2; using qi::_5;
-            using qi::_c; using qi::_3; using qi::_6;
-            using qi::_val;
-            using qi::char_;
-            using qi::lit;
-            using qi::no_case;
-            using qi::no_skip;
+        explicit transform_expression_grammar();
 
-            start = transform_ % no_skip[char_(", ")] ;
-
-            transform_ = matrix | translate | scale | rotate | skewX | skewY ;
-
-            matrix = no_case[lit("matrix")]
-                >> (lit('(')
-                    >> expr >> -lit(',')
-                    >> expr >> -lit(',')
-                    >> expr >> -lit(',')
-                    >> expr >> -lit(',')
-                    >> expr >> -lit(',')
-                    >> expr >>  lit(')'))
-                [ _val = construct<matrix_node>(_1,_2,_3,_4,_5,_6) ];
-
-            translate = no_case[lit("translate")]
-                >> (lit('(')
-                    >> expr >> -lit(',')
-                    >> -expr >> lit(')'))
-                [ _val = construct<translate_node>(_1,_2) ];
-
-            scale = no_case[lit("scale")]
-                >> (lit('(')
-                    >> expr >> -lit(',')
-                    >> -expr >> lit(')'))
-                [ _val = construct<scale_node>(_1,_2) ];
-
-            rotate = no_case[lit("rotate")]
-                >> lit('(')
-                >> expr[_a = _1] >> -lit(',')
-                >> -(expr [_b = _1] >> -lit(',') >> expr[_c = _1])
-                >> lit(')')
-                [ _val = construct<rotate_node>(_a,_b,_c) ];
-
-            skewX = no_case[lit("skewX")]
-                >> lit('(')
-                >> expr [ _val = construct<skewX_node>(_1) ]
-                >> lit(')');
-
-            skewY = no_case[lit("skewY")]
-                >> lit('(')
-                >> expr [ _val = construct<skewY_node>(_1) ]
-                >> lit(')');
-
-            expr = g.expr.alias();
-        }
-
-        typedef qi::locals<expr_node, boost::optional<expr_node>,
-                                      boost::optional<expr_node>
-                          > rotate_locals;
         typedef qi::rule<Iterator, transform_node(), space_type> node_rule;
         typedef qi::rule<Iterator, transform_list(), space_type> list_rule;
 
         // rules
-        typename expression_grammar<Iterator>::rule_type expr;
+        qi::rule<Iterator, std::string(), space_type>    attr;
+        qi::rule<Iterator, expr_node(), space_type>      atom;
+        qi::rule<Iterator, expr_node(), space_type>      expr;
+        qi::rule<Iterator, expr_node(), space_type>      sep_atom;
+        qi::rule<Iterator, expr_node(), space_type>      sep_expr;
         qi::rule<Iterator, transform_list(), space_type> start;
         qi::rule<Iterator, transform_node(), space_type> transform_;
         qi::rule<Iterator, transform_node(), space_type> matrix;
         qi::rule<Iterator, transform_node(), space_type> translate;
         qi::rule<Iterator, transform_node(), space_type> scale;
-        qi::rule<Iterator, transform_node(), space_type, rotate_locals> rotate;
+        qi::rule<Iterator, transform_node(), space_type> rotate;
         qi::rule<Iterator, transform_node(), space_type> skewX;
         qi::rule<Iterator, transform_node(), space_type> skewY;
+        mapnik::expression_grammar<Iterator> g_;
     };
 
 } // namespace mapnik

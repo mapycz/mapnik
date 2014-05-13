@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
+#include <mapnik/noncopyable.hpp>
 // boost
-#include <boost/shared_ptr.hpp>
-#include <boost/utility.hpp>
+#include <memory>
 #include <boost/variant.hpp>
+
 //sqlite3
 #include <sqlite3.h>
 
@@ -37,7 +37,7 @@
 
 namespace mapnik {  namespace sqlite {
 
-    class database : private boost::noncopyable
+    class database : private mapnik::noncopyable
     {
         friend class prepared_statement;
 
@@ -52,7 +52,7 @@ namespace mapnik {  namespace sqlite {
             }
         };
 
-        typedef boost::shared_ptr<sqlite3> sqlite_db;
+        typedef std::shared_ptr<sqlite3> sqlite_db;
         sqlite_db db_;
 
     public:
@@ -74,7 +74,7 @@ namespace mapnik {  namespace sqlite {
     typedef boost::variant<int,double,std::string, blob,null_type> value_type;
     typedef std::vector<value_type> record_type;
 
-    class prepared_statement : boost::noncopyable
+    class prepared_statement : mapnik::noncopyable
     {
         struct binder : public boost::static_visitor<bool>
         {
@@ -85,7 +85,7 @@ namespace mapnik {  namespace sqlite {
             {
                 if (sqlite3_bind_null(stmt_, index_) != SQLITE_OK)
                 {
-                    std::cerr << "cannot bind NULL\n";
+                    std::cerr << "cannot bind nullptr\n";
                     return false;
                 }
                 return true;
@@ -186,4 +186,3 @@ namespace mapnik {  namespace sqlite {
     };
     }
 }
-

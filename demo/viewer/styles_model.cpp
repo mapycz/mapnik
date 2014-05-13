@@ -17,21 +17,23 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-//$Id$
 
 #include "styles_model.hpp"
 #include <mapnik/expression_string.hpp>
+#include <mapnik/noncopyable.hpp>
+#include <mapnik/rule.hpp>
+#include <mapnik/feature_type_style.hpp>
+
 // boost
 #include <boost/concept_check.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/utility.hpp>
+
 // qt
 #include <QList>
 #include <QIcon>
 #include <QPainter>
 #include <QPixmap>
 
-class node : private boost::noncopyable
+class node : private mapnik::noncopyable
 {
     struct node_base
     {
@@ -112,7 +114,7 @@ public:
     }
 
 private:
-    boost::scoped_ptr<node_base> impl_;
+    const std::unique_ptr<node_base> impl_;
     QList<node*> children_;
     node * parent_;
 };
@@ -162,6 +164,18 @@ struct symbolizer_info : public boost::static_visitor<QString>
         return QString("ShieldSymbolizer");
     }
 
+    QString operator() (mapnik::markers_symbolizer const& sym) const
+    {
+        boost::ignore_unused_variable_warning(sym);
+        return QString("MarkersSymbolizer");
+    }
+
+    QString operator() (mapnik::building_symbolizer const& sym) const
+    {
+        boost::ignore_unused_variable_warning(sym);
+        return QString("BuildingSymbolizer");
+    }
+
     template <typename T>
     QString operator() (T const& ) const
     {
@@ -175,7 +189,7 @@ struct symbolizer_icon : public boost::static_visitor<QIcon>
     {
         QPixmap pix(16,16);
         QPainter painter(&pix);
-        mapnik::color const& fill = sym.get_fill();
+        mapnik::color const& fill = mapnik::get<mapnik::color>(sym, mapnik::keys::fill);
         QBrush brush(QColor(fill.red(),fill.green(),fill.blue(),fill.alpha()));
         painter.fillRect(0, 0, 16, 16, brush);
         return QIcon(pix);
@@ -185,7 +199,7 @@ struct symbolizer_icon : public boost::static_visitor<QIcon>
     {
         // FIXME!
         /*
-          boost::shared_ptr<mapnik::image_data_32> symbol = sym.get_image();
+          std::shared_ptr<mapnik::image_data_32> symbol = sym.get_image();
           if (symbol)
           {
           QImage image(symbol->getBytes(),
@@ -201,10 +215,10 @@ struct symbolizer_icon : public boost::static_visitor<QIcon>
         QPixmap pix(48,16);
         pix.fill();
         QPainter painter(&pix);
-        mapnik::stroke const&  strk = sym.get_stroke();
-        mapnik::color const& col = strk.get_color();
+        //mapnik::stroke const&  strk = sym.get_stroke();
+        mapnik::color const& col = mapnik::get<mapnik::color>(sym, mapnik::keys::stroke);
         QPen pen(QColor(col.red(),col.green(),col.blue(),col.alpha()));
-        pen.setWidth(strk.get_width());
+        pen.setWidth(mapnik::get<double>(sym, mapnik::keys::width));
         painter.setPen(pen);
         painter.drawLine(0,7,47,7);
         //painter.drawLine(7,15,12,0);
@@ -223,7 +237,7 @@ class symbolizer_node
 {
 public:
     symbolizer_node(mapnik::symbolizer const & sym)
-    : sym_(sym) {}
+        : sym_(sym) {}
     ~symbolizer_node(){}
 
     QString name() const
@@ -249,7 +263,6 @@ public:
     QString name() const
     {
         mapnik::expression_ptr filter = rule_.get_filter();
-
         return QString(mapnik::to_expression_string(*filter).c_str());
     }
 
@@ -290,7 +303,7 @@ private:
 class map_node
 {
 public:
-    explicit map_node(boost::shared_ptr<mapnik::Map> map)
+    explicit map_node(std::shared_ptr<mapnik::Map> map)
     : map_(map)  {}
     ~map_node() {}
 
@@ -305,10 +318,10 @@ public:
     }
 
 private:
-    boost::shared_ptr<mapnik::Map> map_;
+    std::shared_ptr<mapnik::Map> map_;
 };
 
-StyleModel::StyleModel(boost::shared_ptr<mapnik::Map> map, QObject * parent)
+StyleModel::StyleModel(std::shared_ptr<mapnik::Map> map, QObject * parent)
     : QAbstractItemModel(parent),
       root_(new node(map_node(map)))
 {

@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-//$Id$
 
 
 #include "layerlistmodel.hpp"
@@ -28,7 +27,7 @@
 
 using mapnik::Map;
 
-LayerListModel::LayerListModel(boost::shared_ptr<Map> map,QObject *parent)
+LayerListModel::LayerListModel(std::shared_ptr<Map> map,QObject *parent)
     : QAbstractListModel(parent),
       map_(map) {}
 
@@ -118,8 +117,3 @@ boost::optional<mapnik::layer&> LayerListModel::map_layer(int i)
    }
    return boost::optional<mapnik::layer&>();
 }
-
-
-
-
-

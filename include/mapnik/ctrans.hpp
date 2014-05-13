@@ -24,10 +24,8 @@
 #define MAPNIK_CTRANS_HPP
 
 // mapnik
-#include <mapnik/debug.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/vertex.hpp>
-#include <mapnik/coord_array.hpp>
 #include <mapnik/proj_transform.hpp>
 
 // stl
@@ -36,13 +34,30 @@
 namespace mapnik
 {
 
-typedef coord_array<coord2d> CoordinateArray;
-
 template <typename Transform, typename Geometry>
 struct MAPNIK_DECL coord_transform
 {
+    // SFINAE value_type detector
+    template <typename T>
+    struct void_type
+    {
+        typedef void type;
+    };
+
+    template <typename T, typename D, typename _ = void>
+    struct select_value_type
+    {
+        typedef D type;
+    };
+
+    template <typename T, typename D>
+    struct select_value_type<T, D, typename void_type<typename T::value_type>::type>
+    {
+        typedef typename T::value_type type;
+    };
+
     typedef std::size_t size_type;
-    //typedef typename Geometry::value_type value_type;
+    typedef typename select_value_type<Geometry, void>::type value_type;
 
     coord_transform(Transform const& t,
                      Geometry & geom,
@@ -55,34 +70,25 @@ struct MAPNIK_DECL coord_transform
         : t_(0),
         geom_(geom),
         prj_trans_(0)  {}
-    
+
     void set_proj_trans(proj_transform const& prj_trans)
     {
         prj_trans_ = &prj_trans;
     }
-    
+
     void set_trans(Transform  const& t)
     {
         t_ = &t;
     }
-    
+
     unsigned vertex(double *x, double *y) const
     {
-        unsigned command = SEG_MOVETO;
-        bool ok = false;
-        bool skipped_points = false;
-        double z = 0;
-        while (!ok && command != SEG_END)
+        unsigned command = geom_.vertex(x, y);
+        if ( command != SEG_END)
         {
-            command = geom_.vertex(x, y);
-            ok = prj_trans_->backward(*x, *y, z);
-            if (!ok) {
-                skipped_points = true;
-            }
-        }
-        if (skipped_points && (command == SEG_LINETO))
-        {
-            command = SEG_MOVETO;
+            double z = 0;
+            if (!prj_trans_->backward(*x, *y, z))
+                return SEG_END;
         }
         t_->forward(x, y);
         return command;
@@ -91,6 +97,11 @@ struct MAPNIK_DECL coord_transform
     void rewind(unsigned pos) const
     {
         geom_.rewind(pos);
+    }
+
+    unsigned type() const
+    {
+        return static_cast<unsigned>(geom_.type());
     }
 
     Geometry const& geom() const
@@ -112,17 +123,19 @@ private:
     box2d<double> extent_;
     double offset_x_;
     double offset_y_;
+    int offset_;
     double sx_;
     double sy_;
 
 public:
     CoordTransform(int width, int height, const box2d<double>& extent,
-                   double offset_x = 0, double offset_y = 0)
+                   double offset_x = 0.0, double offset_y = 0.0)
         : width_(width),
           height_(height),
           extent_(extent),
           offset_x_(offset_x),
           offset_y_(offset_y),
+          offset_(0),
           sx_(1.0),
           sy_(1.0)
     {
@@ -130,6 +143,26 @@ public:
             sx_ = static_cast<double>(width_) / extent_.width();
         if (extent_.height() > 0)
             sy_ = static_cast<double>(height_) / extent_.height();
+    }
+
+    inline int offset() const
+    {
+        return offset_;
+    }
+
+    inline void set_offset(int offset)
+    {
+        offset_ = offset;
+    }
+
+    inline double offset_x() const
+    {
+        return offset_x_;
+    }
+
+    inline double offset_y() const
+    {
+        return offset_y_;
     }
 
     inline int width() const
@@ -154,14 +187,14 @@ public:
 
     inline void forward(double *x, double *y) const
     {
-        *x = (*x - extent_.minx()) * sx_ - offset_x_;
-        *y = (extent_.maxy() - *y) * sy_ - offset_y_;
+        *x = (*x - extent_.minx()) * sx_ - (offset_x_ - offset_);
+        *y = (extent_.maxy() - *y) * sy_ - (offset_y_ - offset_);
     }
 
     inline void backward(double *x, double *y) const
     {
-        *x = extent_.minx() + (*x + offset_x_) / sx_;
-        *y = extent_.maxy() - (*y + offset_y_) / sy_;
+        *x = extent_.minx() + (*x + (offset_x_ - offset_)) / sx_;
+        *y = extent_.maxy() - (*y + (offset_y_ - offset_)) / sy_;
     }
 
     inline coord2d& forward(coord2d& c) const
@@ -226,24 +259,6 @@ public:
         backward(&x0, &y0);
         backward(&x1, &y1);
         return box2d<double>(x0, y0, x1, y1);
-    }
-
-    inline CoordinateArray& forward(CoordinateArray& coords) const
-    {
-        for (unsigned i = 0; i < coords.size(); ++i)
-        {
-            forward(coords[i]);
-        }
-        return coords;
-    }
-
-    inline CoordinateArray& backward(CoordinateArray& coords) const
-    {
-        for (unsigned i = 0; i < coords.size(); ++i)
-        {
-            backward(coords[i]);
-        }
-        return coords;
     }
 
     inline box2d<double> const& extent() const

@@ -25,28 +25,32 @@
 
 // mapnik
 #include <mapnik/config.hpp>
-#include <mapnik/palette.hpp>
 
 #ifdef _MSC_VER
 #include <mapnik/graphics.hpp>
 #endif
 
 // boost
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/optional.hpp>
 
 // stl
 #include <string>
+#include <cmath>
 
 namespace mapnik {
 
+// fwd declares
 class Map;
+class rgba_palette;
+class image_32;
+
 class ImageWriterException : public std::exception
 {
 private:
     std::string message_;
 public:
-    ImageWriterException(const std::string& message)
+    ImageWriterException(std::string const& message)
         : message_(message) {}
 
     ~ImageWriterException() throw() {}
@@ -60,7 +64,13 @@ public:
 #if defined(HAVE_CAIRO)
 MAPNIK_DECL void save_to_cairo_file(mapnik::Map const& map,
                                     std::string const& filename,
-                                    std::string const& type);
+                                    double scale_factor=1.0,
+                                    double scale_denominator=0.0);
+MAPNIK_DECL void save_to_cairo_file(mapnik::Map const& map,
+                                    std::string const& filename,
+                                    std::string const& type,
+                                    double scale_factor=1.0,
+                                    double scale_denominator=0.0);
 #endif
 
 template <typename T>
@@ -137,6 +147,12 @@ inline bool is_ps (std::string const& filename)
     return boost::algorithm::iends_with(filename,std::string(".ps"));
 }
 
+inline bool is_webp (std::string const& filename)
+{
+    return boost::algorithm::iends_with(filename,std::string(".webp"));
+}
+
+
 inline boost::optional<std::string> type_from_filename(std::string const& filename)
 
 {
@@ -147,6 +163,7 @@ inline boost::optional<std::string> type_from_filename(std::string const& filena
     if (is_pdf(filename)) return result_type("pdf");
     if (is_svg(filename)) return result_type("svg");
     if (is_ps(filename)) return result_type("ps");
+    if (is_webp(filename)) return result_type("webp");
     return result_type();
 }
 
@@ -184,41 +201,9 @@ void add_border(T & image)
     }
 }
 
-// IMAGE SCALING
-enum scaling_method_e
-{
-    SCALING_NEAR=0,
-    SCALING_BILINEAR=1,
-    SCALING_BICUBIC=2,
-    SCALING_SPLINE16=3,
-    SCALING_SPLINE36=4,
-    SCALING_HANNING=5,
-    SCALING_HAMMING=6,
-    SCALING_HERMITE=7,
-    SCALING_KAISER=8,
-    SCALING_QUADRIC=9,
-    SCALING_CATROM=10,
-    SCALING_GAUSSIAN=11,
-    SCALING_BESSEL=12,
-    SCALING_MITCHELL=13,
-    SCALING_SINC=14,
-    SCALING_LANCZOS=15,
-    SCALING_BLACKMAN=16
-};
 
-scaling_method_e get_scaling_method_by_name (std::string name);
-
-template <typename Image>
-void scale_image_agg (Image& target,const Image& source, scaling_method_e scaling_method, double scale_factor, double x_off_f=0, double y_off_f=0, double filter_radius=2, double ratio=1);
-
-template <typename Image>
-void scale_image_bilinear_old (Image& target,const Image& source, double x_off_f=0, double y_off_f=0);
-
-template <typename Image>
-void scale_image_bilinear8 (Image& target,const Image& source, double x_off_f=0, double y_off_f=0);
 
 /////////// save_to_file ////////////////////////////////////////////////
-class image_32;
 
 MAPNIK_DECL void save_to_file(image_32 const& image,
                               std::string const& file);
@@ -249,6 +234,11 @@ template MAPNIK_DECL void save_to_file<image_data_32>(image_data_32 const&,
                                                       std::string const&,
                                                       std::string const&,
                                                       rgba_palette const&);
+
+template MAPNIK_DECL void save_to_file<image_data_32>(image_data_32 const&,
+                                                      std::string const&,
+                                                      std::string const&);
+
 template MAPNIK_DECL void save_to_file<image_data_32>(image_data_32 const&,
                                                       std::string const&,
                                                       rgba_palette const&);

@@ -25,7 +25,6 @@
 
 // mapnik
 #include <mapnik/config.hpp>
-#include <mapnik/debug.hpp>
 #include <mapnik/image_data.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/grid/grid_view.hpp>
@@ -36,7 +35,7 @@
 #include <mapnik/util/conversions.hpp>
 
 // boost
-#include <boost/cstdint.hpp>
+#include <cstdint>
 
 // stl
 #include <map>
@@ -58,7 +57,6 @@ public:
     typedef std::string lookup_type;
     // mapping between pixel id and key
     typedef std::map<value_type, lookup_type> feature_key_type;
-    typedef std::map<lookup_type, value_type> key_type;
     typedef std::map<lookup_type, mapnik::feature_ptr> feature_type;
     static const value_type base_mask;
 
@@ -77,45 +75,17 @@ private:
 
 public:
 
-    hit_grid(int width, int height, std::string const& key, unsigned int resolution)
-        :width_(width),
-        height_(height),
-        key_(key),
-        data_(width,height),
-        resolution_(resolution),
-        id_name_("__id__"),
-        painted_(false),
-        names_(),
-        f_keys_(),
-        features_(),
-        ctx_(boost::make_shared<mapnik::context_type>())
-        {
-            f_keys_[base_mask] = "";
-            data_.set(base_mask);
-        }
+    hit_grid(int width, int height, std::string const& key, unsigned int resolution);
 
-    hit_grid(const hit_grid<T>& rhs)
-        :width_(rhs.width_),
-        height_(rhs.height_),
-        key_(rhs.key_),
-        data_(rhs.data_),
-        resolution_(rhs.resolution_),
-        id_name_("__id__"),
-        painted_(rhs.painted_),
-        names_(rhs.names_),
-        f_keys_(rhs.f_keys_),
-        features_(rhs.features_),
-        ctx_(rhs.ctx_)
-        {
-            f_keys_[base_mask] = "";
-            data_.set(base_mask);
-        }
+    hit_grid(hit_grid<T> const& rhs);
 
     ~hit_grid() {}
 
-    inline void painted(bool painted)
+    void clear();
+
+    inline void painted(bool is_painted)
     {
-        painted_ = painted;
+        painted_ = is_painted;
     }
 
     inline bool painted() const
@@ -128,64 +98,7 @@ public:
         return id_name_;
     }
 
-    inline void add_feature(mapnik::feature_impl & feature)
-    {
-        int feature_id = feature.id();
-        // avoid adding duplicate features (e.g. in the case of both a line symbolizer and a polygon symbolizer)
-        typename feature_key_type::const_iterator feature_pos = f_keys_.find(feature_id);
-        if (feature_pos != f_keys_.end())
-        {
-            return;
-        }
-
-        if (ctx_->size() == 0) {
-            mapnik::feature_impl::iterator itr = feature.begin();
-            mapnik::feature_impl::iterator end = feature.end();
-            for ( ;itr!=end; ++itr)
-            {
-                ctx_->push(boost::get<0>(*itr));
-            }
-        }
-        // NOTE: currently lookup keys must be strings,
-        // but this should be revisited
-        lookup_type lookup_value;
-        if (key_ == id_name_)
-        {
-            mapnik::util::to_string(lookup_value,feature_id);
-        }
-        else
-        {
-            if (feature.has_key(key_))
-            {
-                lookup_value = feature.get(key_).to_string();
-            }
-            else
-            {
-                MAPNIK_LOG_DEBUG(grid) << "hit_grid: Should not get here: key '" << key_ << "' not found in feature properties";
-            }
-        }
-
-        if (!lookup_value.empty())
-        {
-            // TODO - consider shortcutting f_keys if feature_id == lookup_value
-            // create a mapping between the pixel id and the feature key
-            f_keys_.insert(std::make_pair(feature_id,lookup_value));
-            // if extra fields have been supplied, push them into grid memory
-            if (!names_.empty())
-            {
-                // it is ~ 2x faster to copy feature attributes compared
-                // to building up a in-memory cache of feature_ptrs
-                // https://github.com/mapnik/mapnik/issues/1198
-                mapnik::feature_ptr feature2(mapnik::feature_factory::create(ctx_,feature_id));
-                feature2->set_data(feature.get_data());
-                features_.insert(std::make_pair(lookup_value,feature2));
-            }
-        }
-        else
-        {
-            MAPNIK_LOG_DEBUG(grid) << "hit_grid: Warning - key '" << key_ << "' was blank for " << feature;
-        }
-    }
+    void add_feature(mapnik::feature_impl & feature);
 
     inline void add_property_name(std::string const& name)
     {
@@ -197,27 +110,17 @@ public:
         return names_;
     }
 
-    inline const feature_type& get_grid_features() const
+    inline feature_type const& get_grid_features() const
     {
         return features_;
     }
 
-    inline feature_type& get_grid_features()
-    {
-        return features_;
-    }
-
-    inline const feature_key_type& get_feature_keys() const
+    inline feature_key_type const& get_feature_keys() const
     {
         return f_keys_;
     }
 
-    inline feature_key_type& get_feature_keys()
-    {
-        return f_keys_;
-    }
-
-    inline const std::string& get_key() const
+    inline std::string const& get_key() const
     {
         return key_;
     }
@@ -237,7 +140,7 @@ public:
         resolution_ = res;
     }
 
-    inline const data_type& data() const
+    inline data_type const& data() const
     {
         return data_;
     }
@@ -247,7 +150,7 @@ public:
         return data_;
     }
 
-    inline const T* raw_data() const
+    inline T const * raw_data() const
     {
         return data_.getData();
     }
@@ -257,7 +160,7 @@ public:
         return data_.getData();
     }
 
-    inline const value_type* getRow(unsigned row) const
+    inline value_type const * getRow(unsigned row) const
     {
         return data_.getRow(row);
     }
@@ -295,30 +198,6 @@ public:
         return height_;
     }
 
-    inline void blendPixel(value_type feature_id,int x,int y,unsigned int rgba1,int t)
-    {
-        blendPixel2(feature_id ,x,y,rgba1,t,1.0);  // do not change opacity
-    }
-
-    inline void blendPixel2(value_type feature_id,int x,int y,unsigned int rgba1,int t,double opacity)
-    {
-        if (checkBounds(x,y))
-        {
-
-#ifdef MAPNIK_BIG_ENDIAN
-            unsigned a = (int)((rgba1 & 0xff) * opacity) & 0xff; // adjust for desired opacity
-#else
-            unsigned a = (int)(((rgba1 >> 24) & 0xff) * opacity) & 0xff; // adjust for desired opacity
-#endif
-            // if the pixel is more than a tenth
-            // opaque then burn in the feature id
-            if (a >= 25)
-            {
-                data_(x,y) = feature_id;
-            }
-        }
-    }
-
     inline void set_rectangle(value_type id,image_data_32 const& data,int x0,int y0)
     {
         box2d<int> ext0(0,0,width_,height_);
@@ -353,7 +232,7 @@ public:
 
 };
 
-typedef MAPNIK_DECL hit_grid<int> grid;
+typedef hit_grid<mapnik::value_integer> grid;
 
 }
 #endif //MAPNIK_GRID_HPP

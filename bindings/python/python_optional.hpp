@@ -23,6 +23,8 @@
 #include <boost/optional/optional.hpp>
 #include <boost/python.hpp>
 
+#include <mapnik/noncopyable.hpp>
+
 // boost::optional<T> to/from converter from John Wiegley
 
 template <typename T, typename TfromPy>
@@ -45,7 +47,7 @@ struct register_python_conversion
 };
 
 template <typename T>
-struct python_optional : public boost::noncopyable
+struct python_optional : public mapnik::noncopyable
 {
     struct optional_to_python
     {
@@ -73,7 +75,7 @@ struct python_optional : public boost::noncopyable
                     rvalue_from_python_stage1(source, converters);
                 return rvalue_from_python_stage2(source, data, converters);
             }
-            return NULL;
+            return 0;
         }
 
         static void construct(PyObject * source,
@@ -93,45 +95,104 @@ struct python_optional : public boost::noncopyable
         }
     };
 
-    explicit python_optional() {
+    explicit python_optional()
+    {
         register_python_conversion<boost::optional<T>,
             optional_to_python, optional_from_python>();
     }
 };
 
-/** This class works around a bug in boost python.
-
-    See http://osdir.com/ml/python.c++/2003-11/msg00158.html
-*/
-template <typename T, typename X1 = boost::python::detail::not_specified, typename X2 = boost::python::detail::not_specified, typename X3 = boost::python::detail::not_specified>
-class class_with_converter : public boost::python::class_<T, X1, X2, X3>
+// to/from boost::optional<bool>
+template <>
+struct python_optional<float> : public mapnik::noncopyable
 {
-public:
-    typedef class_with_converter<T,X1,X2,X3> self;
-    // Construct with the class name, with or without docstring, and default __init__() function
-    class_with_converter(char const* name, char const* doc = 0) : boost::python::class_<T, X1, X2, X3>(name, doc)  { }
-
-    // Construct with class name, no docstring, and an uncallable __init__ function
-    class_with_converter(char const* name, boost::python::no_init_t y) : boost::python::class_<T, X1, X2, X3>(name, y) { }
-
-    // Construct with class name, docstring, and an uncallable __init__ function
-    class_with_converter(char const* name, char const* doc, boost::python::no_init_t y) : boost::python::class_<T, X1, X2, X3>(name, doc, y) { }
-
-    // Construct with class name and init<> function
-    template <class DerivedT> class_with_converter(char const* name, boost::python::init_base<DerivedT> const& i)
-        : boost::python::class_<T, X1, X2, X3>(name, i) { }
-
-    // Construct with class name, docstring and init<> function
-    template <class DerivedT>
-    inline class_with_converter(char const* name, char const* doc, boost::python::init_base<DerivedT> const& i)
-        : boost::python::class_<T, X1, X2, X3>(name, doc, i) { }
-
-    template <class D>
-    self& def_readwrite_convert(char const* name, D const& d, char const* doc=0)
+    struct optional_to_python
     {
-        this->add_property(name,
-                           boost::python::make_getter(d, boost::python::return_value_policy<boost::python::return_by_value>()),
-                           boost::python::make_setter(d, boost::python::default_call_policies()));
-        return *this;
+        static PyObject * convert(const boost::optional<float>& value)
+        {
+            return (value ? PyFloat_FromDouble(*value) :
+                    boost::python::detail::none());
+        }
+    };
+
+    struct optional_from_python
+    {
+        static void * convertible(PyObject * source)
+        {
+            using namespace boost::python::converter;
+
+            if (source == Py_None || PyFloat_Check(source))
+                return source;
+            return 0;
+        }
+
+        static void construct(PyObject * source,
+                              boost::python::converter::rvalue_from_python_stage1_data * data)
+        {
+            using namespace boost::python::converter;
+            void * const storage = ((rvalue_from_python_storage<boost::optional<bool> > *)
+                                    data)->storage.bytes;
+            if (source == Py_None)  // == None
+                new (storage) boost::optional<float>(); // A Boost uninitialized value
+            else
+                new (storage) boost::optional<float>(PyFloat_AsDouble(source));
+            data->convertible = storage;
+        }
+    };
+
+    explicit python_optional()
+    {
+        register_python_conversion<boost::optional<float>,
+            optional_to_python, optional_from_python>();
+    }
+};
+
+// to/from boost::optional<float>
+template <>
+struct python_optional<bool> : public mapnik::noncopyable
+{
+    struct optional_to_python
+    {
+        static PyObject * convert(const boost::optional<bool>& value)
+        {
+            if (value)
+            {
+                if (*value) Py_RETURN_TRUE;
+                else Py_RETURN_FALSE;
+            }
+            else return boost::python::detail::none();
+        }
+    };
+    struct optional_from_python
+    {
+        static void * convertible(PyObject * source)
+        {
+            using namespace boost::python::converter;
+
+            if (source == Py_None || PyBool_Check(source))
+                return source;
+            return 0;
+        }
+
+        static void construct(PyObject * source,
+                              boost::python::converter::rvalue_from_python_stage1_data * data)
+        {
+            using namespace boost::python::converter;
+            void * const storage = ((rvalue_from_python_storage<boost::optional<bool> > *)
+                                    data)->storage.bytes;
+            if (source == Py_None)  // == None
+                new (storage) boost::optional<bool>(); // A Boost uninitialized value
+            else
+            {
+                new (storage) boost::optional<bool>(source == Py_True ? true : false);
+            }
+            data->convertible = storage;
+        }
+    };
+
+    explicit python_optional()
+    {
+        register_python_conversion<boost::optional<bool>,
+            optional_to_python, optional_from_python>();
     }
 };

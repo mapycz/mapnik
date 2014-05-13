@@ -22,202 +22,177 @@
 
 //mapnik
 #include <mapnik/symbolizer.hpp>
-#include <mapnik/map.hpp>
+#include <mapnik/attribute.hpp>
+#include <mapnik/feature.hpp>
 #include <mapnik/transform_processor.hpp>
 
 namespace mapnik {
 
-void evaluate_transform(agg::trans_affine& tr, Feature const& feature,
-                        transform_list_ptr const& trans_expr)
+// START FIXME - move to its own compilation unit
+void evaluate_transform(agg::trans_affine& tr, feature_impl const& feature,
+                        transform_list_ptr const& trans_expr, double scale_factor)
 {
-    #ifdef MAPNIK_LOG
-    MAPNIK_LOG_DEBUG(transform) << "transform: evaluate "
-        << (trans_expr
-            ? transform_processor_type::to_string(*trans_expr)
-            : std::string("null"));
-    #endif
-
     if (trans_expr)
     {
-        transform_processor_type::evaluate(tr, feature, *trans_expr);
+#ifdef MAPNIK_LOG
+    MAPNIK_LOG_DEBUG(transform) << "transform: evaluate "
+                                << transform_processor_type::to_string(*trans_expr);
+#endif
+        transform_processor_type::evaluate(tr, feature, *trans_expr, scale_factor);
     }
 }
+// END FIXME
 
-// default ctor
-symbolizer_base::symbolizer_base()
-    : properties_(),
-      properties_complete_(),
-      writer_name_(),
-      writer_ptr_(),
-      comp_op_(src_over),
-      clip_(true),
-      smooth_value_(0.0)
-{
-}
+// stroke
+static const char * line_cap_strings[] = {
+    "butt",
+    "square",
+    "round",
+    ""
+};
 
-// copy ctor
-symbolizer_base::symbolizer_base(symbolizer_base const& other)
-    : comp_op_(other.comp_op_),
-      affine_transform_(other.affine_transform_),
-      clip_(other.clip_),
-      smooth_value_(other.smooth_value_) {}
 
-void symbolizer_base::add_metawriter(std::string const& name, metawriter_properties const& properties)
-{
-    writer_name_ = name;
-    properties_ = properties;
-}
+IMPLEMENT_ENUM( line_cap_e, line_cap_strings )
 
-void symbolizer_base::add_metawriter(metawriter_ptr writer_ptr, metawriter_properties const& properties,
-                                     std::string const& name)
-{
-    writer_ptr_ = writer_ptr;
-    properties_ = properties;
-    writer_name_ = name;
-    if (writer_ptr) {
-        properties_complete_ = writer_ptr->get_default_properties();
-        properties_complete_.insert(properties_.begin(), properties_.end());
-    } else {
-        properties_complete_.clear();
-    }
-}
 
-void symbolizer_base::cache_metawriters(Map const &m)
-{
-    if (writer_name_.empty()) {
-        properties_complete_.clear();
-        writer_ptr_ = metawriter_ptr();
-        return; // No metawriter
-    }
+static const char * line_join_strings[] = {
+    "miter",
+    "miter_revert",
+    "round",
+    "bevel",
+    ""
+};
 
-    writer_ptr_ = m.find_metawriter(writer_name_);
-    if (writer_ptr_) {
-        properties_complete_ = writer_ptr_->get_default_properties();
-        properties_complete_.insert(properties_.begin(), properties_.end());
-    } else {
-        properties_complete_.clear();
-        MAPNIK_LOG_WARN(symbolizer) << "Metawriter '" << writer_name_ << "' used but not defined.";
-    }
-}
+IMPLEMENT_ENUM( line_join_e, line_join_strings )
 
-metawriter_with_properties symbolizer_base::get_metawriter() const
-{
-    return metawriter_with_properties(writer_ptr_, properties_complete_);
-}
+// point symbolizer
+static const char * point_placement_strings[] = {
+    "centroid",
+    "interior",
+    ""
+};
 
-void symbolizer_base::set_comp_op(composite_mode_e comp_op)
-{
-    comp_op_ = comp_op;
-}
+IMPLEMENT_ENUM( point_placement_e, point_placement_strings )
 
-composite_mode_e symbolizer_base::comp_op() const
-{
-    return comp_op_;
-}
+// line symbolizer
+static const char * line_rasterizer_strings[] = {
+    "full",
+    "fast",
+    ""
+};
+IMPLEMENT_ENUM( line_rasterizer_e, line_rasterizer_strings )
 
-void symbolizer_base::set_transform(transform_type const& affine_transform)
-{
-    affine_transform_ = affine_transform;
+// markers symbolizer
+static const char * marker_placement_strings[] = {
+    "point",
+    "interior",
+    "line",
+    ""
+};
 
-    #ifdef MAPNIK_LOG
-    MAPNIK_LOG_DEBUG(load_map) << "map_parser: set_transform: "
-        << (affine_transform_
-            ? transform_processor_type::to_string(*affine_transform_)
-            : std::string("null"));
-    #endif
-}
+IMPLEMENT_ENUM( marker_placement_e, marker_placement_strings )
 
-transform_type const& symbolizer_base::get_transform() const
-{
-    return affine_transform_;
-}
+static const char * marker_multi_policy_strings[] = {
+    "each",
+    "whole",
+    "largest",
+    ""
+};
 
-std::string symbolizer_base::get_transform_string() const
-{
-    if (affine_transform_)
-        return transform_processor_type::to_string(*affine_transform_);
-    else
-        return std::string();
-}
+IMPLEMENT_ENUM( marker_multi_policy_e, marker_multi_policy_strings )
 
-void symbolizer_base::set_clip(bool clip)
-{
-    clip_ = clip;
-}
+// debug symbolizer
+static const char * debug_symbolizer_mode_strings[] = {
+    "collision",
+    "vertex",
+    ""
+};
 
-bool symbolizer_base::clip() const
-{
-    return clip_;
-}
+IMPLEMENT_ENUM( debug_symbolizer_mode_e, debug_symbolizer_mode_strings )
 
-void symbolizer_base::set_smooth(double smooth)
-{
-    smooth_value_ = smooth;
-}
+// polygon pattern symbolizer
+static const char * pattern_alignment_strings[] = {
+    "local", // feature
+    "global", // map
+    ""
+};
 
-double symbolizer_base::smooth() const
-{
-    return smooth_value_;
-}
+IMPLEMENT_ENUM( pattern_alignment_e, pattern_alignment_strings )
 
-///////////////////////////////////////////////////////////////////////////////////////
 
-symbolizer_with_image::symbolizer_with_image(path_expression_ptr file)
-    : image_filename_( file ),
-      image_opacity_(1.0f)
-{
-}
+// text
+static const char * halo_rasterizer_strings[] = {
+    "full",
+    "fast",
+    ""
+};
 
-symbolizer_with_image::symbolizer_with_image( symbolizer_with_image const& rhs)
-    : image_filename_(rhs.image_filename_),
-      image_opacity_(rhs.image_opacity_),
-      image_transform_(rhs.image_transform_)
-{
-}
+IMPLEMENT_ENUM( halo_rasterizer_e, halo_rasterizer_strings )
 
-path_expression_ptr symbolizer_with_image::get_filename() const
-{
-    return image_filename_;
-}
 
-void symbolizer_with_image::set_filename(path_expression_ptr image_filename)
-{
-    image_filename_ = image_filename;
-}
+static const char * label_placement_strings[] = {
+    "point",
+    "line",
+    "vertex",
+    "interior",
+    ""
+};
 
-void symbolizer_with_image::set_opacity(float opacity)
-{
-    image_opacity_ = opacity;
-}
 
-float symbolizer_with_image::get_opacity() const
-{
-    return image_opacity_;
-}
+IMPLEMENT_ENUM( label_placement_e, label_placement_strings )
 
-void symbolizer_with_image::set_image_transform(transform_type const& tr)
-{
-    image_transform_ = tr;
+static const char * vertical_alignment_strings[] = {
+    "top",
+    "middle",
+    "bottom",
+    "auto",
+    ""
+};
 
-    #ifdef MAPNIK_LOG
-    MAPNIK_LOG_DEBUG(load_map) << "map_parser: set_image_transform: "
-        << (image_transform_
-            ? transform_processor_type::to_string(*image_transform_)
-            : std::string("null"));
-    #endif
-}
 
-transform_type const& symbolizer_with_image::get_image_transform() const
-{
-    return image_transform_;
-}
+IMPLEMENT_ENUM( vertical_alignment_e, vertical_alignment_strings )
 
-std::string symbolizer_with_image::get_image_transform_string() const
-{
-    if (image_transform_)
-        return transform_processor_type::to_string(*image_transform_);
-    else
-        return std::string();
-}
+static const char * horizontal_alignment_strings[] = {
+    "left",
+    "middle",
+    "right",
+    "auto",
+    ""
+};
+
+
+IMPLEMENT_ENUM( horizontal_alignment_e, horizontal_alignment_strings )
+
+static const char * justify_alignment_strings[] = {
+    "left",
+    "center", // not 'middle' in order to match CSS
+    "right",
+    "auto",
+    ""
+};
+
+
+IMPLEMENT_ENUM( justify_alignment_e, justify_alignment_strings )
+
+static const char * text_transform_strings[] = {
+    "none",
+    "uppercase",
+    "lowercase",
+    "capitalize",
+    ""
+};
+
+
+IMPLEMENT_ENUM( text_transform_e, text_transform_strings )
+
+static const char * text_upright_strings[] = {
+    "auto",
+    "left",
+    "right",
+    "left_only",
+    "right_only",
+    ""
+};
+IMPLEMENT_ENUM(text_upright_e, text_upright_strings)
 
 } // end of namespace mapnik

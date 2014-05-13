@@ -22,6 +22,9 @@
 
 #include "basiccurl.h"
 
+#include <iostream>
+#include <cstring>
+
 CURL_LOAD_DATA* grab_http_response(const char* url)
 {
     CURL_LOAD_DATA* data;
@@ -34,21 +37,23 @@ CURL_LOAD_DATA* grab_http_response(const char* url)
         curl_easy_cleanup(curl);
         return data;
     }
-    return NULL;
+    return nullptr;
 }
 
 CURL_LOAD_DATA* do_grab(CURL* curl,const char* url)
 {
-    CURLcode res;
     CURL_LOAD_DATA* data = (CURL_LOAD_DATA*)malloc(sizeof(CURL_LOAD_DATA));
-    data->data = NULL;
+    data->data = nullptr;
     data->nbytes = 0;
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, response_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
 
-    res = curl_easy_perform(curl);
+    CURLcode res = curl_easy_perform(curl);
+    if (res !=0) {
+        std::clog << "error grabbing data\n";
+    }
 
     return data;
 }
@@ -61,7 +66,7 @@ size_t response_callback(void* ptr, size_t size, size_t nmemb, void* d)
     // fprintf(stderr,"rsize is %d\n", rsize);
 
     data->data = (char*)realloc(data->data, (data->nbytes + rsize) * sizeof(char));
-    memcpy(&(data->data[data->nbytes]), ptr, rsize);
+    std::memcpy(&(data->data[data->nbytes]), ptr, rsize);
     data->nbytes += rsize;
 
     // fprintf(stderr,"data->nbytes is %d\n", data->nbytes);

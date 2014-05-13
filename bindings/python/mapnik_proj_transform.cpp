@@ -20,11 +20,18 @@
  *
  *****************************************************************************/
 
+#include "boost_std_shared_shim.hpp"
+
 // mapnik
 #include <mapnik/proj_transform.hpp>
+#include <boost/noncopyable.hpp>
 
 // boost
 #include <boost/python.hpp>
+
+// stl
+#include <stdexcept>
+
 
 using mapnik::proj_transform;
 using mapnik::projection;

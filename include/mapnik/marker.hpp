@@ -29,16 +29,15 @@
 #include <mapnik/svg/svg_path_attributes.hpp>
 #include <mapnik/svg/svg_storage.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // agg
 #include "agg_path_storage.h"
 
 // boost
-#include <boost/utility.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/optional.hpp>
-#include <boost/make_shared.hpp>
 
 // stl
 #include <cassert>
@@ -49,35 +48,38 @@ namespace mapnik
 
 typedef agg::pod_bvector<mapnik::svg::path_attributes> attr_storage;
 typedef mapnik::svg::svg_storage<mapnik::svg::svg_path_storage,attr_storage> svg_storage_type;
-typedef boost::shared_ptr<svg_storage_type> path_ptr;
-typedef boost::shared_ptr<image_data_32> image_ptr;
+typedef std::shared_ptr<svg_storage_type> svg_path_ptr;
+typedef std::shared_ptr<image_data_32> image_ptr;
 /**
  * A class to hold either vector or bitmap marker data. This allows these to be treated equally
  * in the image caches and most of the render paths.
  */
-class marker
+class marker: private mapnik::noncopyable
 {
 public:
     marker()
     {
         // create default OGC 4x4 black pixel
-        bitmap_data_ = boost::optional<mapnik::image_ptr>(boost::make_shared<image_data_32>(4,4));
+        bitmap_data_ = boost::optional<mapnik::image_ptr>(std::make_shared<image_data_32>(4,4));
         (*bitmap_data_)->set(0xff000000);
     }
 
-    marker(const boost::optional<mapnik::image_ptr> &data) : bitmap_data_(data)
+    marker(boost::optional<mapnik::image_ptr> const& data)
+        : bitmap_data_(data)
     {
 
     }
 
-    marker(const boost::optional<mapnik::path_ptr> &data) : vector_data_(data)
+    marker(boost::optional<mapnik::svg_path_ptr> const& data)
+        : vector_data_(data)
     {
 
     }
 
-    marker(const marker& rhs) : bitmap_data_(rhs.bitmap_data_), vector_data_(rhs.vector_data_)
-    {
-    }
+    marker(marker const& rhs)
+        : bitmap_data_(rhs.bitmap_data_),
+          vector_data_(rhs.vector_data_)
+    {}
 
     box2d<double> bounding_box() const
     {
@@ -97,17 +99,25 @@ public:
     inline double width() const
     {
         if (is_bitmap())
+        {
             return (*bitmap_data_)->width();
+        }
         else if (is_vector())
+        {
             return (*vector_data_)->bounding_box().width();
+        }
         return 0;
     }
     inline double height() const
     {
         if (is_bitmap())
+        {
             return (*bitmap_data_)->height();
+        }
         else if (is_vector())
+        {
             return (*vector_data_)->bounding_box().height();
+        }
         return 0;
     }
 
@@ -126,17 +136,14 @@ public:
         return bitmap_data_;
     }
 
-    boost::optional<mapnik::path_ptr> get_vector_data() const
+    boost::optional<mapnik::svg_path_ptr> get_vector_data() const
     {
         return vector_data_;
     }
 
-
 private:
-    marker& operator=(const marker&);
-
     boost::optional<mapnik::image_ptr> bitmap_data_;
-    boost::optional<mapnik::path_ptr> vector_data_;
+    boost::optional<mapnik::svg_path_ptr> vector_data_;
 
 };
 

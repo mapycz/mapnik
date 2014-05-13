@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2013 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,11 +24,12 @@
 #define MAPNIK_GLOBAL_HPP
 
 // boost
-#include <boost/cstdint.hpp>
 #include <boost/detail/endian.hpp>
 
 // stl
+#include <cstdint>
 #include <cstring>
+#include <cmath>
 
 namespace mapnik
 {
@@ -37,24 +38,24 @@ namespace mapnik
 #define MAPNIK_BIG_ENDIAN
 #endif
 
-#define int2net(A)  (int16_t) (((boost::uint16_t) ((boost::uint8_t) (A)[1]))      | \
-                               (((boost::uint16_t) ((boost::uint8_t) (A)[0])) << 8))
+#define int2net(A)  (int16_t) (((std::uint16_t) ((std::uint8_t) (A)[1]))      | \
+                               (((std::uint16_t) ((std::uint8_t) (A)[0])) << 8))
 
-#define int4net(A)  (int32_t)  (((boost::uint32_t) ((boost::uint8_t) (A)[3]))        | \
-                                (((boost::uint32_t) ((boost::uint8_t) (A)[2])) << 8)  | \
-                                (((boost::uint32_t) ((boost::uint8_t) (A)[1])) << 16) | \
-                                (((boost::uint32_t) ((boost::uint8_t) (A)[0])) << 24))
+#define int4net(A)  (int32_t)  (((std::uint32_t) ((std::uint8_t) (A)[3]))        | \
+                                (((std::uint32_t) ((std::uint8_t) (A)[2])) << 8)  | \
+                                (((std::uint32_t) ((std::uint8_t) (A)[1])) << 16) | \
+                                (((std::uint32_t) ((std::uint8_t) (A)[0])) << 24))
 
-#define int8net(A)  (int64_t)  (((boost::uint64_t) ((boost::uint8_t) (A)[7]))        | \
-                                (((boost::uint64_t) ((boost::uint8_t) (A)[6])) << 8)  | \
-                                (((boost::uint64_t) ((boost::uint8_t) (A)[5])) << 16) | \
-                                (((boost::uint64_t) ((boost::uint8_t) (A)[4])) << 24) | \
-                                (((boost::uint64_t) ((boost::uint8_t) (A)[3])) << 32) | \
-                                (((boost::uint64_t) ((boost::uint8_t) (A)[2])) << 40) | \
-                                (((boost::uint64_t) ((boost::uint8_t) (A)[1])) << 48) | \
-                                (((boost::uint64_t) ((boost::uint8_t) (A)[0])) << 56))
+#define int8net(A)  (int64_t)  (((std::uint64_t) ((std::uint8_t) (A)[7]))        | \
+                                (((std::uint64_t) ((std::uint8_t) (A)[6])) << 8)  | \
+                                (((std::uint64_t) ((std::uint8_t) (A)[5])) << 16) | \
+                                (((std::uint64_t) ((std::uint8_t) (A)[4])) << 24) | \
+                                (((std::uint64_t) ((std::uint8_t) (A)[3])) << 32) | \
+                                (((std::uint64_t) ((std::uint8_t) (A)[2])) << 40) | \
+                                (((std::uint64_t) ((std::uint8_t) (A)[1])) << 48) | \
+                                (((std::uint64_t) ((std::uint8_t) (A)[0])) << 56))
 
-typedef boost::uint8_t byte;
+typedef std::uint8_t byte;
 #define float8net(V,M)   do { double def_temp;  \
         ((byte*) &def_temp)[0]=(M)[7];          \
         ((byte*) &def_temp)[1]=(M)[6];          \
@@ -74,7 +75,7 @@ typedef boost::uint8_t byte;
 
 
 // read int16_t NDR (little endian)
-inline void read_int16_ndr(const char* data, boost::int16_t & val)
+inline void read_int16_ndr(const char* data, std::int16_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     std::memcpy(&val,data,2);
@@ -85,7 +86,7 @@ inline void read_int16_ndr(const char* data, boost::int16_t & val)
 }
 
 // read int32_t NDR (little endian)
-inline void read_int32_ndr(const char* data, boost::int32_t & val)
+inline void read_int32_ndr(const char* data, std::int32_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     std::memcpy(&val,data,4);
@@ -103,30 +104,30 @@ inline void read_double_ndr(const char* data, double & val)
 #ifndef MAPNIK_BIG_ENDIAN
     std::memcpy(&val,&data[0],8);
 #else
-    boost::int64_t bits = ((boost::int64_t)data[0] & 0xff) |
-        ((boost::int64_t)data[1] & 0xff) << 8   |
-        ((boost::int64_t)data[2] & 0xff) << 16  |
-        ((boost::int64_t)data[3] & 0xff) << 24  |
-        ((boost::int64_t)data[4] & 0xff) << 32  |
-        ((boost::int64_t)data[5] & 0xff) << 40  |
-        ((boost::int64_t)data[6] & 0xff) << 48  |
-        ((boost::int64_t)data[7] & 0xff) << 56  ;
+    std::int64_t bits = ((std::int64_t)data[0] & 0xff) |
+        ((std::int64_t)data[1] & 0xff) << 8   |
+        ((std::int64_t)data[2] & 0xff) << 16  |
+        ((std::int64_t)data[3] & 0xff) << 24  |
+        ((std::int64_t)data[4] & 0xff) << 32  |
+        ((std::int64_t)data[5] & 0xff) << 40  |
+        ((std::int64_t)data[6] & 0xff) << 48  |
+        ((std::int64_t)data[7] & 0xff) << 56  ;
     std::memcpy(&val,&bits,8);
 #endif
 }
 
 // read int16_t XDR (big endian)
-inline void read_int16_xdr(const char* data, boost::int16_t & val)
+inline void read_int16_xdr(const char* data, std::int16_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
-    val = (data[3]&0xff) | ((data[2]&0xff)<<8);
+    val = static_cast<std::int16_t>((data[3]&0xff) | ((data[2]&0xff)<<8));
 #else
     std::memcpy(&val,data,2);
 #endif
 }
 
 // read int32_t XDR (big endian)
-inline void read_int32_xdr(const char* data, boost::int32_t & val)
+inline void read_int32_xdr(const char* data, std::int32_t & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
     val = (data[3]&0xff) | ((data[2]&0xff)<<8) | ((data[1]&0xff)<<16) | ((data[0]&0xff)<<24);
@@ -139,14 +140,14 @@ inline void read_int32_xdr(const char* data, boost::int32_t & val)
 inline void read_double_xdr(const char* data, double & val)
 {
 #ifndef MAPNIK_BIG_ENDIAN
-    boost::int64_t bits = ((boost::int64_t)data[7] & 0xff) |
-        ((boost::int64_t)data[6] & 0xff) << 8   |
-        ((boost::int64_t)data[5] & 0xff) << 16  |
-        ((boost::int64_t)data[4] & 0xff) << 24  |
-        ((boost::int64_t)data[3] & 0xff) << 32  |
-        ((boost::int64_t)data[2] & 0xff) << 40  |
-        ((boost::int64_t)data[1] & 0xff) << 48  |
-        ((boost::int64_t)data[0] & 0xff) << 56  ;
+    std::int64_t bits = ((std::int64_t)data[7] & 0xff) |
+        ((std::int64_t)data[6] & 0xff) << 8   |
+        ((std::int64_t)data[5] & 0xff) << 16  |
+        ((std::int64_t)data[4] & 0xff) << 24  |
+        ((std::int64_t)data[3] & 0xff) << 32  |
+        ((std::int64_t)data[2] & 0xff) << 40  |
+        ((std::int64_t)data[1] & 0xff) << 48  |
+        ((std::int64_t)data[0] & 0xff) << 56  ;
     std::memcpy(&val,&bits,8);
 #else
     std::memcpy(&val,&data[0],8);
@@ -155,14 +156,14 @@ inline void read_double_xdr(const char* data, double & val)
 
 #ifdef _WINDOWS
 // msvc doesn't have rint in <cmath>
-inline int rint( double val)
+inline int rint(double val)
 {
-    return int(floor(val + 0.5));
+    return int(std::floor(val + 0.5));
 }
 
-inline double round (double val)
+inline double round(double val)
 {
-    return floor(val);
+    return std::floor(val);
 }
 
 #define  _USE_MATH_DEFINES

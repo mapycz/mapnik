@@ -25,21 +25,20 @@
 
 //mapnik
 #include <mapnik/box2d.hpp>
-#include <mapnik/feature.hpp>
 
 // boost
 #include <boost/tuple/tuple.hpp>
 
 // stl
 #include <set>
-#include <limits>
+#include <string>
 
 namespace mapnik {
 
 class query
 {
 public:
-    typedef boost::tuple<double,double> resolution_type;
+    typedef std::tuple<double,double> resolution_type;
 
     query(box2d<double> const& bbox,
           resolution_type const& resolution,

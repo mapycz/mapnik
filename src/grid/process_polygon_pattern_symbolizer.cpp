@@ -20,13 +20,21 @@
  *
  *****************************************************************************/
 
+#if defined(GRID_RENDERER)
+
+// boost
+
+
 // mapnik
+#include <mapnik/feature.hpp>
 #include <mapnik/grid/grid_rasterizer.hpp>
 #include <mapnik/grid/grid_renderer.hpp>
-#include <mapnik/grid/grid_pixfmt.hpp>
-#include <mapnik/grid/grid_pixel.hpp>
+#include <mapnik/grid/grid_renderer_base.hpp>
 #include <mapnik/grid/grid.hpp>
-#include <mapnik/polygon_pattern_symbolizer.hpp>
+#include <mapnik/vertex_converters.hpp>
+#include <mapnik/marker.hpp>
+#include <mapnik/marker_cache.hpp>
+#include <mapnik/parse_path.hpp>
 
 // agg
 #include "agg_rasterizer_scanline_aa.h"
@@ -44,31 +52,62 @@ void grid_renderer<T>::process(polygon_pattern_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans)
 {
-    typedef coord_transform<CoordTransform,geometry_type> path_type;
-    typedef agg::renderer_base<mapnik::pixfmt_gray32> ren_base;
-    typedef agg::renderer_scanline_bin_solid<ren_base> renderer;
-    agg::scanline_bin sl;
+    std::string filename = get<std::string>(sym, keys::file, feature);
 
-    grid_rendering_buffer buf(pixmap_.raw_data(), width_, height_, width_);
-    mapnik::pixfmt_gray32 pixf(buf);
+    boost::optional<marker_ptr> mark = marker_cache::instance().find(filename,true);
+    if (!mark) return;
 
-    ren_base renb(pixf);
-    renderer ren(renb);
+    if (!(*mark)->is_bitmap())
+    {
+        MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Only images (not '" << filename << "') are supported in the line_pattern_symbolizer";
+        return;
+    }
+
+    boost::optional<image_ptr> pat = (*mark)->get_bitmap_data();
+    if (!pat) return;
 
     ras_ptr->reset();
 
-    for (unsigned i=0;i<feature.num_geometries();++i)
+    bool clip = get<value_bool>(sym, keys::clip, feature, false);
+    double simplify_tolerance = get<value_double>(sym, keys::simplify_tolerance, feature, 0.0);
+    double smooth = get<value_double>(sym, keys::smooth, feature, false);
+
+    agg::trans_affine tr;
+    auto geom_transform = get_optional<transform_type>(sym, keys::geometry_transform);
+    if (geom_transform) evaluate_transform(tr, feature, *geom_transform, common_.scale_factor_);
+
+    typedef boost::mpl::vector<clip_poly_tag,transform_tag,affine_transform_tag,smooth_tag> conv_types;
+    vertex_converter<box2d<double>, grid_rasterizer, polygon_pattern_symbolizer,
+                     CoordTransform, proj_transform, agg::trans_affine, conv_types, feature_impl>
+        converter(common_.query_extent_,*ras_ptr,sym,common_.t_,prj_trans,tr,feature,common_.scale_factor_);
+
+    if (prj_trans.equal() && clip) converter.set<clip_poly_tag>(); //optional clip (default: true)
+    converter.set<transform_tag>(); //always transform
+    converter.set<affine_transform_tag>();
+    if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
+    if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
+
+    for ( geometry_type & geom : feature.paths())
     {
-        geometry_type & geom = feature.get_geometry(i);
-        if (geom.num_points() > 2)
+        if (geom.size() > 2)
         {
-            path_type path(t_,geom,prj_trans);
-            ras_ptr->add_path(path);
+            converter.apply(geom);
         }
     }
+    typedef typename grid_renderer_base_type::pixfmt_type pixfmt_type;
+    typedef typename grid_renderer_base_type::pixfmt_type::color_type color_type;
+    typedef agg::renderer_scanline_bin_solid<grid_renderer_base_type> renderer_type;
+
+    grid_rendering_buffer buf(pixmap_.raw_data(), common_.width_, common_.height_, common_.width_);
+    pixfmt_type pixf(buf);
+
+    grid_renderer_base_type renb(pixf);
+    renderer_type ren(renb);
 
     // render id
-    ren.color(mapnik::gray32(feature.id()));
+    ren.color(color_type(feature.id()));
+    agg::scanline_bin sl;
+    ras_ptr->filling_rule(agg::fill_even_odd);
     agg::render_scanlines(*ras_ptr, sl, ren);
 
     // add feature properties to grid cache
@@ -81,4 +120,6 @@ template void grid_renderer<grid>::process(polygon_pattern_symbolizer const&,
                                            proj_transform const&);
 
 }
+
+#endif
 

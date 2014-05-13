@@ -20,23 +20,25 @@
  *
  *****************************************************************************/
 
-// boost
-#include <boost/foreach.hpp>
 // mapnik
+#include <mapnik/feature.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/graphics.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/agg_pattern_source.hpp>
-#include <mapnik/expression_evaluator.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
-#include <mapnik/line_pattern_symbolizer.hpp>
+#include <mapnik/symbolizer.hpp>
 #include <mapnik/vertex_converters.hpp>
+#include <mapnik/noncopyable.hpp>
+#include <mapnik/parse_path.hpp>
+
 // agg
 #include "agg_basics.h"
-#include "agg_rendering_buffer.h"
 #include "agg_pixfmt_rgba.h"
+#include "agg_color_rgba.h"
+#include "agg_rendering_buffer.h"
 #include "agg_rasterizer_outline.h"
 #include "agg_rasterizer_outline_aa.h"
 #include "agg_scanline_u.h"
@@ -47,16 +49,49 @@
 #include "agg_renderer_outline_image.h"
 #include "agg_conv_clip_polyline.h"
 
+// boost
+
+
+namespace {
+
+class pattern_source : private mapnik::noncopyable
+{
+public:
+    pattern_source(mapnik::image_data_32 const& pattern)
+        : pattern_(pattern) {}
+
+    inline unsigned int width() const
+    {
+        return pattern_.width();
+    }
+    inline unsigned int height() const
+    {
+        return pattern_.height();
+    }
+    inline agg::rgba8 pixel(int x, int y) const
+    {
+        unsigned c = pattern_(x,y);
+        return agg::rgba8_pre(c & 0xff,
+                          (c >> 8) & 0xff,
+                          (c >> 16) & 0xff,
+                          (c >> 24) & 0xff);
+    }
+private:
+    mapnik::image_data_32 const& pattern_;
+};
+
+}
+
 namespace mapnik {
 
-template <typename T>
-void  agg_renderer<T>::process(line_pattern_symbolizer const& sym,
+template <typename T0, typename T1>
+void  agg_renderer<T0,T1>::process(line_pattern_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans)
 {
+
     typedef agg::rgba8 color;
     typedef agg::order_rgba order;
-    typedef agg::pixel32_type pixel_type;    
     typedef agg::comp_op_adaptor_rgba_pre<color, order> blender_type;
     typedef agg::pattern_filter_bilinear_rgba8 pattern_filter_type;
     typedef agg::line_image_pattern<pattern_filter_type> pattern_type;
@@ -64,53 +99,73 @@ void  agg_renderer<T>::process(line_pattern_symbolizer const& sym,
     typedef agg::renderer_base<pixfmt_type> renderer_base;
     typedef agg::renderer_outline_image<renderer_base, pattern_type> renderer_type;
     typedef agg::rasterizer_outline_aa<renderer_type> rasterizer_type;
-    
-    std::string filename = path_processor_type::evaluate( *sym.get_filename(), feature);
 
-    boost::optional<marker_ptr> mark = marker_cache::instance()->find(filename,true);
+    std::string filename = get<std::string>(sym, keys::file, feature);
+
+    boost::optional<marker_ptr> mark = marker_cache::instance().find(filename,true);
     if (!mark) return;
 
     if (!(*mark)->is_bitmap())
     {
         MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Only images (not '" << filename << "') are supported in the line_pattern_symbolizer";
-
         return;
     }
 
     boost::optional<image_ptr> pat = (*mark)->get_bitmap_data();
-
     if (!pat) return;
 
-    box2d<double> ext = query_extent_ * 1.0;
-    
-    agg::rendering_buffer buf(current_buffer_->raw_data(),width_,height_, width_ * 4);
+
+    bool clip = get<value_bool>(sym, keys::clip, feature);
+    //double opacity = get<value_double>(sym,keys::stroke_opacity,feature, 1.0); TODO
+    double offset = get<value_double>(sym, keys::offset, feature, 0.0);
+    double simplify_tolerance = get<value_double>(sym, keys::simplify_tolerance, feature, 0.0);
+    double smooth = get<value_double>(sym, keys::smooth, feature, false);
+
+    agg::rendering_buffer buf(current_buffer_->raw_data(),current_buffer_->width(),current_buffer_->height(), current_buffer_->width() * 4);
     pixfmt_type pixf(buf);
-    pixf.comp_op(static_cast<agg::comp_op_e>(sym.comp_op()));
+    pixf.comp_op(get<agg::comp_op_e>(sym, keys::comp_op, feature, agg::comp_op_src_over));
     renderer_base ren_base(pixf);
     agg::pattern_filter_bilinear_rgba8 filter;
 
     pattern_source source(*(*pat));
     pattern_type pattern (filter,source);
-    renderer_type ren(ren_base, pattern);    
+    renderer_type ren(ren_base, pattern);
     rasterizer_type ras(ren);
-    
-    agg::trans_affine tr;
-    evaluate_transform(tr, feature, sym.get_transform());
 
-    typedef boost::mpl::vector<clip_line_tag,transform_tag,smooth_tag> conv_types;
-    vertex_converter<box2d<double>, rasterizer_type, line_pattern_symbolizer,
-                     CoordTransform, proj_transform, agg::trans_affine, conv_types>
-        converter(ext,ras,sym,t_,prj_trans,tr,scale_factor_);
-    
-    if (sym.clip()) converter.set<clip_line_tag>(); //optional clip (default: true)
-    converter.set<transform_tag>(); //always transform 
-    if (sym.smooth() > 0.0) converter.set<smooth_tag>(); // optional smooth converter
-    
-    BOOST_FOREACH(geometry_type & geom, feature.paths())
+    agg::trans_affine tr;
+    auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
+    if (transform) evaluate_transform(tr, feature, *transform, common_.scale_factor_);
+
+    box2d<double> clip_box = clipping_extent();
+    if (clip)
     {
-        if (geom.num_points() > 1)
+        double padding = (double)(common_.query_extent_.width()/pixmap_.width());
+        double half_stroke = (*mark)->width()/2.0;
+        if (half_stroke > 1)
+            padding *= half_stroke;
+        if (std::fabs(offset) > 0)
+            padding *= std::fabs(offset) * 1.2;
+        padding *= common_.scale_factor_;
+        clip_box.pad(padding);
+    }
+
+    typedef boost::mpl::vector<clip_line_tag,transform_tag,offset_transform_tag,affine_transform_tag,simplify_tag,smooth_tag> conv_types;
+    vertex_converter<box2d<double>, rasterizer_type, line_pattern_symbolizer,
+                     CoordTransform, proj_transform, agg::trans_affine, conv_types, feature_impl>
+        converter(clip_box,ras,sym,common_.t_,prj_trans,tr,feature,common_.scale_factor_);
+
+    if (clip) converter.set<clip_line_tag>(); //optional clip (default: true)
+    converter.set<transform_tag>(); //always transform
+    if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
+    if (std::fabs(offset) > 0.0) converter.set<offset_transform_tag>(); // parallel offset
+    converter.set<affine_transform_tag>(); // optional affine transform
+    if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
+
+    for (geometry_type & geom : feature.paths())
+    {
+        if (geom.size() > 1)
         {
-            converter.apply(geom);        
+            converter.apply(geom);
         }
     }
 }

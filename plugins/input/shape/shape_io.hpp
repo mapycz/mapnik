@@ -25,17 +25,16 @@
 
 // mapnik
 #include <mapnik/geometry.hpp>
-#include <mapnik/datasource.hpp>
+#include <mapnik/box2d.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // boost
-#include <boost/utility.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "dbfile.hpp"
 #include "shapefile.hpp"
-#include "shp_index.hpp"
 
-struct shape_io : boost::noncopyable
+struct shape_io : mapnik::noncopyable
 {
 public:
     enum shapeType
@@ -56,13 +55,13 @@ public:
         shape_multipatch = 31
     };
 
-    shape_io(const std::string& shape_name, bool open_index=true);
+    shape_io(std::string const& shape_name, bool open_index=true);
     ~shape_io();
 
     shape_file& shp();
     dbf_file& dbf();
 
-    inline boost::shared_ptr<shape_file>& index()
+    inline std::shared_ptr<shape_file>& index()
     {
         return index_;
     }
@@ -72,15 +71,15 @@ public:
         return (index_ && index_->is_open());
     }
 
-    void move_to(int id);
-    shapeType type() const;
-    const box2d<double>& current_extent() const;
-    void read_polyline(mapnik::geometry_container & geom);
-    void read_polygon(mapnik::geometry_container & geom);
+    void move_to(std::streampos pos);
+    static void read_bbox(shape_file::record_type & record, mapnik::box2d<double> & bbox);
+    static void read_polyline(shape_file::record_type & record,mapnik::geometry_container & geom);
+    static void read_polygon(shape_file::record_type & record,mapnik::geometry_container & geom);
+
     shapeType type_;
     shape_file shp_;
     dbf_file   dbf_;
-    boost::shared_ptr<shape_file> index_;
+    std::shared_ptr<shape_file> index_;
     unsigned reclength_;
     unsigned id_;
     box2d<double> cur_extent_;

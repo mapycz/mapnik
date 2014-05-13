@@ -26,61 +26,38 @@
 // mapnik
 #include <mapnik/debug.hpp>
 #include <mapnik/utils.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // boost
-#include <boost/shared_ptr.hpp>
-#include <boost/utility.hpp>
+#include <memory>
 #ifdef MAPNIK_THREADSAFE
-#include <boost/thread/mutex.hpp>
+#include <thread>
 #endif
 
 // stl
-#include <iostream>
 #include <map>
 #include <deque>
 #include <ctime>
+#include <cassert>
 
 namespace mapnik
 {
-template <typename T, typename PoolT>
-class PoolGuard
-{
-private:
-    const T& obj_;
-    PoolT& pool_;
-public:
-    explicit PoolGuard(const T& ptr,PoolT& pool)
-        : obj_(ptr),
-          pool_(pool) {}
-
-    ~PoolGuard()
-    {
-        pool_->returnObject(obj_);
-    }
-
-private:
-    PoolGuard();
-    PoolGuard(const PoolGuard&);
-    PoolGuard& operator=(const PoolGuard&);
-};
-
 template <typename T,template <typename> class Creator>
-class Pool : private boost::noncopyable
+class Pool : private mapnik::noncopyable
 {
-    typedef boost::shared_ptr<T> HolderType;
+    typedef std::shared_ptr<T> HolderType;
     typedef std::deque<HolderType> ContType;
 
     Creator<T> creator_;
-    const unsigned initialSize_;
-    const unsigned maxSize_;
-    ContType usedPool_;
-    ContType unusedPool_;
+    unsigned initialSize_;
+    unsigned maxSize_;
+    ContType pool_;
 #ifdef MAPNIK_THREADSAFE
-    mutable boost::mutex mutex_;
+    mutable std::mutex mutex_;
 #endif
 public:
 
-    Pool(const Creator<T>& creator,unsigned initialSize=1, unsigned maxSize=10)
+    Pool(const Creator<T>& creator,unsigned initialSize, unsigned maxSize)
         :creator_(creator),
          initialSize_(initialSize),
          maxSize_(maxSize)
@@ -89,39 +66,42 @@ public:
         {
             HolderType conn(creator_());
             if (conn->isOK())
-                unusedPool_.push_back(conn);
+                pool_.push_back(conn);
         }
     }
 
     HolderType borrowObject()
     {
 #ifdef MAPNIK_THREADSAFE
-        mutex::scoped_lock lock(mutex_);
+        mapnik::scoped_lock lock(mutex_);
 #endif
-        typename ContType::iterator itr=unusedPool_.begin();
-        while ( itr!=unusedPool_.end())
-        {
-            MAPNIK_LOG_DEBUG(pool) << "pool: Borrow instance=" << (*itr).get();
 
-            if ((*itr)->isOK())
+        typename ContType::iterator itr=pool_.begin();
+        while ( itr!=pool_.end())
+        {
+            if (!itr->unique())
             {
-                usedPool_.push_back(*itr);
-                unusedPool_.erase(itr);
-                return usedPool_[usedPool_.size()-1];
+                ++itr;
+            }
+            else if ((*itr)->isOK())
+            {
+                MAPNIK_LOG_DEBUG(pool) << "pool: Borrow instance=" << (*itr).get();
+                return *itr;
             }
             else
             {
                 MAPNIK_LOG_DEBUG(pool) << "pool: Bad connection (erase) instance=" << (*itr).get();
 
-                itr=unusedPool_.erase(itr);
+                itr=pool_.erase(itr);
             }
         }
-        if (usedPool_.size() < maxSize_)
+        // all connection have been taken, check if we allowed to grow pool
+        if (pool_.size() < maxSize_)
         {
             HolderType conn(creator_());
             if (conn->isOK())
             {
-                usedPool_.push_back(conn);
+                pool_.push_back(conn);
 
                 MAPNIK_LOG_DEBUG(pool) << "pool: Create connection=" << conn.get();
 
@@ -131,33 +111,60 @@ public:
         return HolderType();
     }
 
-    void returnObject(HolderType obj)
+    unsigned size() const
     {
 #ifdef MAPNIK_THREADSAFE
-        mutex::scoped_lock lock(mutex_);
+        mapnik::scoped_lock lock(mutex_);
 #endif
-        typename ContType::iterator itr=usedPool_.begin();
-        while (itr != usedPool_.end())
-        {
-            if (obj.get()==(*itr).get())
-            {
-                MAPNIK_LOG_DEBUG(pool) << "pool: Return instance=" << (*itr).get();
-
-                unusedPool_.push_back(*itr);
-                usedPool_.erase(itr);
-                return;
-            }
-            ++itr;
-        }
+        return pool_.size();
     }
 
-    std::pair<unsigned,unsigned> size() const
+    unsigned max_size() const
     {
 #ifdef MAPNIK_THREADSAFE
-        mutex::scoped_lock lock(mutex_);
+        mapnik::scoped_lock lock(mutex_);
 #endif
-        std::pair<unsigned,unsigned> size(unusedPool_.size(),usedPool_.size());
-        return size;
+        return maxSize_;
+    }
+
+    void set_max_size(unsigned size)
+    {
+#ifdef MAPNIK_THREADSAFE
+        mapnik::scoped_lock lock(mutex_);
+#endif
+        maxSize_ = std::max(maxSize_,size);
+    }
+
+    unsigned initial_size() const
+    {
+#ifdef MAPNIK_THREADSAFE
+        mapnik::scoped_lock lock(mutex_);
+#endif
+        return initialSize_;
+    }
+
+    void set_initial_size(unsigned size)
+    {
+#ifdef MAPNIK_THREADSAFE
+        mapnik::scoped_lock lock(mutex_);
+#endif
+        if (size > initialSize_)
+        {
+            initialSize_ = size;
+            unsigned total_size = pool_.size();
+            // ensure we don't have ghost obj's in the pool.
+            if (total_size < initialSize_)
+            {
+                unsigned grow_size = initialSize_ - total_size ;
+
+                for (unsigned i=0; i < grow_size; ++i)
+                {
+                    HolderType conn(creator_());
+                    if (conn->isOK())
+                        pool_.push_back(conn);
+                }
+            }
+        }
     }
 };
 

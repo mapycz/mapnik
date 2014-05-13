@@ -21,8 +21,10 @@
  *****************************************************************************/
 
 // boost
-#include <boost/foreach.hpp>
+
+
 // mapnik
+#include <mapnik/feature.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/graphics.hpp>
 #include <mapnik/agg_renderer.hpp>
@@ -30,12 +32,15 @@
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
-#include <mapnik/expression_evaluator.hpp>
 #include <mapnik/vertex_converters.hpp>
+#include <mapnik/parse_path.hpp>
+#include <mapnik/symbolizer.hpp>
+
 // agg
 #include "agg_basics.h"
 #include "agg_rendering_buffer.h"
 #include "agg_pixfmt_rgba.h"
+#include "agg_color_rgba.h"
 #include "agg_rasterizer_scanline_aa.h"
 #include "agg_scanline_u.h"
 // for polygon_pattern_symbolizer
@@ -47,23 +52,30 @@
 
 namespace mapnik {
 
-template <typename T>
-void agg_renderer<T>::process(polygon_pattern_symbolizer const& sym,
+template <typename T0, typename T1>
+void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
                               mapnik::feature_impl & feature,
                               proj_transform const& prj_trans)
 {
     typedef agg::conv_clip_polygon<geometry_type> clipped_geometry_type;
     typedef coord_transform<CoordTransform,clipped_geometry_type> path_type;
 
-    agg::rendering_buffer buf(current_buffer_->raw_data(), width_, height_, width_ * 4);
+    agg::rendering_buffer buf(current_buffer_->raw_data(), current_buffer_->width(), current_buffer_->height(), current_buffer_->width() * 4);
     ras_ptr->reset();
-    set_gamma_method(sym,ras_ptr);
+    double gamma = get<value_double>(sym, keys::gamma, feature, 1.0);
+    gamma_method_enum gamma_method = get<gamma_method_enum>(sym, keys::gamma_method, feature, GAMMA_POWER);
+    if (gamma != gamma_ || gamma_method != gamma_method_)
+    {
+        set_gamma_method(ras_ptr, gamma, gamma_method);
+        gamma_method_ = gamma_method;
+        gamma_ = gamma;
+    }
 
-    std::string filename = path_processor_type::evaluate( *sym.get_filename(), feature);
+    std::string filename = get<std::string>(sym, keys::file, feature);
     boost::optional<mapnik::marker_ptr> marker;
     if ( !filename.empty() )
     {
-        marker = marker_cache::instance()->find(filename, true);
+        marker = marker_cache::instance().find(filename, true);
     }
     else
     {
@@ -83,15 +95,21 @@ void agg_renderer<T>::process(polygon_pattern_symbolizer const& sym,
 
     if (!pat) return;
 
+    bool clip = get<value_bool>(sym, keys::clip, feature, false);
+    double opacity = get<double>(sym,keys::stroke_opacity, 1.0);
+    double simplify_tolerance = get<value_double>(sym, keys::simplify_tolerance, feature, 0.0);
+    double smooth = get<value_double>(sym, keys::smooth, feature, false);
+
+    box2d<double> clip_box = clipping_extent();
+
     typedef agg::rgba8 color;
     typedef agg::order_rgba order;
-    typedef agg::pixel32_type pixel_type;
     typedef agg::comp_op_adaptor_rgba_pre<color, order> blender_type;
     typedef agg::pixfmt_custom_blend_rgba<blender_type, agg::rendering_buffer> pixfmt_type;
 
     typedef agg::wrap_mode_repeat wrap_x_type;
     typedef agg::wrap_mode_repeat wrap_y_type;
-    typedef agg::image_accessor_wrap<agg::pixfmt_rgba32,
+    typedef agg::image_accessor_wrap<agg::pixfmt_rgba32_pre,
                                      wrap_x_type,
                                      wrap_y_type> img_source_type;
 
@@ -103,60 +121,63 @@ void agg_renderer<T>::process(polygon_pattern_symbolizer const& sym,
         span_gen_type> renderer_type;
 
     pixfmt_type pixf(buf);
-    pixf.comp_op(static_cast<agg::comp_op_e>(sym.comp_op()));
+    pixf.comp_op(get<agg::comp_op_e>(sym, keys::comp_op, feature, agg::comp_op_src_over));
     ren_base renb(pixf);
 
     unsigned w=(*pat)->width();
     unsigned h=(*pat)->height();
     agg::rendering_buffer pattern_rbuf((agg::int8u*)(*pat)->getBytes(),w,h,w*4);
-    agg::pixfmt_rgba32 pixf_pattern(pattern_rbuf);
+    agg::pixfmt_rgba32_pre pixf_pattern(pattern_rbuf);
     img_source_type img_src(pixf_pattern);
 
-    pattern_alignment_e align = sym.get_alignment();
+    pattern_alignment_enum alignment = get<pattern_alignment_enum>(sym, keys::alignment, feature, LOCAL_ALIGNMENT);
     unsigned offset_x=0;
     unsigned offset_y=0;
 
-    if (align == LOCAL_ALIGNMENT)
+    if (alignment == LOCAL_ALIGNMENT)
     {
         double x0 = 0;
         double y0 = 0;
         if (feature.num_geometries() > 0)
         {
             clipped_geometry_type clipped(feature.get_geometry(0));
-            clipped.clip_box(query_extent_.minx(),query_extent_.miny(),query_extent_.maxx(),query_extent_.maxy());
-            path_type path(t_,clipped,prj_trans);
+            clipped.clip_box(clip_box.minx(),clip_box.miny(),clip_box.maxx(),clip_box.maxy());
+            path_type path(common_.t_,clipped,prj_trans);
             path.vertex(&x0,&y0);
         }
-        offset_x = unsigned(width_ - x0);
-        offset_y = unsigned(height_ - y0);
+        offset_x = unsigned(current_buffer_->width() - x0);
+        offset_y = unsigned(current_buffer_->height() - y0);
     }
 
     span_gen_type sg(img_src, offset_x, offset_y);
 
     agg::span_allocator<agg::rgba8> sa;
-    renderer_type rp(renb,sa, sg, unsigned(sym.get_opacity()*255));
+    renderer_type rp(renb,sa, sg, unsigned(opacity * 255));
 
     agg::trans_affine tr;
-    evaluate_transform(tr, feature, sym.get_transform());
+    auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
+    if (transform) evaluate_transform(tr, feature, *transform, common_.scale_factor_);
 
-    box2d<double> inflated_extent = query_extent_ * 1.0;
-    typedef boost::mpl::vector<clip_poly_tag,transform_tag,smooth_tag> conv_types;
+    typedef boost::mpl::vector<clip_poly_tag,transform_tag,affine_transform_tag,simplify_tag,smooth_tag> conv_types;
     vertex_converter<box2d<double>, rasterizer, polygon_pattern_symbolizer,
-                     CoordTransform, proj_transform, agg::trans_affine, conv_types>
-        converter(inflated_extent,*ras_ptr,sym,t_,prj_trans,tr,scale_factor_);
+                     CoordTransform, proj_transform, agg::trans_affine, conv_types, feature_impl>
+        converter(clip_box,*ras_ptr,sym,common_.t_,prj_trans,tr,feature,common_.scale_factor_);
 
-    if (sym.clip()) converter.set<clip_poly_tag>(); //optional clip (default: true)
+    if (prj_trans.equal() && clip) converter.set<clip_poly_tag>(); //optional clip (default: true)
     converter.set<transform_tag>(); //always transform
-    if (sym.smooth() > 0.0) converter.set<smooth_tag>(); // optional smooth converter
+    converter.set<affine_transform_tag>(); // optional affine transform
+    if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
+    if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
 
-    BOOST_FOREACH( geometry_type & geom, feature.paths())
+    for ( geometry_type & geom : feature.paths())
     {
-        if (geom.num_points() > 2)
+        if (geom.size() > 2)
         {
             converter.apply(geom);
         }
     }
     agg::scanline_u8 sl;
+    ras_ptr->filling_rule(agg::fill_even_odd);
     agg::render_scanlines(*ras_ptr, sl, rp);
 }
 

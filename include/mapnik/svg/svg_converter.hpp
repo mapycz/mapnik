@@ -26,9 +26,7 @@
 // mapnik
 #include <mapnik/svg/svg_path_attributes.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
-
-// boost
-#include <boost/utility.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // agg
 #include "agg_path_storage.h"
@@ -46,7 +44,7 @@ namespace mapnik {
 namespace svg {
 
 template <typename VertexSource, typename AttributeSource>
-class svg_converter : boost::noncopyable
+class svg_converter : mapnik::noncopyable
 {
 public:
 
@@ -66,10 +64,10 @@ public:
         {
             throw std::runtime_error("end_path : The path was not begun");
         }
-        path_attributes attr = cur_attr();
-        unsigned idx = attributes_[attributes_.size() - 1].index;
+        path_attributes& attr = attributes_[attributes_.size() - 1];
+        unsigned idx = attr.index;
+        attr = cur_attr();
         attr.index = idx;
-        attributes_[attributes_.size() - 1] = attr;
     }
 
     void move_to(double x, double y, bool rel=false)  // M, m
@@ -193,7 +191,7 @@ public:
     }
 
     // Attribute setting functions.
-    void fill(const agg::rgba8& f)
+    void fill(agg::rgba8 const& f)
     {
         path_attributes& attr = cur_attr();
         double a = attr.fill_color.opacity();
@@ -202,19 +200,19 @@ public:
         attr.fill_flag = true;
     }
 
-    void add_fill_gradient(mapnik::gradient& grad)
+    void add_fill_gradient(mapnik::gradient const& grad)
     {
         path_attributes& attr = cur_attr();
         attr.fill_gradient = grad;
     }
 
-    void add_stroke_gradient(mapnik::gradient& grad)
+    void add_stroke_gradient(mapnik::gradient const& grad)
     {
         path_attributes& attr = cur_attr();
         attr.stroke_gradient = grad;
     }
 
-    void stroke(const agg::rgba8& s)
+    void stroke(agg::rgba8 const& s)
     {
         path_attributes& attr = cur_attr();
         double a = attr.stroke_color.opacity();
@@ -264,11 +262,12 @@ public:
 
     void fill_opacity(double op)
     {
-        cur_attr().fill_color.opacity(op);
+        cur_attr().fill_opacity = op;
     }
+
     void stroke_opacity(double op)
     {
-        cur_attr().stroke_color.opacity(op);
+        cur_attr().stroke_opacity = op;
     }
 
     void opacity(double op)
@@ -309,6 +308,22 @@ public:
         agg::bounding_rect(trans, *this, 0, attributes_.size(), x1, y1, x2, y2);
     }
 
+    void set_dimensions(double w, double h)
+    {
+        svg_width_ = w;
+        svg_height_ = h;
+    }
+
+    double width()
+    {
+        return svg_width_;
+    }
+
+    double height()
+    {
+        return svg_height_;
+    }
+
     VertexSource & storage()
     {
         return source_;
@@ -334,6 +349,8 @@ private:
     AttributeSource & attributes_;
     AttributeSource  attr_stack_;
     agg::trans_affine transform_;
+    double svg_width_;
+    double svg_height_;
 };
 
 

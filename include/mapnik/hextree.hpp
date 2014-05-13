@@ -26,19 +26,14 @@
 // mapnik
 #include <mapnik/global.hpp>
 #include <mapnik/palette.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // boost
-#include <boost/utility.hpp>
-#include <boost/version.hpp>
-#include <boost/unordered_map.hpp>
-#if BOOST_VERSION >= 104600
 #include <boost/range/algorithm.hpp>
-#endif
-#include <boost/scoped_ptr.hpp>
 
 // stl
 #include <vector>
-#include <iostream>
+#include <cstring>
 #include <set>
 #include <algorithm>
 #include <cmath>
@@ -61,7 +56,7 @@ struct RGBAPolicy
 };
 
 template <typename T, typename InsertPolicy = RGBAPolicy >
-class hextree : private boost::noncopyable
+class hextree : private mapnik::noncopyable
 {
     struct node
     {
@@ -74,7 +69,7 @@ class hextree : private boost::noncopyable
               pixel_count(0),
               children_count(0)
         {
-            memset(&children_[0],0,sizeof(children_));
+            std::memset(&children_[0],0,sizeof(children_));
         }
 
         ~node ()
@@ -126,13 +121,12 @@ class hextree : private boost::noncopyable
     unsigned colors_;
     // flag indicating existance of invisible pixels (a < InsertPolicy::MIN_ALPHA)
     bool has_holes_;
-    boost::scoped_ptr<node> root_;
+    const std::unique_ptr<node> root_;
     // working palette for quantization, sorted on mean(r,g,b,a) for easier searching NN
     std::vector<rgba> sorted_pal_;
     // index remaping of sorted_pal_ indexes to indexes of returned image palette
     std::vector<unsigned> pal_remap_;
     // rgba hashtable for quantization
-    typedef boost::unordered_map<rgba, int, rgba::hash_func> rgba_hash_table;
     mutable rgba_hash_table color_hashmap_;
     // gamma correction to prioritize dark colors (>1.0)
     double gamma_;
@@ -153,9 +147,16 @@ public:
           colors_(0),
           has_holes_(false),
           root_(new node()),
+#ifdef USE_DENSE_HASH_MAP
+          // TODO - test for any benefit to initializing at a larger size
+          color_hashmap_(),
+#endif
           trans_mode_(FULL_TRANSPARENCY)
     {
         setGamma(g);
+#ifdef USE_DENSE_HASH_MAP
+        color_hashmap_.set_empty_key(0);
+#endif
     }
 
     ~hextree()
@@ -238,9 +239,9 @@ public:
     }
 
     // return color index in returned earlier palette
-    int quantize(rgba const& c) const
+    int quantize(unsigned val) const
     {
-        byte a = preprocessAlpha(c.a);
+        byte a = preprocessAlpha(U2ALPHA(val));
         unsigned ind=0;
         if (a < InsertPolicy::MIN_ALPHA || colors_ == 0)
         {
@@ -251,20 +252,16 @@ public:
             return pal_remap_[has_holes_?1:0];
         }
 
-        rgba_hash_table::iterator it = color_hashmap_.find(c);
+        rgba_hash_table::iterator it = color_hashmap_.find(val);
         if (it == color_hashmap_.end())
         {
+            rgba c(val);
             int dr, dg, db, da;
             int dist, newdist;
 
             // find closest match based on mean of r,g,b,a
-#if BOOST_VERSION >= 104600
             std::vector<rgba>::const_iterator pit =
                 boost::lower_bound(sorted_pal_, c, rgba::mean_sort_cmp());
-#else
-            std::vector<rgba>::const_iterator pit =
-                std::lower_bound(sorted_pal_.begin(),sorted_pal_.end(), c, rgba::mean_sort_cmp());
-#endif
             ind = pit-sorted_pal_.begin();
             if (ind == sorted_pal_.size())
                 ind--;
@@ -313,7 +310,7 @@ public:
                 }
             }
             //put found index in hash map
-            color_hashmap_[c] = ind;
+            color_hashmap_[val] = ind;
         }
         else
         {
@@ -337,28 +334,24 @@ public:
         create_palette_rek(sorted_pal_, root_.get());
 
         // sort palette for binary searching in quantization
-#if BOOST_VERSION >= 104600
         boost::sort(sorted_pal_, rgba::mean_sort_cmp());
-#else
-        std::sort(sorted_pal_.begin(), sorted_pal_.end(), rgba::mean_sort_cmp());
-#endif
         // returned palette is rearanged, so that colors with a<255 are at the begining
         pal_remap_.resize(sorted_pal_.size());
         palette.clear();
         palette.reserve(sorted_pal_.size());
-        for (unsigned i=0; i<sorted_pal_.size(); i++)
+        for (unsigned i=0; i<sorted_pal_.size(); ++i)
         {
             if (sorted_pal_[i].a<255)
             {
-                pal_remap_[i] = palette.size();
+                pal_remap_[i] = static_cast<unsigned>(palette.size());
                 palette.push_back(sorted_pal_[i]);
             }
         }
-        for (unsigned i=0; i<sorted_pal_.size(); i++)
+        for (unsigned i=0; i<sorted_pal_.size(); ++i)
         {
             if (sorted_pal_[i].a==255)
             {
-                pal_remap_[i] = palette.size();
+                pal_remap_[i] = static_cast<unsigned>(palette.size());
                 palette.push_back(sorted_pal_[i]);
             }
         }

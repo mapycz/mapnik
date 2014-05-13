@@ -4,20 +4,19 @@
 #include "osm.h"
 #include <string>
 #include <cassert>
+#include <mapnik/util/conversions.hpp>
 
-using std::endl;
-
-osm_item* osmparser::cur_item=NULL;
-long osmparser::curID=0;
+osm_item* osmparser::cur_item=nullptr;
+mapnik::value_integer osmparser::curID=0;
 bool osmparser::in_node=false, osmparser::in_way=false;
-osm_dataset* osmparser::components=NULL;
+osm_dataset* osmparser::components=nullptr;
 std::string osmparser::error="";
-std::map<long,osm_node*> osmparser::tmp_node_store=std::map<long,osm_node*>();
+std::map<mapnik::value_integer,osm_node*> osmparser::tmp_node_store=std::map<mapnik::value_integer,osm_node*>();
 
 void osmparser::processNode(xmlTextReaderPtr reader)
 {
     xmlChar *name = xmlTextReaderName(reader);
-    if(name==NULL)
+    if(name==nullptr)
         name=xmlStrdup(BAD_CAST "--");
 
     switch(xmlTextReaderNodeType(reader))
@@ -50,7 +49,7 @@ void osmparser::startElement(xmlTextReaderPtr reader, const xmlChar *name)
         assert(xid);
         node->lat=atof((char*)xlat);
         node->lon=atof((char*)xlon);
-        node->id = atol((char*)xid);
+        mapnik::util::string2int((char *)xid, node->id);
         cur_item = node;
         tmp_node_store[node->id] = node;
         xmlFree(xid);
@@ -64,25 +63,16 @@ void osmparser::startElement(xmlTextReaderPtr reader, const xmlChar *name)
         osm_way *way=new osm_way;
         xid=xmlTextReaderGetAttribute(reader,BAD_CAST "id");
         assert(xid);
-        way->id = atol((char*)xid);
+        mapnik::util::string2int((char *)xid, way->id);
         cur_item  =  way;
-        // Prevent ways with no name being assigned a name of "0"
-        cur_item->keyvals["name"] = "";
-
-        // HACK: allows comparison with "" in the XML file. Otherwise it
-        // doesn't work. Only do for the most crucial tags for Freemap's
-        // purposes.  TODO investigate why this is
-        cur_item->keyvals["width"] = "";
-        cur_item->keyvals["horse"] = "";
-        cur_item->keyvals["foot"] = "";
-        cur_item->keyvals["bicycle"] = "";
         xmlFree(xid);
     }
     else if (xmlStrEqual(name,BAD_CAST "nd"))
     {
         xid=xmlTextReaderGetAttribute(reader,BAD_CAST "ref");
         assert(xid);
-        long ndid = atol((char*)xid);
+        mapnik::value_integer ndid;
+        mapnik::util::string2int((char *)xid, ndid);
         if(tmp_node_store.find(ndid)!=tmp_node_store.end())
         {
             (static_cast<osm_way*>(cur_item))->nodes.push_back
@@ -137,7 +127,7 @@ bool osmparser::parse(osm_dataset *ds,char* data, int nbytes)
     // libxml2.html, converted from Objective-C to straight C
 
     components=ds;
-    xmlTextReaderPtr reader = xmlReaderForMemory(data,nbytes,NULL,NULL,0);
+    xmlTextReaderPtr reader = xmlReaderForMemory(data,nbytes,nullptr,nullptr,0);
     int ret=do_parse(reader);
     xmlFreeTextReader(reader);
     return (ret==0) ? true:false;
@@ -147,7 +137,7 @@ bool osmparser::parse(osm_dataset *ds,char* data, int nbytes)
 int osmparser::do_parse(xmlTextReaderPtr reader)
 {
     int ret=-1;
-    if(reader!=NULL)
+    if(reader!=nullptr)
     {
         ret = xmlTextReaderRead(reader);
         while(ret==1)

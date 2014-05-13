@@ -39,11 +39,25 @@
 #    pragma warning(disable : 4996) //_CRT_SECURE_NO_DEPRECATE
 #  endif
 #else
+#  if __GNUC__ >= 4
+#  define MAPNIK_EXP __attribute__ ((visibility ("default")))
+#  define MAPNIK_DECL __attribute__ ((visibility ("default")))
+#  define MAPNIK_IMP __attribute__ ((visibility ("default")))
+#  else
 #  define MAPNIK_EXP
-#  define MAPNIK_IMP
 #  define MAPNIK_DECL
+#  define MAPNIK_IMP
+#  endif
 #endif
 
 #define PROJ_ENVELOPE_POINTS 20
+
+#include <boost/thread/locks.hpp>
+#include <mutex>
+
+namespace mapnik
+{
+typedef boost::unique_lock<std::mutex> scoped_lock;
+}
 
 #endif // MAPNIK_CONFIG_HPP

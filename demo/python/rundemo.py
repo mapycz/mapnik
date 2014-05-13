@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# $Id$
+#
 #
 # This file is part of Mapnik (c++ mapping toolkit)
 # Copyright (C) 2005 Jean-Francois Doyon
@@ -186,7 +186,7 @@ m.layers.append(provlines_lyr)
 
 roads34_lyr = mapnik.Layer('Roads')
 roads34_lyr.srs = "+proj=lcc +ellps=GRS80 +lat_0=49 +lon_0=-95 +lat+1=49 +lat_2=77 +datum=NAD83 +units=m +no_defs"
-# create roads datasource (we're going to re-use it later) 
+# create roads datasource (we're going to re-use it later)
 
 roads34_lyr.datasource = mapnik.Shapefile(file='../data/roads')
 
@@ -221,7 +221,7 @@ m.layers.append(roads34_lyr)
 roads2_lyr = mapnik.Layer('Roads')
 roads2_lyr.srs = "+proj=lcc +ellps=GRS80 +lat_0=49 +lon_0=-95 +lat+1=49 +lat_2=77 +datum=NAD83 +units=m +no_defs"
 # Just get a copy from roads34_lyr
-roads2_lyr.datasource = roads34_lyr.datasource 
+roads2_lyr.datasource = roads34_lyr.datasource
 
 roads2_style_1 = mapnik.Style()
 roads2_rule_1 = mapnik.Rule()
@@ -306,7 +306,7 @@ popplaces_text_symbolizer = mapnik.TextSymbolizer(mapnik.Expression("[GEONAME]")
 # We set a "halo" around the text, which looks like an outline if thin enough,
 # or an outright background if large enough.
 popplaces_text_symbolizer.label_placement= mapnik.label_placement.POINT_PLACEMENT
-popplaces_text_symbolizer.halo_fill = mapnik.Color('white')
+popplaces_text_symbolizer.halo_fill = mapnik.Color(255,255,200)
 popplaces_text_symbolizer.halo_radius = 1
 popplaces_text_symbolizer.avoid_edges = True
 #popplaces_text_symbolizer.minimum_padding = 30
@@ -322,7 +322,7 @@ m.layers.append(popplaces_lyr)
 # Draw map
 
 # Set the initial extent of the map in 'master' spherical Mercator projection
-m.zoom_to_box(mapnik.Box2d(-8024477.28459,5445190.38849,-7381388.20071,5662941.44855)) 
+m.zoom_to_box(mapnik.Box2d(-8024477.28459,5445190.38849,-7381388.20071,5662941.44855))
 
 # Render map
 im = mapnik.Image(m.width,m.height)
@@ -330,31 +330,45 @@ mapnik.render(m, im)
 
 # Save image to files
 images_ = []
-im.save('demo.png', 'png') # true-colour RGBA
-images_.append('demo.png')
+if mapnik.has_png():
+    im.save('demo.png', 'png') # true-colour RGBA
+    images_.append('demo.png')
 
-# old behavior, now can do 'png8:c=256'
-im.save('demo256.png', 'png256') # save to palette based (max 256 colours) png
-images_.append('demo256.png')
+    # old behavior, now can do 'png8:c=256'
+    im.save('demo256.png', 'png256') # save to palette based (max 256 colours) png
+    images_.append('demo256.png')
 
-im.save('demo64_binary_transparency.png', 'png8:c=64:t=1')
-images_.append('demo64_binary_transparency.png')
+    im.save('demo64_binary_transparency.png', 'png8:c=64:t=1')
+    images_.append('demo64_binary_transparency.png')
 
-im.save('demo128_colors_hextree_no_alpha.png', 'png8:c=100:m=h:t=0')
-images_.append('demo128_colors_hextree_no_alpha.png')
+    im.save('demo128_colors_hextree_no_alpha.png', 'png8:c=100:m=h:t=0')
+    images_.append('demo128_colors_hextree_no_alpha.png')
 
-im.save('demo_high.jpg', 'jpeg100')
-images_.append('demo_high.jpg')
+if mapnik.has_jpeg():
+    im.save('demo_high.jpg', 'jpeg100')
+    images_.append('demo_high.jpg')
 
-im.save('demo_low.jpg', 'jpeg50')
-images_.append('demo_low.jpg')
+    im.save('demo_low.jpg', 'jpeg50')
+    images_.append('demo_low.jpg')
 
-im.save('demo.tif', 'tiff')
-images_.append('demo.tif')
+if mapnik.has_tiff():
+    im.save('demo.tif', 'tiff')
+    images_.append('demo.tif')
+
+if mapnik.has_webp():
+    im.save('demo.webp', 'webp') # default quality is 90
+    images_.append('demo.webp')
+
+    im.save('demo_highest.webp', 'webp:quality=100')
+    images_.append('demo_med.webp')
+
+    im.save('demo_low.webp', 'webp:quality=50')
+    images_.append('demo_low.webp')
+
 
 # Render cairo examples
 if HAS_PYCAIRO_MODULE and mapnik.has_pycairo():
-    
+
     svg_surface = cairo.SVGSurface('demo.svg', m.width,m.height)
     mapnik.render(m, svg_surface)
     svg_surface.finish()
@@ -368,7 +382,7 @@ if HAS_PYCAIRO_MODULE and mapnik.has_pycairo():
     postscript_surface = cairo.PSSurface('demo.ps', m.width,m.height)
     mapnik.render(m, postscript_surface)
     images_.append('demo.ps')
-    postscript_surface.finish()    
+    postscript_surface.finish()
 
     image_surface = cairo.ImageSurface(cairo.FORMAT_RGB24, m.width, m.height)
     mapnik.render(m, image_surface)
@@ -381,12 +395,12 @@ if HAS_PYCAIRO_MODULE and mapnik.has_pycairo():
     image_surface.write_to_png('demo_cairo_argb32.png')
     images_.append('demo_cairo_argb32.png')
     image_surface.finish()
-    
+
 else:
     print '\n\nPycairo not available...',
     if  mapnik.has_cairo():
         print ' will render Cairo formats using alternative method'
-        
+
         mapnik.render_to_file(m,'demo.pdf')
         images_.append('demo.pdf')
         mapnik.render_to_file(m,'demo.ps')
@@ -399,7 +413,7 @@ else:
         images_.append('demo_cairo_argb.png')
 
 print "\n\n", len(images_), "maps have been rendered in the current directory:"
-    
+
 for im_ in images_:
     print "-", im_
 

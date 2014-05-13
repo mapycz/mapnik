@@ -31,10 +31,11 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cstring>
 
 polygon_types osm_way::ptypes;
 
-bool osm_dataset::load(const char* filename,const std::string& parser)
+bool osm_dataset::load(const char* filename,std::string const& parser)
 {
     if (parser == "libxml2")
     {
@@ -43,9 +44,9 @@ bool osm_dataset::load(const char* filename,const std::string& parser)
     return false;
 }
 
-bool osm_dataset::load_from_url(const std::string& url,
-                                const std::string& bbox,
-                                const std::string& parser)
+bool osm_dataset::load_from_url(std::string const& url,
+                                std::string const& bbox,
+                                std::string const& parser)
 {
     if (parser == "libxml2")
     {
@@ -61,10 +62,10 @@ bool osm_dataset::load_from_url(const std::string& url,
 
         CURL_LOAD_DATA* resp = grab_http_response(str.str().c_str());
 
-        if (resp != NULL)
+        if (resp != nullptr)
         {
             char *blx = new char[resp->nbytes + 1];
-            memcpy(blx, resp->data, resp->nbytes);
+            std::memcpy(blx, resp->data, resp->nbytes);
             blx[resp->nbytes] = '\0';
 
             MAPNIK_LOG_DEBUG(osm) << "osm_dataset: CURL Response=" << blx;
@@ -90,7 +91,7 @@ void osm_dataset::clear()
     for (unsigned int count = 0; count < ways.size(); ++count)
     {
         delete ways[count];
-        ways[count] = NULL;
+        ways[count] = nullptr;
     }
     ways.clear();
 
@@ -98,7 +99,7 @@ void osm_dataset::clear()
     for (unsigned int count = 0; count < nodes.size(); ++count)
     {
         delete nodes[count];
-        nodes[count] = NULL;
+        nodes[count] = nullptr;
     }
     nodes.clear();
 
@@ -141,7 +142,7 @@ osm_node* osm_dataset::next_node()
     {
         return *(node_i++);
     }
-    return NULL;
+    return nullptr;
 }
 
 osm_way* osm_dataset::next_way()
@@ -150,16 +151,16 @@ osm_way* osm_dataset::next_way()
     {
         return *(way_i++);
     }
-    return NULL;
+    return nullptr;
 }
 
 osm_item* osm_dataset::next_item()
 {
-    osm_item* item = NULL;
+    osm_item* item = nullptr;
     if (next_item_mode == Node)
     {
         item = next_node();
-        if (item == NULL)
+        if (item == nullptr)
         {
             next_item_mode = Way;
             rewind_ways();
@@ -225,7 +226,7 @@ std::string osm_way::to_string()
 
     for (unsigned int count = 0; count < nodes.size(); ++count)
     {
-        if (nodes[count] != NULL)
+        if (nodes[count] != nullptr)
         {
             strm << nodes[count]->id << " ";
         }
@@ -254,7 +255,7 @@ bool osm_way::is_polygon()
     for (unsigned int count = 0; count < ptypes.ptypes.size(); ++count)
     {
         if (keyvals.find(ptypes.ptypes[count].first) != keyvals.end() &&
-            keyvals[ptypes.ptypes[count].first] == ptypes.ptypes[count].second)
+            (ptypes.ptypes[count].second.empty() || keyvals[ptypes.ptypes[count].first] == ptypes.ptypes[count].second))
         {
             return true;
         }

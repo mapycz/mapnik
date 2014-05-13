@@ -22,17 +22,28 @@
 
 // mapnik
 #include <mapnik/box2d.hpp>
+#include <mapnik/util/trim.hpp>
 
 // stl
 #include <stdexcept>
 
 // boost
-#include <boost/tokenizer.hpp>
-#include <boost/algorithm/string.hpp>
+// fusion
+#include <boost/fusion/include/adapt_adt.hpp>
+// spirit
 #include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/support_adapt_adt_attributes.hpp>
 
 // agg
 #include "agg_trans_affine.h"
+
+BOOST_FUSION_ADAPT_TPL_ADT(
+    (T),
+    (mapnik::box2d)(T),
+    (T, T, obj.minx(), obj.set_minx(val))
+    (T, T, obj.miny(), obj.set_miny(val))
+    (T, T, obj.maxx(), obj.set_maxx(val))
+    (T, T, obj.maxy(), obj.set_maxy(val)))
 
 namespace mapnik
 {
@@ -41,31 +52,49 @@ box2d<T>::box2d()
     :minx_(0),miny_(0),maxx_(-1),maxy_(-1) {}
 
 template <typename T>
-box2d<T>::box2d(T minx_,T miny_,T maxx_,T maxy_)
+box2d<T>::box2d(T minx,T miny,T maxx,T maxy)
 {
-    init(minx_,miny_,maxx_,maxy_);
+    init(minx,miny,maxx,maxy);
 }
 
 template <typename T>
-box2d<T>::box2d(const coord<T,2> &c0,const coord<T,2> &c1)
+box2d<T>::box2d(coord<T,2> const& c0, coord<T,2> const& c1)
 {
     init(c0.x,c0.y,c1.x,c1.y);
 }
 
 template <typename T>
-box2d<T>::box2d(const box2d &rhs)
+box2d<T>::box2d(box2d_type const& rhs)
     : minx_(rhs.minx_),
       miny_(rhs.miny_),
       maxx_(rhs.maxx_),
       maxy_(rhs.maxy_) {}
-// copy rather than init so dfl ctor (0,0,-1,-1) is not modified
-// http://trac.mapnik.org/ticket/749
-/*{
-  init(rhs.minx_,rhs.miny_,rhs.maxx_,rhs.maxy_);
-  }*/
 
 template <typename T>
-box2d<T>::box2d(const box2d_type &rhs, const agg::trans_affine& tr)
+box2d<T>::box2d(box2d_type && rhs)
+    : minx_(std::move(rhs.minx_)),
+      miny_(std::move(rhs.miny_)),
+      maxx_(std::move(rhs.maxx_)),
+      maxy_(std::move(rhs.maxy_)) {}
+
+template <typename T>
+box2d<T>& box2d<T>::operator=(box2d_type other)
+{
+    swap(other);
+    return *this;
+}
+
+template <typename T>
+void box2d<T>::swap(box2d_type & other)
+{
+    std::swap(minx_, other.minx_);
+    std::swap(miny_, other.miny_);
+    std::swap(maxx_, other.maxx_);
+    std::swap(maxy_, other.maxy_);
+}
+
+template <typename T>
+box2d<T>::box2d(box2d_type const& rhs, agg::trans_affine const& tr)
 {
     double x0 = rhs.minx_, y0 = rhs.miny_;
     double x1 = rhs.maxx_, y1 = rhs.miny_;
@@ -75,16 +104,14 @@ box2d<T>::box2d(const box2d_type &rhs, const agg::trans_affine& tr)
     tr.transform(&x1, &y1);
     tr.transform(&x2, &y2);
     tr.transform(&x3, &y3);
-    init(x0, y0, x2, y2);
-    expand_to_include(x1, y1);
-    expand_to_include(x3, y3);
+    init(static_cast<T>(x0), static_cast<T>(y0),
+         static_cast<T>(x2), static_cast<T>(y2));
+    expand_to_include(static_cast<T>(x1), static_cast<T>(y1));
+    expand_to_include(static_cast<T>(x3), static_cast<T>(y3));
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-bool box2d<T>::operator==(const box2d<T>& other) const
+bool box2d<T>::operator==(box2d<T> const& other) const
 {
     return minx_==other.minx_ &&
         miny_==other.miny_ &&
@@ -93,63 +120,66 @@ bool box2d<T>::operator==(const box2d<T>& other) const
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 T box2d<T>::minx() const
 {
     return minx_;
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 T box2d<T>::maxx() const
 {
     return maxx_;
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 T box2d<T>::miny() const
 {
     return miny_;
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 T box2d<T>::maxy() const
 {
     return maxy_;
 }
 
+template<typename T>
+void box2d<T>::set_minx(T v)
+{
+    minx_ = v;
+}
+
+template<typename T>
+void box2d<T>::set_miny(T v)
+{
+    miny_ = v;
+}
+
+template<typename T>
+void box2d<T>::set_maxx(T v)
+{
+    maxx_ = v;
+}
+
+template<typename T>
+void box2d<T>::set_maxy(T v)
+{
+    maxy_ = v;
+}
+
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 T box2d<T>::width() const
 {
     return maxx_-minx_;
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 T box2d<T>::height() const
 {
     return maxy_-miny_;
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 void box2d<T>::width(T w)
 {
     T cx=center().x;
@@ -158,9 +188,6 @@ void box2d<T>::width(T w)
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 void box2d<T>::height(T h)
 {
     T cy=center().y;
@@ -169,9 +196,6 @@ void box2d<T>::height(T h)
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 coord<T,2> box2d<T>::center() const
 {
     return coord<T,2>(static_cast<T>(0.5*(minx_+maxx_)),
@@ -179,18 +203,12 @@ coord<T,2> box2d<T>::center() const
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-void box2d<T>::expand_to_include(const coord<T,2>& c)
+void box2d<T>::expand_to_include(coord<T,2> const& c)
 {
     expand_to_include(c.x,c.y);
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 void box2d<T>::expand_to_include(T x,T y)
 {
     if (x<minx_) minx_=x;
@@ -200,7 +218,7 @@ void box2d<T>::expand_to_include(T x,T y)
 }
 
 template <typename T>
-void box2d<T>::expand_to_include(const box2d<T> &other)
+void box2d<T>::expand_to_include(box2d<T> const& other)
 {
     if (other.minx_<minx_) minx_=other.minx_;
     if (other.maxx_>maxx_) maxx_=other.maxx_;
@@ -209,28 +227,19 @@ void box2d<T>::expand_to_include(const box2d<T> &other)
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-bool box2d<T>::contains(const coord<T,2> &c) const
+bool box2d<T>::contains(coord<T,2> const& c) const
 {
     return contains(c.x,c.y);
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 bool box2d<T>::contains(T x,T y) const
 {
     return x>=minx_ && x<=maxx_ && y>=miny_ && y<=maxy_;
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-bool box2d<T>::contains(const box2d<T> &other) const
+bool box2d<T>::contains(box2d<T> const& other) const
 {
     return other.minx_>=minx_ &&
         other.maxx_<=maxx_ &&
@@ -239,38 +248,26 @@ bool box2d<T>::contains(const box2d<T> &other) const
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-bool box2d<T>::intersects(const coord<T,2> &c) const
+bool box2d<T>::intersects(coord<T,2> const& c) const
 {
     return intersects(c.x,c.y);
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 bool box2d<T>::intersects(T x,T y) const
 {
     return !(x>maxx_ || x<minx_ || y>maxy_ || y<miny_);
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-bool box2d<T>::intersects(const box2d<T> &other) const
+bool box2d<T>::intersects(box2d<T> const& other) const
 {
     return !(other.minx_>maxx_ || other.maxx_<minx_ ||
              other.miny_>maxy_ || other.maxy_<miny_);
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-box2d<T> box2d<T>::intersect(const box2d_type& other) const
+box2d<T> box2d<T>::intersect(box2d_type const& other) const
 {
     if (intersects(other)) {
         T x0=std::max(minx_,other.minx_);
@@ -286,9 +283,6 @@ box2d<T> box2d<T>::intersect(const box2d_type& other) const
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 void box2d<T>::re_center(T cx,T cy)
 {
     T dx=cx-center().x;
@@ -300,18 +294,12 @@ void box2d<T>::re_center(T cx,T cy)
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-void box2d<T>::re_center(const coord<T,2> &c)
+void box2d<T>::re_center(coord<T,2> const& c)
 {
     re_center(c.x,c.y);
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 void box2d<T>::init(T x0,T y0,T x1,T y1)
 {
     if (x0<x1)
@@ -333,10 +321,7 @@ void box2d<T>::init(T x0,T y0,T x1,T y1)
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-void box2d<T>::clip(const box2d_type& other)
+void box2d<T>::clip(box2d_type const& other)
 {
     minx_ = std::max(minx_,other.minx());
     miny_ = std::max(miny_,other.miny());
@@ -344,62 +329,66 @@ void box2d<T>::clip(const box2d_type& other)
     maxy_ = std::min(maxy_,other.maxy());
 }
 
+template <typename T>
+void box2d<T>::pad(T padding)
+{
+    minx_ -= padding;
+    miny_ -= padding;
+    maxx_ += padding;
+    maxy_ += padding;
+}
+
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
-bool box2d<T>::from_string(const std::string& s)
+bool box2d<T>::from_string(std::string const& str)
 {
-    unsigned i = 0;
-    double d[4];
-    bool success = false;
-    boost::char_separator<char> sep(", ");
-    boost::tokenizer<boost::char_separator<char> > tok(s, sep);
-    for (boost::tokenizer<boost::char_separator<char> >::iterator beg = tok.begin();
-         beg != tok.end(); ++beg)
-    {
-        std::string item(*beg);
-        boost::trim(item);
-        // note: we intentionally do not use mapnik::util::conversions::string2double
-        // here to ensure that shapeindex can statically compile mapnik::box2d without
-        // needing to link to libmapnik
-        std::string::const_iterator str_beg = item.begin();
-        std::string::const_iterator str_end = item.end();
-        bool r = boost::spirit::qi::phrase_parse(str_beg,str_end,boost::spirit::qi::double_,boost::spirit::ascii::space,d[i]);
-        if (!(r && (str_beg == str_end)))
-        {
-            break;
-        }
-        if (i == 3)
-        {
-            success = true;
-            break;
-        }
-        ++i;
-    }
-
-    if (success)
-    {
-        init(static_cast<T>(d[0]),static_cast<T>(d[1]),static_cast<T>(d[2]),static_cast<T>(d[3]));
-    }
-
-    return success;
+    boost::spirit::qi::lit_type lit;
+    boost::spirit::qi::double_type double_;
+    boost::spirit::ascii::space_type space;
+    bool r = boost::spirit::qi::phrase_parse(str.begin(),
+                                             str.end(),
+                                             double_ >> -lit(',') >> double_ >> -lit(',')
+                                             >> double_ >> -lit(',') >> double_,
+                                             space,
+                                             *this);
+    return r;
 }
 
 template <typename T>
-#if !defined(__SUNPRO_CC)
-inline
-#endif
 bool box2d<T>::valid() const
 {
     return (minx_ <= maxx_ && miny_ <= maxy_) ;
 }
 
 template <typename T>
+void box2d<T>::move(T x, T y)
+{
+    minx_ += x;
+    maxx_ += x;
+    miny_ += y;
+    maxy_ += y;
+}
+
+template <typename T>
 box2d<T>&  box2d<T>::operator+=(box2d<T> const& other)
 {
     expand_to_include(other);
+    return *this;
+}
+
+template <typename T>
+box2d<T> box2d<T>::operator+ (T other) const
+{
+    return box2d<T>(minx_ - other, miny_ - other, maxx_ + other, maxy_ + other);
+}
+
+template <typename T>
+box2d<T>& box2d<T>::operator+= (T other)
+{
+    minx_ -= other;
+    miny_ -= other;
+    maxx_ += other;
+    maxy_ += other;
     return *this;
 }
 
@@ -473,9 +462,10 @@ box2d<T>& box2d<T>::operator*=(agg::trans_affine const& tr)
     tr.transform(&x1, &y1);
     tr.transform(&x2, &y2);
     tr.transform(&x3, &y3);
-    init(x0, y0, x2, y2);
-    expand_to_include(x1, y1);
-    expand_to_include(x3, y3);
+    init(static_cast<T>(x0), static_cast<T>(y0),
+         static_cast<T>(x2), static_cast<T>(y2));
+    expand_to_include(static_cast<T>(x1), static_cast<T>(y1));
+    expand_to_include(static_cast<T>(x3), static_cast<T>(y3));
     return *this;
 }
 

@@ -23,7 +23,6 @@
 #include "ogr_datasource.hpp"
 #include "ogr_featureset.hpp"
 #include "ogr_index_featureset.hpp"
-#include "ogr_feature_ptr.hpp"
 
 #include <gdal_version.h>
 
@@ -32,14 +31,14 @@
 #include <mapnik/boolean.hpp>
 #include <mapnik/geom_util.hpp>
 #include <mapnik/timer.hpp>
+#include <mapnik/utils.hpp>
 
 // boost
 #include <boost/algorithm/string.hpp>
-#include <boost/make_shared.hpp>
 
 // stl
-#include <iostream>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 using mapnik::datasource;
@@ -58,13 +57,32 @@ using mapnik::filter_in_box;
 using mapnik::filter_at_point;
 
 
-ogr_datasource::ogr_datasource(parameters const& params, bool bind)
+ogr_datasource::ogr_datasource(parameters const& params)
     : datasource(params),
       extent_(),
       type_(datasource::Vector),
-      desc_(*params_.get<std::string>("type"), *params_.get<std::string>("encoding", "utf-8")),
+      desc_(*params.get<std::string>("type"), *params.get<std::string>("encoding", "utf-8")),
       indexed_(false)
 {
+    init(params);
+}
+
+ogr_datasource::~ogr_datasource()
+{
+    // free layer before destroying the datasource
+    layer_.free_layer();
+    OGRDataSource::DestroyDataSource (dataset_);
+}
+
+void ogr_datasource::init(mapnik::parameters const& params)
+{
+#ifdef MAPNIK_STATS
+    mapnik::progress_timer __stats__(std::clog, "ogr_datasource::init");
+#endif
+
+    // initialize ogr formats
+    OGRRegisterAll();
+
     boost::optional<std::string> file = params.get<std::string>("file");
     boost::optional<std::string> string = params.get<std::string>("string");
     if (! file && ! string)
@@ -89,40 +107,12 @@ ogr_datasource::ogr_datasource(parameters const& params, bool bind)
         }
     }
 
-    if (bind)
-    {
-        this->bind();
-    }
-}
-
-ogr_datasource::~ogr_datasource()
-{
-    if (is_bound_)
-    {
-        // free layer before destroying the datasource
-        layer_.free_layer();
-
-        OGRDataSource::DestroyDataSource (dataset_);
-    }
-}
-
-void ogr_datasource::bind() const
-{
-    if (is_bound_) return;
-
-#ifdef MAPNIK_STATS
-    mapnik::progress_timer __stats__(std::clog, "ogr_datasource::bind");
-#endif
-
-    // initialize ogr formats
-    OGRRegisterAll();
-
-    std::string driver = *params_.get<std::string>("driver","");
+    std::string driver = *params.get<std::string>("driver","");
 
     if (! driver.empty())
     {
         OGRSFDriver * ogr_driver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(driver.c_str());
-        if (ogr_driver && ogr_driver != NULL)
+        if (ogr_driver && ogr_driver != nullptr)
         {
             dataset_ = ogr_driver->Open((dataset_name_).c_str(), FALSE);
         }
@@ -148,9 +138,9 @@ void ogr_datasource::bind() const
     }
 
     // initialize layer
-    boost::optional<std::string> layer_by_name = params_.get<std::string>("layer");
-    boost::optional<unsigned> layer_by_index = params_.get<unsigned>("layer_by_index");
-    boost::optional<std::string> layer_by_sql = params_.get<std::string>("layer_by_sql");
+    boost::optional<std::string> layer_by_name = params.get<std::string>("layer");
+    boost::optional<mapnik::value_integer> layer_by_index = params.get<mapnik::value_integer>("layer_by_index");
+    boost::optional<std::string> layer_by_sql = params.get<std::string>("layer_by_sql");
 
     int passed_parameters = 0;
     passed_parameters += layer_by_name ? 1 : 0;
@@ -172,14 +162,11 @@ void ogr_datasource::bind() const
     }
     else if (layer_by_index)
     {
-        const unsigned num_layers = dataset_->GetLayerCount();
+        int num_layers = dataset_->GetLayerCount();
         if (*layer_by_index >= num_layers)
         {
             std::ostringstream s;
-            s << "OGR Plugin: only ";
-            s << num_layers;
-            s << " layer(s) exist, cannot find layer by index '" << *layer_by_index << "'";
-
+            s << "OGR Plugin: only " << num_layers << " layer(s) exist, cannot find layer by index '" << *layer_by_index << "'";
             throw datasource_exception(s.str());
         }
 
@@ -189,7 +176,7 @@ void ogr_datasource::bind() const
     else if (layer_by_sql)
     {
 #ifdef MAPNIK_STATS
-        mapnik::progress_timer __stats_sql__(std::clog, "ogr_datasource::bind(layer_by_sql)");
+        mapnik::progress_timer __stats_sql__(std::clog, "ogr_datasource::init(layer_by_sql)");
 #endif
 
         layer_.layer_by_sql(dataset_, *layer_by_sql);
@@ -197,12 +184,11 @@ void ogr_datasource::bind() const
     }
     else
     {
-        std::ostringstream s;
-        s << "OGR Plugin: missing <layer> or <layer_by_index> or <layer_by_sql> "
-          << "parameter, available layers are: ";
+        std::string s("OGR Plugin: missing <layer> or <layer_by_index> or <layer_by_sql>  parameter, available layers are: ");
 
         unsigned num_layers = dataset_->GetLayerCount();
         bool layer_found = false;
+        std::vector<std::string> layer_names;
         for (unsigned i = 0; i < num_layers; ++i )
         {
             OGRLayer* ogr_layer = dataset_->GetLayer(i);
@@ -210,21 +196,26 @@ void ogr_datasource::bind() const
             if (ogr_layer_def != 0)
             {
                 layer_found = true;
-                s << " '" << ogr_layer_def->GetName() << "' ";
+                layer_names.push_back(std::string("'") + ogr_layer_def->GetName() + std::string("'"));
             }
         }
 
         if (! layer_found)
         {
-            s << "None (no layers were found in dataset)";
+            s += "None (no layers were found in dataset)";
+        }
+        else
+        {
+            s += boost::algorithm::join(layer_names,", ");
         }
 
-        throw datasource_exception(s.str());
+        throw datasource_exception(s);
     }
 
     if (! layer_.is_valid())
     {
-        std::ostringstream s("OGR Plugin: ");
+        std::ostringstream s;
+        s << "OGR Plugin: ";
 
         if (layer_by_name)
         {
@@ -263,7 +254,12 @@ void ogr_datasource::bind() const
     }
     index_name_ = dataset_name_.substr(0, breakpoint) + ".ogrindex";
 
+#if defined (_WINDOWS)
+    std::ifstream index_file(mapnik::utf8_to_utf16(index_name_), std::ios::in | std::ios::binary);
+#else
     std::ifstream index_file(index_name_.c_str(), std::ios::in | std::ios::binary);
+#endif
+
     if (index_file)
     {
         indexed_ = true;
@@ -279,7 +275,7 @@ void ogr_datasource::bind() const
 #endif
 
 #ifdef MAPNIK_STATS
-    mapnik::progress_timer __stats2__(std::clog, "ogr_datasource::bind(get_column_description)");
+    mapnik::progress_timer __stats2__(std::clog, "ogr_datasource::init(get_column_description)");
 #endif
 
     // deal with attributes descriptions
@@ -329,11 +325,9 @@ void ogr_datasource::bind() const
             }
         }
     }
-
-    is_bound_ = true;
 }
 
-std::string ogr_datasource::name()
+const char * ogr_datasource::name()
 {
     return "ogr";
 }
@@ -345,7 +339,6 @@ mapnik::datasource::datasource_t ogr_datasource::type() const
 
 box2d<double> ogr_datasource::envelope() const
 {
-    if (! is_bound_) bind();
     return extent_;
 }
 
@@ -385,14 +378,14 @@ boost::optional<mapnik::datasource::geometry_t> ogr_datasource::get_geometry_typ
                 // TODO - csv and shapefile inspect first 4 features
                 if (dataset_ && layer_.is_valid())
                 {
-                    OGRLayer* layer = layer_.layer();
+                    layer = layer_.layer();
                     // only new either reset of setNext
                     //layer->ResetReading();
                     layer->SetNextByIndex(0);
-                    ogr_feature_ptr feat(layer->GetNextFeature());
-                    if ((*feat) != NULL)
+                    OGRFeature *poFeature;
+                    while ((poFeature = layer->GetNextFeature()) != nullptr)
                     {
-                        OGRGeometry* geom = (*feat)->GetGeometryRef();
+                        OGRGeometry* geom = poFeature->GetGeometryRef();
                         if (geom && ! geom->IsEmpty())
                         {
                             switch (wkbFlatten(geom->getGeometryType()))
@@ -417,6 +410,8 @@ boost::optional<mapnik::datasource::geometry_t> ogr_datasource::get_geometry_typ
                                 break;
                             }
                         }
+                        OGRFeature::DestroyFeature( poFeature );
+                        break;
                     }
                 }
                 break;
@@ -431,7 +426,6 @@ boost::optional<mapnik::datasource::geometry_t> ogr_datasource::get_geometry_typ
 
 layer_descriptor ogr_datasource::get_descriptor() const
 {
-    if (! is_bound_) bind();
     return desc_;
 }
 
@@ -460,12 +454,12 @@ void validate_attribute_names(query const& q, std::vector<attribute_descriptor> 
         if (! found_name)
         {
             std::ostringstream s;
-            std::vector<attribute_descriptor>::const_iterator itr = names.begin();
-            std::vector<attribute_descriptor>::const_iterator end = names.end();
-            s << "OGR Plugin: no attribute '" << *pos << "'. Valid attributes are: ";
-            for ( ;itr!=end;++itr)
+            s << "OGR Plugin: no attribute named '" << *pos << "'. Valid attributes are: ";
+            std::vector<attribute_descriptor>::const_iterator e_itr = names.begin();
+            std::vector<attribute_descriptor>::const_iterator e_end = names.end();
+            for ( ;e_itr!=e_end;++e_itr)
             {
-                s << itr->get_name() << std::endl;
+                s << e_itr->get_name() << std::endl;
             }
             throw mapnik::datasource_exception(s.str());
         }
@@ -474,8 +468,6 @@ void validate_attribute_names(query const& q, std::vector<attribute_descriptor> 
 
 featureset_ptr ogr_datasource::features(query const& q) const
 {
-    if (! is_bound_) bind();
-
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "ogr_datasource::features");
 #endif
@@ -486,7 +478,7 @@ featureset_ptr ogr_datasource::features(query const& q) const
 
         std::vector<attribute_descriptor> const& desc_ar = desc_.get_descriptors();
         // feature context (schema)
-        mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
+        mapnik::context_ptr ctx = std::make_shared<mapnik::context_type>();
 
         std::vector<attribute_descriptor>::const_iterator itr = desc_ar.begin();
         std::vector<attribute_descriptor>::const_iterator end = desc_ar.end();
@@ -502,7 +494,6 @@ featureset_ptr ogr_datasource::features(query const& q) const
             filter_in_box filter(q.get_bbox());
 
             return featureset_ptr(new ogr_index_featureset<filter_in_box>(ctx,
-                                                                          *dataset_,
                                                                           *layer,
                                                                           filter,
                                                                           index_name_,
@@ -510,8 +501,7 @@ featureset_ptr ogr_datasource::features(query const& q) const
         }
         else
         {
-            return featureset_ptr(new ogr_featureset (ctx,
-                                                      *dataset_,
+            return featureset_ptr(new ogr_featureset(ctx,
                                                       *layer,
                                                       q.get_bbox(),
                                                       desc_.get_encoding()));
@@ -521,10 +511,8 @@ featureset_ptr ogr_datasource::features(query const& q) const
     return featureset_ptr();
 }
 
-featureset_ptr ogr_datasource::features_at_point(coord2d const& pt) const
+featureset_ptr ogr_datasource::features_at_point(coord2d const& pt, double tol) const
 {
-    if (!is_bound_) bind();
-
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "ogr_datasource::features_at_point");
 #endif
@@ -533,7 +521,7 @@ featureset_ptr ogr_datasource::features_at_point(coord2d const& pt) const
     {
         std::vector<attribute_descriptor> const& desc_ar = desc_.get_descriptors();
         // feature context (schema)
-        mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
+        mapnik::context_ptr ctx = std::make_shared<mapnik::context_type>();
 
         std::vector<attribute_descriptor>::const_iterator itr = desc_ar.begin();
         std::vector<attribute_descriptor>::const_iterator end = desc_ar.end();
@@ -543,10 +531,9 @@ featureset_ptr ogr_datasource::features_at_point(coord2d const& pt) const
 
         if (indexed_)
         {
-            filter_at_point filter(pt);
+            filter_at_point filter(pt, tol);
 
             return featureset_ptr(new ogr_index_featureset<filter_at_point> (ctx,
-                                                                             *dataset_,
                                                                              *layer,
                                                                              filter,
                                                                              index_name_,
@@ -554,14 +541,11 @@ featureset_ptr ogr_datasource::features_at_point(coord2d const& pt) const
         }
         else
         {
-            OGRPoint point;
-            point.setX (pt.x);
-            point.setY (pt.y);
-
+            mapnik::box2d<double> bbox(pt, pt);
+            bbox.pad(tol);
             return featureset_ptr(new ogr_featureset (ctx,
-                                                      *dataset_,
                                                       *layer,
-                                                      point,
+                                                      bbox,
                                                       desc_.get_encoding()));
         }
     }

@@ -19,7 +19,7 @@
 #ifndef AGG_MATH_INCLUDED
 #define AGG_MATH_INCLUDED
 
-#include <math.h>
+#include <cmath>
 #include "agg_basics.h"
 
 namespace agg
@@ -27,7 +27,7 @@ namespace agg
 
     //------------------------------------------------------vertex_dist_epsilon
     // Coinciding points maximal distance (Epsilon)
-    const double vertex_dist_epsilon = 1e-14;
+    const double vertex_dist_epsilon = 1e-5;
 
     //-----------------------------------------------------intersection_epsilon
     // See calc_intersection

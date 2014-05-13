@@ -25,10 +25,11 @@
 
 // mapnik
 #include <mapnik/quad_tree.hpp>
+#include <mapnik/noncopyable.hpp>
+#include <mapnik/value_types.hpp>
 
 // stl
 #include <vector>
-#include <unicode/unistr.h>
 
 namespace mapnik
 {
@@ -63,7 +64,7 @@ private:
 };
 
 // quad_tree based label collision detector
-class label_collision_detector2 : boost::noncopyable
+class label_collision_detector2 : mapnik::noncopyable
 {
     typedef quad_tree<box2d<double> > tree_t;
     tree_t tree_;
@@ -97,7 +98,7 @@ public:
 };
 
 // quad_tree based label collision detector with seperate check/insert
-class label_collision_detector3 : boost::noncopyable
+class label_collision_detector3 : mapnik::noncopyable
 {
     typedef quad_tree< box2d<double> > tree_t;
     tree_t tree_;
@@ -135,16 +136,16 @@ public:
 
 
 //quad tree based label collision detector so labels dont appear within a given distance
-class label_collision_detector4 : boost::noncopyable
+class label_collision_detector4 : mapnik::noncopyable
 {
 public:
     struct label
     {
         label(box2d<double> const& b) : box(b), text() {}
-        label(box2d<double> const& b, UnicodeString const& t) : box(b), text(t) {}
+        label(box2d<double> const& b, mapnik::value_unicode_string const& t) : box(b), text(t) {}
 
         box2d<double> box;
-        UnicodeString text;
+        mapnik::value_unicode_string text;
     };
 
 private:
@@ -173,7 +174,7 @@ public:
         return true;
     }
 
-    bool has_placement(box2d<double> const& box, UnicodeString const& text, double distance)
+    bool has_placement(box2d<double> const& box, mapnik::value_unicode_string const& text, double distance)
     {
         box2d<double> bigger_box(box.minx() - distance, box.miny() - distance, box.maxx() + distance, box.maxy() + distance);
         tree_t::query_iterator itr = tree_.query_in_box(bigger_box);
@@ -212,7 +213,7 @@ public:
         tree_.insert(label(box), box);
     }
 
-    void insert(box2d<double> const& box, UnicodeString const& text)
+    void insert(box2d<double> const& box, mapnik::value_unicode_string const& text)
     {
         tree_.insert(label(box, text), box);
     }

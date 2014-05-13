@@ -24,19 +24,26 @@
 #define MAPNIK_MAP_HPP
 
 // mapnik
+#include <mapnik/color.hpp>
+#include <mapnik/config.hpp>
+#include <mapnik/font_set.hpp>
 #include <mapnik/enumeration.hpp>
-#include <mapnik/feature_type_style.hpp>
-#include <mapnik/datasource.hpp>
+#include <mapnik/datasource.hpp>  // for featureset_ptr
 #include <mapnik/layer.hpp>
-#include <mapnik/metawriter.hpp>
 #include <mapnik/params.hpp>
+#include <mapnik/well_known_srs.hpp>
+#include <mapnik/image_compositing.hpp>
 
 // boost
-#include <boost/optional/optional.hpp>
+#include <boost/optional.hpp>
 
 namespace mapnik
 {
-class MAPNIK_DECL Map
+
+class feature_type_style;
+class CoordTransform;
+
+class MAPNIK_DECL Map : boost::equality_comparable<Map>
 {
 public:
 
@@ -71,8 +78,9 @@ private:
     int buffer_size_;
     boost::optional<color> background_;
     boost::optional<std::string> background_image_;
+    composite_mode_e background_image_comp_op_;
+    float background_image_opacity_;
     std::map<std::string,feature_type_style> styles_;
-    std::map<std::string,metawriter_ptr> metawriters_;
     std::map<std::string,font_set> fontsets_;
     std::vector<layer> layers_;
     aspect_fix_mode aspectFixMode_;
@@ -87,7 +95,6 @@ public:
     typedef std::map<std::string,feature_type_style>::iterator style_iterator;
     typedef std::map<std::string,font_set>::const_iterator const_fontset_iterator;
     typedef std::map<std::string,font_set>::iterator fontset_iterator;
-    typedef std::map<std::string,metawriter_ptr>::const_iterator const_metawriter_iterator;
 
     /*! \brief Default constructor.
      *
@@ -103,20 +110,20 @@ public:
      *  @param height Initial map height.
      *  @param srs Initial map projection.
      */
-    Map(int width, int height, std::string const& srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+    Map(int width, int height, std::string const& srs=MAPNIK_LONGLAT_PROJ);
 
-    /*! \brief Copy Constructur.
+    /*! \brief Copy Constructor.
      *
      *  @param rhs Map to copy from.
      */
-    Map(const Map& rhs);
+    Map(Map const& rhs);
 
     /*! \brief Assignment operator
      *
      *  TODO: to be documented
      *
      */
-    Map& operator=(const Map& rhs);
+    Map& operator=(Map rhs);
 
     /*! \brief Get all styles
      * @return Const reference to styles
@@ -152,14 +159,15 @@ public:
      *  @param name The name of the style.
      *  @param style The style to insert.
      *  @return true If success.
-     *  @return false If no success.
+     *          false If no success.
      */
     bool insert_style(std::string const& name,feature_type_style const& style);
+    bool insert_style(std::string const& name,feature_type_style && style);
 
     /*! \brief Remove a style from the map.
      *  @param name The name of the style.
      */
-    void remove_style(const std::string& name);
+    void remove_style(std::string const& name);
 
     /*! \brief Find a style.
      *  @param name The name of the style.
@@ -167,47 +175,14 @@ public:
      */
     boost::optional<feature_type_style const&> find_style(std::string const& name) const;
 
-    /*! \brief Insert a metawriter in the map.
-     *  @param name The name of the writer.
-     *  @param style A pointer to the writer to insert.
-     *  @return true If success.
-     *  @return false If no success.
-     */
-    bool insert_metawriter(std::string const& name, metawriter_ptr const& writer);
-
-    /*! \brief Remove a metawriter from the map.
-     *  @param name The name of the writer.
-     */
-    void remove_metawriter(const std::string& name);
-
-    /*! \brief Find a metawriter.
-     *  @param name The name of the writer.
-     *  @return The writer if found. If not found return 0.
-     */
-    metawriter_ptr find_metawriter(std::string const& name) const;
-
-    /*! \brief Get all metawriters.
-     *  @return Const reference to metawriters.
-     */
-    std::map<std::string,metawriter_ptr> const& metawriters() const;
-
-    /*! \brief Get first iterator in metawriters.
-     *  @return Constant metawriter iterator.
-     */
-    const_metawriter_iterator begin_metawriters() const;
-
-    /*! \brief Get last iterator in metawriters.
-     *  @return Constant metawriter iterator.
-     */
-    const_metawriter_iterator end_metawriters() const;
-
     /*! \brief Insert a fontset into the map.
      *  @param name The name of the fontset.
-     *  @param style The fontset to insert.
+     *  @param fontset The fontset to insert.
      *  @return true If success.
-     *  @return false If failure.
+     *          false If failure.
      */
     bool insert_fontset(std::string const& name, font_set const& fontset);
+    bool insert_fontset(std::string const& name, font_set && fontset);
 
     /*! \brief Find a fontset.
      *  @param name The name of the fontset.
@@ -232,24 +207,24 @@ public:
     /*! \brief Add a layer to the map.
      *  @param l The layer to add.
      */
-    void addLayer(const layer& l);
+    void add_layer(layer const& l);
 
     /*! \brief Get a layer.
      *  @param index layer number.
      *  @return Constant layer.
      */
-    const layer& getLayer(size_t index) const;
+    layer const& get_layer(size_t index) const;
 
     /*! \brief Get a layer.
      *  @param index layer number.
      *  @return Non-constant layer.
      */
-    layer& getLayer(size_t index);
+    layer& get_layer(size_t index);
 
     /*! \brief Remove a layer.
      *  @param index layer number.
      */
-    void removeLayer(size_t index);
+    void remove_layer(size_t index);
 
     /*! \brief Get all layers.
      *  @return Constant layers.
@@ -298,7 +273,7 @@ public:
     /*! \brief Set the map background color.
      *  @param c Background color.
      */
-    void set_background(const color& c);
+    void set_background(color const& c);
 
     /*! \brief Get the map background color
      *  @return Background color as boost::optional
@@ -307,7 +282,7 @@ public:
     boost::optional<color> const& background() const;
 
     /*! \brief Set the map background image filename.
-     *  @param c Background image filename.
+     *  @param image_filename Background image filename.
      */
     void set_background_image(std::string const& image_filename);
 
@@ -317,10 +292,30 @@ public:
      */
     boost::optional<std::string> const& background_image() const;
 
+    /*! \brief Set the compositing operation uses to blend the background image into the background color.
+     *  @param comp_op compositing operation.
+     */
+    void set_background_image_comp_op(composite_mode_e comp_op);
+
+    /*! \brief Get the map background image compositing operation
+     *  @return Background image compositing operation as composite_mode_e
+     *  object
+     */
+    composite_mode_e background_image_comp_op() const;
+
+    /*! \brief Set the map background image opacity.
+     *  @param opacity Background image opacity.
+     */
+    void set_background_image_opacity(float opacity);
+
+    /*! \brief Get the map background image opacity
+     *  @return opacity value as float
+     */
+    float background_image_opacity() const;
+
     /*! \brief Set buffer size
      *  @param buffer_size Buffer size in pixels.
      */
-
     void set_buffer_size(int buffer_size);
 
     /*! \brief Get the map buffer size
@@ -331,22 +326,20 @@ public:
     /*! \brief Set the map maximum extent.
      *  @param box The bounding box for the maximum extent.
      */
-    void set_maximum_extent(box2d<double>const& box);
+    void set_maximum_extent(box2d<double> const& box);
 
     /*! \brief Get the map maximum extent as box2d<double>
      */
     boost::optional<box2d<double> > const& maximum_extent() const;
 
-    /*! \brief Get the non-const map maximum extent as box2d<double>
-     */
-    boost::optional<box2d<double> > & maximum_extent();
+    void reset_maximum_extent();
 
     /*! \brief Get the map base path where paths should be relative to.
      */
     std::string const& base_path() const;
 
-    /*! \brief Set the map base path where paths should be releative to.
-     *  @param srs Map base_path.
+    /*! \brief Set the map base path where paths should be relative to.
+     *  @param base Map base_path.
      */
     void set_base_path(std::string const& base);
 
@@ -360,7 +353,7 @@ public:
      *  Aspect is handled automatic if not fitting to width/height.
      *  @param box The bounding box where to zoom.
      */
-    void zoom_to_box(const box2d<double>& box);
+    void zoom_to_box(box2d<double> const& box);
 
     /*! \brief Zoom the map to show all data.
      */
@@ -373,7 +366,7 @@ public:
     /*! \brief Get current bounding box.
      *  @return The current bounding box.
      */
-    const box2d<double>& get_current_extent() const;
+    box2d<double> const& get_current_extent() const;
 
     /*! \brief Get current buffered bounding box.
      *  @return The current buffered bounding box.
@@ -398,7 +391,7 @@ public:
      * @param index The index of the layer to query from.
      * @param x The x coordinate where to query.
      * @param y The y coordinate where to query.
-     * @return A Mapnik Featureset if successful otherwise will return NULL.
+     * @return A Mapnik Featureset if successful otherwise will return nullptr.
      */
     featureset_ptr query_point(unsigned index, double x, double y) const;
 
@@ -411,37 +404,14 @@ public:
      * @param index The index of the layer to query from.
      * @param x The x coordinate where to query.
      * @param y The y coordinate where to query.
-     * @return A Mapnik Featureset if successful otherwise will return NULL.
+     * @return A Mapnik Featureset if successful otherwise will return nullptr.
      */
     featureset_ptr query_map_point(unsigned index, double x, double y) const;
-
-    /*!
-     * @brief Resolve names to object references for metawriters.
-     */
-    void init_metawriters();
 
     ~Map();
 
     inline void set_aspect_fix_mode(aspect_fix_mode afm) { aspectFixMode_ = afm; }
     inline aspect_fix_mode get_aspect_fix_mode() const { return aspectFixMode_; }
-
-    /*!
-     * @brief Metawriter properties.
-     *
-     * These properties are defined by the user and are substituted in filenames,
-     * sepcial columns in tables, etc.
-     */
-    metawriter_property_map metawriter_output_properties;
-
-    /*!
-     * @brief Set a metawriter property.
-     */
-    void set_metawriter_property(std::string name, std::string value);
-
-    /*!
-     * @brief Get a metawriter property.
-     */
-    std::string get_metawriter_property(std::string name) const;
 
     /*!
      * @brief Get extra, arbitrary Parameters attached to the Map

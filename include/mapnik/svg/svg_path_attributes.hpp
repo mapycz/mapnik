@@ -26,7 +26,6 @@
 // agg
 #include "agg_math_stroke.h"
 #include "agg_color_rgba.h"
-#include "agg_pixfmt_rgba.h"
 #include "agg_trans_affine.h"
 
 // mapnik
@@ -38,9 +37,11 @@ namespace svg {
 struct path_attributes
 {
     unsigned     index;
-    agg::rgba8   fill_color;
-    agg::rgba8   stroke_color;
     double       opacity;
+    agg::rgba8   fill_color;
+    double       fill_opacity;
+    agg::rgba8   stroke_color;
+    double       stroke_opacity;
     bool         fill_flag;
     bool         stroke_flag;
     bool         even_odd_flag;
@@ -57,9 +58,11 @@ struct path_attributes
     // Empty constructor
     path_attributes() :
         index(0),
-        fill_color(agg::rgba(0,0,0)),
-        stroke_color(agg::rgba(0,0,0)),
         opacity(1.0),
+        fill_color(agg::rgba(0,0,0)),
+        fill_opacity(1.0),
+        stroke_color(agg::rgba(0,0,0)),
+        stroke_opacity(1.0),
         fill_flag(true),
         stroke_flag(false),
         even_odd_flag(false),
@@ -78,9 +81,11 @@ struct path_attributes
     // Copy constructor
     path_attributes(const path_attributes& attr)
         : index(attr.index),
-          fill_color(attr.fill_color),
-          stroke_color(attr.stroke_color),
           opacity(attr.opacity),
+          fill_color(attr.fill_color),
+          fill_opacity(attr.fill_opacity),
+          stroke_color(attr.stroke_color),
+          stroke_opacity(attr.stroke_opacity),
           fill_flag(attr.fill_flag),
           stroke_flag(attr.stroke_flag),
           even_odd_flag(attr.even_odd_flag),
@@ -98,9 +103,11 @@ struct path_attributes
     // Copy constructor with new index value
     path_attributes(path_attributes const& attr, unsigned idx)
         : index(idx),
-          fill_color(attr.fill_color),
-          stroke_color(attr.stroke_color),
           opacity(attr.opacity),
+          fill_color(attr.fill_color),
+          fill_opacity(attr.fill_opacity),
+          stroke_color(attr.stroke_color),
+          stroke_opacity(attr.stroke_opacity),
           fill_flag(attr.fill_flag),
           stroke_flag(attr.stroke_flag),
           even_odd_flag(attr.even_odd_flag),

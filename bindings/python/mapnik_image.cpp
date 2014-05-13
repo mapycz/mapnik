@@ -20,34 +20,25 @@
  *
  *****************************************************************************/
 
-extern "C"
-{
-#include <png.h>
-}
+#include "boost_std_shared_shim.hpp"
 
 // boost
 #include <boost/python.hpp>
 #include <boost/python/module.hpp>
 #include <boost/python/def.hpp>
-#include <boost/make_shared.hpp>
 
 // mapnik
 #include <mapnik/graphics.hpp>
 #include <mapnik/palette.hpp>
 #include <mapnik/image_util.hpp>
-#include <mapnik/png_io.hpp>
 #include <mapnik/image_reader.hpp>
 #include <mapnik/image_compositing.hpp>
 
-// jpeg
-#if defined(HAVE_JPEG)
-#include <mapnik/jpeg_io.hpp>
-#endif
-
 // cairo
 #if defined(HAVE_CAIRO) && defined(HAVE_PYCAIRO)
-#include <cairomm/surface.h>
+#include <mapnik/cairo_context.hpp>
 #include <pycairo.h>
+#include <cairo.h>
 #endif
 
 using mapnik::image_32;
@@ -118,21 +109,55 @@ bool painted(mapnik::image_32 const& im)
     return im.painted();
 }
 
+bool is_solid(mapnik::image_32 const& im)
+{
+    if (im.width() > 0 && im.height() > 0)
+    {
+        mapnik::image_data_32 const & data = im.data();
+        mapnik::image_data_32::pixel_type const* first_row = data.getRow(0);
+        mapnik::image_data_32::pixel_type const first_pixel = first_row[0];
+        for (unsigned y = 0; y < im.height(); ++y)
+        {
+            mapnik::image_data_32::pixel_type const * row = data.getRow(y);
+            for (unsigned x = 0; x < im.width(); ++x)
+            {
+                if (first_pixel != row[x])
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+unsigned get_pixel(mapnik::image_32 const& im, int x, int y)
+{
+    if (x < static_cast<int>(im.width()) && y < static_cast<int>(im.height()))
+    {
+        mapnik::image_data_32 const & data = im.data();
+        return data(x,y);
+    }
+    PyErr_SetString(PyExc_IndexError, "invalid x,y for image dimensions");
+    boost::python::throw_error_already_set();
+    return 0;
+}
+
 void set_pixel(mapnik::image_32 & im, unsigned x, unsigned y, mapnik::color const& c)
 {
     im.setPixel(x, y, c.rgba());
 }
 
-boost::shared_ptr<image_32> open_from_file(std::string const& filename)
+std::shared_ptr<image_32> open_from_file(std::string const& filename)
 {
     boost::optional<std::string> type = type_from_filename(filename);
     if (type)
     {
-        std::auto_ptr<image_reader> reader(get_image_reader(filename,*type));
+        std::unique_ptr<image_reader> reader(get_image_reader(filename,*type));
         if (reader.get())
         {
 
-            boost::shared_ptr<image_32> image_ptr = boost::make_shared<image_32>(reader->width(),reader->height());
+            std::shared_ptr<image_32> image_ptr = std::make_shared<image_32>(reader->width(),reader->height());
             reader->read(0,0,image_ptr->data());
             return image_ptr;
         }
@@ -141,11 +166,40 @@ boost::shared_ptr<image_32> open_from_file(std::string const& filename)
     throw mapnik::image_reader_exception("Unsupported image format:" + filename);
 }
 
+std::shared_ptr<image_32> fromstring(std::string const& str)
+{
+    std::unique_ptr<image_reader> reader(get_image_reader(str.c_str(),str.size()));
+    if (reader.get())
+    {
+        std::shared_ptr<image_32> image_ptr = std::make_shared<image_32>(reader->width(),reader->height());
+        reader->read(0,0,image_ptr->data());
+        return image_ptr;
+    }
+    throw mapnik::image_reader_exception("Failed to load image from buffer" );
+}
+
+std::shared_ptr<image_32> frombuffer(PyObject * obj)
+{
+    void const* buffer=0;
+    Py_ssize_t buffer_len;
+    if (PyObject_AsReadBuffer(obj, &buffer, &buffer_len) == 0)
+    {
+        std::unique_ptr<image_reader> reader(get_image_reader(reinterpret_cast<char const*>(buffer),buffer_len));
+        if (reader.get())
+        {
+            std::shared_ptr<image_32> image_ptr = std::make_shared<image_32>(reader->width(),reader->height());
+            reader->read(0,0,image_ptr->data());
+            return image_ptr;
+        }
+    }
+    throw mapnik::image_reader_exception("Failed to load image from buffer" );
+}
+
+
 void blend (image_32 & im, unsigned x, unsigned y, image_32 const& im2, float opacity)
 {
     im.set_rectangle_alpha2(im2.data(),x,y,opacity);
 }
-
 
 void composite(image_32 & dst, image_32 & src, mapnik::composite_mode_e mode, float opacity)
 {
@@ -153,10 +207,10 @@ void composite(image_32 & dst, image_32 & src, mapnik::composite_mode_e mode, fl
 }
 
 #if defined(HAVE_CAIRO) && defined(HAVE_PYCAIRO)
-boost::shared_ptr<image_32> from_cairo(PycairoSurface* surface)
+std::shared_ptr<image_32> from_cairo(PycairoSurface* py_surface)
 {
-    Cairo::RefPtr<Cairo::ImageSurface> s(new Cairo::ImageSurface(surface->surface));
-    boost::shared_ptr<image_32> image_ptr = boost::make_shared<image_32>(s);
+    mapnik::cairo_surface_ptr surface(cairo_surface_reference(py_surface->surface), mapnik::cairo_surface_closer());
+    std::shared_ptr<image_32> image_ptr = std::make_shared<image_32>(surface);
     return image_ptr;
 }
 #endif
@@ -164,6 +218,7 @@ boost::shared_ptr<image_32> from_cairo(PycairoSurface* surface)
 void export_image()
 {
     using namespace boost::python;
+    // NOTE: must match list in include/mapnik/image_compositing.hpp
     enum_<mapnik::composite_mode_e>("CompositeOp")
         .value("clear", mapnik::clear)
         .value("src", mapnik::src)
@@ -192,14 +247,20 @@ void export_image()
         .value("exclusion", mapnik::exclusion)
         .value("contrast", mapnik::contrast)
         .value("invert", mapnik::invert)
-        .value("invert_rgb", mapnik::invert_rgb)
+        .value("grain_merge", mapnik::grain_merge)
+        .value("grain_extract", mapnik::grain_extract)
+        .value("hue", mapnik::hue)
+        .value("saturation", mapnik::saturation)
+        .value("color", mapnik::_color)
+        .value("value", mapnik::_value)
         ;
 
-    class_<image_32,boost::shared_ptr<image_32> >("Image","This class represents a 32 bit RGBA image.",init<int,int>())
+    class_<image_32,std::shared_ptr<image_32> >("Image","This class represents a 32 bit RGBA image.",init<int,int>())
         .def("width",&image_32::width)
         .def("height",&image_32::height)
         .def("view",&image_32::get_view)
         .def("painted",&painted)
+        .def("is_solid",&is_solid)
         .add_property("background",make_function
                       (&image_32::get_background,return_value_policy<copy_const_reference>()),
                       &image_32::set_background, "The background color of the image.")
@@ -210,12 +271,15 @@ void export_image()
         .def("composite",&composite,
          ( arg("self"),
            arg("image"),
-           arg("mode"),
+           arg("mode")=mapnik::src_over,
            arg("opacity")=1.0f
          ))
+        .def("premultiplied",&image_32::premultiplied)
         .def("premultiply",&image_32::premultiply)
         .def("demultiply",&image_32::demultiply)
         .def("set_pixel",&set_pixel)
+        .def("get_pixel",&get_pixel)
+        .def("clear",&image_32::clear)
         //TODO(haoyu) The method name 'tostring' might be confusing since they actually return bytes in Python 3
 
         .def("tostring",&tostring1)
@@ -226,6 +290,10 @@ void export_image()
         .def("save", &save_to_file3)
         .def("open",open_from_file)
         .staticmethod("open")
+        .def("frombuffer",&frombuffer)
+        .staticmethod("frombuffer")
+        .def("fromstring",&fromstring)
+        .staticmethod("fromstring")
 #if defined(HAVE_CAIRO) && defined(HAVE_PYCAIRO)
         .def("from_cairo",&from_cairo)
         .staticmethod("from_cairo")

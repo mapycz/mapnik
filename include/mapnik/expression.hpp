@@ -25,29 +25,23 @@
 
 // mapnik
 #include <mapnik/config.hpp>
-#include <mapnik/expression_node.hpp>
+#include <mapnik/expression_node_types.hpp>
+
+// boost
+#include <memory>
 
 // stl
 #include <string>
+#include <set>
 
 namespace mapnik
 {
 
-typedef boost::shared_ptr<expr_node> expression_ptr;
-template <typename Iterator> struct expression_grammar;
+// fwd declare to reduce compile time
+typedef std::shared_ptr<expr_node> expression_ptr;
+typedef std::set<expression_ptr> expression_set;
 
-class expression_factory
-{
-public:
-    static expression_ptr compile(std::string const& str,transcoder const& tr);
-    static bool parse_from_string(expression_ptr const& expr,
-                                  std::string const& str,
-                                  mapnik::expression_grammar<std::string::const_iterator> const& g);
-};
-
-MAPNIK_DECL expression_ptr parse_expression (std::string const& wkt, std::string const& encoding);
-MAPNIK_DECL expression_ptr parse_expression (std::string const& wkt);
-
+MAPNIK_DECL expression_ptr parse_expression (std::string const& wkt, std::string const& encoding = "UTF8");
 }
 
 #endif // MAPNIK_EXPRESSION_HPP

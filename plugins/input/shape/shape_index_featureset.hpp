@@ -29,9 +29,12 @@
 
 // mapnik
 #include <mapnik/geom_util.hpp>
+#include <mapnik/feature.hpp>
+#include <mapnik/unicode.hpp>
+#include <mapnik/value_types.hpp>
 
 // boost
-#include <boost/scoped_ptr.hpp>
+
 #include <boost/utility.hpp>
 
 #include "shape_datasource.hpp"
@@ -59,12 +62,13 @@ private:
     filterT filter_;
     context_ptr ctx_;
     shape_io & shape_;
-    boost::scoped_ptr<transcoder> tr_;
-    std::vector<int> ids_;
-    std::vector<int>::iterator itr_;
+    const std::unique_ptr<mapnik::transcoder> tr_;
+    std::vector<std::streampos> offsets_;
+    std::vector<std::streampos>::iterator itr_;
     std::vector<int> attr_ids_;
-    const int row_limit_;
+    mapnik::value_integer row_limit_;
     mutable int count_;
+    mutable box2d<double> feature_bbox_;
 };
 
 #endif // SHAPE_INDEX_FEATURESET_HPP

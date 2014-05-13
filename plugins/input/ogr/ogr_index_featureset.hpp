@@ -25,7 +25,8 @@
 
 #include <set>
 #include <vector>
-#include <boost/scoped_ptr.hpp>
+
+#include <mapnik/feature.hpp>
 #include "ogr_featureset.hpp"
 
 template <typename filterT>
@@ -33,7 +34,6 @@ class ogr_index_featureset : public mapnik::Featureset
 {
 public:
     ogr_index_featureset(mapnik::context_ptr const& ctx,
-                         OGRDataSource& dataset,
                          OGRLayer& layer,
                          filterT const& filter,
                          std::string const& index_file,
@@ -41,17 +41,16 @@ public:
 
     virtual ~ogr_index_featureset();
     mapnik::feature_ptr next();
-
 private:
     mapnik::context_ptr ctx_;
-    OGRDataSource& dataset_;
     OGRLayer& layer_;
     OGRFeatureDefn* layerdef_;
     filterT filter_;
     std::vector<int> ids_;
     std::vector<int>::iterator itr_;
-    boost::scoped_ptr<mapnik::transcoder> tr_;
+    const std::unique_ptr<mapnik::transcoder> tr_;
     const char* fidcolumn_;
+    OGREnvelope feature_envelope_;
 };
 
 #endif // OGR_INDEX_FEATURESET_HPP

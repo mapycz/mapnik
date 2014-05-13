@@ -20,7 +20,6 @@
  *
  *****************************************************************************/
 
-//$Id$
 
 #include <iostream>
 #include <string>
@@ -30,7 +29,7 @@
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/util/geometry_to_wkb.hpp>
 
-#include <boost/foreach.hpp>
+
 
 
 int main (int argc, char ** argv )
@@ -44,7 +43,7 @@ int main (int argc, char ** argv )
 
     std::cerr << "Geometry to WKB converter\n";
 
-    mapnik::datasource_cache::instance()->register_datasources("/opt/mapnik/lib/mapnik/input/");
+    mapnik::datasource_cache::instance().register_datasources("/opt/mapnik/lib/mapnik/input/");
 
     std::string filename(argv[1]);
     std::cerr << filename << std::endl;
@@ -57,7 +56,7 @@ int main (int argc, char ** argv )
 
     try
     {
-        ds = mapnik::datasource_cache::instance()->create(p);
+        ds = mapnik::datasource_cache::instance().create(p);
     }
     catch ( ... )
     {
@@ -71,7 +70,7 @@ int main (int argc, char ** argv )
 
         mapnik::query q(ds->envelope());
         mapnik::layer_descriptor layer_desc = ds->get_descriptor();
-        BOOST_FOREACH ( mapnik::attribute_descriptor const& attr_desc, layer_desc.get_descriptors())
+        for (mapnik::attribute_descriptor const& attr_desc : layer_desc.get_descriptors())
         {
             q.add_property_name(attr_desc.get_name());
         }
@@ -83,7 +82,7 @@ int main (int argc, char ** argv )
         {
             std::cerr << *f << std::endl;
             boost::ptr_vector<mapnik::geometry_type> & paths = f->paths();
-            BOOST_FOREACH ( mapnik::geometry_type const& geom, paths)
+            for (mapnik::geometry_type const& geom : paths)
             {
                 // NDR
                 {
@@ -105,5 +104,3 @@ int main (int argc, char ** argv )
 
     return EXIT_SUCCESS;
 }
-
-

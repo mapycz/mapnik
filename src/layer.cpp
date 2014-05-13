@@ -27,8 +27,6 @@
 
 // stl
 #include <string>
-#include <iostream>
-
 
 namespace mapnik
 {
@@ -55,33 +53,19 @@ layer::layer(const layer& rhs)
       cache_features_(rhs.cache_features_),
       group_by_(rhs.group_by_),
       styles_(rhs.styles_),
-      ds_(rhs.ds_) {}
+      ds_(rhs.ds_),
+      buffer_size_(rhs.buffer_size_),
+      maximum_extent_(rhs.maximum_extent_) {}
 
-layer& layer::operator=(const layer& rhs)
+layer& layer::operator=(layer rhs)
 {
-    layer tmp(rhs);
-    swap(tmp);
+    std::swap(*this, rhs);
     return *this;
 }
 
 bool layer::operator==(layer const& other) const
 {
     return (this == &other);
-}
-
-void layer::swap(const layer& rhs)
-{
-    name_=rhs.name_;
-    srs_ = rhs.srs_;
-    min_zoom_=rhs.min_zoom_;
-    max_zoom_=rhs.max_zoom_;
-    active_=rhs.active_;
-    queryable_=rhs.queryable_;
-    clear_label_cache_ = rhs.clear_label_cache_;
-    cache_features_ = rhs.cache_features_;
-    group_by_ = rhs.group_by_;
-    styles_=rhs.styles_;
-    ds_=rhs.ds_;
 }
 
 layer::~layer() {}
@@ -176,6 +160,37 @@ void layer::set_datasource(datasource_ptr const& ds)
     ds_ = ds;
 }
 
+void layer::set_maximum_extent(box2d<double> const& box)
+{
+    maximum_extent_.reset(box);
+}
+
+boost::optional<box2d<double> > const& layer::maximum_extent() const
+{
+    return maximum_extent_;
+}
+
+void layer::reset_maximum_extent()
+{
+    maximum_extent_.reset();
+}
+
+void layer::set_buffer_size(int size)
+{
+    buffer_size_.reset(size);
+}
+
+boost::optional<int> const& layer::buffer_size() const
+{
+    return buffer_size_;
+}
+
+void layer::reset_buffer_size()
+{
+    buffer_size_.reset();
+}
+
+
 box2d<double> layer::envelope() const
 {
     if (ds_) return ds_->envelope();
@@ -202,12 +217,12 @@ bool layer::cache_features() const
     return cache_features_;
 }
 
-void layer::set_group_by(std::string column)
+void layer::set_group_by(std::string const& column)
 {
     group_by_ = column;
 }
 
-std::string layer::group_by() const
+std::string const& layer::group_by() const
 {
     return group_by_;
 }

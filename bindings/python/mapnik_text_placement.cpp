@@ -19,23 +19,26 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
+
+#include "boost_std_shared_shim.hpp"
+
 #include <boost/python.hpp>
 #include <boost/python/stl_iterator.hpp>
+#include <boost/noncopyable.hpp>
 
-#include <mapnik/text_properties.hpp>
-#include <mapnik/text_placements/simple.hpp>
-#include <mapnik/text_placements/list.hpp>
-#include <mapnik/formatting/text.hpp>
-#include <mapnik/formatting/list.hpp>
-#include <mapnik/formatting/format.hpp>
-#include <mapnik/formatting/expression.hpp>
-#include <mapnik/processed_text.hpp>
-#include <mapnik/expression_string.hpp>
-#include <mapnik/text_symbolizer.hpp>
+#include <mapnik/text/text_properties.hpp>
+#include <mapnik/text/placements/simple.hpp>
+#include <mapnik/text/placements/list.hpp>
+#include <mapnik/text/formatting/text.hpp>
+#include <mapnik/text/formatting/list.hpp>
+#include <mapnik/text/formatting/format.hpp>
+#include <mapnik/text/formatting/expression_format.hpp>
+#include <mapnik/text/formatting/layout.hpp>
+#include <mapnik/text/layout.hpp>
+#include <mapnik/symbolizer.hpp>
 
 #include "mapnik_enumeration.hpp"
 #include "mapnik_threads.hpp"
-#include "python_optional.hpp"
 
 using namespace mapnik;
 
@@ -52,14 +55,54 @@ using namespace mapnik;
 */
 
 namespace {
+
 using namespace boost::python;
 
-boost::python::tuple get_displacement(text_symbolizer_properties const& t)
+// This class works around a feature in boost python.
+// See http://osdir.com/ml/python.c++/2003-11/msg00158.html
+
+template <typename T,
+          typename X1 = boost::python::detail::not_specified,
+          typename X2 = boost::python::detail::not_specified,
+          typename X3 = boost::python::detail::not_specified>
+class class_with_converter : public boost::python::class_<T, X1, X2, X3>
 {
-    return boost::python::make_tuple(t.displacement.first, t.displacement.second);
+public:
+    typedef class_with_converter<T,X1,X2,X3> self;
+    // Construct with the class name, with or without docstring, and default __init__() function
+    class_with_converter(char const* name, char const* doc = 0) : boost::python::class_<T, X1, X2, X3>(name, doc)  { }
+
+    // Construct with class name, no docstring, and an uncallable __init__ function
+    class_with_converter(char const* name, boost::python::no_init_t y) : boost::python::class_<T, X1, X2, X3>(name, y) { }
+
+    // Construct with class name, docstring, and an uncallable __init__ function
+    class_with_converter(char const* name, char const* doc, boost::python::no_init_t y) : boost::python::class_<T, X1, X2, X3>(name, doc, y) { }
+
+    // Construct with class name and init<> function
+    template <class DerivedT> class_with_converter(char const* name, boost::python::init_base<DerivedT> const& i)
+        : boost::python::class_<T, X1, X2, X3>(name, i) { }
+
+    // Construct with class name, docstring and init<> function
+    template <class DerivedT>
+    inline class_with_converter(char const* name, char const* doc, boost::python::init_base<DerivedT> const& i)
+        : boost::python::class_<T, X1, X2, X3>(name, doc, i) { }
+
+    template <class D>
+    self& def_readwrite_convert(char const* name, D const& d, char const* /*doc*/=0)
+    {
+        this->add_property(name,
+                           boost::python::make_getter(d, boost::python::return_value_policy<boost::python::return_by_value>()),
+                           boost::python::make_setter(d, boost::python::default_call_policies()));
+        return *this;
+    }
+};
+
+boost::python::tuple get_displacement(text_layout_properties const& t)
+{
+    return boost::python::make_tuple(t.displacement.x, t.displacement.y);
 }
 
-void set_displacement(text_symbolizer_properties &t, boost::python::tuple arg)
+void set_displacement(text_layout_properties &t, boost::python::tuple arg)
 {
     if (len(arg) != 2)
     {
@@ -72,9 +115,8 @@ void set_displacement(text_symbolizer_properties &t, boost::python::tuple arg)
 
     double x = extract<double>(arg[0]);
     double y = extract<double>(arg[1]);
-    t.displacement = std::make_pair(x, y);
+    t.displacement.set(x, y);
 }
-
 
 struct NodeWrap: formatting::node, wrapper<formatting::node>
 {
@@ -83,7 +125,7 @@ struct NodeWrap: formatting::node, wrapper<formatting::node>
 
     }
 
-    void apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    void apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         python_block_auto_unblock b;
         this->get_override("apply")(ptr(&p), ptr(&feature), ptr(&output));
@@ -121,7 +163,7 @@ struct TextNodeWrap: formatting::text_node, wrapper<formatting::text_node>
 
     }
 
-    virtual void apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    virtual void apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         if(override o = this->get_override("apply"))
         {
@@ -134,7 +176,7 @@ struct TextNodeWrap: formatting::text_node, wrapper<formatting::text_node>
         }
     }
 
-    void default_apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    void default_apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         formatting::text_node::apply(p, feature, output);
     }
@@ -142,7 +184,7 @@ struct TextNodeWrap: formatting::text_node, wrapper<formatting::text_node>
 
 struct FormatNodeWrap: formatting::format_node, wrapper<formatting::format_node>
 {
-    virtual void apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    virtual void apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         if(override o = this->get_override("apply"))
         {
@@ -155,7 +197,7 @@ struct FormatNodeWrap: formatting::format_node, wrapper<formatting::format_node>
         }
     }
 
-    void default_apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    void default_apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         formatting::format_node::apply(p, feature, output);
     }
@@ -163,7 +205,7 @@ struct FormatNodeWrap: formatting::format_node, wrapper<formatting::format_node>
 
 struct ExprFormatWrap: formatting::expression_format, wrapper<formatting::expression_format>
 {
-    virtual void apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    virtual void apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         if(override o = this->get_override("apply"))
         {
@@ -176,9 +218,30 @@ struct ExprFormatWrap: formatting::expression_format, wrapper<formatting::expres
         }
     }
 
-    void default_apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    void default_apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         formatting::expression_format::apply(p, feature, output);
+    }
+};
+
+struct LayoutNodeWrap: formatting::layout_node, wrapper<formatting::layout_node>
+{
+    virtual void apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
+    {
+        if(override o = this->get_override("apply"))
+        {
+            python_block_auto_unblock b;
+            o(ptr(&p), ptr(&feature), ptr(&output));
+        }
+        else
+        {
+            formatting::layout_node::apply(p, feature, output);
+        }
+    }
+
+    void default_apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
+    {
+        formatting::layout_node::apply(p, feature, output);
     }
 };
 
@@ -193,14 +256,17 @@ struct ListNodeWrap: formatting::list_node, wrapper<formatting::list_node>
     ListNodeWrap(object l) : formatting::list_node(), wrapper<formatting::list_node>()
     {
         stl_input_iterator<formatting::node_ptr> begin(l), end;
-        children_.insert(children_.end(), begin, end);
+        while (begin != end)
+        {
+           children_.push_back(*begin);
+           ++begin;
+        }
     }
 
     /* TODO: Add constructor taking variable number of arguments.
        http://wiki.python.org/moin/boost.python/HowTo#A.22Raw.22_function */
 
-
-    virtual void apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    virtual void apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         if(override o = this->get_override("apply"))
         {
@@ -213,7 +279,7 @@ struct ListNodeWrap: formatting::list_node, wrapper<formatting::list_node>
         }
     }
 
-    void default_apply(char_properties const& p, Feature const& feature, processed_text &output) const
+    void default_apply(char_properties_ptr p, feature_impl const& feature, text_layout &output) const
     {
         formatting::list_node::apply(p, feature, output);
     }
@@ -230,16 +296,16 @@ struct ListNodeWrap: formatting::list_node, wrapper<formatting::list_node>
 
     formatting::node_ptr get_item(int i)
     {
-        if (i<0) i+= children_.size();
-        if (i<children_.size()) return children_[i];
+        if (i < 0) i+= children_.size();
+        if (i < static_cast<int>(children_.size())) return children_[i];
         IndexError();
         return formatting::node_ptr(); //Avoid compiler warning
     }
 
     void set_item(int i, formatting::node_ptr ptr)
     {
-        if (i<0) i+= children_.size();
-        if (i<children_.size()) children_[i] = ptr;
+        if (i < 0) i+= children_.size();
+        if (i < static_cast<int>(children_.size())) children_[i] = ptr;
         IndexError();
     }
 
@@ -279,12 +345,13 @@ void insert_expression(expression_set *set, expression_ptr p)
     set->insert(p);
 }
 
-char_properties & get_format(text_symbolizer const& sym)
+/*
+char_properties_ptr get_format(text_symbolizer const& sym)
 {
     return sym.get_placement_options()->defaults.format;
 }
 
-void set_format(text_symbolizer const& sym, char_properties & format)
+void set_format(text_symbolizer const& sym, char_properties_ptr format)
 {
     sym.get_placement_options()->defaults.format = format;
 }
@@ -298,7 +365,7 @@ void set_properties(text_symbolizer const& sym, text_symbolizer_properties & def
 {
     sym.get_placement_options()->defaults = defaults;
 }
-
+*/
 }
 
 void export_text_placement()
@@ -339,34 +406,20 @@ void export_text_placement()
         .value("CAPITALIZE",CAPITALIZE)
         ;
 
+    enumeration_<halo_rasterizer_e>("halo_rasterizer")
+        .value("FULL",HALO_RASTERIZER_FULL)
+        .value("FAST",HALO_RASTERIZER_FAST)
+        ;
+
     class_<text_symbolizer>("TextSymbolizer",
                             init<>())
-        .def(init<expression_ptr, std::string const&, unsigned, color const&>())
-        .add_property("placements",
-                      &text_symbolizer::get_placement_options,
-                      &text_symbolizer::set_placement_options)
-        //TODO: Check return policy, is there a better way to do this?
-        .add_property("format",
-                      make_function(&get_format, return_value_policy<reference_existing_object>()),
-                      &set_format,
-                      "Shortcut for placements.defaults.default_format")
-        .add_property("properties",
-                      make_function(&get_properties, return_value_policy<reference_existing_object>()),
-                      &set_properties,
-                      "Shortcut for placements.defaults")
         ;
 
 
     class_with_converter<text_symbolizer_properties>
         ("TextSymbolizerProperties")
         .def_readwrite_convert("label_placement", &text_symbolizer_properties::label_placement)
-        .def_readwrite_convert("horizontal_alignment", &text_symbolizer_properties::halign)
-        .def_readwrite_convert("justify_alignment", &text_symbolizer_properties::jalign)
-        .def_readwrite_convert("vertical_alignment", &text_symbolizer_properties::valign)
-        .def_readwrite("orientation", &text_symbolizer_properties::orientation)
-        .add_property("displacement",
-                      &get_displacement,
-                      &set_displacement)
+        .def_readwrite_convert("upright", &text_symbolizer_properties::upright)
         .def_readwrite("label_spacing", &text_symbolizer_properties::label_spacing)
         .def_readwrite("label_position_tolerance", &text_symbolizer_properties::label_position_tolerance)
         .def_readwrite("avoid_edges", &text_symbolizer_properties::avoid_edges)
@@ -377,8 +430,7 @@ void export_text_placement()
         .def_readwrite("force_odd_labels", &text_symbolizer_properties::force_odd_labels)
         .def_readwrite("allow_overlap", &text_symbolizer_properties::allow_overlap)
         .def_readwrite("largest_bbox_only", &text_symbolizer_properties::largest_bbox_only)
-        .def_readwrite("text_ratio", &text_symbolizer_properties::text_ratio)
-        .def_readwrite("wrap_width", &text_symbolizer_properties::wrap_width)
+        .def_readwrite("layout_defaults", &text_symbolizer_properties::layout_defaults)
         .def_readwrite("format", &text_symbolizer_properties::format)
         .add_property ("format_tree",
                        &text_symbolizer_properties::format_tree,
@@ -390,18 +442,30 @@ void export_text_placement()
        set_old_style expression is just a compatibility wrapper and doesn't need to be exposed in python. */
     ;
 
-    class_<char_properties>
+    class_with_converter<text_layout_properties>
+        ("TextLayoutProperties")
+        .def_readwrite_convert("horizontal_alignment", &text_layout_properties::halign)
+        .def_readwrite_convert("justify_alignment", &text_layout_properties::jalign)
+        .def_readwrite_convert("vertical_alignment", &text_layout_properties::valign)
+        .def_readwrite("text_ratio", &text_layout_properties::text_ratio)
+        .def_readwrite("wrap_width", &text_layout_properties::wrap_width)
+        .def_readwrite("wrap_before", &text_layout_properties::wrap_before)
+        .def_readwrite("orientation", &text_layout_properties::orientation)
+        .def_readwrite("rotate_displacement", &text_layout_properties::rotate_displacement)
+        .add_property("displacement", &get_displacement, &set_displacement);
+
+    class_with_converter<char_properties>
         ("CharProperties")
+        .def_readwrite_convert("text_transform", &char_properties::text_transform)
+        .def_readwrite_convert("fontset", &char_properties::fontset)
         .def(init<char_properties const&>()) //Copy constructor
         .def_readwrite("face_name", &char_properties::face_name)
-        .def_readwrite("fontset", &char_properties::fontset)
         .def_readwrite("text_size", &char_properties::text_size)
         .def_readwrite("character_spacing", &char_properties::character_spacing)
         .def_readwrite("line_spacing", &char_properties::line_spacing)
         .def_readwrite("text_opacity", &char_properties::text_opacity)
         .def_readwrite("wrap_char", &char_properties::wrap_char)
-        .def_readwrite("wrap_before", &char_properties::wrap_before)
-        .def_readwrite("text_transform", &char_properties::text_transform)
+        .def_readwrite("wrap_character", &char_properties::wrap_char)
         .def_readwrite("fill", &char_properties::fill)
         .def_readwrite("halo_fill", &char_properties::halo_fill)
         .def_readwrite("halo_radius", &char_properties::halo_radius)
@@ -409,41 +473,29 @@ void export_text_placement()
         ;
 
     class_<TextPlacementsWrap,
-        boost::shared_ptr<TextPlacementsWrap>,
+        std::shared_ptr<TextPlacementsWrap>,
         boost::noncopyable>
         ("TextPlacements")
         .def_readwrite("defaults", &text_placements::defaults)
         .def("get_placement_info", pure_virtual(&text_placements::get_placement_info))
         /* TODO: add_expressions() */
         ;
-    register_ptr_to_python<boost::shared_ptr<text_placements> >();
+    register_ptr_to_python<std::shared_ptr<text_placements> >();
 
     class_<TextPlacementInfoWrap,
-        boost::shared_ptr<TextPlacementInfoWrap>,
+        std::shared_ptr<TextPlacementInfoWrap>,
         boost::noncopyable>
         ("TextPlacementInfo",
          init<text_placements const*, double>())
         .def("next", pure_virtual(&text_placement_info::next))
-        .def("get_actual_label_spacing", &text_placement_info::get_actual_label_spacing)
-        .def("get_actual_minimum_distance", &text_placement_info::get_actual_minimum_distance)
-        .def("get_actual_minimum_padding", &text_placement_info::get_actual_minimum_padding)
         .def_readwrite("properties", &text_placement_info::properties)
         .def_readwrite("scale_factor", &text_placement_info::scale_factor)
         ;
-    register_ptr_to_python<boost::shared_ptr<text_placement_info> >();
-
-
-    class_<processed_text,
-        boost::shared_ptr<processed_text>,
-        boost::noncopyable>
-        ("ProcessedText", no_init)
-        .def("push_back", &processed_text::push_back)
-        .def("clear", &processed_text::clear)
-        ;
+    register_ptr_to_python<std::shared_ptr<text_placement_info> >();
 
 
     class_<expression_set,
-        boost::shared_ptr<expression_set>,
+        std::shared_ptr<expression_set>,
         boost::noncopyable>
         ("ExpressionSet")
         .def("insert", &insert_expression);
@@ -452,7 +504,7 @@ void export_text_placement()
 
     //TODO: Python namespace
     class_<NodeWrap,
-        boost::shared_ptr<NodeWrap>,
+        std::shared_ptr<NodeWrap>,
         boost::noncopyable>
         ("FormattingNode")
         .def("apply", pure_virtual(&formatting::node::apply))
@@ -460,11 +512,11 @@ void export_text_placement()
              &formatting::node::add_expressions,
              &NodeWrap::default_add_expressions)
         ;
-    register_ptr_to_python<boost::shared_ptr<formatting::node> >();
+    register_ptr_to_python<std::shared_ptr<formatting::node> >();
 
 
     class_<TextNodeWrap,
-        boost::shared_ptr<TextNodeWrap>,
+        std::shared_ptr<TextNodeWrap>,
         bases<formatting::node>,
         boost::noncopyable>
         ("FormattingText", init<expression_ptr>())
@@ -474,11 +526,11 @@ void export_text_placement()
                       &formatting::text_node::get_text,
                       &formatting::text_node::set_text)
         ;
-    register_ptr_to_python<boost::shared_ptr<formatting::text_node> >();
+    register_ptr_to_python<std::shared_ptr<formatting::text_node> >();
 
 
     class_with_converter<FormatNodeWrap,
-        boost::shared_ptr<FormatNodeWrap>,
+        std::shared_ptr<FormatNodeWrap>,
         bases<formatting::node>,
         boost::noncopyable>
         ("FormattingFormat")
@@ -488,7 +540,7 @@ void export_text_placement()
         .def_readwrite_convert("line_spacing", &formatting::format_node::line_spacing)
         .def_readwrite_convert("text_opacity", &formatting::format_node::text_opacity)
         .def_readwrite_convert("wrap_char", &formatting::format_node::wrap_char)
-        .def_readwrite_convert("wrap_before", &formatting::format_node::wrap_before)
+        .def_readwrite_convert("wrap_character", &formatting::format_node::wrap_char)
         .def_readwrite_convert("text_transform", &formatting::format_node::text_transform)
         .def_readwrite_convert("fill", &formatting::format_node::fill)
         .def_readwrite_convert("halo_fill", &formatting::format_node::halo_fill)
@@ -498,10 +550,10 @@ void export_text_placement()
                       &formatting::format_node::get_child,
                       &formatting::format_node::set_child)
         ;
-    register_ptr_to_python<boost::shared_ptr<formatting::format_node> >();
+    register_ptr_to_python<std::shared_ptr<formatting::format_node> >();
 
     class_<ListNodeWrap,
-        boost::shared_ptr<ListNodeWrap>,
+        std::shared_ptr<ListNodeWrap>,
         bases<formatting::node>,
         boost::noncopyable>
         ("FormattingList", init<>())
@@ -514,10 +566,10 @@ void export_text_placement()
         .def("append", &ListNodeWrap::append)
         ;
 
-    register_ptr_to_python<boost::shared_ptr<formatting::list_node> >();
+    register_ptr_to_python<std::shared_ptr<formatting::list_node> >();
 
     class_<ExprFormatWrap,
-        boost::shared_ptr<ExprFormatWrap>,
+        std::shared_ptr<ExprFormatWrap>,
         bases<formatting::node>,
         boost::noncopyable>
         ("FormattingExpressionFormat")
@@ -527,7 +579,7 @@ void export_text_placement()
         .def_readwrite("line_spacing", &formatting::expression_format::line_spacing)
         .def_readwrite("text_opacity", &formatting::expression_format::text_opacity)
         .def_readwrite("wrap_char", &formatting::expression_format::wrap_char)
-        .def_readwrite("wrap_before", &formatting::expression_format::wrap_before)
+        .def_readwrite("wrap_character", &formatting::expression_format::wrap_char)
         .def_readwrite("fill", &formatting::expression_format::fill)
         .def_readwrite("halo_fill", &formatting::expression_format::halo_fill)
         .def_readwrite("halo_radius", &formatting::expression_format::halo_radius)
@@ -536,7 +588,7 @@ void export_text_placement()
                       &formatting::expression_format::get_child,
                       &formatting::expression_format::set_child)
         ;
-    register_ptr_to_python<boost::shared_ptr<formatting::expression_format> >();
+    register_ptr_to_python<std::shared_ptr<formatting::expression_format> >();
 
     //TODO: registry
 }

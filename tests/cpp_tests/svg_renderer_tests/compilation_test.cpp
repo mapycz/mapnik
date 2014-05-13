@@ -1,3 +1,4 @@
+#undef BOOST_SPIRIT_NO_PREDEFINED_TERMINALS
 #define BOOST_TEST_MODULE compile_test
 
 // boost.test
@@ -5,7 +6,7 @@
 
 // mapnik
 #include <mapnik/map.hpp>
-#include <mapnik/svg_renderer.hpp>
+#include <mapnik/svg/output/svg_renderer.hpp>
 
 // std
 #include <sstream>

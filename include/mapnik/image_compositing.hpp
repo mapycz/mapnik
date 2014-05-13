@@ -74,11 +74,11 @@ enum composite_mode_e
     hue,
     saturation,
     _color,
-    _value,
-    colorize_alpha
+    _value
 };
 
 MAPNIK_DECL boost::optional<composite_mode_e> comp_op_from_string(std::string const& name);
+MAPNIK_DECL boost::optional<std::string> comp_op_to_string(composite_mode_e comp_op);
 
 template <typename T1, typename T2>
 MAPNIK_DECL void composite(T1 & dst, T2 & src,

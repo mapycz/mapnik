@@ -21,9 +21,6 @@
  *****************************************************************************/
 
 // stl
-#include <iostream>
-#include <sstream>
-#include <fstream>
 #include <stdexcept>
 #include <set>
 
@@ -34,7 +31,6 @@
 #include <mapnik/boolean.hpp>
 
 // boost
-#include <boost/make_shared.hpp>
 
 #include "osm_datasource.hpp"
 #include "osm_featureset.hpp"
@@ -52,28 +48,17 @@ using mapnik::attribute_descriptor;
 
 DATASOURCE_PLUGIN(osm_datasource)
 
-osm_datasource::osm_datasource(const parameters& params, bool bind)
+osm_datasource::osm_datasource(const parameters& params)
     : datasource (params),
       extent_(),
       type_(datasource::Vector),
-      desc_(*params_.get<std::string>("type"), *params_.get<std::string>("encoding", "utf-8"))
+      desc_(*params.get<std::string>("type"), *params.get<std::string>("encoding", "utf-8"))
 {
-    if (bind)
-    {
-        this->bind();
-    }
-}
-
-void osm_datasource::bind() const
-{
-    if (is_bound_) return;
-
-    osm_data_ = NULL;
-    std::string osm_filename = *params_.get<std::string>("file", "");
-    std::string parser = *params_.get<std::string>("parser", "libxml2");
-    std::string url = *params_.get<std::string>("url", "");
-    std::string bbox = *params_.get<std::string>("bbox", "");
-
+    osm_data_ = nullptr;
+    std::string osm_filename = *params.get<std::string>("file", "");
+    std::string parser = *params.get<std::string>("parser", "libxml2");
+    std::string url = *params.get<std::string>("url", "");
+    std::string bbox = *params.get<std::string>("bbox", "");
 
     // load the data
     if (url != "" && bbox != "")
@@ -81,7 +66,7 @@ void osm_datasource::bind() const
         // if we supplied a url and a bounding box, load from the url
         MAPNIK_LOG_DEBUG(osm) << "osm_datasource: loading_from_url url=" << url << ",bbox=" << bbox;
 
-        if ((osm_data_ = dataset_deliverer::load_from_url(url, bbox, parser)) == NULL)
+        if ((osm_data_ = dataset_deliverer::load_from_url(url, bbox, parser)) == nullptr)
         {
             throw datasource_exception("Error loading from URL");
         }
@@ -89,11 +74,11 @@ void osm_datasource::bind() const
     else if (osm_filename != "")
     {
         // if we supplied a filename, load from file
-        if ((osm_data_ = dataset_deliverer::load_from_file(osm_filename, parser)) == NULL)
+        if ((osm_data_ = dataset_deliverer::load_from_file(osm_filename, parser)) == nullptr)
         {
-            std::ostringstream s;
-            s << "OSM Plugin: Error loading from file '" << osm_filename << "'";
-            throw datasource_exception(s.str());
+            std::string s("OSM Plugin: Error loading from file '");
+            s += osm_filename + "'";
+            throw datasource_exception(s);
         }
     }
     else
@@ -113,15 +98,13 @@ void osm_datasource::bind() const
 
     // Add the attributes to the datasource descriptor - assume they are
     // all of type String
-    for (std::set<std::string>::iterator i = keys.begin(); i != keys.end(); i++)
+    for (auto const& key : keys)
     {
-        desc_.add_descriptor(attribute_descriptor(*i, tagtypes.get_type(*i)));
+        desc_.add_descriptor(attribute_descriptor(key, tagtypes.get_type(key)));
     }
-
     // Get the bounds of the data and set extent_ accordingly
     bounds b = osm_data_->get_bounds();
-    extent_ =  box2d<double>(b.w, b.s, b.e, b.n);
-    is_bound_ = true;
+    extent_ = box2d<double>(b.w,b.s,b.e,b.n);
 }
 
 osm_datasource::~osm_datasource()
@@ -130,7 +113,7 @@ osm_datasource::~osm_datasource()
     //delete osm_data_;
 }
 
-std::string osm_datasource::name()
+const char * osm_datasource::name()
 {
     return "osm";
 }
@@ -147,21 +130,17 @@ layer_descriptor osm_datasource::get_descriptor() const
 
 featureset_ptr osm_datasource::features(const query& q) const
 {
-    if (!is_bound_) bind();
-
     filter_in_box filter(q.get_bbox());
     // so we need to filter osm features by bbox here...
 
-    return boost::make_shared<osm_featureset<filter_in_box> >(filter,
+    return std::make_shared<osm_featureset<filter_in_box> >(filter,
                                                               osm_data_,
                                                               q.property_names(),
                                                               desc_.get_encoding());
 }
 
-featureset_ptr osm_datasource::features_at_point(coord2d const& pt) const
+featureset_ptr osm_datasource::features_at_point(coord2d const& pt, double tol) const
 {
-    if (!is_bound_) bind();
-
     filter_at_point filter(pt);
     // collect all attribute names
     std::vector<attribute_descriptor> const& desc_vector = desc_.get_descriptors();
@@ -175,7 +154,7 @@ featureset_ptr osm_datasource::features_at_point(coord2d const& pt) const
         ++itr;
     }
 
-    return boost::make_shared<osm_featureset<filter_at_point> >(filter,
+    return std::make_shared<osm_featureset<filter_at_point> >(filter,
                                                                 osm_data_,
                                                                 names,
                                                                 desc_.get_encoding());
@@ -183,12 +162,10 @@ featureset_ptr osm_datasource::features_at_point(coord2d const& pt) const
 
 box2d<double> osm_datasource::envelope() const
 {
-    if (!is_bound_) bind();
     return extent_;
 }
 
 boost::optional<mapnik::datasource::geometry_t> osm_datasource::get_geometry_type() const
 {
-    if (! is_bound_) bind();
     return boost::optional<mapnik::datasource::geometry_t>(mapnik::datasource::Collection);
 }

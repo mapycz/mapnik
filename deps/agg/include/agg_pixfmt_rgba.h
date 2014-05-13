@@ -25,16 +25,11 @@
 #ifndef AGG_PIXFMT_RGBA_INCLUDED
 #define AGG_PIXFMT_RGBA_INCLUDED
 
-#include <string.h>
-#include <math.h>
+#include <cstring>
+#include <cmath>
 #include "agg_basics.h"
 #include "agg_color_rgba.h"
 #include "agg_rendering_buffer.h"
-
-#include <boost/gil/gil_all.hpp>
-#include <boost/gil/extension/toolbox/hsv.hpp>
-
-#include <iostream>
 
 namespace agg
 {
@@ -139,7 +134,7 @@ namespace agg
         static AGG_INLINE void blend_pix(value_type* p,
                                          unsigned cr, unsigned cg, unsigned cb,
                                          unsigned alpha,
-                                         unsigned cover=0)
+                                         unsigned /*cover*/=0)
         {
             calc_type r = p[Order::R];
             calc_type g = p[Order::G];
@@ -334,7 +329,7 @@ namespace agg
             p[Order::R] = (value_type)(sr + ((p[Order::R] * s1a + base_mask) >> base_shift));
             p[Order::G] = (value_type)(sg + ((p[Order::G] * s1a + base_mask) >> base_shift));
             p[Order::B] = (value_type)(sb + ((p[Order::B] * s1a + base_mask) >> base_shift));
-            p[Order::A] = (value_type)(sa + p[Order::A] - ((sa * p[Order::A] + base_mask) >> base_shift));
+            p[Order::A] = (value_type)(sa + ((p[Order::A] * s1a + base_mask) >> base_shift));
         }
     };
 
@@ -368,7 +363,7 @@ namespace agg
             p[Order::R] = (value_type)(p[Order::R] + ((sr * d1a + base_mask) >> base_shift));
             p[Order::G] = (value_type)(p[Order::G] + ((sg * d1a + base_mask) >> base_shift));
             p[Order::B] = (value_type)(p[Order::B] + ((sb * d1a + base_mask) >> base_shift));
-            p[Order::A] = (value_type)(sa + p[Order::A] - ((sa * p[Order::A] + base_mask) >> base_shift));
+            p[Order::A] = (value_type)(p[Order::A] + ((sa * d1a + base_mask) >> base_shift));
         }
     };
 
@@ -691,9 +686,9 @@ namespace agg
             }
             if(sa)
             {
-                calc_type dr = p[Order::R] - sr;
-                calc_type dg = p[Order::G] - sg;
-                calc_type db = p[Order::B] - sb;
+                calc_type dr = (sr > p[Order::R]) ? 0 : p[Order::R] - sr;
+                calc_type dg = (sg > p[Order::G]) ? 0 : p[Order::G] - sg;
+                calc_type db = (sb > p[Order::B]) ? 0 : p[Order::B] - sb;
                 p[Order::R] = (dr > base_mask) ? 0 : dr;
                 p[Order::G] = (dg > base_mask) ? 0 : dg;
                 p[Order::B] = (db > base_mask) ? 0 : db;
@@ -1015,18 +1010,34 @@ namespace agg
         //   Dca' = Sa.(Sca.Da + Dca.Sa - Sa.Da)/Sca + Sca.(1 - Da) + Dca.(1 - Sa)
         //
         // Da'  = Sa + Da - Sa.Da
+
+
+        // http://www.w3.org/TR/SVGCompositing/
+        // if Sca == 0 and Dca == Da
+        //   Dca' = Sa × Da + Sca × (1 - Da) + Dca × (1 - Sa)
+        //        = Sa × Da + Dca × (1 - Sa)
+        //        = Da = Dca
+        // otherwise if Sca == 0
+        //   Dca' = Sca × (1 - Da) + Dca × (1 - Sa)
+        //        = Dca × (1 - Sa)
+        // otherwise if Sca > 0
+        //   Dca' = Sa × Da - Sa × Da × min(1, (1 - Dca/Da) × Sa/Sca) + Sca × (1 - Da) + Dca × (1 - Sa)
+        //        = Sa × Da × (1 - min(1, (1 - Dca/Da) × Sa/Sca)) + Sca × (1 - Da) + Dca × (1 - Sa)
+
+        //   sa * da * (255 - std::min(255, (255 - p[0]/da)*(sa/(sc*sa)) +
         static AGG_INLINE void blend_pix(value_type* p,
                                          unsigned sr, unsigned sg, unsigned sb,
                                          unsigned sa, unsigned cover)
         {
-            if(cover < 255)
+            if (cover < 255)
             {
                 sr = (sr * cover + 255) >> 8;
                 sg = (sg * cover + 255) >> 8;
                 sb = (sb * cover + 255) >> 8;
                 sa = (sa * cover + 255) >> 8;
             }
-            if(sa)
+
+            if (sa)
             {
                 calc_type d1a  = base_mask - p[Order::A];
                 calc_type s1a  = base_mask - sa;
@@ -1043,16 +1054,16 @@ namespace agg
                 long_type sada = sa * da;
 
                 p[Order::R] = (value_type)(((srda + drsa <= sada) ?
-                    sr * d1a + dr * s1a :
-                    sa * (srda + drsa - sada) / sr + sr * d1a + dr * s1a + base_mask) >> base_shift);
+                   sr * d1a + dr * s1a :
+                   (sr > 0 ? sa * (srda + drsa - sada) / sr + sr * d1a + dr * s1a + base_mask : 0)) >> base_shift);
 
                 p[Order::G] = (value_type)(((sgda + dgsa <= sada) ?
                     sg * d1a + dg * s1a :
-                    sa * (sgda + dgsa - sada) / sg + sg * d1a + dg * s1a + base_mask) >> base_shift);
+                   (sg > 0 ? sa * (sgda + dgsa - sada) / sg + sg * d1a + dg * s1a + base_mask : 0)) >> base_shift);
 
                 p[Order::B] = (value_type)(((sbda + dbsa <= sada) ?
                     sb * d1a + db * s1a :
-                    sa * (sbda + dbsa - sada) / sb + sb * d1a + db * s1a + base_mask) >> base_shift);
+                   (sb > 0 ? sa * (sbda + dbsa - sada) / sb + sb * d1a + db * s1a + base_mask : 0)) >> base_shift);
 
                 p[Order::A] = (value_type)(sa + da - ((sa * da + base_mask) >> base_shift));
             }
@@ -1433,57 +1444,8 @@ namespace agg
         }
     };
 
-    // colorize alpha values
-    template <typename ColorT, typename Order>
-    struct comp_op_rgba_colorize_alpha
-    {
-        typedef ColorT color_type;
-        typedef Order order_type;
-        typedef typename color_type::value_type value_type;
-        typedef typename color_type::calc_type calc_type;
-        typedef typename color_type::long_type long_type;
-        enum base_scale_e
-        {
-            base_shift = color_type::base_shift,
-            base_mask  = color_type::base_mask
-        };
-
-        static AGG_INLINE void blend_pix(value_type* p,
-                                         // source rgb
-                                         unsigned sr, unsigned sg, unsigned sb,
-                                         // source alpha and opacity
-                                         unsigned sa, unsigned cover) {
-            if (cover < 255) {
-                sa = (sa * cover + 255) >> 8;
-            }
-            p[Order::R] = (value_type)(((0 + base_mask) >> base_shift));
-            p[Order::G] = (value_type)(((0 + base_mask) >> base_shift));
-            p[Order::B] = (value_type)(((0 + base_mask) >> base_shift));
-            p[Order::A] = (value_type)(sa + p[Order::A] - ((sa * p[Order::A] + base_mask) >> base_shift));
-
-            // http://en.wikipedia.org/wiki/File:HSV-RGB-comparison.svg
-            if (p[Order::A] < 64) {
-                p[Order::G] = ((p[Order::A] - 64) * 4);
-                p[Order::B] = 255;
-            }
-            if (p[Order::A] >= 64 && p[Order::A] < 128) {
-                p[Order::G] = 255;
-                p[Order::B] = 255 - ((p[Order::A] - 64) * 4);
-            }
-            if (p[Order::A] >= 128 && p[Order::A] < 192) {
-                p[Order::R] = ((p[Order::A] - 128) * 4);
-                p[Order::G] = 255;
-            }
-            if (p[Order::A] >= 192) {
-                p[Order::R] = 255;
-                p[Order::G] = 255 - ((p[Order::A] - 192) * 4);
-            }
-        }
-    };
-
     // grain extract (GIMP)
     // E = I - M + 128
-
     template <typename ColorT, typename Order>
     struct comp_op_rgba_grain_extract
     {
@@ -1502,24 +1464,29 @@ namespace agg
                                          unsigned sr, unsigned sg, unsigned sb,
                                          unsigned sa, unsigned cover)
         {
-            if (cover < 255)
-            {
-                sr = (sr * cover + 255) >> 8;
-                sg = (sg * cover + 255) >> 8;
-                sb = (sb * cover + 255) >> 8;
-                sa = (sa * cover + 255) >> 8;
-            }
-            if (sa > 0)
-            {
-                calc_type da = p[Order::A];
-                int dr = p[Order::R] - sr + 128;
-                int dg = p[Order::G] - sg + 128;
-                int db = p[Order::B] - sb + 128;
+            calc_type da = (p[Order::A] * sa + 255) >> 8;
 
-                p[Order::R] = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-                p[Order::G] = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-                p[Order::B] = db < 0 ? 0 : (db > 255 ? 255 : db);
-                p[Order::A] = (value_type)(sa + da - ((sa * da + base_mask) >> base_shift));
+            int dr = p[Order::R] - sr + 128;
+            int dg = p[Order::G] - sg + 128;
+            int db = p[Order::B] - sb + 128;
+
+            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+            db = db < 0 ? 0 : (db > 255 ? 255 : db);
+
+            p[Order::A] = da;
+
+            if (da < 255)
+            {
+                p[Order::R] = (dr * da + 255) >> 8;
+                p[Order::G] = (dg * da + 255) >> 8;
+                p[Order::B] = (db * da + 255) >> 8;
+            }
+            else
+            {
+                p[Order::R] = dr;
+                p[Order::G] = dg;
+                p[Order::B] = db;
             }
         }
     };
@@ -1538,36 +1505,9 @@ namespace agg
             base_mask  = color_type::base_mask
         };
 
-        static AGG_INLINE void blend_pix(value_type* p,
+        static void blend_pix(value_type* p,
                                          unsigned sr, unsigned sg, unsigned sb,
-                                         unsigned sa, unsigned cover)
-        {
-            if (cover < 255)
-            {
-                sr = (sr * cover + 255) >> 8;
-                sg = (sg * cover + 255) >> 8;
-                sb = (sb * cover + 255) >> 8;
-                sa = (sa * cover + 255) >> 8;
-            }
-
-            if (sa > 0)
-            {
-                using namespace boost;
-                using namespace gil;
-                using namespace hsv_color_space;
-                rgb8_pixel_t rgb_src(sr,sg,sb);
-                rgb8_pixel_t rgb_dst(p[Order::R],p[Order::G],p[Order::B]);
-                hsv32f_pixel_t hsv_src,hsv_dst;
-                color_convert(rgb_src, hsv_src);
-                color_convert(rgb_dst, hsv_dst);
-                get_color(hsv_dst,hue_t()) = get_color(hsv_src,hue_t());
-                color_convert(hsv_dst, rgb_dst);
-                p[Order::R] = get_color(rgb_dst,red_t());
-                p[Order::G] = get_color(rgb_dst,green_t());
-                p[Order::B] = get_color(rgb_dst,blue_t());
-                p[Order::A] = (value_type)(sa + p[Order::A] - ((sa * p[Order::A] + base_mask) >> base_shift));
-            }
-        }
+                                         unsigned sa, unsigned cover);
     };
 
     template <typename ColorT, typename Order>
@@ -1584,36 +1524,9 @@ namespace agg
             base_mask  = color_type::base_mask
         };
 
-        static AGG_INLINE void blend_pix(value_type* p,
+        static void blend_pix(value_type* p,
                                          unsigned sr, unsigned sg, unsigned sb,
-                                         unsigned sa, unsigned cover)
-        {
-            if (cover < 255)
-            {
-                sr = (sr * cover + 255) >> 8;
-                sg = (sg * cover + 255) >> 8;
-                sb = (sb * cover + 255) >> 8;
-                sa = (sa * cover + 255) >> 8;
-            }
-
-            if (sa > 0)
-            {
-                using namespace boost;
-                using namespace gil;
-                using namespace hsv_color_space;
-                rgb8_pixel_t rgb_src(sr,sg,sb);
-                rgb8_pixel_t rgb_dst(p[Order::R],p[Order::G],p[Order::B]);
-                hsv32f_pixel_t hsv_src,hsv_dst;
-                color_convert( rgb_src, hsv_src);
-                color_convert( rgb_dst, hsv_dst);
-                get_color(hsv_dst,saturation_t()) = get_color(hsv_src,saturation_t());
-                color_convert(hsv_dst, rgb_dst);
-                p[Order::R] = get_color(rgb_dst,red_t());
-                p[Order::G] = get_color(rgb_dst,green_t());
-                p[Order::B] = get_color(rgb_dst,blue_t());
-                p[Order::A] = (value_type)(sa + p[Order::A] - ((sa * p[Order::A] + base_mask) >> base_shift));
-            }
-        }
+                                         unsigned sa, unsigned cover);
     };
 
     template <typename ColorT, typename Order>
@@ -1630,37 +1543,9 @@ namespace agg
             base_mask  = color_type::base_mask
         };
 
-        static AGG_INLINE void blend_pix(value_type* p,
+        static void blend_pix(value_type* p,
                                          unsigned sr, unsigned sg, unsigned sb,
-                                         unsigned sa, unsigned cover)
-        {
-            if (cover < 255)
-            {
-                sr = (sr * cover + 255) >> 8;
-                sg = (sg * cover + 255) >> 8;
-                sb = (sb * cover + 255) >> 8;
-                sa = (sa * cover + 255) >> 8;
-            }
-
-            if (sa > 0)
-            {
-                using namespace boost;
-                using namespace gil;
-                using namespace hsv_color_space;
-                rgb8_pixel_t rgb_src(sr,sg,sb);
-                rgb8_pixel_t rgb_dst(p[Order::R],p[Order::G],p[Order::B]);
-                hsv32f_pixel_t hsv_src,hsv_dst;
-                color_convert( rgb_src, hsv_src);
-                color_convert( rgb_dst, hsv_dst);
-                get_color(hsv_dst,hue_t()) = get_color(hsv_src,hue_t());
-                get_color(hsv_dst,saturation_t()) = get_color(hsv_src,saturation_t());
-                color_convert(hsv_dst, rgb_dst);
-                p[Order::R] = get_color(rgb_dst,red_t());
-                p[Order::G] = get_color(rgb_dst,green_t());
-                p[Order::B] = get_color(rgb_dst,blue_t());
-                p[Order::A] = (value_type)(sa + p[Order::A] - ((sa * p[Order::A] + base_mask) >> base_shift));
-            }
-        }
+                                         unsigned sa, unsigned cover);
     };
 
 
@@ -1678,36 +1563,9 @@ namespace agg
             base_mask  = color_type::base_mask
         };
 
-        static AGG_INLINE void blend_pix(value_type* p,
+        static void blend_pix(value_type* p,
                                          unsigned sr, unsigned sg, unsigned sb,
-                                         unsigned sa, unsigned cover)
-        {
-            if (cover < 255)
-            {
-                sr = (sr * cover + 255) >> 8;
-                sg = (sg * cover + 255) >> 8;
-                sb = (sb * cover + 255) >> 8;
-                sa = (sa * cover + 255) >> 8;
-            }
-
-            if (sa > 0)
-            {
-                using namespace boost;
-                using namespace gil;
-                using namespace hsv_color_space;
-                rgb8_pixel_t rgb_src(sr,sg,sb);
-                rgb8_pixel_t rgb_dst(p[Order::R],p[Order::G],p[Order::B]);
-                hsv32f_pixel_t hsv_src,hsv_dst;
-                color_convert( rgb_src, hsv_src);
-                color_convert( rgb_dst, hsv_dst);
-                get_color(hsv_dst,value_t()) = get_color(hsv_src,value_t());
-                color_convert(hsv_dst, rgb_dst);
-                p[Order::R] = get_color(rgb_dst,red_t());
-                p[Order::G] = get_color(rgb_dst,green_t());
-                p[Order::B] = get_color(rgb_dst,blue_t());
-                p[Order::A] = (value_type)(sa + p[Order::A] - ((sa * p[Order::A] + base_mask) >> base_shift));
-            }
-        }
+                                         unsigned sa, unsigned cover);
     };
 
     //======================================================comp_op_table_rgba
@@ -1762,7 +1620,7 @@ namespace agg
         comp_op_rgba_saturation<ColorT,Order>::blend_pix,
         comp_op_rgba_color<ColorT,Order>::blend_pix,
         comp_op_rgba_value<ColorT,Order>::blend_pix,
-        comp_op_rgba_colorize_alpha<ColorT,Order>::blend_pix,
+        //comp_op_rgba_colorize_alpha<ColorT,Order>::blend_pix,
         0
     };
 
@@ -1804,7 +1662,7 @@ namespace agg
         comp_op_saturation,    //----comp_op_saturation
         comp_op_color,         //----comp_op_color
         comp_op_value,         //----comp_op_value
-        comp_op_colorize_alpha,//----comp_op_colorize_alpha
+        //comp_op_colorize_alpha,//----comp_op_colorize_alpha
         end_of_comp_op_e
     };
 

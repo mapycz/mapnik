@@ -20,19 +20,26 @@
  *
  *****************************************************************************/
 // mapnik
+#include <mapnik/value_types.hpp>
 #include <mapnik/global.hpp>
 #include <mapnik/utils.hpp>
 #include <mapnik/unicode.hpp>
+#include <mapnik/util/trim.hpp>
 
 #include "dbfile.hpp"
 
 // boost
-#include <boost/algorithm/string.hpp>
 #include <boost/spirit/include/qi.hpp>
+#ifdef SHAPE_MEMORY_MAPPED_FILE
+#include <boost/interprocess/mapped_region.hpp>
 #include <mapnik/mapped_memory_cache.hpp>
-// stl
-#include <string>
+#endif
 
+// stl
+#include <cstdint>
+#include <string>
+#include <cstring>
+#include <stdexcept>
 
 dbf_file::dbf_file()
     : num_records_(0),
@@ -46,6 +53,8 @@ dbf_file::dbf_file(std::string const& file_name)
      record_length_(0),
 #ifdef SHAPE_MEMORY_MAPPED_FILE
      file_(),
+#elif defined(_WINDOWS)
+     file_(mapnik::utf8_to_utf16(file_name), std::ios::in | std::ios::binary),
 #else
      file_(file_name.c_str() ,std::ios::in | std::ios::binary),
 #endif
@@ -53,10 +62,15 @@ dbf_file::dbf_file(std::string const& file_name)
 {
 
 #ifdef SHAPE_MEMORY_MAPPED_FILE
-    boost::optional<mapnik::mapped_region_ptr> memory = mapnik::mapped_memory_cache::find(file_name.c_str(),true);
+    boost::optional<mapnik::mapped_region_ptr> memory = mapnik::mapped_memory_cache::instance().find(file_name,true);
     if (memory)
     {
+        mapped_region_ = *memory;
         file_.buffer(static_cast<char*>((*memory)->get_address()),(*memory)->get_size());
+    }
+    else
+    {
+        throw std::runtime_error("could not create file mapping for "+file_name);
     }
 #endif
     if (file_)
@@ -121,7 +135,7 @@ const field_descriptor& dbf_file::descriptor(int col) const
 }
 
 
-void dbf_file::add_attribute(int col, mapnik::transcoder const& tr, Feature & f) const throw()
+void dbf_file::add_attribute(int col, mapnik::transcoder const& tr, mapnik::feature_impl & f) const throw()
 {
     using namespace boost::spirit;
 
@@ -129,26 +143,41 @@ void dbf_file::add_attribute(int col, mapnik::transcoder const& tr, Feature & f)
     {
         std::string const& name=fields_[col].name_;
 
+        // NOTE: ensure types handled here are matched in shape_datasource.cpp
         switch (fields_[col].type_)
         {
         case 'C':
-        case 'D'://todo handle date?
-        case 'M':
-        case 'L':
+        case 'D':
         {
             // FIXME - avoid constructing std::string on stack
             std::string str(record_+fields_[col].offset_,fields_[col].length_);
-            boost::trim(str);
+            mapnik::util::trim(str);
             f.put(name,tr.transcode(str.c_str()));
             break;
         }
-        case 'N':
-        case 'F':
+        case 'L':
+        {
+            char ch = record_[fields_[col].offset_];
+            if ( ch == '1' || ch == 't' || ch == 'T' || ch == 'y' || ch == 'Y')
+            {
+                f.put(name,true);
+            }
+            else
+            {
+                // NOTE: null logical fields use '?'
+                f.put(name,false);
+            }
+            break;
+        }
+        case 'N': // numeric
+        case 'O': // double
+        case 'F': // float
         {
 
             if (record_[fields_[col].offset_] == '*')
             {
-                f.put(name,0);
+                // NOTE: we intentionally do not store null here
+                // since it is equivalent to the attribute not existing
                 break;
             }
             if ( fields_[col].dec_>0 )
@@ -156,18 +185,24 @@ void dbf_file::add_attribute(int col, mapnik::transcoder const& tr, Feature & f)
                 double val = 0.0;
                 const char *itr = record_+fields_[col].offset_;
                 const char *end = itr + fields_[col].length_;
-                bool r = qi::phrase_parse(itr,end,double_,ascii::space,val);
-                if (r && (itr == end))
+                ascii::space_type space;
+                qi::double_type double_;
+                if (qi::phrase_parse(itr,end,double_,space,val))
+                {
                     f.put(name,val);
+                }
             }
             else
             {
-                int val = 0;
+                mapnik::value_integer val = 0;
                 const char *itr = record_+fields_[col].offset_;
                 const char *end = itr + fields_[col].length_;
-                bool r = qi::phrase_parse(itr,end,int_,ascii::space,val);
-                if (r && (itr == end))
+                ascii::space_type space;
+                qi::int_type int_;
+                if (qi::phrase_parse(itr,end,int_,space,val))
+                {
                     f.put(name,val);
+                }
             }
             break;
         }
@@ -189,14 +224,16 @@ void dbf_file::read_header()
         skip(22);
         std::streampos offset=0;
         char name[11];
-        memset(&name,0,11);
+        std::memset(&name,0,11);
         fields_.reserve(num_fields_);
         for (int i=0;i<num_fields_;++i)
         {
             field_descriptor desc;
             desc.index_=i;
             file_.read(name,10);
-            desc.name_=boost::trim_left_copy(std::string(name));
+            desc.name_=name;
+            // TODO - when is this trim needed?
+            mapnik::util::trim(desc.name_);
             skip(1);
             desc.type_=file_.get();
             skip(4);
@@ -220,7 +257,7 @@ int dbf_file::read_short()
 {
     char b[2];
     file_.read(b,2);
-    boost::int16_t val;
+    std::int16_t val;
     mapnik::read_int16_ndr(b,val);
     return val;
 }
@@ -230,7 +267,7 @@ int dbf_file::read_int()
 {
     char b[4];
     file_.read(b,4);
-    boost::int32_t val;
+    std::int32_t val;
     mapnik::read_int32_ndr(b,val);
     return val;
 }

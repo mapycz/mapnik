@@ -23,9 +23,11 @@
 #ifndef MAPNIK_UTILS_HPP
 #define MAPNIK_UTILS_HPP
 
+#include <mapnik/config.hpp>
+
 // boost
 #ifdef MAPNIK_THREADSAFE
-#include <boost/thread/mutex.hpp>
+#include <mutex>
 #endif
 
 // stl
@@ -33,15 +35,14 @@
 #include <cstdlib>
 #include <limits>
 #include <ctime>
-#include <sstream>
-#include <iostream>
 #include <algorithm>
 #include <cmath>
 
 namespace mapnik
 {
+
 #ifdef MAPNIK_THREADSAFE
-using boost::mutex;
+using std::mutex;
 #endif
 
 template <typename T>
@@ -83,29 +84,23 @@ public:
         static MaxAlign staticMemory;
         return new(&staticMemory) T;
     }
-#ifdef __SUNPRO_CC
-    // Sun C++ Compiler doesn't handle `volatile` keyword same as GCC.
-    static void destroy(T* obj)
-#else
     static void destroy(volatile T* obj)
-#endif
     {
         obj->~T();
     }
 };
 
+
+#ifdef __GNUC__
+template <typename T,
+          template <typename U> class CreatePolicy=CreateStatic> class MAPNIK_DECL singleton
+{
+#else
 template <typename T,
           template <typename U> class CreatePolicy=CreateStatic> class singleton
 {
-#ifdef __SUNPRO_CC
-    /* Sun's C++ compiler will issue the following errors if CreatePolicy<T> is used:
-       Error: A class template name was expected instead of mapnik::CreatePolicy<mapnik::T>
-       Error: A "friend" declaration must specify a class or function.
-    */
-    friend class CreatePolicy;
-#else
-    friend class CreatePolicy<T>;
 #endif
+    friend class CreatePolicy<T>;
     static T* pInstance_;
     static bool destroyed_;
     singleton(const singleton &rhs);
@@ -124,45 +119,58 @@ template <typename T,
     }
 
 protected:
+
 #ifdef MAPNIK_THREADSAFE
-    static mutex mutex_;
+        static mutex mutex_;
 #endif
-    singleton() {}
-public:
-    static  T* instance()
-    {
-        if (! pInstance_)
+        singleton() {}
+    public:
+        static T& instance()
         {
-#ifdef MAPNIK_THREADSAFE
-            mutex::scoped_lock lock(mutex_);
-#endif
             if (! pInstance_)
             {
-                if (destroyed_)
+#ifdef MAPNIK_THREADSAFE
+                mapnik::scoped_lock lock(mutex_);
+#endif
+                if (! pInstance_)
                 {
-                    onDeadReference();
-                }
-                else
-                {
-                    pInstance_ = CreatePolicy<T>::create();
+                    if (destroyed_)
+                    {
+                        destroyed_ = false;
+                        onDeadReference();
+                    }
+                    else
+                    {
+                        pInstance_ = CreatePolicy<T>::create();
 
-                    // register destruction
-                    std::atexit(&DestroySingleton);
+                        // register destruction
+                        std::atexit(&DestroySingleton);
+                    }
                 }
             }
+            return *pInstance_;
         }
-        return pInstance_;
-    }
 };
+
 #ifdef MAPNIK_THREADSAFE
-template <typename T,
-          template <typename U> class CreatePolicy> mutex singleton<T,CreatePolicy>::mutex_;
+    template <typename T,
+              template <typename U> class CreatePolicy> mutex singleton<T,CreatePolicy>::mutex_;
 #endif
 
-template <typename T,
-          template <typename U> class CreatePolicy> T* singleton<T,CreatePolicy>::pInstance_=0;
-template <typename T,
-          template <typename U> class CreatePolicy> bool singleton<T,CreatePolicy>::destroyed_=false;
+    template <typename T,
+              template <typename U> class CreatePolicy> T* singleton<T,CreatePolicy>::pInstance_=0;
+    template <typename T,
+              template <typename U> class CreatePolicy> bool singleton<T,CreatePolicy>::destroyed_=false;
+
+
+#ifdef _WINDOWS
+
+// UTF8 <--> UTF16 conversion routines
+
+MAPNIK_DECL std::string utf16_to_utf8(std::wstring const& wstr);
+MAPNIK_DECL std::wstring utf8_to_utf16(std::string const& str);
+
+#endif  // _WINDOWS
 
 }
 

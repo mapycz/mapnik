@@ -20,14 +20,19 @@
  *
  *****************************************************************************/
 
+#include "boost_std_shared_shim.hpp"
+
 // boost
 #include <boost/python.hpp>
-#include <boost/make_shared.hpp>
+#include <boost/noncopyable.hpp>
 
 //mapnik
 #include <mapnik/palette.hpp>
 
-static boost::shared_ptr<mapnik::rgba_palette> make_palette( const std::string& palette, const std::string& format )
+// stl
+#include <stdexcept>
+
+static std::shared_ptr<mapnik::rgba_palette> make_palette( std::string const& palette, std::string const& format )
 {
     mapnik::rgba_palette::palette_type type = mapnik::rgba_palette::PALETTE_RGBA;
     if (format == "rgb")
@@ -36,7 +41,7 @@ static boost::shared_ptr<mapnik::rgba_palette> make_palette( const std::string& 
         type = mapnik::rgba_palette::PALETTE_ACT;
     else
         throw std::runtime_error("invalid type passed for mapnik.Palette: must be either rgba, rgb, or act");
-    return boost::make_shared<mapnik::rgba_palette>(palette, type);
+    return std::make_shared<mapnik::rgba_palette>(palette, type);
 }
 
 void export_palette ()
@@ -44,12 +49,15 @@ void export_palette ()
     using namespace boost::python;
 
     class_<mapnik::rgba_palette,
-        boost::shared_ptr<mapnik::rgba_palette>,
+        std::shared_ptr<mapnik::rgba_palette>,
         boost::noncopyable >("Palette",no_init)
         //, init<std::string,std::string>(
         // ( arg("palette"), arg("type")),
         // "Creates a new color palette from a file\n"
         // )
         .def( "__init__", boost::python::make_constructor(make_palette))
+        .def("to_string", &mapnik::rgba_palette::to_string,
+             "Returns the palette as a string.\n"
+            )
         ;
 }

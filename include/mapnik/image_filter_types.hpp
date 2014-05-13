@@ -23,7 +23,21 @@
 #ifndef MAPNIK_IMAGE_FILTER_TYPES_HPP
 #define MAPNIK_IMAGE_FILTER_TYPES_HPP
 
-#include <boost/variant.hpp>
+// mapnik
+#include <mapnik/config.hpp>
+#include <mapnik/color.hpp>
+#include <mapnik/config_error.hpp>
+
+// boost
+#include <boost/variant/variant.hpp>
+#include <boost/variant/static_visitor.hpp>
+#include <boost/variant/apply_visitor.hpp>
+
+// stl
+#include <vector>
+#include <ostream>
+#include <iterator>  // for std::back_insert_iterator
+
 
 namespace mapnik { namespace filter {
 
@@ -37,17 +51,82 @@ struct x_gradient {};
 struct y_gradient {};
 struct invert {};
 
-struct agg_stack_blur 
+struct agg_stack_blur
 {
     agg_stack_blur(unsigned rx_, unsigned ry_)
         : rx(rx_),ry(ry_) {}
-    // an attempt to support older boost spirit (< 1.46)
-    agg_stack_blur()
-        : rx(1),ry(1) {}
     unsigned rx;
     unsigned ry;
 };
 
+struct color_to_alpha
+{
+    color_to_alpha(mapnik::color const& c)
+        : color(c) {}
+    mapnik::color color;
+};
+
+struct scale_hsla
+{
+    scale_hsla(double _h0, double _h1,
+         double _s0, double _s1,
+         double _l0, double _l1,
+         double _a0, double _a1) :
+      h0(_h0),
+      h1(_h1),
+      s0(_s0),
+      s1(_s1),
+      l0(_l0),
+      l1(_l1),
+      a0(_a0),
+      a1(_a1) {
+          if (h0 < 0 || h0 > 1 ||
+              h1 < 0 || h1 > 1 ||
+              s0 < 0 || s0 > 1 ||
+              s1 < 0 || s1 > 1 ||
+              l0 < 0 || l0 > 1 ||
+              l1 < 0 || l1 > 1 ||
+              a0 < 0 || a0 > 1 ||
+              a1 < 0 || a1 > 1)
+          {
+              throw config_error("scale-hsla values must be between 0 and 1");
+          }
+      }
+    inline bool is_identity() const {
+        return (h0 == 0 &&
+                h1 == 1 &&
+                s0 == 0 &&
+                s1 == 1 &&
+                l0 == 0 &&
+                l1 == 1);
+    }
+    inline bool is_alpha_identity() const {
+        return (a0 == 0 &&
+                a1 == 1);
+    }
+    double h0;
+    double h1;
+    double s0;
+    double s1;
+    double l0;
+    double l1;
+    double a0;
+    double a1;
+};
+
+struct color_stop
+{
+    color_stop() {}
+    color_stop(mapnik::color const& c, double val = 0.0)
+        : color(c),offset(val) {}
+    mapnik::color color;
+    double offset;
+};
+
+struct colorize_alpha : std::vector<color_stop>
+{
+    colorize_alpha() {}
+};
 
 typedef boost::variant<filter::blur,
                        filter::gray,
@@ -58,7 +137,131 @@ typedef boost::variant<filter::blur,
                        filter::sobel,
                        filter::x_gradient,
                        filter::y_gradient,
-                       filter::invert> filter_type;
+                       filter::invert,
+                       filter::scale_hsla,
+                       filter::colorize_alpha,
+                       filter::color_to_alpha> filter_type;
+
+inline std::ostream& operator<< (std::ostream& os, blur)
+{
+    os << "blur";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, gray)
+{
+    os << "gray";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, agg_stack_blur const& filter)
+{
+    os << "agg-stack-blur(" << filter.rx << ',' << filter.ry << ')';
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, color_to_alpha const& filter)
+{
+    os << "color-to-alpha(" << filter.color << ')';
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, scale_hsla const& filter)
+{
+    os << "scale-hsla("
+                  << filter.h0 << ',' << filter.h1 << ','
+                  << filter.s0 << ',' << filter.s1 << ','
+                  << filter.l0 << ',' << filter.l1 << ','
+                  << filter.a0 << ',' << filter.a1 << ')';
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, emboss)
+{
+    os << "emboss";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, sharpen)
+{
+    os << "sharpen";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, edge_detect)
+{
+    os << "edge-detect";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, sobel)
+{
+    os << "sobel";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, x_gradient)
+{
+    os << "x-gradient";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, y_gradient)
+{
+    os << "y-gradient";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, invert)
+{
+    os << "invert";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, colorize_alpha const& filter)
+{
+    os << "colorize-alpha(";
+    bool first = true;
+    for ( mapnik::filter::color_stop const& stop : filter)
+    {
+        if (!first) os << ",";
+        else first = false;
+        os << stop.color;
+        if (stop.offset > 0)
+        {
+            os << " " << stop.offset;
+        }
+    }
+    os << ')';
+    return os;
+}
+
+
+template <typename Out>
+struct to_string_visitor : boost::static_visitor<void>
+{
+    to_string_visitor(Out & out)
+    : out_(out) {}
+
+    template <typename T>
+    void operator () (T const& filter_tag)
+    {
+        out_ << filter_tag;
+    }
+
+    Out & out_;
+};
+
+inline std::ostream& operator<< (std::ostream& os, filter_type const& filter)
+{
+    to_string_visitor<std::ostream> visitor(os);
+    boost::apply_visitor(visitor, filter);
+    return os;
+}
+
+MAPNIK_DECL bool generate_image_filters(std::back_insert_iterator<std::string> & sink, std::vector<filter_type> const& v);
+
+MAPNIK_DECL bool parse_image_filters(std::string const& filters, std::vector<filter_type>& image_filters);
 
 }}
 

@@ -3,11 +3,12 @@
 
 // mapnik
 #include <mapnik/datasource.hpp>
+#include <mapnik/feature.hpp>
+#include <mapnik/unicode.hpp>
 
 // boost
-#include <boost/scoped_ptr.hpp> // needed for wrapping the transcoder
+ // needed for wrapping the transcoder
 
-// extend the mapnik::Featureset defined in include/mapnik/datasource.hpp
 class hello_featureset : public mapnik::Featureset
 {
 public:
@@ -22,9 +23,9 @@ public:
 
 private:
     // members are up to you, but these are recommended
-    mapnik::box2d<double> const& box_;
-    mutable int feature_id_;
-    boost::scoped_ptr<mapnik::transcoder> tr_;
+    mapnik::box2d<double> box_;
+    mapnik::value_integer feature_id_;
+    const std::unique_ptr<mapnik::transcoder> tr_;
     mapnik::context_ptr ctx_;
 };
 

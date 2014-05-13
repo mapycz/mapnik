@@ -26,19 +26,23 @@
 // mapnik
 #include <mapnik/image_data.hpp>
 #include <mapnik/config.hpp>
-
+#include <mapnik/noncopyable.hpp>
+#include <mapnik/factory.hpp>
+// boost
+#include <boost/optional.hpp>
 // stl
 #include <stdexcept>
 #include <string>
 
 namespace mapnik
 {
+
 class image_reader_exception : public std::exception
 {
 private:
     std::string message_;
 public:
-    image_reader_exception(const std::string& message)
+    image_reader_exception(std::string const& message)
         : message_(message) {}
 
     ~image_reader_exception() throw() {}
@@ -49,17 +53,24 @@ public:
     }
 };
 
-struct MAPNIK_DECL image_reader
+struct MAPNIK_DECL image_reader : private mapnik::noncopyable
 {
     virtual unsigned width() const=0;
     virtual unsigned height() const=0;
+    virtual bool premultiplied_alpha() const=0;
     virtual void read(unsigned x,unsigned y,image_data_32& image)=0;
     virtual ~image_reader() {}
 };
 
-bool register_image_reader(const std::string& type,image_reader* (*)(const std::string&));
-MAPNIK_DECL image_reader* get_image_reader(const std::string& file,const std::string& type);
-MAPNIK_DECL image_reader* get_image_reader(const std::string& file);
+template <typename...Args>
+bool register_image_reader(std::string const& type, image_reader* (* fun)(Args...))
+{
+    return factory<image_reader,std::string, Args...>::instance().register_product(type, fun);
+}
+
+MAPNIK_DECL image_reader* get_image_reader(std::string const& file,std::string const& type);
+MAPNIK_DECL image_reader* get_image_reader(std::string const& file);
+MAPNIK_DECL image_reader* get_image_reader(char const* data, size_t size);
 
 }
 
