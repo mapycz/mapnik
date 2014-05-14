@@ -133,6 +133,8 @@ IMPLEMENT_ENUM( halo_rasterizer_e, halo_rasterizer_strings )
 static const char * label_placement_strings[] = {
     "point",
     "line",
+    "line-left",
+    "line-right",
     "vertex",
     "interior",
     ""
