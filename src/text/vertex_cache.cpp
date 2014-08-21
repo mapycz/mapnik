@@ -31,8 +31,8 @@ namespace mapnik
 
 double vertex_cache::angle(double width)
 {
- /* IMPORTANT NOTE: See note about coordinate systems in placement_finder::find_point_placement()
-  * for imformation about why the y axis is inverted! */
+    // IMPORTANT NOTE: See note about coordinate systems in placement_finder::find_point_placement()
+    // for imformation about why the y axis is inverted!
     double tmp = width + position_in_segment_;
     if ((tmp <= current_segment_->length) && (tmp >= 0))
     {
