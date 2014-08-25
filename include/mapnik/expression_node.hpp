@@ -24,191 +24,41 @@
 #define MAPNIK_EXPRESSION_NODE_HPP
 
 // mapnik
+#include <mapnik/value_types.hpp>
 #include <mapnik/value.hpp>
 #include <mapnik/attribute.hpp>
+#include <mapnik/expression_node_types.hpp>
 
 // boost
-#include <boost/variant.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/regex.hpp>
 #if defined(BOOST_REGEX_HAS_ICU)
 #include <boost/regex/icu.hpp>
+#else
+#include <boost/regex.hpp>
 #endif
-#include <boost/function.hpp>
+
+#include <functional>
 
 namespace mapnik
 {
 
-namespace tags  {
-struct negate
-{
-    static const char* str()
-    {
-        return "-";
-    }
-};
-
-struct plus
-{
-    static const char* str()
-    {
-        return "+";
-    }
-};
-
-struct minus
-{
-    static const char* str()
-    {
-        return "-";
-    }
-};
-
-struct mult
-{
-    static const char* str()
-    {
-        return "*";
-    }
-};
-
-struct div
-{
-    static const char* str()
-    {
-        return "/";
-    }
-};
-
-
-struct  mod
-{
-    static const char* str()
-    {
-        return "%";
-    }
-};
-
-struct less
-{
-    static const char* str()
-    {
-        return "<";
-    }
-};
-
-struct  less_equal
-{
-    static const char* str()
-    {
-        return "<=";
-    }
-};
-
-struct greater
-{
-    static const char* str()
-    {
-        return ">";
-    }
-};
-
-struct greater_equal
-{
-    static const char* str()
-    {
-        return ">=";
-    }
-};
-
-struct equal_to
-{
-    static const char* str()
-    {
-        return "=";
-    }
-};
-
-struct not_equal_to
-{
-    static const char* str()
-    {
-        return "!=";
-    }
-};
-
-struct logical_not
-{
-    static const char* str()
-    {
-        return "not ";
-    }
-};
-
-struct logical_and
-{
-    static const char* str()
-    {
-        return " and ";
-    }
-};
-
-struct logical_or
-{
-    static const char* str()
-    {
-        return " or ";
-    }
-};
-
-} // end operation tags
-
-
-template <typename Tag> struct binary_node;
-template <typename Tag> struct unary_node;
-struct regex_match_node;
-struct regex_replace_node;
-
-typedef mapnik::value value_type;
-
-typedef boost::variant <
-value_type,
-attribute,
-boost::recursive_wrapper<unary_node<tags::negate> >,
-boost::recursive_wrapper<binary_node<tags::plus> >,
-boost::recursive_wrapper<binary_node<tags::minus> >,
-boost::recursive_wrapper<binary_node<tags::mult> >,
-boost::recursive_wrapper<binary_node<tags::div> >,
-boost::recursive_wrapper<binary_node<tags::mod> >,
-boost::recursive_wrapper<binary_node<tags::less> >,
-boost::recursive_wrapper<binary_node<tags::less_equal> >,
-boost::recursive_wrapper<binary_node<tags::greater> >,
-boost::recursive_wrapper<binary_node<tags::greater_equal> >,
-boost::recursive_wrapper<binary_node<tags::equal_to> >,
-boost::recursive_wrapper<binary_node<tags::not_equal_to> >,
-boost::recursive_wrapper<unary_node<tags::logical_not> >,
-boost::recursive_wrapper<binary_node<tags::logical_and> >,
-boost::recursive_wrapper<binary_node<tags::logical_or> >,
-boost::recursive_wrapper<regex_match_node>,
-boost::recursive_wrapper<regex_replace_node>
-> expr_node;
+using value_type = mapnik::value;
 
 template <typename Tag> struct make_op;
-template <> struct make_op<tags::negate> { typedef std::negate<value_type> type;};
-template <> struct make_op<tags::plus> { typedef std::plus<value_type> type;};
-template <> struct make_op<tags::minus> { typedef std::minus<value_type> type;};
-template <> struct make_op<tags::mult> { typedef std::multiplies<value_type> type;};
-template <> struct make_op<tags::div> { typedef std::divides<value_type> type;};
-template <> struct make_op<tags::mod> { typedef std::modulus<value_type> type;};
-template <> struct make_op<tags::less> { typedef std::less<value_type> type;};
-template <> struct make_op<tags::less_equal> { typedef std::less_equal<value_type> type;};
-template <> struct make_op<tags::greater> { typedef std::greater<value_type> type;};
-template <> struct make_op<tags::greater_equal> { typedef std::greater_equal<value_type> type;};
-template <> struct make_op<tags::equal_to> { typedef std::equal_to<value_type> type;};
-template <> struct make_op<tags::not_equal_to> { typedef std::not_equal_to<value_type> type;};
-template <> struct make_op<tags::logical_not> { typedef std::logical_not<value_type> type;};
-template <> struct make_op<tags::logical_and> { typedef std::logical_and<value_type> type;};
-template <> struct make_op<tags::logical_or> { typedef std::logical_or<value_type> type;};
+template <> struct make_op<tags::negate> { using type = std::negate<value_type>;};
+template <> struct make_op<tags::plus> { using type = std::plus<value_type>;};
+template <> struct make_op<tags::minus> { using type = std::minus<value_type>;};
+template <> struct make_op<tags::mult> { using type = std::multiplies<value_type>;};
+template <> struct make_op<tags::div> { using type = std::divides<value_type>;};
+template <> struct make_op<tags::mod> { using type =  std::modulus<value_type>;};
+template <> struct make_op<tags::less> { using type = std::less<value_type>;};
+template <> struct make_op<tags::less_equal> { using type = std::less_equal<value_type>;};
+template <> struct make_op<tags::greater> { using type = std::greater<value_type>;};
+template <> struct make_op<tags::greater_equal> { using type = std::greater_equal<value_type>;};
+template <> struct make_op<tags::equal_to> { using type = std::equal_to<value_type>;};
+template <> struct make_op<tags::not_equal_to> { using type = std::not_equal_to<value_type>;};
+template <> struct make_op<tags::logical_not> { using type = std::logical_not<value_type>;};
+template <> struct make_op<tags::logical_and> { using type = std::logical_and<value_type>;};
+template <> struct make_op<tags::logical_or> { using type =  std::logical_or<value_type>;};
 
 template <typename Tag>
 struct unary_node
@@ -239,12 +89,10 @@ struct binary_node
 };
 
 #if defined(BOOST_REGEX_HAS_ICU)
+
 struct regex_match_node
 {
-    regex_match_node (expr_node const& a, UnicodeString const& ustr)
-        : expr(a),
-          pattern(boost::make_u32regex(ustr)) {}
-
+    regex_match_node (expr_node const& a, mapnik::value_unicode_string const& ustr);
     expr_node expr;
     boost::u32regex pattern;
 };
@@ -252,22 +100,17 @@ struct regex_match_node
 
 struct regex_replace_node
 {
-    regex_replace_node (expr_node const& a, UnicodeString const& ustr, UnicodeString const& f)
-        : expr(a),
-          pattern(boost::make_u32regex(ustr)),
-          format(f) {}
-
+    regex_replace_node (expr_node const& a, mapnik::value_unicode_string const& ustr, mapnik::value_unicode_string const& f);
     expr_node expr;
     boost::u32regex pattern;
-    UnicodeString format;
+    mapnik::value_unicode_string format;
 };
+
 #else
+
 struct regex_match_node
 {
-    regex_match_node (expr_node const& a, std::string const& str)
-        : expr(a),
-          pattern(str) {}
-
+    regex_match_node (expr_node const& a, std::string const& str);
     expr_node expr;
     boost::regex pattern;
 };
@@ -275,56 +118,55 @@ struct regex_match_node
 
 struct regex_replace_node
 {
-    regex_replace_node (expr_node const& a, std::string const& str, std::string const& f)
-        : expr(a),
-          pattern(str),
-          format(f) {}
-
+    regex_replace_node (expr_node const& a, std::string const& str, std::string const& f);
     expr_node expr;
     boost::regex pattern;
     std::string format;
 };
 #endif
 
+using nullary_function_impl = std::function<value_type()>;
+using unary_function_impl = std::function<value_type(value_type const&)>;
+using binary_function_impl = std::function<value_type(value_type const&, value_type const&)>;
+
+typedef util::variant<nullary_function_impl, unary_function_impl, binary_function_impl> function_impl;
+
 struct function_call
 {
-    template<typename Fun>
-    explicit function_call (expr_node const a, Fun f)
-        : expr(a),
-          call_(f) {}
+    using arguments_type = std::vector<expr_node>;
+    function_call(function_impl fun, arguments_type const& arguments)
+        : fun(fun), arguments(arguments) { }
 
-    expr_node expr;
-    boost::function<value_type(value_type)> call_;
+    function_impl fun;
+    arguments_type arguments;
 };
-
-// ops
 
 inline expr_node& operator- (expr_node& expr)
 {
     return expr = unary_node<tags::negate>(expr);
 }
 
-inline expr_node & operator += ( expr_node &left ,const expr_node &right)
+inline expr_node & operator += ( expr_node &left, expr_node const& right)
 {
     return left =  binary_node<tags::plus>(left,right);
 }
 
-inline expr_node & operator -= ( expr_node &left ,const expr_node &right)
+inline expr_node & operator -= ( expr_node &left, expr_node const& right)
 {
     return left =  binary_node<tags::minus>(left,right);
 }
 
-inline expr_node & operator *= ( expr_node &left ,const expr_node &right)
+inline expr_node & operator *= ( expr_node &left , expr_node const& right)
 {
     return left =  binary_node<tags::mult>(left,right);
 }
 
-inline expr_node & operator /= ( expr_node &left ,const expr_node &right)
+inline expr_node & operator /= ( expr_node &left , expr_node const& right)
 {
     return left =  binary_node<tags::div>(left,right);
 }
 
-inline expr_node & operator %= ( expr_node &left ,const expr_node &right)
+inline expr_node & operator %= ( expr_node &left , expr_node const& right)
 {
     return left = binary_node<tags::mod>(left,right);
 }

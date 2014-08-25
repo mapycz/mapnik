@@ -21,65 +21,43 @@
  *****************************************************************************/
 
 // mapnik
+#include <mapnik/feature.hpp>
 #include <mapnik/agg_renderer.hpp>
+#include <mapnik/image_scaling.hpp>
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/graphics.hpp>
+#include <mapnik/symbolizer.hpp>
+#include <mapnik/raster_colorizer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/image_data.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/raster.hpp>
 #include <mapnik/box2d.hpp>
-#include <mapnik/warp.hpp>
 #include <mapnik/config.hpp>
+#include <mapnik/renderer_common/process_raster_symbolizer.hpp>
 
 // stl
 #include <cmath>
 
+// agg
+#include "agg_rendering_buffer.h"
+#include "agg_pixfmt_rgba.h"
 
 namespace mapnik {
 
-
-template <typename T>
-void agg_renderer<T>::process(raster_symbolizer const& sym,
+template <typename T0, typename T1>
+void agg_renderer<T0,T1>::process(raster_symbolizer const& sym,
                               mapnik::feature_impl & feature,
                               proj_transform const& prj_trans)
 {
-    raster_ptr const& source=feature.get_raster();
-    if (source)
-    {
-        // If there's a colorizer defined, use it to color the raster in-place
-        raster_colorizer_ptr colorizer = sym.get_colorizer();
-        if (colorizer)
-            colorizer->colorize(source,feature);
-
-        box2d<double> target_ext = box2d<double>(source->ext_);
-        prj_trans.backward(target_ext, PROJ_ENVELOPE_POINTS);
-
-        box2d<double> ext=t_.forward(target_ext);
-        int start_x = (int)ext.minx();
-        int start_y = (int)ext.miny();
-        int end_x = (int)ceil(ext.maxx());
-        int end_y = (int)ceil(ext.maxy());
-        int raster_width = end_x - start_x;
-        int raster_height = end_y - start_y;
-        double err_offs_x = ext.minx() - start_x;
-        double err_offs_y = ext.miny() - start_y;
-
-        if (raster_width > 0 && raster_height > 0)
-        {
-            double scale_factor = ext.width() / source->data_.width();
-            image_data_32 target_data(raster_width,raster_height);
-            raster target(target_ext, target_data);
-
-            reproject_raster(target, *source, prj_trans, err_offs_x, err_offs_y,
-                             sym.get_mesh_size(),
-                             sym.calculate_filter_factor(),
-                             scale_factor,
-                             sym.get_scaling());
-
-            composite(current_buffer_->data(), target.data_, sym.comp_op(), sym.get_opacity(), start_x, start_y, true);
+    render_raster_symbolizer(
+        sym, feature, prj_trans, common_,
+        [&](image_data_32 & target, composite_mode_e comp_op, double opacity,
+            int start_x, int start_y) {
+            composite(current_buffer_->data(), target,
+                      comp_op, opacity, start_x, start_y, false);
         }
-    }
+    );
 }
 
 template void agg_renderer<image_32>::process(raster_symbolizer const&,

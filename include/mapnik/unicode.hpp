@@ -25,30 +25,37 @@
 
 //mapnik
 #include <mapnik/config.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // icu
-#include <unicode/unistr.h>
+#include <mapnik/value_types.hpp>
 #include <unicode/ucnv.h>
 
-// boost
-#include <boost/utility.hpp>
-#include <boost/cstdint.hpp>
-
 // stl
+#include <cstdint>
 #include <string>
 
 namespace mapnik {
 
-class MAPNIK_DECL transcoder : private boost::noncopyable
+class MAPNIK_DECL transcoder : private mapnik::noncopyable
 {
 public:
     explicit transcoder (std::string const& encoding);
-    UnicodeString transcode(const char* data, boost::int32_t length = -1) const;
+    mapnik::value_unicode_string transcode(const char* data, std::int32_t length = -1) const;
     ~transcoder();
 private:
     bool ok_;
     UConverter * conv_;
 };
+}
+
+namespace U_ICU_NAMESPACE {
+
+inline std::size_t hash_value(mapnik::value_unicode_string const& val)
+{
+    return val.hashCode();
+}
+
 }
 
 #endif // MAPNIK_UNICODE_HPP

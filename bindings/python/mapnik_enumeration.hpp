@@ -22,6 +22,11 @@
 #ifndef MAPNIK_PYTHON_BINDING_ENUMERATION_INCLUDED
 #define MAPNIK_PYTHON_BINDING_ENUMERATION_INCLUDED
 
+#include <boost/python/converter/registered.hpp>  // for registered
+#include <boost/python/enum.hpp>        // for enum_
+#include <boost/python/implicit.hpp>    // for implicitly_convertible
+#include <boost/python/to_python_converter.hpp>
+
 namespace mapnik {
 
 template <typename EnumWrapper>
@@ -29,8 +34,8 @@ class enumeration_ :
         public boost::python::enum_<typename EnumWrapper::native_type>
 {
     // some short cuts
-    typedef boost::python::enum_<typename EnumWrapper::native_type> base_type;
-    typedef typename EnumWrapper::native_type native_type;
+    using base_type = boost::python::enum_<typename EnumWrapper::native_type>;
+    using native_type = typename EnumWrapper::native_type;
 public:
     enumeration_() :
         base_type( EnumWrapper::get_name().c_str() )
@@ -42,15 +47,8 @@ public:
     {
         init();
     }
-#if BOOST_VERSION >= 103500
     enumeration_(const char * python_alias, const char * doc) :
         base_type( python_alias, doc )
-#else
-        enumeration_(const char * python_alias, const char * /*doc*/) :
-        // Boost.Python < 1.35.0 doesn't support
-        // docstrings for enums so we ignore it.
-        base_type( python_alias )
-#endif
     {
         init();
     }

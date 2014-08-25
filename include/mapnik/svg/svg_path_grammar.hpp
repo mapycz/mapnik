@@ -35,7 +35,6 @@
 namespace mapnik { namespace svg {
 
     using namespace boost::spirit;
-    using namespace boost::fusion;
     using namespace boost::phoenix;
 
     template <typename Iterator, typename SkipType, typename PathType>
@@ -54,16 +53,16 @@ namespace mapnik { namespace svg {
               arc_to_(arc_to<PathType>(path)),
               close_(close<PathType>(path))
         {
-            using qi::_1;
-            using qi::_2;
-            using qi::_3;
-            using qi::_4;
-            using qi::_5;
-            using qi::_a;
-            using qi::lit;
-            using qi::double_;
-            using qi::int_;
-            using qi::no_case;
+            qi::_1_type _1;
+            qi::_2_type _2;
+            qi::_3_type _3;
+            qi::_4_type _4;
+            qi::_5_type _5;
+            qi::_a_type _a;
+            qi::lit_type lit;
+            qi::double_type double_;
+            qi::int_type int_;
+            qi::no_case_type no_case;
 
             start = +cmd;
             cmd = M  >> *drawto_cmd;
@@ -135,7 +134,7 @@ namespace mapnik { namespace svg {
         qi::rule<Iterator,qi::locals<bool>,SkipType> A; // A,a
         qi::rule<Iterator,SkipType> Z;                  // Z,z
 
-        qi::rule<Iterator,vector2<double,double>(),SkipType> coord;
+        qi::rule<Iterator,boost::fusion::vector2<double,double>(),SkipType> coord;
 
         // commands
         function<move_to<PathType> > move_to_;

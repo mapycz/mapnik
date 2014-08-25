@@ -21,6 +21,11 @@
  *****************************************************************************/
 
 #include <mapnik/feature_type_style.hpp>
+#include <mapnik/rule.hpp>
+#include <mapnik/enumeration.hpp>
+
+// boost
+
 
 namespace mapnik
 {
@@ -35,48 +40,58 @@ IMPLEMENT_ENUM( filter_mode_e, filter_mode_strings )
 
 
 feature_type_style::feature_type_style()
-: filter_mode_(FILTER_ALL),
-    filters_(),
-    direct_filters_(),
-    scale_denom_validity_(-1),
-    opacity_(1.0f)
+    : rules_(),
+      filter_mode_(FILTER_ALL),
+      filters_(),
+      direct_filters_(),
+      comp_op_(),
+      opacity_(1.0f),
+      image_filters_inflate_(false)
 {}
 
-feature_type_style::feature_type_style(feature_type_style const& rhs, bool deep_copy)
-    : filter_mode_(rhs.filter_mode_),
+feature_type_style::feature_type_style(feature_type_style const& rhs)
+    : rules_(rhs.rules_),
+      filter_mode_(rhs.filter_mode_),
       filters_(rhs.filters_),
       direct_filters_(rhs.direct_filters_),
       comp_op_(rhs.comp_op_),
-      scale_denom_validity_(-1),
-      opacity_(rhs.opacity_)
+      opacity_(rhs.opacity_),
+      image_filters_inflate_(rhs.image_filters_inflate_)
 {
-    if (!deep_copy) {
-        rules_ = rhs.rules_;
-    } else {
-        rules::const_iterator it  = rhs.rules_.begin(),
-            end = rhs.rules_.end();
-        for(; it != end; ++it) {
-            rules_.push_back(rule(*it, deep_copy));
-        }
-    }
 }
 
-feature_type_style& feature_type_style::operator=(feature_type_style const& rhs)
+feature_type_style& feature_type_style::operator=(feature_type_style rhs)
 {
-    if (this == &rhs) return *this;
-    rules_=rhs.rules_;   
-    filters_ = rhs.filters_;
-    direct_filters_ = rhs.direct_filters_;
-    comp_op_ = rhs.comp_op_;
-    scale_denom_validity_ = -1;
-    opacity_= rhs.opacity_;
+    swap(*this, rhs);
     return *this;
 }
 
-void feature_type_style::add_rule(rule const& rule)
+void swap( feature_type_style & lhs, feature_type_style & rhs)
 {
-    rules_.push_back(rule);
-    scale_denom_validity_ = -1;
+    using std::swap;
+    std::swap(lhs.rules_, rhs.rules_);
+    std::swap(lhs.filter_mode_, rhs.filter_mode_);
+    std::swap(lhs.filters_, rhs.filters_);
+    std::swap(lhs.direct_filters_, rhs.direct_filters_);
+    std::swap(lhs.comp_op_, rhs.comp_op_);
+    std::swap(lhs.opacity_, rhs.opacity_);
+    std::swap(lhs.image_filters_inflate_, rhs.image_filters_inflate_);
+}
+
+bool feature_type_style::operator==(feature_type_style const& rhs) const
+{
+    return (rules_ == rhs.rules_) &&
+        (filter_mode_ == rhs.filter_mode_) &&
+        (filters_ == rhs.filters_) &&
+        (direct_filters_ == rhs.direct_filters_) &&
+        (comp_op_ == rhs.comp_op_) &&
+        (opacity_ == rhs.opacity_) &&
+        (image_filters_inflate_ == rhs.image_filters_inflate_);
+}
+
+void feature_type_style::add_rule(rule && rule)
+{
+    rules_.push_back(std::move(rule));
 }
 
 rules const& feature_type_style::get_rules() const
@@ -87,6 +102,18 @@ rules const& feature_type_style::get_rules() const
 rules& feature_type_style::get_rules_nonconst()
 {
     return rules_;
+}
+
+bool feature_type_style::active(double scale_denom) const
+{
+    for (rule const& r : rules_)
+    {
+        if (r.active(scale_denom))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 void feature_type_style::set_filter_mode(filter_mode_e mode)
@@ -139,59 +166,14 @@ float feature_type_style::get_opacity() const
     return opacity_;
 }
 
-void feature_type_style::update_rule_cache(double scale_denom)
+void feature_type_style::set_image_filters_inflate(bool inflate)
 {
-    if_rules_.clear();
-    else_rules_.clear();
-    also_rules_.clear();
-
-    BOOST_FOREACH(rule const& r, rules_)
-    {
-        if (r.active(scale_denom))
-        {
-            if (r.has_else_filter())
-            {
-                else_rules_.push_back(const_cast<rule*>(&r));
-            }
-            else if (r.has_also_filter())
-            {
-                also_rules_.push_back(const_cast<rule*>(&r));
-            }
-            else
-            {
-                if_rules_.push_back(const_cast<rule*>(&r));
-            }
-        }
-    }
-
-    scale_denom_validity_ = scale_denom;
+    image_filters_inflate_ = inflate;
 }
 
-rule_ptrs const& feature_type_style::get_if_rules(double scale_denom)
+bool feature_type_style::image_filters_inflate() const
 {
-    if (scale_denom_validity_ != scale_denom)
-    {
-        update_rule_cache(scale_denom);
-    }
-    return if_rules_;
-}
-
-rule_ptrs const& feature_type_style::get_else_rules(double scale_denom)
-{
-    if (scale_denom_validity_ != scale_denom)
-    {
-        update_rule_cache(scale_denom);
-    }
-    return else_rules_;
-}
-
-rule_ptrs const& feature_type_style::get_also_rules(double scale_denom)
-{
-    if (scale_denom_validity_ != scale_denom)
-    {
-        update_rule_cache(scale_denom);
-    }
-    return also_rules_;
+    return image_filters_inflate_;
 }
 
 }

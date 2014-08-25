@@ -34,7 +34,7 @@
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/spirit/home/phoenix/object/construct.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
 
 namespace mapnik { namespace svg {
 
@@ -50,10 +50,10 @@ namespace mapnik { namespace svg {
     template <typename TransformType>
     struct process_matrix
     {
-        template <typename T0, typename T1, typename T2, typename T3, typename T4, typename T5>
+        template <typename T0>
         struct result
         {
-            typedef void type;
+            using type = void;
         };
 
         explicit process_matrix( TransformType & tr)
@@ -70,10 +70,10 @@ namespace mapnik { namespace svg {
     template <typename TransformType>
     struct process_rotate
     {
-        template <typename T0, typename T1, typename T2>
+        template <typename T0>
         struct result
         {
-            typedef void type;
+            using type = void;
         };
 
         explicit process_rotate( TransformType & tr)
@@ -101,10 +101,10 @@ namespace mapnik { namespace svg {
     template <typename TransformType>
     struct process_translate
     {
-        template <typename T0, typename T1>
+        template <typename T0>
         struct result
         {
-            typedef void type;
+            using type = void;
         };
 
         explicit process_translate( TransformType & tr)
@@ -123,10 +123,10 @@ namespace mapnik { namespace svg {
     template <typename TransformType>
     struct process_scale
     {
-        template <typename T0, typename T1>
+        template <typename T0>
         struct result
         {
-            typedef void type;
+            using type = void;
         };
 
         explicit process_scale( TransformType & tr)
@@ -146,10 +146,10 @@ namespace mapnik { namespace svg {
     template <typename TransformType>
     struct process_skew
     {
-        template <typename T0, typename T1>
+        template <typename T0>
         struct result
         {
-            typedef void type;
+            using type = void;
         };
 
         explicit process_skew( TransformType & tr)
@@ -187,18 +187,18 @@ namespace mapnik { namespace svg {
               scale_action(process_scale<TransformType>(tr)),
               skew_action(process_skew<TransformType>(tr))
         {
-            using qi::_1;
-            using qi::_2;
-            using qi::_3;
-            using qi::_4;
-            using qi::_5;
-            using qi::_6;
-            using qi::_a;
-            using qi::_b;
-            using qi::_c;
-            using qi::_val;
-            using qi::double_;
-            using qi::no_case;
+            qi::_1_type _1;
+            qi::_2_type _2;
+            qi::_3_type _3;
+            qi::_4_type _4;
+            qi::_5_type _5;
+            qi::_6_type _6;
+            qi::_a_type _a;
+            qi::_b_type _b;
+            qi::_c_type _c;
+            qi::lit_type lit;
+            qi::double_type double_;
+            qi::no_case_type no_case;
 
             start =  +transform_ ;
 

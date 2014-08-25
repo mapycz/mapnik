@@ -22,13 +22,60 @@
 #ifndef MAPNIK_PIXEL_POSITION_HPP
 #define MAPNIK_PIXEL_POSITION_HPP
 
-/** Store a pixel position. */
+namespace mapnik
+{
+
+struct rotation;
 struct pixel_position
 {
     double x;
     double y;
-    pixel_position(double x, double y) : x(x), y(y) { }
-    pixel_position() : x(0), y(0) { }
+    pixel_position(double x_, double y_)
+     : x(x_),
+       y(y_) {}
+    pixel_position()
+     : x(0),
+       y(0) {}
+    pixel_position operator+ (pixel_position const& other) const
+    {
+        return pixel_position(x + other.x, y + other.y);
+    }
+
+    pixel_position operator- (pixel_position const& other) const
+    {
+        return pixel_position(x - other.x, y - other.y);
+    }
+
+    pixel_position operator* (double other) const
+    {
+        return pixel_position(x * other, y * other);
+    }
+
+    void set(double x_, double y_)
+    {
+        x = x_;
+        y = y_;
+    }
+
+    void clear()
+    {
+        x = 0;
+        y = 0;
+    }
+
+    pixel_position rotate(rotation const& rot) const;
+    pixel_position operator~() const
+    {
+        return pixel_position(x, -y);
+    }
 };
+
+inline pixel_position operator* (double factor, pixel_position const& pos)
+{
+    return pixel_position(factor * pos.x, factor * pos.y);
+}
+
+}
+
 
 #endif // MAPNIK_PIXEL_POSITION_HPP

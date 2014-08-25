@@ -20,8 +20,13 @@
  *
  *****************************************************************************/
 
+#include <mapnik/config.hpp>
+
+#include "boost_std_shared_shim.hpp"
+
 // boost
 #include <boost/python.hpp>
+#include <boost/noncopyable.hpp>
 
 // mapnik
 #include <mapnik/feature.hpp>
@@ -49,13 +54,14 @@ inline object pass_through(object const& o) { return o; }
 
 inline mapnik::feature_ptr next(mapnik::featureset_ptr const& itr)
 {
-    if (!itr)
+    mapnik::feature_ptr f = itr->next();
+    if (!f)
     {
         PyErr_SetString(PyExc_StopIteration, "No more features.");
         boost::python::throw_error_already_set();
     }
 
-    return itr->next();
+    return f;
 }
 
 }
@@ -63,10 +69,7 @@ inline mapnik::feature_ptr next(mapnik::featureset_ptr const& itr)
 void export_featureset()
 {
     using namespace boost::python;
-    using mapnik::Feature;
-    using mapnik::Featureset;
-
-    class_<Featureset,boost::shared_ptr<Featureset>,
+    class_<mapnik::Featureset,std::shared_ptr<mapnik::Featureset>,
         boost::noncopyable>("Featureset",no_init)
         .def("__iter__",pass_through)
         .def("next",next)

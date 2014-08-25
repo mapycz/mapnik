@@ -1,5 +1,6 @@
 #encoding: utf8
 import mapnik
+from utilities import execution_path, run_all
 from nose.tools import *
 
 def test_add_feature():
@@ -15,10 +16,9 @@ def test_add_feature():
 
     featureset = md.features_at_point(mapnik.Coord(2,3))
     retrieved = []
-    feat = featureset.next()
-    while feat:
+
+    for feat in featureset:
         retrieved.append(feat)
-        feat = featureset.next()
 
     eq_(len(retrieved), 1)
     f = retrieved[0]
@@ -26,10 +26,9 @@ def test_add_feature():
 
     featureset = md.features_at_point(mapnik.Coord(20,30))
     retrieved = []
-    feat = featureset.next()
-    while feat:
+    for feat in featureset:
         retrieved.append(feat)
     eq_(len(retrieved), 0)
 
 if __name__ == "__main__":
-    [eval(run)() for run in dir() if 'test_' in run]
+    exit(run_all(eval(x) for x in dir() if x.startswith("test_")))

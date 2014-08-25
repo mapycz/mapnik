@@ -24,17 +24,35 @@
 #define RASTERLITE_FEATURESET_HPP
 
 // mapnik
+#include <mapnik/feature.hpp>
+#include <mapnik/query.hpp>
 #include <mapnik/datasource.hpp>
-
-// boost
-#include <boost/variant.hpp>
+#include <mapnik/util/variant.hpp>
 
 #include "rasterlite_include.hpp"
 
-typedef boost::variant<mapnik::query,mapnik::coord2d> rasterlite_query;
+using rasterlite_query = mapnik::util::variant<mapnik::query,mapnik::coord2d>;
 
 class rasterlite_featureset : public mapnik::Featureset
 {
+    struct query_dispatch : public mapnik::util::static_visitor<mapnik::feature_ptr>
+    {
+        query_dispatch( rasterlite_featureset & featureset)
+            : featureset_(featureset) {}
+
+        mapnik::feature_ptr operator() (mapnik::query const& q) const
+        {
+            return featureset_.get_feature(q);
+        }
+
+        mapnik::feature_ptr operator() (mapnik::coord2d const& p) const
+        {
+            return featureset_.get_feature_at_point(p);
+        }
+
+        rasterlite_featureset & featureset_;
+    };
+
 public:
     rasterlite_featureset(void* dataset,
                           rasterlite_query q);

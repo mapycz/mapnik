@@ -20,13 +20,19 @@
  *
  *****************************************************************************/
 
+#if defined(GRID_RENDERER)
+
 // mapnik
+#include <mapnik/debug.hpp>
+#include <mapnik/feature.hpp>
 #include <mapnik/grid/grid_rasterizer.hpp>
 #include <mapnik/grid/grid_renderer.hpp>
-#include <mapnik/grid/grid_pixfmt.hpp>
-#include <mapnik/grid/grid_pixel.hpp>
+#include <mapnik/grid/grid_renderer_base.hpp>
 #include <mapnik/grid/grid.hpp>
-#include <mapnik/line_pattern_symbolizer.hpp>
+#include <mapnik/marker.hpp>
+#include <mapnik/marker_cache.hpp>
+#include <mapnik/vertex_converters.hpp>
+#include <mapnik/parse_path.hpp>
 
 // agg
 #include "agg_rasterizer_scanline_aa.h"
@@ -45,37 +51,95 @@ void grid_renderer<T>::process(line_pattern_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans)
 {
-    typedef coord_transform<CoordTransform,geometry_type> path_type;
-    typedef agg::renderer_base<mapnik::pixfmt_gray32> ren_base;
-    typedef agg::renderer_scanline_bin_solid<ren_base> renderer;
+    std::string filename = get<std::string>(sym, keys::file, feature, common_.vars_);
+    if (filename.empty()) return;
+    boost::optional<mapnik::marker_ptr> mark = marker_cache::instance().find(filename, true);
+    if (!mark) return;
+
+    if (!(*mark)->is_bitmap())
+    {
+        MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Only images (not '" << filename << "') are supported in the line_pattern_symbolizer";
+        return;
+    }
+
+    boost::optional<image_ptr> pat = (*mark)->get_bitmap_data();
+    if (!pat) return;
+
+    bool clip = get<value_bool>(sym, keys::clip, feature, common_.vars_, false);
+    double offset = get<value_double>(sym, keys::offset, feature, common_.vars_, 0.0);
+    double simplify_tolerance = get<value_double>(sym, keys::simplify_tolerance, feature, common_.vars_, 0.0);
+    double smooth = get<value_double>(sym, keys::smooth, feature, common_.vars_, false);
+
+    using pixfmt_type = typename grid_renderer_base_type::pixfmt_type;
+    using color_type = typename grid_renderer_base_type::pixfmt_type::color_type;
+    using renderer_type = agg::renderer_scanline_bin_solid<grid_renderer_base_type>;
+    using conv_types = boost::mpl::vector<clip_line_tag, transform_tag,
+                                          offset_transform_tag, affine_transform_tag,
+                                          simplify_tag, smooth_tag, stroke_tag>;
     agg::scanline_bin sl;
 
-    grid_rendering_buffer buf(pixmap_.raw_data(), width_, height_, width_);
-    mapnik::pixfmt_gray32 pixf(buf);
+    grid_rendering_buffer buf(pixmap_.raw_data(), common_.width_, common_.height_, common_.width_);
+    pixfmt_type pixf(buf);
 
-    ren_base renb(pixf);
-    renderer ren(renb);
+    grid_renderer_base_type renb(pixf);
+    renderer_type ren(renb);
 
     ras_ptr->reset();
 
-    // TODO - actually handle image dimensions
-    int stroke_width = 2;
+    int stroke_width = (*pat)->width();
 
-    for (unsigned i=0;i<feature.num_geometries();++i)
+    agg::trans_affine tr;
+    auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
+    if (transform)
     {
-        geometry_type & geom = feature.get_geometry(i);
-        if (geom.num_points() > 1)
+        evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
+    }
+
+    box2d<double> clipping_extent = common_.query_extent_;
+    if (clip)
+    {
+        double padding = (double)(common_.query_extent_.width()/pixmap_.width());
+        double half_stroke = stroke_width/2.0;
+        if (half_stroke > 1)
+            padding *= half_stroke;
+        if (std::fabs(offset) > 0)
+            padding *= std::fabs(offset) * 1.2;
+        padding *= common_.scale_factor_;
+        clipping_extent.pad(padding);
+    }
+
+    // to avoid the complexity of using an agg pattern filter instead
+    // we create a line_symbolizer in order to fake the pattern
+    line_symbolizer line;
+    put<value_double>(line, keys::stroke_width, value_double(stroke_width));
+    // TODO: really should pass the offset to the fake line too, but
+    // this wasn't present in the previous version and makes the test
+    // fail - in this case, probably the test should be updated.
+    //put<value_double>(line, keys::offset, value_double(offset));
+    put<value_double>(line, keys::simplify_tolerance, value_double(simplify_tolerance));
+    put<value_double>(line, keys::smooth, value_double(smooth));
+
+    vertex_converter<box2d<double>, grid_rasterizer, line_symbolizer,
+                     CoordTransform, proj_transform, agg::trans_affine, conv_types, feature_impl>
+        converter(clipping_extent,*ras_ptr,line,common_.t_,prj_trans,tr,feature,common_.vars_,common_.scale_factor_);
+    if (clip) converter.set<clip_line_tag>(); // optional clip (default: true)
+    converter.set<transform_tag>(); // always transform
+    if (std::fabs(offset) > 0.0) converter.set<offset_transform_tag>(); // parallel offset
+    converter.set<affine_transform_tag>(); // optional affine transform
+    if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
+    if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
+    converter.set<stroke_tag>(); //always stroke
+
+    for (geometry_type & geom : feature.paths())
+    {
+        if (geom.size() > 1)
         {
-            path_type path(t_,geom,prj_trans);
-            agg::conv_stroke<path_type> stroke(path);
-            stroke.generator().miter_limit(4.0);
-            stroke.generator().width(stroke_width * scale_factor_);
-            ras_ptr->add_path(stroke);
+            converter.apply(geom);
         }
     }
 
     // render id
-    ren.color(mapnik::gray32(feature.id()));
+    ren.color(color_type(feature.id()));
     agg::render_scanlines(*ras_ptr, sl, ren);
 
     // add feature properties to grid cache
@@ -90,3 +154,4 @@ template void grid_renderer<grid>::process(line_pattern_symbolizer const&,
 
 }
 
+#endif

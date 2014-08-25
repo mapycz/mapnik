@@ -24,18 +24,20 @@
 #define MAPNIK_WARP_HPP
 
 // mapnik
-#include <mapnik/raster.hpp>
-#include <mapnik/proj_transform.hpp>
+#include <mapnik/image_scaling.hpp>
+#include <mapnik/config.hpp>
 
 namespace mapnik {
 
-void reproject_raster(raster &target, raster const& source,
-                      proj_transform const& prj_trans,
-                      double offset_x, double offset_y,
-                      unsigned mesh_size,
-                      double filter_radius,
-                      double scale_factor,
-                      std::string scaling_method_name);
+class raster;
+class proj_transform;
+
+MAPNIK_DECL void reproject_and_scale_raster(raster & target,
+                                raster const& source,
+                                proj_transform const& prj_trans,
+                                double offset_x, double offset_y,
+                                unsigned mesh_size,
+                                scaling_method_e scaling_method);
 
 }
 

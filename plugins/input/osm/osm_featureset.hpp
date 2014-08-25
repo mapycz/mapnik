@@ -27,7 +27,7 @@
 #include <set>
 
 // boost
-#include <boost/scoped_ptr.hpp>
+
 
 // mapnik
 #include <mapnik/geom_util.hpp>
@@ -57,11 +57,10 @@ public:
 private:
     filterT filter_;
     box2d<double> query_ext_;
-    boost::scoped_ptr<transcoder> tr_;
+    const std::unique_ptr<transcoder> tr_;
     std::vector<int> attr_ids_;
     mutable box2d<double> feature_ext_;
     mutable int total_geom_size;
-    mutable int feature_id_;
     osm_dataset *dataset_;
     std::set<std::string> attribute_names_;
     mapnik::context_ptr ctx_;

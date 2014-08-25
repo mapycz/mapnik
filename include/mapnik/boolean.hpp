@@ -22,73 +22,65 @@
 #ifndef MAPNIK_BOOLEAN_HPP
 #define MAPNIK_BOOLEAN_HPP
 
-// std
-#include <istream>
+// mapnik
+#include <mapnik/config.hpp>
+#include <mapnik/util/conversions.hpp>
 
-// boost
-#include <boost/algorithm/string.hpp>
+// std
+#include <iosfwd>
+#include <algorithm>
+#include <string>
+//#include <istream>
+//#include <ostream>
 
 namespace mapnik
 {
-/** Helper for class bool */
-class boolean {
+
+class MAPNIK_DECL boolean_type
+{
 public:
-    boolean(): b_(false)  {}
-    boolean(bool b) : b_(b) {}
-    boolean(boolean const& b) : b_(b.b_) {}
+    boolean_type()
+        : b_(false)  {}
+    boolean_type(bool b)
+        : b_(b) {}
+    boolean_type(boolean_type const& b)
+        : b_(b.b_) {}
 
     operator bool() const
     {
         return b_;
     }
 
-    boolean & operator = (boolean const& other)
+    boolean_type & operator =(boolean_type const& other)
     {
+        if (this == &other)
+            return *this;
         b_ = other.b_;
-        return * this;
-    }
-
-    boolean & operator = (bool other)
-    {
-        b_ = other;
-        return * this;
+        return *this;
     }
 
 private:
     bool b_;
 };
 
-/** Special stream input operator for boolean values */
+// Special stream input operator for boolean_type values
 template <typename charT, typename traits>
 std::basic_istream<charT, traits> &
-operator >> ( std::basic_istream<charT, traits> & s, boolean & b )
+operator >> ( std::basic_istream<charT, traits> & s, boolean_type & b )
 {
-    std::string word;
-    s >> word;
-    boost::algorithm::to_lower(word);
     if ( s )
     {
-        if ( word == "true" || word == "yes" || word == "on" ||
-             word == "1")
-        {
-            b = true;
-        }
-        else if ( word == "false" || word == "no" || word == "off" ||
-                  word == "0")
-        {
-            b = false;
-        }
-        else
-        {
-            s.setstate( std::ios::failbit );
-        }
+        std::string word;
+        s >> word;
+        bool result;
+        if (util::string2bool(word,result)) b = result;
     }
     return s;
 }
 
 template <typename charT, typename traits>
 std::basic_ostream<charT, traits> &
-operator << ( std::basic_ostream<charT, traits> & s, boolean const& b )
+operator << ( std::basic_ostream<charT, traits> & s, boolean_type const& b )
 {
     s << ( b ? "true" : "false" );
     return s;

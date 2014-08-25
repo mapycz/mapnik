@@ -25,16 +25,18 @@
 
 // stl
 #include <ctime>
+#include <stdexcept>
+#include <fstream>
 
 #ifndef MAPNIK_LOG_FORMAT
-#define MAPNIK_LOG_FORMAT "Mapnik LOG> %Y-%m-%d %H:%M:%S:"
+  #define MAPNIK_LOG_FORMAT  Mapnik LOG> %Y-%m-%d %H:%M:%S:
 #endif
 
 #ifndef MAPNIK_DEFAULT_LOG_SEVERITY
   #ifdef MAPNIK_DEBUG
-    #define MAPNIK_DEFAULT_LOG_SEVERITY 1
+    #define MAPNIK_DEFAULT_LOG_SEVERITY 0
   #else
-    #define MAPNIK_DEFAULT_LOG_SEVERITY 3
+    #define MAPNIK_DEFAULT_LOG_SEVERITY 2
   #endif
 #endif
 
@@ -43,8 +45,8 @@ namespace mapnik {
 // mutexes
 
 #ifdef MAPNIK_THREADSAFE
-boost::mutex logger::severity_mutex_;
-boost::mutex logger::format_mutex_;
+std::mutex logger::severity_mutex_;
+std::mutex logger::format_mutex_;
 #endif
 
 
@@ -58,16 +60,12 @@ bool logger::format_env_check_ = true;
 
 logger::severity_type logger::severity_level_ =
     #if MAPNIK_DEFAULT_LOG_SEVERITY == 0
-        logger::info
-    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 1
         logger::debug
-    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 2
+    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 1
         logger::warn
-    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 3
+    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 2
         logger::error
-    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 4
-        logger::fatal
-    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 5
+    #elif MAPNIK_DEFAULT_LOG_SEVERITY == 3
         logger::none
     #else
         #error "Wrong default log severity level specified!"
@@ -94,7 +92,7 @@ std::string logger::str()
         logger::format_env_check_ = false;
 
         const char* log_format = getenv("MAPNIK_LOG_FORMAT");
-        if (log_format != NULL)
+        if (log_format != nullptr)
         {
             logger::format_ = log_format;
         }
@@ -114,7 +112,7 @@ std::ofstream logger::file_output_;
 std::string logger::file_name_;
 std::streambuf* logger::saved_buf_ = 0;
 
-void logger::use_file(const std::string& filepath)
+void logger::use_file(std::string const& filepath)
 {
     // save clog rdbuf
     if (saved_buf_ == 0)
@@ -140,7 +138,7 @@ void logger::use_file(const std::string& filepath)
         else
         {
             std::stringstream s;
-            s << "cannot redirect log to file " << file_output_;
+            s << "cannot redirect log to file " << file_name_;
             throw std::runtime_error(s.str());
         }
     }

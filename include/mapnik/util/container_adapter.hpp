@@ -24,42 +24,46 @@
 #define CONTAINER_ADAPTER_HPP
 
 // mapnik
-#include <mapnik/global.hpp>
 #include <mapnik/geometry.hpp>
-#include <mapnik/util/vertex_iterator.hpp>
+#include <mapnik/util/path_iterator.hpp>
 
 // boost
-#include <boost/tuple/tuple.hpp>
-#include <boost/spirit/include/karma.hpp>
+#include <boost/spirit/include/support_container.hpp>
+#include <boost/concept_check.hpp>
 
 namespace boost { namespace spirit { namespace traits {
 
 template <>
 struct is_container<mapnik::geometry_type const> : mpl::true_ {} ;
 
+// make gcc and darwin toolsets happy.
+template <>
+struct is_container<mapnik::geometry_container const> : mpl::false_ {} ;
+
 template <>
 struct container_iterator<mapnik::geometry_type const>
 {
-    typedef mapnik::util::vertex_iterator<double> type;
+    using type = mapnik::util::path_iterator<mapnik::geometry_type>;
 };
 
 template <>
 struct begin_container<mapnik::geometry_type const>
 {
-    static mapnik::util::vertex_iterator<double>
+    static mapnik::util::path_iterator<mapnik::geometry_type>
     call (mapnik::geometry_type const& g)
     {
-        return mapnik::util::vertex_iterator<double>(g.data());
+        return mapnik::util::path_iterator<mapnik::geometry_type>(g);
     }
 };
 
 template <>
 struct end_container<mapnik::geometry_type const>
 {
-    static mapnik::util::vertex_iterator<double>
+    static mapnik::util::path_iterator<mapnik::geometry_type>
     call (mapnik::geometry_type const& g)
     {
-        return mapnik::util::vertex_iterator<double>();
+        boost::ignore_unused_variable_warning(g);
+        return mapnik::util::path_iterator<mapnik::geometry_type>();
     }
 };
 

@@ -23,13 +23,13 @@
 // mapnik
 #include <mapnik/global.hpp>
 #include <mapnik/debug.hpp>
-#include <mapnik/datasource.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/feature_layer_desc.hpp>
 #include <mapnik/wkb.hpp>
 #include <mapnik/unicode.hpp>
+#include <mapnik/value_types.hpp>
 #include <mapnik/feature_factory.hpp>
 
 // ogr
@@ -37,8 +37,6 @@
 
 using mapnik::query;
 using mapnik::box2d;
-using mapnik::CoordTransform;
-using mapnik::Feature;
 using mapnik::feature_ptr;
 using mapnik::geometry_type;
 using mapnik::geometry_utils;
@@ -64,7 +62,8 @@ occi_featureset::occi_featureset(StatelessConnectionPool* pool,
                                  bool use_connection_pool,
                                  bool use_wkb,
                                  unsigned prefetch_rows)
-    : tr_(new transcoder(encoding)),
+    : rs_(nullptr),
+      tr_(new transcoder(encoding)),
       feature_id_(1),
       ctx_(ctx),
       use_wkb_(use_wkb)
@@ -85,6 +84,8 @@ occi_featureset::occi_featureset(StatelessConnectionPool* pool,
     catch (SQLException &ex)
     {
         MAPNIK_LOG_ERROR(occi) << "OCCI Plugin: error processing " << sqlstring << " : " << ex.getMessage();
+
+        rs_ = nullptr;
     }
 }
 
@@ -94,35 +95,41 @@ occi_featureset::~occi_featureset()
 
 feature_ptr occi_featureset::next()
 {
-    if (rs_ && rs_->next())
+    while (rs_ != nullptr && rs_->next() == oracle::occi::ResultSet::DATA_AVAILABLE)
     {
-        feature_ptr feature(feature_factory::create(ctx_,feature_id_));
-        ++feature_id_;
+        feature_ptr feature(feature_factory::create(ctx_, feature_id_));
 
         if (use_wkb_)
         {
-            Blob blob = rs_->getBlob (1);
+            Blob blob = rs_->getBlob(1);
             blob.open(oracle::occi::OCCI_LOB_READONLY);
 
-            int size = blob.length();
+            unsigned int size = blob.length();
             if (buffer_.size() < size)
             {
                 buffer_.resize(size);
             }
 
-            oracle::occi::Stream* instream = blob.getStream(1,0);
+            oracle::occi::Stream* instream = blob.getStream(1, 0);
             instream->readBuffer(buffer_.data(), size);
             blob.closeStream(instream);
             blob.close();
 
-            geometry_utils::from_wkb(feature->paths(), buffer_.data(), size);
+            if (! geometry_utils::from_wkb(feature->paths(), buffer_.data(), size))
+            {
+                continue;
+            }
         }
         else
         {
-            boost::scoped_ptr<SDOGeometry> geom(dynamic_cast<SDOGeometry*>(rs_->getObject(1)));
+            const std::unique_ptr<SDOGeometry> geom(dynamic_cast<SDOGeometry*>(rs_->getObject(1)));
             if (geom.get())
             {
                 convert_geometry(geom.get(), feature);
+            }
+            else
+            {
+                continue;
             }
         }
 
@@ -146,44 +153,50 @@ feature_ptr occi_featureset::next()
             switch (type_oid)
             {
             case oracle::occi::OCCIBOOL:
+                feature->put(fld_name, (rs_->getInt(i + 1) != 0));
+                break;
             case oracle::occi::OCCIINT:
             case oracle::occi::OCCIUNSIGNED_INT:
-            case oracle::occi::OCCIROWID:
-                feature->put(fld_name,rs_->getInt (i + 1));
+                feature->put(fld_name, static_cast<mapnik::value_integer>(rs_->getInt(i + 1)));
                 break;
             case oracle::occi::OCCIFLOAT:
             case oracle::occi::OCCIBFLOAT:
+                feature->put(fld_name, (double)rs_->getFloat(i + 1));
+                break;
             case oracle::occi::OCCIDOUBLE:
             case oracle::occi::OCCIBDOUBLE:
             case oracle::occi::OCCINUMBER:
             case oracle::occi::OCCI_SQLT_NUM:
-                feature->put(fld_name,rs_->getDouble (i + 1));
+                feature->put(fld_name, rs_->getDouble(i + 1));
                 break;
             case oracle::occi::OCCICHAR:
             case oracle::occi::OCCISTRING:
             case oracle::occi::OCCI_SQLT_AFC:
             case oracle::occi::OCCI_SQLT_AVC:
             case oracle::occi::OCCI_SQLT_CHR:
+            case oracle::occi::OCCI_SQLT_LNG:
             case oracle::occi::OCCI_SQLT_LVC:
-            case oracle::occi::OCCI_SQLT_RDD:
             case oracle::occi::OCCI_SQLT_STR:
             case oracle::occi::OCCI_SQLT_VCS:
             case oracle::occi::OCCI_SQLT_VNU:
             case oracle::occi::OCCI_SQLT_VBI:
             case oracle::occi::OCCI_SQLT_VST:
-                feature->put(fld_name,(UnicodeString) tr_->transcode (rs_->getString (i + 1).c_str()));
-                break;
+            case oracle::occi::OCCIROWID:
+            case oracle::occi::OCCI_SQLT_RDD:
+            case oracle::occi::OCCI_SQLT_RID:
             case oracle::occi::OCCIDATE:
-            case oracle::occi::OCCITIMESTAMP:
-            case oracle::occi::OCCIINTERVALDS:
-            case oracle::occi::OCCIINTERVALYM:
             case oracle::occi::OCCI_SQLT_DAT:
             case oracle::occi::OCCI_SQLT_DATE:
             case oracle::occi::OCCI_SQLT_TIME:
             case oracle::occi::OCCI_SQLT_TIME_TZ:
+            case oracle::occi::OCCITIMESTAMP:
             case oracle::occi::OCCI_SQLT_TIMESTAMP:
             case oracle::occi::OCCI_SQLT_TIMESTAMP_LTZ:
             case oracle::occi::OCCI_SQLT_TIMESTAMP_TZ:
+                feature->put(fld_name, static_cast<mapnik::value_unicode_string>(tr_->transcode(rs_->getString(i + 1).c_str())));
+                break;
+            case oracle::occi::OCCIINTERVALDS:
+            case oracle::occi::OCCIINTERVALYM:
             case oracle::occi::OCCI_SQLT_INTERVAL_YM:
             case oracle::occi::OCCI_SQLT_INTERVAL_DS:
             case oracle::occi::OCCIANYDATA:
@@ -219,6 +232,8 @@ feature_ptr occi_featureset::next()
             }
         }
 
+        ++feature_id_;
+
         return feature;
     }
 
@@ -244,9 +259,9 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
         SDOPointType* sdopoint = geom->getSdo_point();
         if (sdopoint && ! sdopoint->isNull())
         {
-            geometry_type* point = new geometry_type(mapnik::Point);
+            std::unique_ptr<geometry_type> point = std::make_unique<geometry_type>(mapnik::geometry_type::types::Point);
             point->move_to(sdopoint->getX(), sdopoint->getY());
-            feature->add_geometry(point);
+            feature->add_geometry(point.release());
         }
     }
     break;
@@ -257,7 +272,7 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
             const bool is_single_geom = true;
             const bool is_point_type = false;
             convert_ordinates(feature,
-                              mapnik::LineString,
+                              mapnik::geometry_type::types::LineString,
                               elem_info,
                               ordinates,
                               dimensions,
@@ -273,7 +288,7 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
             const bool is_single_geom = true;
             const bool is_point_type = false;
             convert_ordinates(feature,
-                              mapnik::Polygon,
+                              mapnik::geometry_type::types::Polygon,
                               elem_info,
                               ordinates,
                               dimensions,
@@ -288,10 +303,8 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
         {
             const bool is_single_geom = false;
             const bool is_point_type = true;
-
-            // FIXME :http://trac.mapnik.org/ticket/458
             convert_ordinates(feature,
-                              mapnik::Point,
+                              mapnik::geometry_type::types::Point,
                               elem_info,
                               ordinates,
                               dimensions,
@@ -308,7 +321,7 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
             const bool is_point_type = false;
 
             convert_ordinates(feature,
-                              mapnik::LineString,
+                              mapnik::geometry_type::types::LineString,
                               elem_info,
                               ordinates,
                               dimensions,
@@ -325,7 +338,7 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
             const bool is_point_type = false;
 
             convert_ordinates(feature,
-                              mapnik::Polygon,
+                              mapnik::geometry_type::types::Polygon,
                               elem_info,
                               ordinates,
                               dimensions,
@@ -343,7 +356,7 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
             const bool is_point_type = false;
 
             convert_ordinates(feature,
-                              mapnik::Polygon,
+                              mapnik::geometry_type::types::Polygon,
                               elem_info,
                               ordinates,
                               dimensions,
@@ -364,7 +377,7 @@ void occi_featureset::convert_geometry(SDOGeometry* geom, feature_ptr feature)
 }
 
 void occi_featureset::convert_ordinates(mapnik::feature_ptr feature,
-                                        const mapnik::eGeomType& geom_type,
+                                        const mapnik::geometry_type::types& geom_type,
                                         const std::vector<Number>& elem_info,
                                         const std::vector<Number>& ordinates,
                                         const int dimensions,
@@ -391,20 +404,20 @@ void occi_featureset::convert_ordinates(mapnik::feature_ptr feature,
                 int next_interp = elem_info[i + 2];
                 bool is_linear_element = true;
                 bool is_unknown_etype = false;
-                mapnik::eGeomType gtype = mapnik::Point;
+                mapnik::geometry_type::types gtype = mapnik::geometry_type::types::Point;
 
                 switch (etype)
                 {
                 case SDO_ETYPE_POINT:
                     if (interp == SDO_INTERPRETATION_POINT)     {}
                     if (interp > SDO_INTERPRETATION_POINT)      {}
-                    gtype = mapnik::Point;
+                    gtype = mapnik::geometry_type::types::Point;
                     break;
 
                 case SDO_ETYPE_LINESTRING:
                     if (interp == SDO_INTERPRETATION_STRAIGHT)  {}
                     if (interp == SDO_INTERPRETATION_CIRCULAR)  {}
-                    gtype = mapnik::LineString;
+                    gtype = mapnik::geometry_type::types::LineString;
                     break;
 
                 case SDO_ETYPE_POLYGON:
@@ -413,7 +426,7 @@ void occi_featureset::convert_ordinates(mapnik::feature_ptr feature,
                     if (interp == SDO_INTERPRETATION_CIRCULAR)  {}
                     if (interp == SDO_INTERPRETATION_RECTANGLE) {}
                     if (interp == SDO_INTERPRETATION_CIRCLE)    {}
-                    gtype = mapnik::Polygon;
+                    gtype = mapnik::geometry_type::types::Polygon;
                     break;
 
                 case SDO_ETYPE_COMPOUND_LINESTRING:
@@ -421,7 +434,7 @@ void occi_featureset::convert_ordinates(mapnik::feature_ptr feature,
                 case SDO_ETYPE_COMPOUND_POLYGON_INTERIOR:
                     // interp = next ETYPE to consider
                     is_linear_element = false;
-                    gtype = mapnik::Polygon;
+                    gtype = mapnik::geometry_type::types::Polygon;
                     break;
 
                 case SDO_ETYPE_UNKNOWN:    // unknown

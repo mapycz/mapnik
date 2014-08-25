@@ -26,16 +26,19 @@
 // stl
 #include <cstring>
 #include <fstream>
+#include <stdexcept>
+#include <cstdint>
 
 // mapnik
 #include <mapnik/global.hpp>
+#include <mapnik/utils.hpp>
 #include <mapnik/box2d.hpp>
+#ifdef SHAPE_MEMORY_MAPPED_FILE
+#include <boost/interprocess/mapped_region.hpp>
 #include <mapnik/mapped_memory_cache.hpp>
-
-// boost
-#include <boost/utility.hpp>
-#include <boost/cstdint.hpp>
 #include <boost/interprocess/streams/bufferstream.hpp>
+#endif
+#include <mapnik/noncopyable.hpp>
 
 using mapnik::box2d;
 using mapnik::read_int32_ndr;
@@ -46,7 +49,7 @@ using mapnik::read_double_xdr;
 
 struct RecordTag
 {
-    typedef char* data_type;
+    using data_type = char*;
     static data_type alloc(unsigned size)
     {
         return static_cast<data_type>(::operator new(sizeof(char)*size));
@@ -60,7 +63,7 @@ struct RecordTag
 
 struct MappedRecordTag
 {
-    typedef const char* data_type;
+    using data_type = const char*;
     static data_type alloc(unsigned) { return 0; }
     static void dealloc(data_type ) {}
 };
@@ -72,9 +75,9 @@ struct shape_record
     size_t size;
     mutable size_t pos;
 
-    explicit shape_record(size_t size)
-        : data(Tag::alloc(size)),
-          size(size),
+    explicit shape_record(size_t size_)
+        : data(Tag::alloc(size_)),
+          size(size_),
           pos(0)
     {}
 
@@ -100,7 +103,7 @@ struct shape_record
 
     int read_ndr_integer()
     {
-        boost::int32_t val;
+        std::int32_t val;
         read_int32_ndr(&data[pos], val);
         pos += 4;
         return val;
@@ -108,7 +111,7 @@ struct shape_record
 
     int read_xdr_integer()
     {
-        boost::int32_t val;
+        std::int32_t val;
         read_int32_xdr(&data[pos], val);
         pos += 4;
         return val;
@@ -128,18 +131,17 @@ struct shape_record
     }
 };
 
-using namespace boost::interprocess;
-
-class shape_file : boost::noncopyable
+class shape_file : mapnik::noncopyable
 {
 public:
 
 #ifdef SHAPE_MEMORY_MAPPED_FILE
-    typedef ibufferstream file_source_type;
-    typedef shape_record<MappedRecordTag> record_type;
+    using file_source_type = boost::interprocess::ibufferstream;
+    using record_type = shape_record<MappedRecordTag>;
+    mapnik::mapped_region_ptr mapped_region_;
 #else
-    typedef std::ifstream file_source_type;
-    typedef shape_record<RecordTag> record_type;
+    using file_source_type = std::ifstream;
+    using record_type = shape_record<RecordTag>;
 #endif
 
     file_source_type file_;
@@ -149,17 +151,24 @@ public:
     shape_file(std::string  const& file_name) :
 #ifdef SHAPE_MEMORY_MAPPED_FILE
         file_()
+#elif defined (_WINDOWS)
+        file_(mapnik::utf8_to_utf16(file_name), std::ios::in | std::ios::binary)
 #else
         file_(file_name.c_str(), std::ios::in | std::ios::binary)
 #endif
     {
 #ifdef SHAPE_MEMORY_MAPPED_FILE
         boost::optional<mapnik::mapped_region_ptr> memory =
-            mapnik::mapped_memory_cache::find(file_name.c_str(),true);
+            mapnik::mapped_memory_cache::instance().find(file_name,true);
 
         if (memory)
         {
-            file_.buffer(static_cast<char*>((*memory)->get_address()), (*memory)->get_size());
+            mapped_region_ = *memory;
+            file_.buffer(static_cast<char*>(mapped_region_->get_address()),mapped_region_->get_size());
+        }
+        else
+        {
+            throw std::runtime_error("could not create file mapping for "+file_name);
         }
 #endif
     }
@@ -171,7 +180,7 @@ public:
         return file_;
     }
 
-    inline bool is_open()
+    inline bool is_open() const
     {
 #ifdef SHAPE_MEMORY_MAPPED_FILE
         return (file_.buffer().second > 0);
@@ -194,7 +203,7 @@ public:
     {
         char b[4];
         file_.read(b, 4);
-        boost::int32_t val;
+        std::int32_t val;
         read_int32_xdr(b, val);
         return val;
     }
@@ -203,7 +212,7 @@ public:
     {
         char b[4];
         file_.read(b, 4);
-        boost::int32_t val;
+        std::int32_t val;
         read_int32_ndr(b, val);
         return val;
     }

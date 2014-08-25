@@ -2,11 +2,11 @@
 
 ## Community
 
-Mapnik is an open source community creating a tool to enable to the craft of making beautiful maps. Working together collaboratively towards this goal is what makes it all possible and fun.
+Mapnik is a creative community focused on making beautiful maps with beautiful software.
 
-We host our code on github.com/mapnik and encourage anyone interested to fork the repository and provide pull requests or patches for things they want to see added.
+We host our code on github.com/mapnik and encourage anyone interested to fork the repository and provide pull requests or patches for things they want to see added or fixed.
 
-If you just have a question about the code, or a feature you want to discuss then feel free to create a new issue.
+If you just have a question about the code, or a feature you want to discuss then feel free to create a new issue at github.com/mapnik-support.
 
 
 ## Code Philosophy
@@ -15,10 +15,9 @@ Look through the code to get an idea, and do not hesitate to ask questions.
 
 Also read the design philosophy page for the motivations that lead to code decisions.
 
-Templates are good, within reason. We seek to use templates were possible for flexible code, but not in cases where functional
-patterns would be just as concise and clear.
+Templates are good, within reason. We seek to use templates where possible for flexible code, but not in cases where functional patterns would be just as concise and clear.
 
-In general we use Boost, it makes more possible in C++. It is a big build time dependency (as in time to compile against and # of headers) but ultimately compiles to small object code and is very fast (particularly spirit). It also has no dependencies itself (it's really an extension to the C++ language) so requiring it is much easier than requiring a hard dependency that itself has other dependencies. This is a big reason that we prefer AGG to Cairo as our primary renderer. Also AGG, besides producing the best visual output, strikes an excellent balance between speed and thread safety by using very lightweight objects. Cairo not so much.
+In general we use Boost, it makes more possible in C++. It is a big build time dependency (as in time to compile against and # of headers) but ultimately compiles to small object code and is very fast (particularly spirit). It also has no dependencies itself (it's really an extension to the C++ language) so requiring it is much easier than requiring a hard dependency that itself has other dependencies. This is a big reason that we prefer AGG to Cairo as our primary renderer. Also AGG produces the best visual output and strikes an excellent balance between speed and thread safety by using very lightweight objects. Cairo not so much.
 
 You will also notice that we don't use many of the standard geo libraries when we could. For instance we don't use GDAL, OGR, or GEOS anywhere in core, and only leverage them in optional plugins. We feel we can often write code that is faster and more thread safe than these libraries but that still does the job. If this ever changes we can adapt and start using these libraries or others as dependencies - nothing is nicer than standing on the shoulders of giants when it makes sense.
 
@@ -49,12 +48,11 @@ Mapnik is licensed LGPL, which means that you are a free to use the code in any 
 
 ## Copyright
 
-Mapnik is an open source project and will always be, proudly, an open source project. Your contributions to Mapnik should be motivated by (amount other things) your desire to contribute to a community effort and by the knowledge that your open code will stay that way.
+Mapnik is an open source project and will always be. Your contributions to Mapnik should be motivated by your desire to contribute to a community effort and by the knowledge that your open code will stay that way.
 
 Artem, as the founder and leader of the Mapnik project, is the primary copyright holder and therefore also the primary contact for any current or future license questions around Mapnik. It is important that the copyright holder is respected, trusted, and known to the community so maintaining copyright with Artem is key to maintaining the project as open source.
 
-Therefore, convention is that all new files created by any core developers or patch
-authors should have a copyright declaration like:
+Therefore all files created by any core developers or patch authors should have a copyright declaration like:
 
     /*****************************************************************************
      *
@@ -85,6 +83,15 @@ Mapnik is written in C++, and we try to follow general coding guidelines.
 
 If you see bits of code around that do not follow these please don't hesitate to flag the issue or correct it yourself.
 
+#### Avoid boost::lexical_cast
+
+It's slow both to compile and at runtime.
+
+#### Avoid sstream objects if possible
+
+They should never be used in performance critical code because they trigger std::locale usage
+which triggers locks
+
 #### Spaces not tabs, and avoid trailing whitespace
 
 #### Indentation is four spaces
@@ -92,7 +99,7 @@ If you see bits of code around that do not follow these please don't hesitate to
 #### Use C++ style casts
 
     static_cast<int>(value); // yes
-    
+
     (int)value; // no
 
 #### Use const keyword after the type
@@ -109,22 +116,29 @@ If you see bits of code around that do not follow these please don't hesitate to
 
 #### Shared pointers should be created with [boost::make_shared](http://www.boost.org/doc/libs/1_47_0/libs/smart_ptr/make_shared.html) where possible
 
+#### Use assignment operator for zero initialized numbers
+
+    double num = 0; // please
+
+    double num(0); // no
+
+
 #### Function definitions should not be separated from their arguments:
 
     void foo(int a) // please
-    
+
     void foo (int a) // no
 
 #### Separate arguments by a single space:
 
     void foo(int a, float b) // please
-  
+
     void foo(int a,float b) // no
 
 #### Space between operators:
 
     if (a == b) // please
-    
+
     if(a==b) // no
 
 #### Braces should always be used:
@@ -136,7 +150,7 @@ If you see bits of code around that do not follow these please don't hesitate to
 
     if (!file)
         throw mapnik::datasource_exception("not found"); // no
-        
+
 
 #### Braces should be on a separate line:
 
@@ -145,6 +159,14 @@ If you see bits of code around that do not follow these please don't hesitate to
         int z = 5;
         // more...
     }
+
+#### Prefer `empty()` over `size() == 0` if container supports it
+
+This avoids implicit conversions to bool and reduces compiler warnings.
+
+    if (container.empty()) // please
+
+    if (container.size() == 0) // no
 
 
 ### Other C++ style resources

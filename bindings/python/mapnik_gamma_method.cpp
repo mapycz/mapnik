@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
+#include <mapnik/config.hpp>
 
 #include <boost/python.hpp>
-#include <mapnik/gamma_method.hpp>
+#include <mapnik/symbolizer_enumerations.hpp>
 #include "mapnik_enumeration.hpp"
 
 void export_gamma_method()

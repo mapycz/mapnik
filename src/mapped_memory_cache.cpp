@@ -20,25 +20,25 @@
  *
  *****************************************************************************/
 
+#if defined(SHAPE_MEMORY_MAPPED_FILE)
+
 // mapnik
 #include <mapnik/debug.hpp>
+#include <mapnik/util/fs.hpp>
 #include <mapnik/mapped_memory_cache.hpp>
 
 // boost
 #include <boost/assert.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/file_mapping.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/make_shared.hpp>
 
 namespace mapnik
 {
 
-boost::unordered_map<std::string, mapped_region_ptr> mapped_memory_cache::cache_;
-
 void mapped_memory_cache::clear()
 {
 #ifdef MAPNIK_THREADSAFE
-    mutex::scoped_lock lock(mutex_);
+    mapnik::scoped_lock lock(mutex_);
 #endif
     return cache_.clear();
 }
@@ -46,17 +46,17 @@ void mapped_memory_cache::clear()
 bool mapped_memory_cache::insert(std::string const& uri, mapped_region_ptr mem)
 {
 #ifdef MAPNIK_THREADSAFE
-    mutex::scoped_lock lock(mutex_);
+    mapnik::scoped_lock lock(mutex_);
 #endif
-    return cache_.insert(std::make_pair(uri,mem)).second;
+    return cache_.emplace(uri,mem).second;
 }
 
 boost::optional<mapped_region_ptr> mapped_memory_cache::find(std::string const& uri, bool update_cache)
 {
 #ifdef MAPNIK_THREADSAFE
-    mutex::scoped_lock lock(mutex_);
+    mapnik::scoped_lock lock(mutex_);
 #endif
-    typedef boost::unordered_map<std::string, mapped_region_ptr>::const_iterator iterator_type;
+    using iterator_type = std::unordered_map<std::string, mapped_region_ptr>::const_iterator;
     boost::optional<mapped_region_ptr> result;
     iterator_type itr = cache_.find(uri);
     if (itr != cache_.end())
@@ -65,25 +65,24 @@ boost::optional<mapped_region_ptr> mapped_memory_cache::find(std::string const& 
         return result;
     }
 
-    boost::filesystem::path path(uri);
-    if (exists(path))
+    if (mapnik::util::exists(uri))
     {
         try
         {
-            file_mapping mapping(uri.c_str(),read_only);
-            mapped_region_ptr region(boost::make_shared<mapped_region>(mapping,read_only));
-
+            boost::interprocess::file_mapping mapping(uri.c_str(),boost::interprocess::read_only);
+            mapped_region_ptr region(std::make_shared<boost::interprocess::mapped_region>(mapping,boost::interprocess::read_only));
             result.reset(region);
-
             if (update_cache)
             {
-                cache_.insert(std::make_pair(uri,*result));
+                cache_.emplace(uri,*result);
             }
             return result;
         }
-        catch (...)
+        catch (std::exception const& ex)
         {
-            MAPNIK_LOG_ERROR(mapped_memory_cache) << "Exception caught while loading mapping memory file: " << uri;
+            MAPNIK_LOG_ERROR(mapped_memory_cache)
+                << "Error loading mapped memory file: '"
+                << uri << "' (" << ex.what() << ")";
         }
     }
     /*
@@ -96,3 +95,5 @@ boost::optional<mapped_region_ptr> mapped_memory_cache::find(std::string const& 
 }
 
 }
+
+#endif

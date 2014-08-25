@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id$
 
 // mapnik
 #include "pgsql2sqlite.hpp"
@@ -29,7 +28,7 @@
 
 // boost
 #include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/program_options.hpp>
 
 //stl
@@ -97,7 +96,7 @@ int main ( int argc, char** argv)
         ConnectionCreator<Connection> creator(host,port,dbname,user,password,connect_timeout);
         try
         {
-            boost::shared_ptr<Connection> conn(creator());
+            std::shared_ptr<Connection> conn(creator());
 
             std::string query = vm["query"].as<std::string>();
             std::string output_table_name = vm.count("table") ? vm["table"].as<std::string>() : mapnik::sql_utils::table_from_sql(query);

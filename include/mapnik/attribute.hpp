@@ -24,9 +24,12 @@
 #define MAPNIK_ATTRIBUTE_HPP
 
 // mapnik
+#include <mapnik/value_types.hpp>
 #include <mapnik/value.hpp>
+
 // stl
 #include <string>
+#include <unordered_map>
 
 namespace mapnik {
 
@@ -44,6 +47,40 @@ struct attribute
 
     std::string const& name() const { return name_;}
 };
+
+struct geometry_type_attribute
+{
+    template <typename V, typename F>
+    V value(F const& f) const
+    {
+        mapnik::value_integer type = 0;
+        for (auto const& geom : f.paths())
+        {
+            if (type != 0 && geom.type() != type)
+            {
+                return value_integer(4); // Collection
+            }
+            type = geom.type();
+        }
+        return type;
+    }
+};
+
+struct global_attribute
+{
+    std::string name;
+    explicit global_attribute(std::string const& name_)
+        : name(name_) {}
+
+    template <typename V, typename C>
+    V const& operator() (C const& ctx)
+    {
+        return ctx.get(name);
+    }
+};
+
+using attributes = std::unordered_map<std::string, value>;
+
 }
 
 #endif // MAPNIK_ATTRIBUTE_HPP

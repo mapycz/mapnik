@@ -25,21 +25,19 @@
 
 //mapnik
 #include <mapnik/box2d.hpp>
-#include <mapnik/feature.hpp>
-
-// boost
-#include <boost/tuple/tuple.hpp>
+#include <mapnik/attribute.hpp>
 
 // stl
 #include <set>
-#include <limits>
+#include <string>
+#include <tuple>
 
 namespace mapnik {
 
 class query
 {
 public:
-    typedef boost::tuple<double,double> resolution_type;
+    using resolution_type = std::tuple<double,double>;
 
     query(box2d<double> const& bbox,
           resolution_type const& resolution,
@@ -50,7 +48,8 @@ public:
           scale_denominator_(scale_denominator),
           filter_factor_(1.0),
           unbuffered_bbox_(unbuffered_bbox),
-          names_()
+          names_(),
+          vars_()
     {}
 
     query(box2d<double> const& bbox,
@@ -61,7 +60,8 @@ public:
           scale_denominator_(scale_denominator),
           filter_factor_(1.0),
           unbuffered_bbox_(bbox),
-          names_()
+          names_(),
+          vars_()
     {}
 
     query(box2d<double> const& bbox)
@@ -70,7 +70,8 @@ public:
           scale_denominator_(1.0),
           filter_factor_(1.0),
           unbuffered_bbox_(bbox),
-          names_()
+          names_(),
+          vars_()
     {}
 
     query(query const& other)
@@ -79,7 +80,8 @@ public:
           scale_denominator_(other.scale_denominator_),
           filter_factor_(other.filter_factor_),
           unbuffered_bbox_(other.unbuffered_bbox_),
-          names_(other.names_)
+          names_(other.names_),
+          vars_(other.vars_)
     {}
 
     query& operator=(query const& other)
@@ -91,6 +93,7 @@ public:
         filter_factor_=other.filter_factor_;
         unbuffered_bbox_=other.unbuffered_bbox_;
         names_=other.names_;
+        vars_=other.vars_;
         return *this;
     }
 
@@ -144,6 +147,16 @@ public:
         return names_;
     }
 
+    void set_variables(attributes const& vars)
+    {
+        vars_ = vars;
+    }
+
+    attributes const& variables() const
+    {
+        return vars_;
+    }
+
 private:
     box2d<double> bbox_;
     resolution_type resolution_;
@@ -151,6 +164,7 @@ private:
     double filter_factor_;
     box2d<double> unbuffered_bbox_;
     std::set<std::string> names_;
+    attributes vars_;
 };
 
 }

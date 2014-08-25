@@ -33,7 +33,7 @@
 
 namespace mapnik { namespace util {
 
-    void to_ds_type(mapnik::geometry_container const& paths,
+    static inline void to_ds_type(mapnik::geometry_container const& paths,
                     boost::optional<mapnik::datasource::geometry_t> & result)
     {
         if (paths.size() == 1)
@@ -43,11 +43,9 @@ namespace mapnik { namespace util {
         else if (paths.size() > 1)
         {
             int multi_type = 0;
-            geometry_container::const_iterator itr = paths.begin();
-            geometry_container::const_iterator end = paths.end();
-            for ( ; itr!=end; ++itr)
+            for (auto const& geom : paths)
             {
-                int type = static_cast<int>(itr->type());
+                int type = static_cast<int>(geom.type());
                 if (multi_type > 0 && multi_type != type)
                 {
                     result.reset(datasource::Collection);

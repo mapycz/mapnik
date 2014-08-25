@@ -30,17 +30,13 @@
 #include <mapnik/utils.hpp>
 
 // boost
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 #include <boost/optional.hpp>
-#ifdef MAPNIK_THREADSAFE
-#include <boost/thread/mutex.hpp>
-//using boost::mutex;
-#endif
 
 // stl
 #include <string>
 #include <sstream>
+#include <memory>
 
 using mapnik::Pool;
 using mapnik::singleton;
@@ -66,7 +62,7 @@ public:
 
     T* operator()() const
     {
-        return new T(connection_string());
+        return new T(connection_string_safe(),pass_);
     }
 
     inline std::string id() const
@@ -76,13 +72,19 @@ public:
 
     inline std::string connection_string() const
     {
+        std::string connect_str = connection_string_safe();
+        if (pass_   && !pass_->empty()) connect_str += " password=" + *pass_;
+        return connect_str;
+    }
+
+    inline std::string connection_string_safe() const
+    {
         std::string connect_str;
-        if (host_   && (*host_).size()) connect_str += "host=" + *host_;
-        if (port_   && (*port_).size()) connect_str += " port=" + *port_;
-        if (dbname_ && (*dbname_).size()) connect_str += " dbname=" + *dbname_;
-        if (user_   && (*user_).size()) connect_str += " user=" + *user_;
-        if (pass_   && (*pass_).size()) connect_str += " password=" + *pass_;
-        if (connect_timeout_ && (*connect_timeout_).size())
+        if (host_   && !host_->empty()) connect_str += "host=" + *host_;
+        if (port_   && !port_->empty()) connect_str += " port=" + *port_;
+        if (dbname_ && !dbname_->empty()) connect_str += " dbname=" + *dbname_;
+        if (user_   && !user_->empty()) connect_str += " user=" + *user_;
+        if (connect_timeout_ && !connect_timeout_->empty())
             connect_str +=" connect_timeout=" + *connect_timeout_;
         return connect_str;
     }
@@ -99,56 +101,48 @@ private:
 class ConnectionManager : public singleton <ConnectionManager,CreateStatic>
 {
 
+public:
+    using PoolType = Pool<Connection,ConnectionCreator>;
+
+private:
     friend class CreateStatic<ConnectionManager>;
-    typedef Pool<Connection,ConnectionCreator> PoolType;
-    typedef std::map<std::string,boost::shared_ptr<PoolType> > ContType;
-    typedef boost::shared_ptr<Connection> HolderType;
+
+    using ContType = std::map<std::string,std::shared_ptr<PoolType> >;
+    using HolderType = std::shared_ptr<Connection>;
     ContType pools_;
 
 public:
 
     bool registerPool(const ConnectionCreator<Connection>& creator,unsigned initialSize,unsigned maxSize)
     {
-#ifdef MAPNIK_THREADSAFE
-        //mutex::scoped_lock lock(mutex_);
-#endif
-        if (pools_.find(creator.id())==pools_.end())
-        {
-            return pools_.insert(std::make_pair(creator.id(),
-                                                boost::make_shared<PoolType>(creator,initialSize,maxSize))).second;
-        }
+        ContType::const_iterator itr = pools_.find(creator.id());
 
+        if (itr != pools_.end())
+        {
+            itr->second->set_initial_size(initialSize);
+            itr->second->set_max_size(maxSize);
+        }
+        else
+        {
+            return pools_.insert(
+                std::make_pair(creator.id(),
+                               std::make_shared<PoolType>(creator,initialSize,maxSize))).second;
+        }
         return false;
 
     }
 
-    boost::shared_ptr<PoolType> getPool(std::string const& key)
+    std::shared_ptr<PoolType> getPool(std::string const& key)
     {
-#ifdef MAPNIK_THREADSAFE
-        //mutex::scoped_lock lock(mutex_);
-#endif
         ContType::const_iterator itr=pools_.find(key);
         if (itr!=pools_.end())
         {
             return itr->second;
         }
-        static const boost::shared_ptr<PoolType> emptyPool;
+        static const std::shared_ptr<PoolType> emptyPool;
         return emptyPool;
     }
 
-    HolderType get(std::string const& key)
-    {
-#ifdef MAPNIK_THREADSAFE
-        //mutex::scoped_lock lock(mutex_);
-#endif
-        ContType::const_iterator itr=pools_.find(key);
-        if (itr!=pools_.end())
-        {
-            boost::shared_ptr<PoolType> pool=itr->second;
-            return pool->borrowObject();
-        }
-        return HolderType();
-    }
     ConnectionManager() {}
 private:
     ConnectionManager(const ConnectionManager&);

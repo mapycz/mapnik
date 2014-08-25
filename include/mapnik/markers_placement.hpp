@@ -23,64 +23,84 @@
 #ifndef MAPNIK_MARKERS_PLACEMENT_HPP
 #define MAPNIK_MARKERS_PLACEMENT_HPP
 
-// mapnik
-#include <mapnik/box2d.hpp>
+#include <mapnik/markers_placements/line.hpp>
+#include <mapnik/markers_placements/point.hpp>
+#include <mapnik/markers_placements/interior.hpp>
+#include <mapnik/markers_placements/vertext_first.hpp>
+#include <mapnik/markers_placements/vertext_last.hpp>
+#include <mapnik/symbolizer_enumerations.hpp>
+#include <mapnik/util/variant.hpp>
+#include <boost/functional/value_factory.hpp>
+#include <boost/function.hpp>
 
-// boost
-#include <boost/utility.hpp>
-
-namespace mapnik {
+namespace mapnik
+{
 
 template <typename Locator, typename Detector>
-class markers_placement : boost::noncopyable
+class markers_placement_finder : mapnik::noncopyable
 {
 public:
-    /** Constructor for markers_placement object.
-     * \param locator  Path along which markers are placed (type: vertex source)
-     * \param size     Size of the marker
-     * \param detector Collision detection
-     * \param spacing  Distance between markers. If the value is negative it is
-     *                 converted to a positive value with similar magnitude, but
-     *                 choosen to optimize marker placement. 0 = no markers
-     */
-    markers_placement(Locator &locator, box2d<double> size, Detector &detector, double spacing, double max_error, bool allow_overlap);
-    /** Start again at first marker.
-     * \note Returns the same list of markers only works when they were NOT added
-     *       to the detector.
-     */
-    void rewind();
-    /** Get a point where the marker should be placed.
-     * Each time this function is called a new point is returned.
-     * \param x     Return value for x position
-     * \param y     Return value for x position
-     * \param angle Return value for rotation angle
-     * \param add_to_detector Add selected position to detector
-     * \return True if a place is found, false if none is found.
-     */
-    bool get_point(double *x, double *y, double *angle, bool add_to_detector = true);
+    using markers_placement = util::variant<markers_point_placement<Locator, Detector>,
+                                            markers_line_placement<Locator, Detector>,
+                                            markers_interior_placement<Locator, Detector>,
+                                            markers_vertex_first_placement<Locator, Detector>,
+                                            markers_vertex_last_placement<Locator, Detector>>;
+
+    class get_point_visitor : public util::static_visitor<bool>
+    {
+    public:
+        get_point_visitor(double &x, double &y, double &angle, bool ignore_placement)
+            : x_(x), y_(y), angle_(angle), ignore_placement_(ignore_placement)
+        {
+        }
+
+        template <typename T>
+        bool operator()(T &placement) const
+        {
+            return placement.get_point(x_, y_, angle_, ignore_placement_);
+        }
+
+    private:
+        double &x_, &y_, &angle_;
+        bool ignore_placement_;
+    };
+
+    markers_placement_finder(marker_placement_e placement_type,
+                             Locator &locator,
+                             Detector &detector,
+                             markers_placement_params const& params)
+        : placement_(create(placement_type, locator, detector, params))
+    {
+    }
+
+    // Get next point where the marker should be placed. Returns true if a place is found, false if none is found.
+    bool get_point(double &x, double &y, double &angle, bool ignore_placement)
+    {
+        return util::apply_visitor(get_point_visitor(x, y, angle, ignore_placement), placement_);
+    }
+
 private:
-    Locator &locator_;
-    box2d<double> size_;
-    Detector &detector_;
-    double spacing_;
-    double max_error_;
-    bool allow_overlap_;
+    // Factory function for particular placement implementations.
+    static markers_placement create(marker_placement_e placement_type,
+                                    Locator &locator,
+                                    Detector &detector,
+                                    markers_placement_params const& params)
+    {
+        static const std::map<marker_placement_e, boost::function<markers_placement(
+            Locator &locator,
+            Detector &detector,
+            markers_placement_params const& params)>> factories =
+            {
+                { MARKER_POINT_PLACEMENT, boost::value_factory<markers_point_placement<Locator, Detector>>() },
+                { MARKER_INTERIOR_PLACEMENT, boost::value_factory<markers_interior_placement<Locator, Detector>>() },
+                { MARKER_LINE_PLACEMENT, boost::value_factory<markers_line_placement<Locator, Detector>>() },
+                { MARKER_VERTEX_FIRST_PLACEMENT, boost::value_factory<markers_vertex_first_placement<Locator, Detector>>() },
+                { MARKER_VERTEX_LAST_PLACEMENT, boost::value_factory<markers_vertex_last_placement<Locator, Detector>>() }
+            };
+        return factories.at(placement_type)(locator, detector, params);
+    }
 
-    bool done_;
-    double last_x, last_y;
-    double next_x, next_y;
-    /** If a marker could not be placed at the exact point where it should
-     * go the next marker's distance will be a bit lower. */
-    double error_;
-    double spacing_left_;
-    unsigned marker_nr_;
-
-    /** Rotates the size_ box and translates the position. */
-    box2d<double> perform_transform(double angle, double dx, double dy);
-    /** Automatically chooses spacing. */
-    double find_optimal_spacing(double s);
-    /** Set spacing_left_, adjusts error_ and performs sanity checks. */
-    void set_spacing_left(double sl, bool allow_negative=false);
+    markers_placement placement_;
 };
 
 }

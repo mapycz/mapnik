@@ -19,25 +19,20 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//$Id: shapeindex.cc 27 2005-03-30 21:45:40Z pavlenko $
 
 
 #include <iostream>
 #include <vector>
 #include <string>
-
+#include <mapnik/util/fs.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
 #include <boost/program_options.hpp>
 #include "quadtree.hpp"
 #include "shapefile.hpp"
 #include "shape_io.hpp"
 
-const int MAXDEPTH = 64;
 const int DEFAULT_DEPTH = 8;
-const double MINRATIO=0.5;
-const double MAXRATIO=0.8;
 const double DEFAULT_RATIO=0.55;
 
 int main (int argc,char** argv)
@@ -101,9 +96,9 @@ int main (int argc,char** argv)
             shape_files=vm["shape_files"].as< vector<string> >();
         }
     }
-    catch (...)
+    catch (std::exception const& ex)
     {
-        clog << "Exception of unknown type!" << endl;
+        clog << "Error: " << ex.what() << endl;
         return -1;
     }
 
@@ -123,16 +118,16 @@ int main (int argc,char** argv)
         boost::algorithm::ireplace_last(shapename,".shp","");
         std::string shapename_full (shapename+".shp");
 
-        if (! boost::filesystem::exists (shapename_full))
+        if (! mapnik::util::exists (shapename_full))
         {
-            clog << "error : file " << shapename_full << " does not exist" << endl;
+            clog << "Error : file " << shapename_full << " does not exist" << endl;
             continue;
         }
 
         shape_file shp (shapename_full);
 
         if (! shp.is_open()) {
-            clog << "error : cannot open " << shapename_full << endl;
+            clog << "Error : cannot open " << shapename_full << endl;
             continue;
         }
 

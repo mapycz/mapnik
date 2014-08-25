@@ -20,6 +20,11 @@
  *
  *****************************************************************************/
 
+#if defined(GRID_RENDERER)
+
+#include <mapnik/config.hpp>
+#include "boost_std_shared_shim.hpp"
+
 // boost
 #include <boost/python.hpp>
 #include <boost/python/module.hpp>
@@ -34,12 +39,12 @@
 using namespace boost::python;
 
 // help compiler see template definitions
-static dict (*encode)( mapnik::grid_view const&, std::string, bool, unsigned int) = mapnik::grid_encode;
+static dict (*encode)( mapnik::grid_view const&, std::string const& , bool, unsigned int) = mapnik::grid_encode;
 
 void export_grid_view()
 {
     class_<mapnik::grid_view,
-        boost::shared_ptr<mapnik::grid_view> >("GridView",
+        std::shared_ptr<mapnik::grid_view> >("GridView",
                                                "This class represents a feature hitgrid subset.",no_init)
         .def("width",&mapnik::grid_view::width)
         .def("height",&mapnik::grid_view::height)
@@ -49,3 +54,5 @@ void export_grid_view()
             )
         ;
 }
+
+#endif

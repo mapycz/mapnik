@@ -22,15 +22,20 @@
 
 // mapnik
 #include <mapnik/debug.hpp>
+#include <mapnik/query.hpp>
+#include <mapnik/box2d.hpp>
 #include <mapnik/memory_datasource.hpp>
 #include <mapnik/memory_featureset.hpp>
-#include <mapnik/feature_factory.hpp>
-
+#include <mapnik/boolean.hpp>
 // boost
-#include <boost/make_shared.hpp>
 
 // stl
 #include <algorithm>
+
+using mapnik::datasource;
+using mapnik::parameters;
+
+DATASOURCE_PLUGIN(mapnik::memory_datasource)
 
 namespace mapnik {
 
@@ -41,7 +46,7 @@ struct accumulate_extent
 
     void operator() (feature_ptr feat)
     {
-        for (unsigned i=0;i<feat->num_geometries();++i)
+        for (std::size_t i=0;i<feat->num_geometries();++i)
         {
             geometry_type & geom = feat->get_geometry(i);
             if ( first_ )
@@ -60,9 +65,17 @@ struct accumulate_extent
     bool first_;
 };
 
-memory_datasource::memory_datasource()
-    : datasource(parameters()),
-      desc_("in-memory datasource","utf-8") {}
+const char * memory_datasource::name()
+{
+    return "memory";
+}
+
+memory_datasource::memory_datasource(parameters const& params)
+    : datasource(params),
+      desc_(memory_datasource::name(),
+            *params.get<std::string>("encoding","utf-8")),
+      type_(datasource::Vector),
+      bbox_check_(*params.get<boolean_type>("bbox_check", true)) {}
 
 memory_datasource::~memory_datasource() {}
 
@@ -75,30 +88,36 @@ void memory_datasource::push(feature_ptr feature)
 
 datasource::datasource_t memory_datasource::type() const
 {
-    return datasource::Vector;
+    return type_;
 }
 
 featureset_ptr memory_datasource::features(const query& q) const
 {
-    return boost::make_shared<memory_featureset>(q.get_bbox(),*this);
+    return std::make_shared<memory_featureset>(q.get_bbox(),*this,bbox_check_);
 }
 
 
-featureset_ptr memory_datasource::features_at_point(coord2d const& pt) const
+featureset_ptr memory_datasource::features_at_point(coord2d const& pt, double tol) const
 {
     box2d<double> box = box2d<double>(pt.x, pt.y, pt.x, pt.y);
-
+    box.pad(tol);
     MAPNIK_LOG_DEBUG(memory_datasource) << "memory_datasource: Box=" << box << ", Point x=" << pt.x << ",y=" << pt.y;
+    return std::make_shared<memory_featureset>(box,*this);
+}
 
-    return boost::make_shared<memory_featureset>(box,*this);
+void memory_datasource::set_envelope(box2d<double> const& box)
+{
+    extent_ = box;
 }
 
 box2d<double> memory_datasource::envelope() const
 {
-    box2d<double> ext;
-    accumulate_extent func(ext);
-    std::for_each(features_.begin(),features_.end(),func);
-    return ext;
+    if (!extent_.valid())
+    {
+        accumulate_extent func(extent_);
+        std::for_each(features_.begin(),features_.end(),func);
+    }
+    return extent_;
 }
 
 boost::optional<datasource::geometry_t> memory_datasource::get_geometry_type() const

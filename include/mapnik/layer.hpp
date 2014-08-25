@@ -24,14 +24,19 @@
 #define MAPNIK_LAYER_HPP
 
 // mapnik
-#include <mapnik/feature.hpp>
-#include <mapnik/datasource.hpp>
+#include <mapnik/well_known_srs.hpp>
+#include <mapnik/box2d.hpp>
 
 // stl
 #include <vector>
+#include <memory>
 
 namespace mapnik
 {
+
+class datasource;
+using datasource_ptr = std::shared_ptr<datasource>;
+
 /*!
  * @brief A Mapnik map layer.
  *
@@ -43,9 +48,13 @@ namespace mapnik
 class MAPNIK_DECL layer
 {
 public:
-    explicit layer(std::string const& name, std::string const& srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs");
+    layer(std::string const& name,
+          std::string const& srs=MAPNIK_LONGLAT_PROJ);
+    // copy
     layer(layer const& l);
-    layer& operator=(layer const& l);
+    // move
+    layer(layer && l);
+    layer& operator=(layer rhs);
     bool operator==(layer const& other) const;
 
     /*!
@@ -57,7 +66,7 @@ public:
      * @return the name of the layer.
      */
 
-    const std::string& name() const;
+    std::string const& name() const;
 
     /*!
      * @brief Set the SRS of the layer.
@@ -88,7 +97,7 @@ public:
     std::vector<std::string>& styles();
 
     /*!
-     * @param max_zoom The minimum zoom level to set
+     * @param min_zoom The minimum zoom level to set
      */
     void set_min_zoom(double min_zoom);
 
@@ -134,7 +143,7 @@ public:
      *
      * @return true if this layer's data is active and visible at a given scale.
      *         Otherwise returns False.
-     * @return false if:
+     *         false if:
      *         scale >= minzoom - 1e-6
      *         or
      *         scale < maxzoom + 1e-6
@@ -152,7 +161,7 @@ public:
     bool clear_label_cache() const;
 
     /*!
-     * @param clear_cache Set whether this layer's features should be cached if used by multiple styles.
+     * @param cache_features Set whether this layer's features should be cached if used by multiple styles.
      */
     void set_cache_features(bool cache_features);
 
@@ -162,14 +171,14 @@ public:
     bool cache_features() const;
 
     /*!
-     * @param group_by Set the field rendering of this layer is grouped by.
+     * @param column Set the field rendering of this layer is grouped by.
      */
-    void set_group_by(std::string column);
+    void set_group_by(std::string const& column);
 
     /*!
      * @return The field rendering of this layer is grouped by.
      */
-    std::string group_by() const;
+    std::string const& group_by() const;
 
     /*!
      * @brief Attach a datasource for this layer.
@@ -188,13 +197,17 @@ public:
      */
     box2d<double> envelope() const;
 
+    void set_maximum_extent(box2d<double> const& box);
+    boost::optional<box2d<double> > const&  maximum_extent() const;
+    void reset_maximum_extent();
+    void set_buffer_size(int size);
+    boost::optional<int> const& buffer_size() const;
+    void reset_buffer_size();
     ~layer();
 private:
-    void swap(const layer& other);
-
+    friend void swap(layer & lhs, layer & rhs);
     std::string name_;
     std::string srs_;
-
     double min_zoom_;
     double max_zoom_;
     bool active_;
@@ -204,6 +217,8 @@ private:
     std::string group_by_;
     std::vector<std::string> styles_;
     datasource_ptr ds_;
+    boost::optional<int> buffer_size_;
+    boost::optional<box2d<double> > maximum_extent_;
 };
 }
 

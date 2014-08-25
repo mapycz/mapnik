@@ -25,16 +25,16 @@
 // stl
 #include <string>
 #include <vector>
-#include <fstream>
+#include <deque>
 
 #include "geojson_featureset.hpp"
 
-geojson_featureset::geojson_featureset(std::vector<mapnik::feature_ptr> const& features, 
-                                       std::deque<std::size_t>::const_iterator index_itr,
-                                       std::deque<std::size_t>::const_iterator index_end)
+geojson_featureset::geojson_featureset(std::vector<mapnik::feature_ptr> const& features,
+                                       array_type && index_array)
     : features_(features),
-      index_itr_(index_itr),
-      index_end_(index_end) {}
+      index_array_(std::move(index_array)),
+      index_itr_(index_array_.begin()),
+      index_end_(index_array_.end()) {}
 
 geojson_featureset::~geojson_featureset() {}
 
@@ -42,11 +42,16 @@ mapnik::feature_ptr geojson_featureset::next()
 {
     if (index_itr_ != index_end_)
     {
-        std::size_t index = *index_itr_++;        
+#if BOOST_VERSION >= 105600
+        geojson_datasource::item_type const& item = *index_itr_++;
+        std::size_t index = item.second;
+#else
+        std::size_t index = *index_itr_++;
+#endif
         if ( index < features_.size())
         {
             return features_.at(index);
         }
-    }    
+    }
     return mapnik::feature_ptr();
 }

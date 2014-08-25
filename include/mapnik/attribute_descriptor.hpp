@@ -79,7 +79,7 @@ public:
         return name_;
     }
 
-    unsigned get_type() const
+    unsigned int get_type() const
     {
         return type_;
     }
@@ -101,23 +101,11 @@ public:
 
 private:
     std::string name_;
-    int type_;
+    unsigned int type_;
     bool primary_key_;
     int size_;
     int precision_;
 };
-
-template <typename charT,typename traits>
-inline std::basic_ostream<charT,traits>&
-operator << (std::basic_ostream<charT,traits>& out,
-             attribute_descriptor const& ad)
-{
-    out << "name=" << ad.get_name() << "\n";
-    out << "type=" << ad.get_type() << "\n";
-    out << "size=" << ad.get_size() << "\n";
-    return out;
-}
-
 
 }
 

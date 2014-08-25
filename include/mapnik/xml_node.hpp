@@ -23,10 +23,6 @@
 #ifndef MAPNIK_XML_NODE_H
 #define MAPNIK_XML_NODE_H
 
-//mapnik
-#include <mapnik/boolean.hpp>
-
-
 //boost
 #include <boost/optional.hpp>
 
@@ -43,7 +39,7 @@ class xml_tree;
 class xml_attribute
 {
 public:
-    xml_attribute(std::string const& value);
+    xml_attribute(const char * value_);
     std::string value;
     mutable bool processed;
 };
@@ -82,9 +78,9 @@ private:
 class xml_node
 {
 public:
-    typedef std::list<xml_node>::const_iterator const_iterator;
-    typedef std::map<std::string, xml_attribute> attribute_map;
-    xml_node(xml_tree &tree, std::string const& name, unsigned line=0, bool text_node = false);
+    using const_iterator = std::list<xml_node>::const_iterator;
+    using attribute_map = std::map<std::string, xml_attribute>;
+    xml_node(xml_tree &tree, std::string && name, unsigned line=0, bool is_text = false);
 
     std::string const& name() const;
     std::string const& text() const;
@@ -92,15 +88,17 @@ public:
     bool is_text() const;
     bool is(std::string const& name) const;
 
-    xml_node &add_child(std::string const& name, unsigned line=0, bool text_node = false);
-    void add_attribute(std::string const& name, std::string const& value);
+    xml_node & add_child(std::string && name, unsigned line=0, bool is_text = false);
+    void add_attribute(const char * name, const char * value);
     attribute_map const& get_attributes() const;
 
     bool processed() const;
     void set_processed(bool processed) const;
 
     unsigned line() const;
+    std::string line_to_string() const;
 
+    std::size_t size() const;
     const_iterator begin() const;
     const_iterator end() const;
 
@@ -108,30 +106,28 @@ public:
     xml_node const& get_child(std::string const& name) const;
     xml_node const* get_opt_child(std::string const& name) const;
     bool has_child(std::string const& name) const;
+    bool has_attribute(std::string const& name) const;
 
     template <typename T>
     boost::optional<T> get_opt_attr(std::string const& name) const;
 
     template <typename T>
-    T get_attr(std::string const& name, T const& default_value) const;
+    T get_attr(std::string const& name, T const& default_opt_value) const;
     template <typename T>
     T get_attr(std::string const& name) const;
 
-    std::string get_text() const;
+    std::string const& get_text() const;
 
-    xml_tree const& get_tree() const
-    {
-        return tree_;
-    }
+    inline xml_tree const& get_tree() const { return tree_; }
 
     template <typename T>
     T get_value() const;
 private:
-    xml_tree &tree_;
+    xml_tree & tree_;
     std::string name_;
     std::list<xml_node> children_;
     attribute_map attributes_;
-    bool text_node_;
+    bool is_text_;
     unsigned line_;
     mutable bool processed_;
     static std::string xml_text;

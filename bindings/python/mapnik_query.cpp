@@ -20,6 +20,11 @@
  *
  *****************************************************************************/
 
+#include <mapnik/config.hpp>
+
+#include "boost_std_shared_shim.hpp"
+#include "python_to_value.hpp"
+
 // boost
 #include <boost/python.hpp>
 
@@ -27,34 +32,71 @@
 #include <mapnik/query.hpp>
 #include <mapnik/box2d.hpp>
 
+#include <string>
+#include <set>
+
 using mapnik::query;
 using mapnik::box2d;
 
-struct query_pickle_suite : boost::python::pickle_suite
+namespace python = boost::python;
+
+struct resolution_to_tuple
 {
-    static boost::python::tuple
-    getinitargs(query const& q)
+    static PyObject* convert(query::resolution_type const& x)
     {
-        return boost::python::make_tuple(q.get_bbox(),q.resolution());
+        python::object tuple(python::make_tuple(std::get<0>(x), std::get<1>(x)));
+        return python::incref(tuple.ptr());
+    }
+
+    static PyTypeObject const* get_pytype()
+    {
+        return &PyTuple_Type;
     }
 };
+
+struct names_to_list
+{
+    static PyObject* convert(std::set<std::string> const& names)
+    {
+        boost::python::list l;
+        for ( std::string const& name : names )
+        {
+            l.append(name);
+        }
+        return python::incref(l.ptr());
+    }
+
+    static PyTypeObject const* get_pytype()
+    {
+        return &PyList_Type;
+    }
+};
+
+namespace {
+
+    void set_variables(mapnik::query & q, boost::python::dict const& d)
+    {
+        mapnik::attributes vars = mapnik::dict2attr(d);
+        q.set_variables(vars);
+    }
+}
 
 void export_query()
 {
     using namespace boost::python;
 
+    to_python_converter<query::resolution_type, resolution_to_tuple> ();
+    to_python_converter<std::set<std::string>, names_to_list> ();
+
     class_<query>("Query", "a spatial query data object",
                   init<box2d<double>,query::resolution_type const&,double>() )
         .def(init<box2d<double> >())
-        .def_pickle(query_pickle_suite())
         .add_property("resolution",make_function(&query::resolution,
                                                  return_value_policy<copy_const_reference>()))
         .add_property("bbox", make_function(&query::get_bbox,
                                             return_value_policy<copy_const_reference>()) )
         .add_property("property_names", make_function(&query::property_names,
                                                       return_value_policy<copy_const_reference>()) )
-        .def("add_property_name", &query::add_property_name);
+        .def("add_property_name", &query::add_property_name)
+        .def("set_variables",&set_variables);
 }
-
-
-

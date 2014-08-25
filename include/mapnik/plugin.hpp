@@ -23,27 +23,35 @@
 #ifndef MAPNIK_PLUGIN_HPP
 #define MAPNIK_PLUGIN_HPP
 
-// boost
-#include <boost/utility.hpp>
+// mapnik
+#include <mapnik/noncopyable.hpp>
 
 // stl
 #include <string>
 
-// ltdl
-#include <ltdl.h>
-
 namespace mapnik
 {
-class PluginInfo : boost::noncopyable
+
+//  Opaque structure for handle
+using mapnik_lib_t = struct _mapnik_lib_t;
+
+class PluginInfo : mapnik::noncopyable
 {
-private:
-    std::string name_;
-    lt_dlhandle module_;
 public:
-    PluginInfo (const std::string& name,const lt_dlhandle module);
+    using name_func = const char* (*) ();
+    PluginInfo (std::string const& filename,
+                std::string const& library_name);
     ~PluginInfo();
-    const std::string& name() const;
-    lt_dlhandle handle() const;
+    std::string const& name() const;
+    bool valid() const;
+    std::string get_error() const;
+    void * get_symbol(std::string const& sym_name) const;
+    static void init();
+    static void exit();
+private:
+    std::string filename_;
+    std::string name_;
+    mapnik_lib_t * module_;
 };
 }
 

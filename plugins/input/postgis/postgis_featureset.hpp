@@ -1,4 +1,3 @@
-
 /*****************************************************************************
  *
  * This file is part of Mapnik (c++ mapping toolkit)
@@ -28,10 +27,7 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/datasource.hpp>
 #include <mapnik/feature.hpp>
-
-// boost
-
-#include <boost/scoped_ptr.hpp>
+#include <mapnik/unicode.hpp>
 
 using mapnik::Featureset;
 using mapnik::box2d;
@@ -44,7 +40,7 @@ class IResultSet;
 class postgis_featureset : public mapnik::Featureset
 {
 public:
-    postgis_featureset(boost::shared_ptr<IResultSet> const& rs,
+    postgis_featureset(std::shared_ptr<IResultSet> const& rs,
                        context_ptr const& ctx,
                        std::string const& encoding,
                        bool key_field = false);
@@ -52,11 +48,11 @@ public:
     ~postgis_featureset();
 
 private:
-    boost::shared_ptr<IResultSet> rs_;
+    std::shared_ptr<IResultSet> rs_;
     context_ptr ctx_;
-    boost::scoped_ptr<mapnik::transcoder> tr_;
-    int totalGeomSize_;
-    int feature_id_;
+    const std::unique_ptr<mapnik::transcoder> tr_;
+    unsigned totalGeomSize_;
+    mapnik::value_integer feature_id_;
     bool key_field_;
 };
 

@@ -24,18 +24,19 @@
 #define MAPNIK_FILTER_FEATURESET_HPP
 
 // mapnik
-#include <mapnik/datasource.hpp>
+#include <mapnik/featureset.hpp>
+#include <mapnik/feature.hpp>
 
 namespace mapnik {
 
 template <typename T>
 class filter_featureset : public Featureset
 {
-    typedef T filter_type;
+    using filter_type = T;
 
 public:
-    filter_featureset(featureset_ptr fs, filter_type const& filter)
-        : fs_(fs), filter_(filter) {}
+    filter_featureset(featureset_ptr const& fs, filter_type && filter)
+        : fs_(fs), filter_(std::move(filter)) {}
 
     feature_ptr next()
     {

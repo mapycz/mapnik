@@ -20,9 +20,14 @@
  *
  *****************************************************************************/
 
+#if defined(GRID_RENDERER)
+
 // mapnik
+#include <mapnik/feature.hpp>
 #include <mapnik/grid/grid_renderer.hpp>
-#include <mapnik/symbolizer_helpers.hpp>
+#include <mapnik/text/symbolizer_helpers.hpp>
+#include <mapnik/pixel_position.hpp>
+#include <mapnik/text/renderer.hpp>
 
 namespace mapnik {
 
@@ -31,29 +36,35 @@ void grid_renderer<T>::process(text_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans)
 {
-    box2d<double> query_extent;
-    text_symbolizer_helper<face_manager<freetype_engine>,
-        label_collision_detector4> helper(
-            sym, feature, prj_trans,
-            detector_.extent().width(), detector_.extent().height(),
-            scale_factor_ * (1.0/pixmap_.get_resolution()),
-            t_, font_manager_, detector_,
-            query_extent);
+    agg::trans_affine tr;
+    auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
+    if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
+    text_symbolizer_helper helper(
+            sym, feature, common_.vars_, prj_trans,
+            common_.width_, common_.height_,
+            common_.scale_factor_ * (1.0/pixmap_.get_resolution()),
+            common_.t_, common_.font_manager_, *common_.detector_,
+            common_.query_extent_, tr);
     bool placement_found = false;
 
-    text_renderer<T> ren(pixmap_, font_manager_, *(font_manager_.get_stroker()));
+    composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
 
-    while (helper.next()) {
+    grid_text_renderer<T> ren(pixmap_,
+                              comp_op,
+                              common_.scale_factor_);
+
+    placements_list const& placements = helper.get();
+    value_integer feature_id = feature.id();
+
+    for (glyph_positions_ptr glyphs : placements)
+    {
+        ren.render(*glyphs, feature_id);
         placement_found = true;
-        placements_type &placements = helper.placements();
-        for (unsigned int ii = 0; ii < placements.size(); ++ii)
-        {
-            ren.prepare_glyphs(&(placements[ii]));
-            ren.render_id(feature.id(), placements[ii].center, 2);
-        }
     }
-    if (placement_found) pixmap_.add_feature(feature);
-
+    if (placement_found)
+    {
+        pixmap_.add_feature(feature);
+    }
 }
 
 template void grid_renderer<grid>::process(text_symbolizer const&,
@@ -62,3 +73,4 @@ template void grid_renderer<grid>::process(text_symbolizer const&,
 
 }
 
+#endif

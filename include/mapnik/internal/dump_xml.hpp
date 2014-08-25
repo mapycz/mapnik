@@ -2,8 +2,11 @@
 #define DUMP_XML_HPP
 #include <mapnik/xml_node.hpp>
 
-/* Debug dump ptree XML representation.
- */
+namespace mapnik
+{
+
+// Debug dump ptree XML representation.
+
 void dump_xml(xml_node const& xml, unsigned level=0)
 {
     std::string indent;
@@ -12,24 +15,20 @@ void dump_xml(xml_node const& xml, unsigned level=0)
     {
         indent += "    ";
     }
-    xml_node::attribute_map const& attr = xml.get_attributes();
+    xml_node::attribute_map const& attr_map = xml.get_attributes();
     std::cerr << indent <<"[" << xml.name();
-    xml_node::attribute_map::const_iterator aitr = attr.begin();
-    xml_node::attribute_map::const_iterator aend = attr.end();
-    for (;aitr!=aend; aitr++)
+    for (auto const& attr : attr_map)
     {
-        std::cerr << " (" << aitr->first << ", " << aitr->second.value << ", " << aitr->second.processed << ")";
+        std::cerr << " (" << attr.first << ", " << attr.second.value << ", " << attr.second.processed << ")";
     }
     std::cerr << "]" << "\n";
     if (xml.is_text()) std::cerr << indent << "text: '" << xml.text() << "'\n";
-    xml_node::const_iterator itr = xml.begin();
-    xml_node::const_iterator end = xml.end();
-    for (; itr!=end; itr++)
+    for (auto const& child : xml)
     {
-        dump_xml(*itr, level+1);
+        dump_xml(child, level+1);
     }
     std::cerr << indent << "[/" << xml.name() << "]" << "\n";
 }
 
-
+}
 #endif // DUMP_XML_HPP

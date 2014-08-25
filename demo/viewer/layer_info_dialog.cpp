@@ -17,11 +17,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-//$Id$
 
 #include "layer_info_dialog.hpp"
 
 // mapnik
+#include <mapnik/datasource.hpp>
+#include <mapnik/params.hpp>
+#include <mapnik/params_impl.hpp>
 #include <mapnik/layer.hpp>
 
 
@@ -52,7 +54,7 @@ layer_info_dialog::layer_info_dialog(mapnik::layer& lay, QWidget *parent)
         for (pos = ps.begin();pos != ps.end();++pos)
         {
             boost::optional<std::string> result;
-            boost::apply_visitor(mapnik::value_extractor_visitor<std::string>(result),pos->second);
+            mapnik::util::apply_visitor(mapnik::value_extractor_visitor<std::string>(result),pos->second);
             if (result)
             {
                 QTableWidgetItem *keyItem = new QTableWidgetItem(QString(pos->first.c_str()));
@@ -69,4 +71,3 @@ Ui::LayerInfoDialog& layer_info_dialog::getUI()
 {
    return ui;
 }
-

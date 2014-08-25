@@ -39,11 +39,20 @@
 #    pragma warning(disable : 4996) //_CRT_SECURE_NO_DEPRECATE
 #  endif
 #else
+#  if __GNUC__ >= 4
+#  define MAPNIK_EXP __attribute__ ((visibility ("default")))
+#  define MAPNIK_DECL __attribute__ ((visibility ("default")))
+#  define MAPNIK_IMP __attribute__ ((visibility ("default")))
+#  else
 #  define MAPNIK_EXP
-#  define MAPNIK_IMP
 #  define MAPNIK_DECL
+#  define MAPNIK_IMP
+#  endif
 #endif
 
 #define PROJ_ENVELOPE_POINTS 20
+
+#define BOOST_MPL_CFG_NO_PREPROCESSED_HEADERS
+#define BOOST_MPL_LIMIT_VECTOR_SIZE 30
 
 #endif // MAPNIK_CONFIG_HPP

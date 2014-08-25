@@ -1,7 +1,7 @@
 #
 # This file is part of Mapnik (c++ mapping toolkit)
 #
-# Copyright (C) 2006 Artem Pavlenko, Jean-Francois Doyon
+# Copyright (C) 2013 Artem Pavlenko
 #
 # Mapnik is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -17,7 +17,7 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
-# $Id$
+# 
 
 import os
 import glob
@@ -34,16 +34,19 @@ source = Split(
     )
 
 program_env['CXXFLAGS'] = copy(env['LIBMAPNIK_CXXFLAGS'])
+program_env.Append(CPPDEFINES = env['LIBMAPNIK_DEFINES'])
 
 if env['HAS_CAIRO']:
-    program_env.PrependUnique(CPPPATH=env['CAIROMM_CPPPATHS'])
-    program_env.Append(CXXFLAGS = '-DHAVE_CAIRO')
+    program_env.PrependUnique(CPPPATH=env['CAIRO_CPPPATHS'])
+    program_env.Append(CPPDEFINES = '-DHAVE_CAIRO')
 
-libraries =  copy(env['LIBMAPNIK_LIBS'])
 boost_program_options = 'boost_program_options%s' % env['BOOST_APPEND']
-libraries.extend([boost_program_options,'mapnik'])
+libraries = [env['MAPNIK_NAME'],boost_program_options]
+libraries.extend(copy(env['LIBMAPNIK_LIBS']))
+if env['RUNTIME_LINK'] == 'static' and env['PLATFORM'] == 'Linux':
+    libraries.append('dl')
 
-svg2png = program_env.Program('svg2png', source, LIBS=libraries, LINKFLAGS=env['CUSTOM_LDFLAGS'])
+svg2png = program_env.Program('svg2png', source, LIBS=libraries)
 
 Depends(svg2png, env.subst('../../src/%s' % env['MAPNIK_LIB_NAME']))
 

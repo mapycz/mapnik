@@ -25,9 +25,7 @@
 
 // mapnik
 #include <mapnik/image_data.hpp>
-
-// boost
-#include <boost/utility.hpp>
+#include <mapnik/noncopyable.hpp>
 
 // agg
 #include "agg_color_rgba.h"
@@ -35,11 +33,12 @@
 namespace mapnik
 {
 
-class pattern_source : private boost::noncopyable
+class pattern_source : private mapnik::noncopyable
 {
 public:
-    pattern_source(image_data_32 const& pattern)
-        : pattern_(pattern) {}
+    pattern_source(image_data_32 const& pattern, double opacity = 1.0)
+        : pattern_(pattern),
+          opacity_(opacity) {}
 
     unsigned int width() const
     {
@@ -52,13 +51,14 @@ public:
     agg::rgba8 pixel(int x, int y) const
     {
         unsigned c = pattern_(x,y);
-        return agg::rgba8(c & 0xff,
-                          (c >> 8) & 0xff,
-                          (c >> 16) & 0xff,
-                          (c >> 24) & 0xff);
+        return agg::rgba8(static_cast<unsigned>((c & 0xff) * opacity_),
+                          static_cast<unsigned>(((c >> 8) & 0xff) * opacity_),
+                          static_cast<unsigned>(((c >> 16) & 0xff) * opacity_),
+                          static_cast<unsigned>(((c >> 24) & 0xff) * opacity_));
     }
 private:
     image_data_32 const& pattern_;
+    double opacity_;
 };
 }
 

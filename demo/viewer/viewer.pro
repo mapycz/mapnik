@@ -1,19 +1,14 @@
 ######################################################################
 # Mapnik viewer - Copyright (C) 2007 Artem Pavlenko
 ######################################################################
-CC = g++
 TEMPLATE = app
-
-INCLUDEPATH += /usr/local/include/
-INCLUDEPATH += /usr/boost/include/
-INCLUDEPATH += /usr/X11/include/
-INCLUDEPATH += /usr/X11/include/freetype2
-INCLUDEPATH += .
-
-QMAKE_CXXFLAGS +=' -DDARWIN -Wno-missing-field-initializers -ansi'
-unix:LIBS =  -L/usr/local/lib -L/usr/X11/lib -lmapnik -lfreetype
-unix:LIBS += -lboost_system -licuuc -lboost_filesystem -lboost_regex
-
+QT += core gui widgets
+QMAKE_CXX = $$system(mapnik-config --cxx)
+QMAKE_LINK = $$system(mapnik-config --cxx)
+QMAKE_CXXFLAGS += $$system(mapnik-config --cxxflags)
+QMAKE_CXXFLAGS += $$system(mapnik-config --includes --dep-includes --defines)
+QMAKE_LFLAGS += $$system(mapnik-config --libs)
+QMAKE_LFLAGS += $$system(mapnik-config --ldflags --dep-libs)
 # Input
 
 CONFIG += qt debug_and_release
@@ -26,17 +21,17 @@ HEADERS += mainwindow.hpp \
            layerwidget.hpp \
            layerlistmodel.hpp \
            layerdelegate.hpp \
-           styles_model.hpp 
+           styles_model.hpp
 
 HEADERS += about_dialog.hpp \
            info_dialog.hpp \
            layer_info_dialog.hpp
 
 SOURCES += main.cpp \
-           mainwindow.cpp \ 
+           mainwindow.cpp \
            mapwidget.cpp \
            layerwidget.cpp \
-           layerlistmodel.cpp \ 
+           layerlistmodel.cpp \
            layerdelegate.cpp \
            styles_model.cpp
 

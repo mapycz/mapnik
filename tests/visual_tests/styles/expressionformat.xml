@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE Map>
-<Map background-color="white" srs="+proj=latlong +datum=WGS84">
+<Map background-color="white" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
 
-  <Layer name="layer" srs="+proj=latlong +datum=WGS84">
+  <Layer name="layer" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
     <StyleName>My Style</StyleName>
     <Datasource>
-      <Parameter name="type">shape</Parameter>
-      <Parameter name="file">../data/points.shp</Parameter>
+      <Parameter name="type">csv</Parameter>
+      <Parameter name="file">../data/points.csv</Parameter>
     </Datasource>
   </Layer>
 
@@ -14,7 +14,7 @@
     <Rule>
       <PointSymbolizer/>
       <TextSymbolizer face-name="DejaVu Sans Book" placement="point" dx="0" dy="5">
-          <ExpressionFormat size="[nr]">[name]</ExpressionFormat>
+          <Format size="[nr]" opacity="1">[name]</Format>
       </TextSymbolizer>
     </Rule>
   </Style>

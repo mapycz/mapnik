@@ -21,91 +21,42 @@
  *****************************************************************************/
 
 // mapnik
+#include <mapnik/feature.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/image_util.hpp>
-#include <mapnik/metawriter.hpp>
+#include <mapnik/geom_util.hpp>
+#include <mapnik/symbolizer.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
-#include <mapnik/expression_evaluator.hpp>
+#include <mapnik/label_collision_detector.hpp>
+#include <mapnik/parse_path.hpp>
+#include <mapnik/pixel_position.hpp>
+#include <mapnik/renderer_common/process_point_symbolizer.hpp>
 
 // agg
-#include "agg_basics.h"
-#include "agg_rendering_buffer.h"
-#include "agg_pixfmt_rgba.h"
-#include "agg_rasterizer_scanline_aa.h"
-#include "agg_scanline_u.h"
+#include "agg_trans_affine.h"
 
 // stl
 #include <string>
 
 // boost
-#include <boost/make_shared.hpp>
 
 namespace mapnik {
 
-template <typename T>
-void agg_renderer<T>::process(point_symbolizer const& sym,
+template <typename T0, typename T1>
+void agg_renderer<T0,T1>::process(point_symbolizer const& sym,
                               mapnik::feature_impl & feature,
                               proj_transform const& prj_trans)
 {
-    std::string filename = path_processor_type::evaluate(*sym.get_filename(), feature);
+    composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
 
-    boost::optional<mapnik::marker_ptr> marker;
-    if ( !filename.empty() )
-    {
-        marker = marker_cache::instance()->find(filename, true);
-    }
-    else
-    {
-        marker.reset(boost::make_shared<mapnik::marker>());
-    }
-
-    if (marker)
-    {
-        box2d<double> const& bbox = (*marker)->bounding_box();
-        coord2d const center = bbox.center();
-
-        agg::trans_affine tr;
-        evaluate_transform(tr, feature, sym.get_image_transform());
-
-        agg::trans_affine_translation const recenter(-center.x, -center.y);
-        agg::trans_affine const recenter_tr = recenter * tr;
-        box2d<double> label_ext = bbox * recenter_tr;
-
-        for (unsigned i=0; i<feature.num_geometries(); ++i)
-        {
-            geometry_type const& geom = feature.get_geometry(i);
-            double x;
-            double y;
-            double z=0;
-            if (sym.get_point_placement() == CENTROID_POINT_PLACEMENT)
-                geom.label_position(&x, &y);
-            else
-                geom.label_interior_position(&x, &y);
-
-            prj_trans.backward(x,y,z);
-            t_.forward(&x,&y);
-            label_ext.re_center(x,y);
-
-            if (sym.get_allow_overlap() ||
-                detector_->has_placement(label_ext))
-            {
-
-                render_marker(pixel_position(x, y), **marker, tr, sym.get_opacity(), sym.comp_op());
-
-                if (/* DEBUG */ 0) {
-                    debug_draw_box(label_ext, 0, 0, 0.0);
-                }
-
-                if (!sym.get_ignore_placement())
-                    detector_->insert(label_ext);
-                metawriter_with_properties writer = sym.get_metawriter();
-                if (writer.first) writer.first->add_box(label_ext, feature, t_, writer.second);
-            }
-        }
-    }
-
+    render_point_symbolizer(
+        sym, feature, prj_trans, common_,
+        [&](pixel_position const& pos, marker const& marker, 
+            agg::trans_affine const& tr, double opacity) {
+            render_marker(pos, marker, tr, opacity, comp_op);
+        });
 }
 
 template void agg_renderer<image_32>::process(point_symbolizer const&,
@@ -113,4 +64,3 @@ template void agg_renderer<image_32>::process(point_symbolizer const&,
                                               proj_transform const&);
 
 }
-

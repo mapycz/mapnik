@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2013 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,20 +28,20 @@
 #include <boost/version.hpp>
 #include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/make_shared.hpp>
 
 // mapnik
 #include <mapnik/debug.hpp>
+#include <mapnik/make_unique.hpp>
+#include <mapnik/util/fs.hpp>
 #include <mapnik/global.hpp>
+#include <mapnik/utils.hpp>
 #include <mapnik/boolean.hpp>
-#include <mapnik/sql_utils.hpp>
 #include <mapnik/util/conversions.hpp>
 #include <mapnik/geom_util.hpp>
 #include <mapnik/timer.hpp>
+#include <mapnik/value_types.hpp>
 
 // stl
-#include <iostream>
 #include <fstream>
 #include <stdexcept>
 
@@ -50,19 +50,23 @@ DATASOURCE_PLUGIN(shape_datasource)
 using mapnik::String;
 using mapnik::Double;
 using mapnik::Integer;
+using mapnik::Boolean;
 using mapnik::datasource_exception;
 using mapnik::filter_in_box;
 using mapnik::filter_at_point;
 using mapnik::attribute_descriptor;
 
-shape_datasource::shape_datasource(const parameters &params, bool bind)
+shape_datasource::shape_datasource(parameters const& params)
     : datasource (params),
       type_(datasource::Vector),
       file_length_(0),
       indexed_(false),
-      row_limit_(*params_.get<int>("row_limit",0)),
-      desc_(*params.get<std::string>("type"), *params.get<std::string>("encoding","utf-8"))
+      row_limit_(*params.get<mapnik::value_integer>("row_limit",0)),
+      desc_(shape_datasource::name(), *params.get<std::string>("encoding","utf-8"))
 {
+#ifdef MAPNIK_STATS
+    mapnik::progress_timer __stats__(std::clog, "shape_datasource::init");
+#endif
     boost::optional<std::string> file = params.get<std::string>("file");
     if (!file) throw datasource_exception("Shape Plugin: missing <file> parameter");
 
@@ -73,44 +77,26 @@ shape_datasource::shape_datasource(const parameters &params, bool bind)
         shape_name_ = *file;
 
     boost::algorithm::ireplace_last(shape_name_,".shp","");
-
-    if (bind)
-    {
-        this->bind();
-    }
-}
-
-void shape_datasource::bind() const
-{
-    if (is_bound_) return;
-
-#ifdef MAPNIK_STATS
-    mapnik::progress_timer __stats__(std::clog, "shape_datasource::bind");
-#endif
-
-    if (!boost::filesystem::exists(shape_name_ + ".shp"))
+    if (!mapnik::util::exists(shape_name_ + ".shp"))
     {
         throw datasource_exception("Shape Plugin: shapefile '" + shape_name_ + ".shp' does not exist");
     }
-
-    if (boost::filesystem::is_directory(shape_name_ + ".shp"))
+    if (mapnik::util::is_directory(shape_name_ + ".shp"))
     {
         throw datasource_exception("Shape Plugin: shapefile '" + shape_name_ + ".shp' appears to be a directory not a file");
     }
-
-    if (!boost::filesystem::exists(shape_name_ + ".dbf"))
+    if (!mapnik::util::exists(shape_name_ + ".dbf"))
     {
         throw datasource_exception("Shape Plugin: shapefile '" + shape_name_ + ".dbf' does not exist");
     }
 
-
     try
     {
 #ifdef MAPNIK_STATS
-        mapnik::progress_timer __stats2__(std::clog, "shape_datasource::bind(get_column_description)");
+        mapnik::progress_timer __stats2__(std::clog, "shape_datasource::init(get_column_description)");
 #endif
 
-        boost::shared_ptr<shape_io> shape_ref = boost::make_shared<shape_io>(shape_name_);
+        std::unique_ptr<shape_io> shape_ref = std::make_unique<shape_io>(shape_name_);
         init(*shape_ref);
         for (int i=0;i<shape_ref->dbf().num_fields();++i)
         {
@@ -119,13 +105,13 @@ void shape_datasource::bind() const
             switch (fd.type_)
             {
             case 'C': // character
-            case 'D': // Date
-            case 'M': // Memo, a string
-            case 'L': // logical
-            case '@': // timestamp
+            case 'D': // date
                 desc_.add_descriptor(attribute_descriptor(fld_name, String));
                 break;
-            case 'N':
+            case 'L': // logical
+                desc_.add_descriptor(attribute_descriptor(fld_name, Boolean));
+                break;
+            case 'N': // numeric
             case 'O': // double
             case 'F': // float
             {
@@ -143,17 +129,16 @@ void shape_datasource::bind() const
                 // I - long
                 // G - ole
                 // + - autoincrement
-                MAPNIK_LOG_WARN(shape) << "shape_datasource: Unknown type=" << fd.type_;
+                // @ - timestamp
+                // B - binary
+                // l - long
+                // M - memo
+                MAPNIK_LOG_ERROR(shape) << "shape_datasource: Unknown type=" << fd.type_;
                 break;
             }
         }
-        // for indexed shapefiles we keep open the file descriptor for fast reads
-        if (indexed_) {
-            shape_ = shape_ref;
-        }
-
     }
-    catch (const datasource_exception& ex)
+    catch (datasource_exception const& ex)
     {
         MAPNIK_LOG_ERROR(shape) << "Shape Plugin: error processing field attributes, " << ex.what();
         throw;
@@ -169,12 +154,9 @@ void shape_datasource::bind() const
         throw;
     }
 
-    is_bound_ = true;
 }
 
-shape_datasource::~shape_datasource() {}
-
-void shape_datasource::init(shape_io& shape) const
+void shape_datasource::init(shape_io& shape)
 {
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "shape_datasource::init");
@@ -212,33 +194,18 @@ void shape_datasource::init(shape_io& shape) const
 
     MAPNIK_LOG_DEBUG(shape) << "shape_datasource: Z min/max=" << zmin << "," << zmax;
     MAPNIK_LOG_DEBUG(shape) << "shape_datasource: M min/max=" << mmin << "," << mmax;
-#else
-    shape.shp().skip(4*8);
 #endif
 
     // check if we have an index file around
-
     indexed_ = shape.has_index();
-
-    //std::string index_name(shape_name_+".index");
-    //std::ifstream file(index_name.c_str(),std::ios::in | std::ios::binary);
-    //if (file)
-    //{
-    //    indexed_=true;
-    //    file.close();
-    //}
-    //else
-    //{
-    //    MAPNIK_LOG_DEBUG(shape) << "shape_datasource: No .index file found for "
-    //                            << shape_name_ << ".shp, use the 'shapeindex' program to build an index for faster rendering";
-    //}
-
     MAPNIK_LOG_DEBUG(shape) << "shape_datasource: Extent=" << extent_;
     MAPNIK_LOG_DEBUG(shape) << "shape_datasource: File length=" << file_length_;
     MAPNIK_LOG_DEBUG(shape) << "shape_datasource: Shape type=" << shape_type_;
 }
 
-std::string shape_datasource::name()
+shape_datasource::~shape_datasource() {}
+
+const char * shape_datasource::name()
 {
     return "shape";
 }
@@ -250,14 +217,11 @@ datasource::datasource_t shape_datasource::type() const
 
 layer_descriptor shape_datasource::get_descriptor() const
 {
-    if (!is_bound_) bind();
     return desc_;
 }
 
-featureset_ptr shape_datasource::features(const query& q) const
+featureset_ptr shape_datasource::features(query const& q) const
 {
-    if (!is_bound_) bind();
-
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "shape_datasource::features");
 #endif
@@ -265,11 +229,10 @@ featureset_ptr shape_datasource::features(const query& q) const
     filter_in_box filter(q.get_bbox());
     if (indexed_)
     {
-        shape_->shp().seek(0);
-        // TODO - use boost::make_shared - #760
+        std::unique_ptr<shape_io> shape_ptr = std::make_unique<shape_io>(shape_name_);
         return featureset_ptr
             (new shape_index_featureset<filter_in_box>(filter,
-                                                       *shape_,
+                                                       std::move(shape_ptr),
                                                        q.property_names(),
                                                        desc_.get_encoding(),
                                                        shape_name_,
@@ -277,24 +240,22 @@ featureset_ptr shape_datasource::features(const query& q) const
     }
     else
     {
-        return boost::make_shared<shape_featureset<filter_in_box> >(filter,
-                                                                    shape_name_,
-                                                                    q.property_names(),
-                                                                    desc_.get_encoding(),
-                                                                    file_length_,
-                                                                    row_limit_);
+        return std::make_shared<shape_featureset<filter_in_box> >(filter,
+                                                                  shape_name_,
+                                                                  q.property_names(),
+                                                                  desc_.get_encoding(),
+                                                                  file_length_,
+                                                                  row_limit_);
     }
 }
 
-featureset_ptr shape_datasource::features_at_point(coord2d const& pt) const
+featureset_ptr shape_datasource::features_at_point(coord2d const& pt, double tol) const
 {
-    if (!is_bound_) bind();
-
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "shape_datasource::features_at_point");
 #endif
 
-    filter_at_point filter(pt);
+    filter_at_point filter(pt,tol);
     // collect all attribute names
     std::vector<attribute_descriptor> const& desc_vector = desc_.get_descriptors();
     std::vector<attribute_descriptor>::const_iterator itr = desc_vector.begin();
@@ -309,11 +270,10 @@ featureset_ptr shape_datasource::features_at_point(coord2d const& pt) const
 
     if (indexed_)
     {
-        shape_->shp().seek(0);
-        // TODO - use boost::make_shared - #760
+        std::unique_ptr<shape_io> shape_ptr = std::make_unique<shape_io>(shape_name_);
         return featureset_ptr
             (new shape_index_featureset<filter_at_point>(filter,
-                                                         *shape_,
+                                                         std::move(shape_ptr),
                                                          names,
                                                          desc_.get_encoding(),
                                                          shape_name_,
@@ -321,19 +281,17 @@ featureset_ptr shape_datasource::features_at_point(coord2d const& pt) const
     }
     else
     {
-        return boost::make_shared<shape_featureset<filter_at_point> >(filter,
-                                                                      shape_name_,
-                                                                      names,
-                                                                      desc_.get_encoding(),
-                                                                      file_length_,
-                                                                      row_limit_);
+        return std::make_shared<shape_featureset<filter_at_point> >(filter,
+                                                                    shape_name_,
+                                                                    names,
+                                                                    desc_.get_encoding(),
+                                                                    file_length_,
+                                                                    row_limit_);
     }
 }
 
 box2d<double> shape_datasource::envelope() const
 {
-    if (!is_bound_) bind();
-
     return extent_;
 }
 

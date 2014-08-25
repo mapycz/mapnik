@@ -24,15 +24,14 @@
 #define MAPNIK_FEATURE_STYLE_PROCESSOR_HPP
 
 // mapnik
-#include <mapnik/map.hpp>
-#include <mapnik/projection.hpp>
-#include <mapnik/memory_datasource.hpp>
-
+#include <mapnik/box2d.hpp>
+#include <mapnik/featureset.hpp>
+#include <mapnik/config.hpp>
+#include <mapnik/feature_style_processor_context.hpp>
 
 // stl
 #include <set>
 #include <string>
-#include <vector>
 
 namespace mapnik
 {
@@ -40,55 +39,81 @@ namespace mapnik
 class Map;
 class layer;
 class projection;
+class proj_transform;
+class feature_type_style;
+class rule_cache;
+struct layer_rendering_material;
+
+enum eAttributeCollectionPolicy
+{
+    DEFAULT = 0,
+    COLLECT_ALL = 1
+};
 
 template <typename Processor>
-class feature_style_processor
+class MAPNIK_DECL feature_style_processor
 {
     struct symbol_dispatch;
 public:
-    explicit feature_style_processor(Map const& m, double scale_factor = 1.0);
+    explicit feature_style_processor(Map const& m,
+                                     double scale_factor = 1.0);
 
     /*!
-     * @return apply renderer to all map layers.
+     * \brief apply renderer to all map layers.
      */
-    void apply();
+    void apply(double scale_denom_override=0.0);
 
     /*!
-     * @return apply renderer to a single layer, providing pre-populated set of query attribute names.
+     * \brief apply renderer to a single layer, providing pre-populated set of query attribute names.
      */
-    void apply(mapnik::layer const& lyr, std::set<std::string>& names);
-private:
-    /*!
-     * @return initialize metawriters for a given map and projection.
-     */
-    void start_metawriters(Map const& m_, projection const& proj);
-    /*!
-     * @return stop metawriters that were previously initialized.
-     */
-    void stop_metawriters(Map const& m_);
+    void apply(mapnik::layer const& lyr,
+               std::set<std::string>& names,
+               double scale_denom_override=0.0);
 
     /*!
-     * @return render a layer given a projection and scale.
+     * \brief render a layer given a projection and scale.
      */
     void apply_to_layer(layer const& lay,
                         Processor & p,
                         projection const& proj0,
+                        double scale,
                         double scale_denom,
+                        unsigned width,
+                        unsigned height,
+                        box2d<double> const& extent,
+                        int buffer_size,
                         std::set<std::string>& names);
 
+private:
     /*!
-     * @return renders a featureset with the given styles.
+     * \brief renders a featureset with the given styles.
      */
-    void render_style(layer const& lay,
-                      Processor & p,
-                      feature_type_style* style,
-                      std::string const& style_name,
+    void render_style(Processor & p,
+                      feature_type_style const* style,
+                      rule_cache const& rules,
                       featureset_ptr features,
-                      proj_transform const& prj_trans,
-                      double scale_denom);
+                      proj_transform const& prj_trans);
+
+    /*!
+     * \brief prepare features for rendering asynchronously.
+     */
+    void prepare_layer(layer_rendering_material & mat,
+                       feature_style_context_map & ctx_map,
+                       Processor & p,
+                       double scale,
+                       double scale_denom,
+                       unsigned width,
+                       unsigned height,
+                       box2d<double> const& extent,
+                       int buffer_size,
+                       std::set<std::string>& names);
+
+    /*!
+     * \brief render features list queued when they are available.
+     */
+    void render_material(layer_rendering_material & mat, Processor & p );
 
     Map const& m_;
-    double scale_factor_;
 };
 }
 

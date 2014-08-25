@@ -29,7 +29,7 @@ template <typename T>
 class image_view
 {
 public:
-    typedef typename T::pixel_type pixel_type;
+    using pixel_type = typename T::pixel_type;
 
     image_view(unsigned x, unsigned y, unsigned width, unsigned height, T const& data)
         : x_(x),
@@ -39,7 +39,7 @@ public:
           data_(data)
     {
         if (x_ >= data_.width()) x_=data_.width()-1;
-        if (y_ >= data_.height()) x_=data_.height()-1;
+        if (y_ >= data_.height()) y_=data_.height()-1;
         if (x_ + width_ > data_.width()) width_= data_.width() - x_;
         if (y_ + height_ > data_.height()) height_= data_.height() - y_;
     }
@@ -61,6 +61,7 @@ public:
         width_ = rhs.width_;
         height_ = rhs.height_;
         data_ = rhs.data_;
+        return *this;
     }
 
     inline unsigned x() const
@@ -77,6 +78,7 @@ public:
     {
         return width_;
     }
+
     inline unsigned height() const
     {
         return height_;
@@ -85,6 +87,11 @@ public:
     inline const pixel_type* getRow(unsigned row) const
     {
         return data_.getRow(row + y_) + x_;
+    }
+
+    inline const unsigned char* getBytes() const
+    {
+        return data_.getBytes();
     }
     inline T& data()
     {
@@ -105,4 +112,3 @@ private:
 }
 
 #endif // MAPNIK_IMAGE_VIEW_HPP
-
