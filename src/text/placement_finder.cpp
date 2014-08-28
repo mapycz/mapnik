@@ -169,7 +169,7 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
     return true;
 }
 
-bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e orientation)
+bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e orientation, bool too_long)
 {
     //
     // IMPORTANT NOTE: See note about coordinate systems in find_point_placement()!
@@ -209,17 +209,18 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
             double angle;
             rotation rot;
             double last_glyph_spacing = 0.;
-            double linear_position = off_pp.linear_position();
+            double linear_pos = off_pp.linear_position();
 
             for (auto const& glyph : line)
             {
                 if (current_cluster != static_cast<int>(glyph.char_index))
                 {
+                    double diff_pos = linear_pos - off_pp.linear_position();
                     double cluster_move = sign * (layout.cluster_width(current_cluster) + last_glyph_spacing);
-                    linear_position += cluster_move;
+                    linear_pos += cluster_move;
                     if (!off_pp.move_to_distance(cluster_move))
                     {
-                        return false;
+                        return !too_long && std::abs(diff_pos) > 0.0 && pp.move(-cluster_move) && single_line_placement(pp, orientation, true);
                     }
                     current_cluster = glyph.char_index;
                     last_glyph_spacing = glyph.format->character_spacing * scale_factor_;
@@ -262,7 +263,7 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
         {
             // Try again with opposite orientation
             begin.restore();
-            return single_line_placement(pp, real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT);
+            return single_line_placement(pp, real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT, too_long);
         }
         // upright==left_only or right_only and more than 50% of characters upside down => no placement
         else if (orientation == UPRIGHT_LEFT_ONLY || orientation == UPRIGHT_RIGHT_ONLY)
