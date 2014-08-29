@@ -209,12 +209,15 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
             double angle;
             rotation rot;
             double last_glyph_spacing = 0.;
+            double linear_position = off_pp.linear_position();
 
             for (auto const& glyph : line)
             {
                 if (current_cluster != static_cast<int>(glyph.char_index))
                 {
-                    if (!off_pp.move(sign * (layout.cluster_width(current_cluster) + last_glyph_spacing)))
+                    double cluster_move = sign * (layout.cluster_width(current_cluster) + last_glyph_spacing);
+                    linear_position += cluster_move;
+                    if (!off_pp.move_to_distance(cluster_move))
                     {
                         return false;
                     }
