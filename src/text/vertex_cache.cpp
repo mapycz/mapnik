@@ -29,6 +29,12 @@
 namespace mapnik
 {
 
+double vertex_cache::current_segment_angle()
+{
+    return atan2(-(current_segment_->pos.y - segment_starting_point_.y),
+                   current_segment_->pos.x - segment_starting_point_.x);
+}
+
 double vertex_cache::angle(double width)
 {
     // IMPORTANT NOTE: See note about coordinate systems in placement_finder::find_point_placement()
@@ -39,20 +45,24 @@ double vertex_cache::angle(double width)
         //Only calculate angle on request as it is expensive
         if (!angle_valid_)
         {
-            angle_ = atan2(-(current_segment_->pos.y - segment_starting_point_.y),
-                           current_segment_->pos.x - segment_starting_point_.x);
+            angle_ = current_segment_angle();
         }
-        return width >= 0 ? angle_ : angle_ + M_PI;
-    }
-    else
+    } else
     {
         scoped_state s(*this);
-        pixel_position const& old_pos = s.get_state().position();
-        move(width);
-        double angle = atan2(-(current_position_.y - old_pos.y),
-                             current_position_.x - old_pos.x);
-        return angle;
+        if (move(width))
+        {
+            pixel_position const& old_pos = s.get_state().position();
+            return atan2(-(current_position_.y - old_pos.y),
+                           current_position_.x - old_pos.x);
+        }
+        else
+        {
+            s.restore();
+            angle_ = current_segment_angle();
+        }
     }
+    return width >= 0 ? angle_ : angle_ + M_PI;
 }
 
 bool vertex_cache::next_subpath()

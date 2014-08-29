@@ -144,6 +144,7 @@ private:
         double cx, double cy, double radius,
         double x1, double y1, double x2, double y2,
         double & ix, double & iy) const;
+    double current_segment_angle();
     // Position as calculated by last move/forward/next call.
     pixel_position current_position_;
     // First pixel of current segment.
