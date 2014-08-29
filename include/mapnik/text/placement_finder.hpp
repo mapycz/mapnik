@@ -64,7 +64,7 @@ public:
 
     void set_marker(marker_info_ptr m, box2d<double> box, bool marker_unlocked, pixel_position const& marker_displacement);
 private:
-    bool single_line_placement(vertex_cache &pp, text_upright_e orientation);
+    bool single_line_placement(vertex_cache &pp, text_upright_e orientation, bool too_long = false);
     // Moves dx pixels but makes sure not to fall of the end.
     void path_move_dx(vertex_cache & pp, double dx);
     // Normalize angle in range [-pi, +pi].
