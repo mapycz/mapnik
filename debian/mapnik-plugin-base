@@ -1,5 +1,5 @@
 #!/bin/sh
 
-inputdir=$(mapnik-config --input-plugins)
+SOVER=`readlink /usr/lib/libmapnik.so |sed -e 's/libmapnik.so.//'`
 
-echo $(dirname $inputdir/../)
+echo /usr/lib/mapnik/$SOVER

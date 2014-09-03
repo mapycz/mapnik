@@ -1,3 +1,2 @@
 version=3
-opts=dversionmangle=s/\+ds\d// \
 http://download.berlios.de/mapnik/mapnik-(\d+.*)\.tar\.gz
