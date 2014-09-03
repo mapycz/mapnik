@@ -1,54 +1,51 @@
-Source: mapnik
+Source: szn-mapnik
 Priority: optional
-Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
-Uploaders: Debian OpenStreetMap Team <pkg-osm-maint@lists.alioth.debian.org>
- , David Paleino <dapal@debian.org>
- , Francesco Paolo Lovergine <frankie@debian.org>
+Maintainer: Mapnik Developers <mapnik@googlegroups.com>
+Uploaders: Robert Coup <robert@coup.net.nz>
 Build-Depends:
- scons
- , debhelper (>= 8~)
- , libtool
- , python-all-dev (>= 2.6.6-3~)
- , libboost-thread-dev
- , libboost-filesystem-dev
- , libboost-regex-dev
- , libboost-python-dev
- , libboost-system-dev
- , libboost-program-options-dev
- , libpng12-dev
- , libjpeg-dev
- , libtiff5-dev
- , zlib1g-dev
- , libfreetype6-dev
- , libpq-dev
- , libproj-dev
- , libltdl-dev
- , libgdal1-dev
- , libxml2-dev
- , libicu-dev
- , libcairo2-dev
- , libcairomm-1.0-dev
- , python-cairo-dev
- , libsqlite3-dev
- , libcurl4-gnutls-dev
- , python-epydoc
- , librasterlite-dev (>= 1.1~)
- , libgeos-dev
- , pkg-config
-Standards-Version: 3.9.2
+ szn-g++-4.8,
+ make,
+ git-core,
+ python-support (>= 0.8.4),
+ python-nose,
+ debhelper (>= 7.0.50~),
+ python-all-dev,
+ libboost-thread-dev (>= 1.49),
+ libboost-filesystem-dev (>= 1.49),
+ libboost-regex-dev (>= 1.49),
+ libboost-python-dev (>= 1.49),
+ libboost-system-dev (>= 1.49),
+ libboost-program-options-dev (>= 1.49),
+ libwebp-dev,
+ libpng-dev,
+ libjpeg-dev,
+ libtiff-dev,
+ zlib1g-dev,
+ szn-libharfbuzz-dev,
+ libfreetype6-dev,
+ libpq-dev,
+ libproj-dev,
+ libgdal1-dev,
+ libxml2-dev,
+ libicu-dev (>= 4.2),
+ libcairo2-dev,
+ python-cairo-dev,
+ libsqlite3-dev,
+ libcurl4-gnutls-dev
+Standards-Version: 3.8.4
 Section: libs
-X-Python-Version: >= 2.5
+XS-Python-Version: >= 2.5
 Homepage: http://www.mapnik.org/
-Vcs-Git: git://git.debian.org/pkg-grass/mapnik.git
-Vcs-Browser: http://git.debian.org/?p=pkg-grass/mapnik.git
 
-Package: libmapnik2-2.1
+Package: szn-libmapnik
 Architecture: any
 Depends:
- ${shlibs:Depends}
- , ${misc:Depends}
- , ttf-dejavu
-Suggests: postgis
+ ${shlibs:Depends},
+ ${misc:Depends},
+ szn-g++-4.8
+Suggests:
+ ttf-dejavu,
+ ttf-unifont
 Description: C++/Python toolkit for developing GIS applications (libraries)
  Mapnik is an OpenSource C++/Python toolkit for developing GIS
  (Geographic Information Systems) applications. At the core is a C++
@@ -62,43 +59,74 @@ Description: C++/Python toolkit for developing GIS applications (libraries)
  High-level Python bindings (boost.python) facilitate rapid application
  development, targeting zope3, django, etc.
  .
- This package contains the shared library and input plugins.
+ This package contains the shared library and input plugins that lack depedencies.
 
-Package: libmapnik2-dev
+Package: szn-mapnik-input-plugin-gdal
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ szn-libmapnik (= ${binary:Version})
+Description: Mapnik GDAL input plugin for reading raster datasources.
+
+Package: szn-mapnik-input-plugin-ogr
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ szn-libmapnik (= ${binary:Version})
+Description: Mapnik OGR input plugin for reading vector datasources.
+
+Package: szn-mapnik-input-plugin-postgis
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ szn-libmapnik (= ${binary:Version})
+Suggests:
+ postgis
+Description: Mapnik PostGIS input plugin for reading vector data from PostGIS tables in PostgreSQL.
+
+Package: szn-mapnik-input-plugin-sqlite
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ szn-libmapnik (= ${binary:Version})
+Description: Mapnik SQLite input plugin for reading vector data in sqlite3 or spatialite databases.
+
+Package: szn-mapnik-input-plugin-osm
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ szn-libmapnik (= ${binary:Version})
+Description: Mapnik OSM input plugin for reading OSM data out of XML.
+
+Package: szn-libmapnik-dev
 Section: libdevel
 Architecture: any
-Breaks: libmapnik-dev (<< 2.0.0+ds1-1~)
-Replaces: libmapnik-dev (<< 2.0.0+ds1-1~)
 Depends:
- ${misc:Depends}
- , libmapnik2-2.1 (= ${binary:Version})
- , libc6-dev | libc-dev
- , libboost-thread-dev
- , libboost-filesystem-dev
- , libboost-regex-dev
- , libboost-python-dev
- , libboost-system-dev
- , libboost-iostreams-dev
- , libpng12-dev
- , libjpeg-dev
- , libtiff5-dev
- , zlib1g-dev
- , libfreetype6-dev
- , libpq-dev
- , libproj-dev
- , libltdl-dev
- , libfribidi-dev
- , libgdal1-dev
- , libxml2-dev
- , libagg-dev
- , libicu-dev
- , libcairo2-dev
- , libcairomm-1.0-dev
- , python-cairo-dev
- , libsqlite3-dev
- , libcurl4-gnutls-dev
- , libsigc++-2.0-dev
-Recommends: mapnik-doc
+ ${misc:Depends},
+ szn-libmapnik (= ${binary:Version}),
+ libc6-dev | libc-dev,
+ libboost-thread-dev (>= 1.42),
+ libboost-filesystem-dev (>= 1.42),
+ libboost-regex-dev (>= 1.42),
+ libboost-python-dev (>= 1.42),
+ libboost-system-dev (>= 1.42),
+ libwebp-dev,
+ libpng-dev,
+ libjpeg-dev,
+ libtiff-dev,
+ zlib1g-dev,
+ libharfbuzz-dev,
+ libfreetype6-dev,
+ libproj-dev,
+ libxml2-dev,
+ libicu-dev (>= 4.2),
+ libcairo2-dev
+Suggests: szn-mapnik-doc
 Description: C++/Python toolkit for developing GIS applications (devel)
  Mapnik is an OpenSource C++/Python toolkit for developing GIS
  (Geographic Information Systems) applications. At the core is a C++
@@ -115,15 +143,46 @@ Description: C++/Python toolkit for developing GIS applications (devel)
  This package contains the development headers, API documentation, and
  build utilities.
 
-Package: python-mapnik2
+Package: szn-mapnik-utils
+Section: utils
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ szn-libmapnik (= ${binary:Version})
+Recommends:
+ python-lxml
+Conflicts: szn-mapnik-utils
+Replaces: szn-mapnik-utils
+Description: C++/Python toolkit for developing GIS applications (utilities)
+ Mapnik is an OpenSource C++/Python toolkit for developing GIS
+ (Geographic Information Systems) applications. At the core is a C++
+ shared library providing algorithms/patterns for spatial data access and
+ visualization.
+ .
+ Essentially a collection of geographic objects (map, layer, datasource,
+ feature, geometry), the library doesn't rely on "windowing systems" and
+ is intended to work in multi-threaded environments
+ .
+ High-level Python bindings (boost.python) facilitate rapid application
+ development, targeting zope3, django, etc.
+ .
+ This package contains miscellaneous utilities distributed with mapnik:
+ .
+ shapeindex: program to creates file system based index for ESRI shape-files
+
+Package: szn-python-mapnik
 Section: python
 Architecture: any
 Depends:
- ${shlibs:Depends}
- , ${misc:Depends}
- , ${python:Depends}
- , python-cairo
+ ${shlibs:Depends},
+ ${misc:Depends},
+ ${python:Depends},
+ szn-libmapnik (= ${binary:Version})
+Suggests:
+ python-cairo
 Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
 Description: C++/Python toolkit for developing GIS applications (Python)
  Mapnik is an OpenSource C++/Python toolkit for developing GIS
  (Geographic Information Systems) applications. At the core is a C++
@@ -138,3 +197,25 @@ Description: C++/Python toolkit for developing GIS applications (Python)
  development, targeting zope3, django, etc.
  .
  This package contains the Python bindings.
+
+Package: szn-mapnik-doc
+Section: doc
+Architecture: all
+Recommends: szn-libmapnik-dev
+Depends: ${misc:Depends}
+Conflicts: szn-mapnik-docs
+Replaces: szn-mapnik-docs
+Description: C++/Python toolkit for developing GIS applications (doc)
+ Mapnik is an OpenSource C++/Python toolkit for developing GIS
+ (Geographic Information Systems) applications. At the core is a C++
+ shared library providing algorithms/patterns for spatial data access and
+ visualization.
+ .
+ Essentially a collection of geographic objects (map, layer, datasource,
+ feature, geometry), the library doesn't rely on "windowing systems" and
+ is intended to work in multi-threaded environments
+ .
+ High-level Python bindings (boost.python) facilitate rapid application
+ development, targeting zope3, django, etc.
+ .
+ This package contains developer documentation.
