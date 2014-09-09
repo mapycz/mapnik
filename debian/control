@@ -3,7 +3,7 @@ Priority: optional
 Maintainer: Mapnik Developers <mapnik@googlegroups.com>
 Uploaders: Robert Coup <robert@coup.net.nz>
 Build-Depends:
- szn-g++-4.8,
+ szn-g++-4.9,
  make,
  git-core,
  python-support (>= 0.8.4),
@@ -42,7 +42,7 @@ Architecture: any
 Depends:
  ${shlibs:Depends},
  ${misc:Depends},
- szn-g++-4.8
+ szn-g++-4.9
 Suggests:
  ttf-dejavu,
  ttf-unifont
