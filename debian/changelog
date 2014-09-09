@@ -1,5 +1,5 @@
-szn-mapnik (3.0.0pre-szn-1) unstable; urgency=low
+szn-mapnik (3.0.0pre) unstable; urgency=low
 
   * build
 
- -- Jan Flidr <jan.flidr@firma.seznam.cz>  Mon, 1 Sep 2014 10:27:10 +0200
+ -- Jiri Drbalek <jiri.drbalek@firma.seznam.cz>  Mon, 1 Sep 2014 10:27:10 +0200
