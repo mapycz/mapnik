@@ -1,3 +1,9 @@
+szn-mapnik (3.0.0pre-2) unstable; urgency=low
+
+  * fix painted
+
+ --  Jiri Drbalek <jiri.drbalek@firma.seznam.cz>  Tue, 16 Sep 2014 11:46:18 +0000
+
 szn-mapnik (3.0.0pre) unstable; urgency=low
 
   * build
