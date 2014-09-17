@@ -1,0 +1,3 @@
+[submodule "debian"]
+	path = debian
+	url = git@github.com:mapycz/mapnik-debian.git
