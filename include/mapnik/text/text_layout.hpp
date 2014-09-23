@@ -110,8 +110,15 @@ public:
 
     void evaluate_properties(feature_impl const& feature, attributes const& attr);
 
+    text_line const& longest_line() const;
+
+    void set_character_spacing(double spacing, double scale_factor);
+
 private:
     void break_line(text_line & line, double wrap_width, unsigned text_ratio, bool wrap_before);
+    void break_line(text_line & line, char wrap_char,
+                    double wrap_width, unsigned text_ratio,
+                    bool wrap_before, bool repeat_wrap_char);
     void shape_text(text_line & line);
     void add_line(text_line & line);
     void clear_cluster_widths(unsigned first, unsigned last);
@@ -144,8 +151,10 @@ private:
 
     // Precalculated values for maximum performance
     rotation orientation_ = {0,1.0};
+    char wrap_char_ = ' ';
     double wrap_width_ = 0.0;
     bool wrap_before_ = false;
+    bool repeat_wrap_char_ = false;
     bool rotate_displacement_ = false;
     double text_ratio_ = 0.0;
     pixel_position displacement_ = {0,0};
@@ -180,6 +189,8 @@ public:
 
     inline double width() const { return bounds_.width(); }
     inline double height() const { return bounds_.height(); }
+
+    void adjust(double width, double scale_factor);
 
 private:
     text_layout_vector layouts_;

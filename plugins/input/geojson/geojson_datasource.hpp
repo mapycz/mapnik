@@ -82,10 +82,9 @@ public:
     mapnik::layer_descriptor get_descriptor() const;
     boost::optional<mapnik::datasource::geometry_t> get_geometry_type() const;
     template <typename T>
-    void parse_geojson(T & stream);
+    void parse_geojson(T const& buffer);
 private:
     mapnik::datasource::datasource_t type_;
-    std::map<std::string, mapnik::parameters> statistics_;
     mapnik::layer_descriptor desc_;
     std::string filename_;
     std::string inline_string_;
