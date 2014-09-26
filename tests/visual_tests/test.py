@@ -281,6 +281,7 @@ files = {
     'marker-on-line-and-avoid-edges':{'sizes':[(512,512)]},
     'text-typographic':{'sizes':[(512,512)]},
     'functional-expressions':{'sizes':[(256,256)], 'bbox':mapnik.Box2d(-10,-10,10,10)},
+    'functional-expressions-length':{'sizes':[(512,512)], 'bbox':mapnik.Box2d(-15,-15,15,15)},
     'marker-collide':{'sizes':[(512,512)]},
     'postgis-inline':{'sizes':[(512,512)]},
     'text-line-wrap':{'sizes':[(512,512)]},
@@ -419,7 +420,8 @@ def render(filename,config, width, height, bbox, scale_factor, reporting):
         else:
             m.zoom_all()
     except Exception, e:
-        if 'Could not create datasource' in str(e):
+        if 'Could not create datasource' in str(e) \
+           or 'Bad connection' in str(e):
             return m
         reporting.other_error(filename, repr(e))
         return m
