@@ -24,18 +24,23 @@
 
 // mapnik
 #include <mapnik/text/formatting/base.hpp>
-#include <mapnik/feature.hpp>
 
 // boost
 #include <boost/property_tree/ptree_fwd.hpp>
 
+// stl
+#include <vector>
+
 namespace mapnik {
+
+class feature_impl;
+
 namespace formatting {
 class MAPNIK_DECL list_node: public node {
 public:
     list_node() : node(), children_() {}
     virtual void to_xml(boost::property_tree::ptree &xml) const;
-    virtual void apply(evaluated_format_properties_ptr p, feature_impl const& feature, attributes const& vars, text_layout &output) const;
+    virtual void apply(evaluated_format_properties_ptr const& p, feature_impl const& feature, attributes const& vars, text_layout &output) const;
     virtual void add_expressions(expression_set &output) const;
 
     void push_back(node_ptr n);

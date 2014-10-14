@@ -501,7 +501,8 @@ elif HELP_REQUESTED:
 
 # need no-op for clean on fresh checkout
 # https://github.com/mapnik/mapnik/issues/2112
-if not os.path.exists(SCONS_LOCAL_LOG) and ('-c' in command_line_args or '--clean' in command_line_args):
+if not os.path.exists(SCONS_LOCAL_LOG) and not os.path.exists(SCONS_CONFIGURE_CACHE) \
+  and ('-c' in command_line_args or '--clean' in command_line_args):
     print 'all good: nothing to clean, but you might want to run "make distclean"'
     Exit(0)
 
@@ -997,10 +998,12 @@ int main()
     if (rc != SQLITE_OK)
     {
         printf("error 2: %s\\n", sqlite3_errmsg(db));
+        sqlite3_close(db);
     }
     else
     {
         printf("yes, has rtree!\\n");
+        sqlite3_close(db);
         return 0;
     }
 
@@ -1172,7 +1175,7 @@ if not preconfigured:
 
     # Set up for libraries and headers dependency checks
     env['CPPPATH'] = ['#include', '#']
-    env['LIBPATH'] = ['#src']
+    env['LIBPATH'] = ['#src','#src/json','#src/wkt']
 
     # set any custom cxxflags and ldflags to come first
     if sys.platform == 'darwin' and not env['HOST']:
@@ -1912,6 +1915,10 @@ if not HELP_REQUESTED:
     # Build agg first, doesn't need anything special
     if env['RUNTIME_LINK'] == 'shared':
         SConscript('deps/agg/build.py')
+
+    # Build spirit grammars
+    SConscript('src/json/build.py')
+    SConscript('src/wkt/build.py')
 
     # Build the core library
     SConscript('src/build.py')

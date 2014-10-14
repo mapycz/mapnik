@@ -102,10 +102,11 @@ lib_env['LIBS'].append(env['ICU_LIB_NAME'])
 lib_env['LIBS'].append('freetype')
 
 if env['RUNTIME_LINK'] == 'static':
-    if env['PLATFORM'] == 'Linux':
-        lib_env['LINKFLAGS'].append('-pthread')
     if 'icuuc' in env['ICU_LIB_NAME']:
         lib_env['LIBS'].append('icudata')
+
+if env['PLATFORM'] == 'Linux':
+    lib_env['LINKFLAGS'].append('-pthread')
 
 if env['RUNTIME_LINK'] != 'static':
     lib_env['LIBS'].insert(0, 'agg')
@@ -164,6 +165,7 @@ source = Split(
     feature_kv_iterator.cpp
     feature_style_processor.cpp
     feature_type_style.cpp
+    dasharray_parser.cpp
     font_engine_freetype.cpp
     font_set.cpp
     function_call.cpp
@@ -177,6 +179,8 @@ source = Split(
     load_map.cpp
     memory.cpp
     palette.cpp
+    marker_helpers.cpp
+    transform_expression_grammar.cpp
     plugin.cpp
     rule.cpp
     save_map.cpp
@@ -200,12 +204,14 @@ source = Split(
     svg/svg_transform_parser.cpp
     warp.cpp
     css_color_grammar.cpp
+    text/font_library.cpp
     text/vertex_cache.cpp
     text/text_layout.cpp
     text/text_line.cpp
     text/itemizer.cpp
     text/scrptrun.cpp
     text/face.cpp
+    text/glyph_positions.cpp
     text/placement_finder.cpp
     text/properties_util.cpp
     text/renderer.cpp
@@ -343,6 +349,7 @@ if env['GRID_RENDERER']:
 if env['SVG_RENDERER']: # svg backend
     source += Split(
     """
+    svg/output/svg_output_grammars.cpp
     svg/output/svg_renderer.cpp
     svg/output/svg_generator.cpp
     svg/output/svg_output_attributes.cpp

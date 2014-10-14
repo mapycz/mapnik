@@ -63,7 +63,8 @@ using boost::optional;
 
 void serialize_text_placements(ptree & node, text_placements_ptr const& p, bool explicit_defaults)
 {
-    p->defaults.to_xml(node, explicit_defaults);
+    text_symbolizer_properties dfl;
+    p->defaults.to_xml(node, explicit_defaults, dfl);
     // Known types:
     //   - text_placements_dummy: no handling required
     //   - text_placements_simple: positions string
@@ -623,6 +624,12 @@ void serialize_map(ptree & pt, Map const& map, bool explicit_defaults)
     if ( c )
     {
         set_attr( map_node, "background-color", * c );
+    }
+
+    optional<std::string> const& font_directory = map.font_directory();
+    if ( font_directory )
+    {
+        set_attr( map_node, "font-directory", *font_directory );
     }
 
     optional<std::string> const& image_filename = map.background_image();

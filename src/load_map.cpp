@@ -84,12 +84,15 @@ constexpr unsigned name2int(const char *str, int off = 0)
 class map_parser : mapnik::noncopyable
 {
 public:
-    map_parser(bool strict, std::string const& filename = "") :
+    map_parser(Map & map, bool strict, std::string const& filename = "") :
         strict_(strict),
         filename_(filename),
-        font_manager_(font_engine_),
-        xml_base_path_()
-    {}
+        font_library_(),
+        font_file_mapping_(map.get_font_file_mapping()),
+        font_name_cache_(),
+        file_sources_(),
+        fontsets_(),
+        xml_base_path_() {}
 
     void parse_map(Map & map, xml_node const& node, std::string const& base_path);
 private:
@@ -129,8 +132,9 @@ private:
     bool strict_;
     std::string filename_;
     std::map<std::string,parameters> datasource_templates_;
-    freetype_engine font_engine_;
-    face_manager<freetype_engine> font_manager_;
+    font_library font_library_;
+    freetype_engine::font_file_mapping_type & font_file_mapping_;
+    std::map<std::string,bool> font_name_cache_;
     std::map<std::string,std::string> file_sources_;
     std::map<std::string,font_set> fontsets_;
     std::string xml_base_path_;
@@ -143,7 +147,7 @@ void load_map(Map & map, std::string const& filename, bool strict, std::string b
     xml_tree tree("utf8");
     tree.set_filename(filename);
     read_xml(filename, tree.root());
-    map_parser parser(strict, filename);
+    map_parser parser(map, strict, filename);
     parser.parse_map(map, tree.root(), base_path);
     //dump_xml(tree.root());
 }
@@ -160,7 +164,7 @@ void load_map_string(Map & map, std::string const& str, bool strict, std::string
     {
         read_xml_string(str, tree.root(), map.base_path()); // FIXME - this value is not fully known yet
     }
-    map_parser parser(strict, base_path);
+    map_parser parser(map, strict, base_path);
     parser.parse_map(map, tree.root(), base_path);
 }
 
@@ -262,7 +266,8 @@ void map_parser::parse_map(Map & map, xml_node const& node, std::string const& b
             optional<std::string> font_directory = map_node.get_opt_attr<std::string>("font-directory");
             if (font_directory)
             {
-                if (!freetype_engine::register_fonts(ensure_relative_to_xml(font_directory), false))
+                map.set_font_directory(*font_directory);
+                if (!map.register_fonts(ensure_relative_to_xml(font_directory), false))
                 {
                     if (strict_)
                     {
@@ -490,6 +495,13 @@ void map_parser::parse_fontset(Map & map, xml_node const& node)
                 {
                     success = true;
                 }
+                else
+                {
+                    // https://github.com/mapnik/mapnik/issues/1791
+                    MAPNIK_LOG_ERROR(fontset) << "warning: unable to find face-name '"
+                                              << n.get_attr<std::string>("face-name","")
+                                              << "' in FontSet '" << fontset.get_name() << "'";
+                }
             }
         }
 
@@ -511,21 +523,34 @@ void map_parser::parse_fontset(Map & map, xml_node const& node)
     }
 }
 
-bool map_parser::parse_font(font_set &fset, xml_node const& f)
+bool map_parser::parse_font(font_set & fset, xml_node const& f)
 {
-    optional<std::string> face_name = f.get_opt_attr<std::string>("face-name");
-    if (face_name)
+    optional<std::string> has_face_name = f.get_opt_attr<std::string>("face-name");
+    if (has_face_name)
     {
-        face_ptr face = font_manager_.get_face(*face_name);
-        if (face)
+        std::string face_name = *has_face_name;
+        bool found = false;
+        auto itr = font_name_cache_.find(face_name);
+        if (itr != font_name_cache_.end())
         {
-            fset.add_face_name(*face_name);
+            found = itr->second;
+        }
+        else
+        {
+            found = freetype_engine::can_open(face_name,
+                                          font_library_,
+                                          font_file_mapping_,
+                                          freetype_engine::get_mapping());
+            font_name_cache_.emplace(face_name,found);
+        }
+        if (found)
+        {
+            fset.add_face_name(face_name);
             return true;
         }
         else if (strict_)
         {
-            throw config_error("Failed to find font face '" +
-                               *face_name + "'");
+            throw config_error("Failed to find font face '" + face_name + "'");
         }
     }
     else
@@ -1051,12 +1076,12 @@ void map_parser::parse_text_symbolizer(rule & rule, xml_node const& node)
         optional<std::string> placement_type = node.get_opt_attr<std::string>("placement-type");
         if (placement_type)
         {
-            placements = placements::registry::instance().from_xml(*placement_type, node, fontsets_);
+            placements = placements::registry::instance().from_xml(*placement_type, node, fontsets_, false);
         }
         else
         {
             placements = std::make_shared<text_placements_dummy>();
-            placements->defaults.from_xml(node, fontsets_);
+            placements->defaults.from_xml(node, fontsets_, false);
         }
         if (strict_ && !placements->defaults.format_defaults.fontset)
         {
@@ -1085,11 +1110,11 @@ void map_parser::parse_shield_symbolizer(rule & rule, xml_node const& node)
         optional<std::string> placement_type = node.get_opt_attr<std::string>("placement-type");
         if (placement_type)
         {
-            placements = placements::registry::instance().from_xml(*placement_type, node, fontsets_);
+            placements = placements::registry::instance().from_xml(*placement_type, node, fontsets_, true);
         } else {
             placements = std::make_shared<text_placements_dummy>();
         }
-        placements->defaults.from_xml(node, fontsets_);
+        placements->defaults.from_xml(node, fontsets_, true);
         if (strict_ &&
             !placements->defaults.format_defaults.fontset)
         {
@@ -1103,7 +1128,6 @@ void map_parser::parse_shield_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base,double>(sym, keys::shield_dx, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::shield_dy, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::opacity, node);
-        set_symbolizer_property<symbolizer_base,double>(sym, keys::text_opacity, node);
         set_symbolizer_property<symbolizer_base,mapnik::boolean_type>(sym, keys::unlock_image, node);
 
         std::string file = node.get_attr<std::string>("file");
@@ -1519,7 +1543,21 @@ void map_parser::parse_pair_layout(group_symbolizer_properties & prop, xml_node 
 
 void map_parser::ensure_font_face(std::string const& face_name)
 {
-    if (! font_manager_.get_face(face_name))
+    bool found = false;
+    auto itr = font_name_cache_.find(face_name);
+    if (itr != font_name_cache_.end())
+    {
+        found = itr->second;
+    }
+    else
+    {
+        found = freetype_engine::can_open(face_name,
+                                      font_library_,
+                                      font_file_mapping_,
+                                      freetype_engine::get_mapping());
+        font_name_cache_.emplace(face_name,found);
+    }
+    if (!found)
     {
         throw config_error("Failed to find font face '" +
                            face_name + "'");

@@ -25,7 +25,7 @@
 #include <mapnik/text/placements/simple.hpp>
 #include <mapnik/ptree_helpers.hpp>
 #include <mapnik/xml_node.hpp>
-#include <mapnik/make_unique.hpp>
+
 // boost
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
@@ -42,7 +42,7 @@ namespace phoenix = boost::phoenix;
 using phoenix::push_back;
 using phoenix::ref;
 
-bool text_placement_info_simple::next()
+bool text_placement_info_simple::next() const
 {
     while (true)
     {
@@ -61,76 +61,18 @@ bool text_placement_info_simple::next()
     return true;
 }
 
-bool text_placement_info_simple::next_position_only()
+bool text_placement_info_simple::next_position_only() const
 {
     if (position_state >= parent_->direction_.size()) return false;
-    directions_e dir = parent_->direction_[position_state];
-    switch (dir)
-    {
-    case EXACT_POSITION:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(dx,dy);
-            };
-        break;
-    case NORTH:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(0,-std::abs(dy));
-            };
-        break;
-    case EAST:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(std::abs(dx),0);
-            };
-        break;
-    case SOUTH:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(0,std::abs(dy));
-            };
-        break;
-    case WEST:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(-std::abs(dx),0);
-            };
-        break;
-    case NORTHEAST:
-        properties.layout_defaults.displacement_evaluator_ =  [](double dx, double dy)
-            {
-                return pixel_position(std::abs(dx),-std::abs(dy));
-            };
-        break;
-    case SOUTHEAST:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(std::abs(dx),std::abs(dy));
-            };
-        break;
-    case NORTHWEST:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(-std::abs(dx),-std::abs(dy));
-            };
-        break;
-    case SOUTHWEST:
-        properties.layout_defaults.displacement_evaluator_ = [](double dx, double dy)
-            {
-                return pixel_position(-std::abs(dx),std::abs(dy));
-            };
-        break;
-    default:
-        MAPNIK_LOG_WARN(text_placements) << "Unknown placement";
-    }
+    //directions_e dir = parent_->direction_[position_state];
+    properties.layout_defaults.dir = parent_->direction_[position_state];
     ++position_state;
     return true;
 }
 
 text_placement_info_ptr text_placements_simple::get_placement_info(double scale_factor) const
 {
-    return std::make_unique<text_placement_info_simple>(this, scale_factor);
+    return std::make_shared<text_placement_info_simple>(this, scale_factor);
 }
 
 // Position string: [POS][SIZE]
@@ -199,11 +141,11 @@ std::string text_placements_simple::get_positions()
     return positions_; //TODO: Build string from data in direction_ and text_sizes_
 }
 
-text_placements_ptr text_placements_simple::from_xml(xml_node const& xml, fontset_map const& fontsets)
+text_placements_ptr text_placements_simple::from_xml(xml_node const& xml, fontset_map const& fontsets, bool is_shield)
 {
     text_placements_ptr ptr = std::make_shared<text_placements_simple>(
         xml.get_attr<std::string>("placements", "X"));
-    ptr->defaults.from_xml(xml, fontsets);
+    ptr->defaults.from_xml(xml, fontsets, is_shield);
     return ptr;
 }
 

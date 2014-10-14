@@ -22,6 +22,8 @@
 
 #include <mapnik/text/properties_util.hpp>
 #include <mapnik/expression_string.hpp>
+#include <mapnik/symbolizer.hpp>
+#include <mapnik/ptree_helpers.hpp>
 #include <mapnik/text/font_feature_settings.hpp>
 
 namespace mapnik { namespace detail {
@@ -68,9 +70,9 @@ struct property_serializer : public util::static_visitor<>
         node_.put("<xmlattr>." + name_, str);
     }
 
-    void operator() (font_feature_settings_ptr const& val) const
+    void operator() (font_feature_settings const& val) const
     {
-        std::string str = val->to_string();
+        std::string str = val.to_string();
         node_.put("<xmlattr>." + name_, str);
     }
 

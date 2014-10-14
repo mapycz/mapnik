@@ -21,6 +21,7 @@
  *****************************************************************************/
 
 //mapnik
+#include <mapnik/debug.hpp>
 #include <mapnik/make_unique.hpp>
 #include <mapnik/xml_tree.hpp>
 #include <mapnik/xml_attribute_cast.hpp>
@@ -76,7 +77,7 @@ DEFINE_NAME_TRAIT( mapnik::value_integer, "int" )
 DEFINE_NAME_TRAIT( std::string, "string" )
 DEFINE_NAME_TRAIT( color, "color" )
 DEFINE_NAME_TRAIT( expression_ptr, "expression_ptr" )
-DEFINE_NAME_TRAIT( font_feature_settings_ptr, "font-feature-settings" )
+DEFINE_NAME_TRAIT( font_feature_settings, "font-feature-settings" )
 
 template <typename ENUM, int MAX>
 struct name_trait< mapnik::enumeration<ENUM, MAX> >
@@ -114,54 +115,55 @@ std::string const& xml_tree::filename() const
     return file_;
 }
 
-xml_node &xml_tree::root()
+xml_node & xml_tree::root()
 {
     return node_;
 }
 
-const xml_node &xml_tree::root() const
+const xml_node & xml_tree::root() const
 {
     return node_;
 }
 
 xml_attribute::xml_attribute(const char * value_)
     : value(value_),
-      processed(false)
-{
-
-}
+      processed(false) {}
 
 node_not_found::node_not_found(std::string const& node_name)
-    : node_name_(node_name) {}
+    : node_name_(node_name),
+      msg_() {}
 
 const char* node_not_found::what() const throw()
 {
-    return ("Node "+node_name_+ "not found").c_str();
+    msg_ = std::string("Node "+node_name_+ "not found");
+    return msg_.c_str();
 }
 
 node_not_found::~node_not_found() throw() {}
 
 
-attribute_not_found::attribute_not_found(
-    std::string const& node_name,
-    std::string const& attribute_name)
-    :
-    node_name_(node_name),
-    attribute_name_(attribute_name) {}
+attribute_not_found::attribute_not_found(std::string const& node_name,
+                                         std::string const& attribute_name)
+    : node_name_(node_name),
+      attribute_name_(attribute_name),
+      msg_() {}
 
 const char* attribute_not_found::what() const throw()
 {
-    return ("Attribute '" + attribute_name_ +"' not found in node '"+node_name_+ "'").c_str();
+    msg_ = std::string("Attribute '" + attribute_name_ +"' not found in node '"+node_name_+ "'");
+    return msg_.c_str();
 }
 
 attribute_not_found::~attribute_not_found() throw() {}
 
 more_than_one_child::more_than_one_child(std::string const& node_name)
-    : node_name_(node_name) {}
+    : node_name_(node_name),
+      msg_() {}
 
 const char* more_than_one_child::what() const throw()
 {
-    return ("More than one child node in node '" + node_name_ +"'").c_str();
+    msg_ = std::string("More than one child node in node '" + node_name_ +"'");
+    return msg_.c_str();
 }
 
 more_than_one_child::~more_than_one_child() throw() {}
@@ -221,15 +223,19 @@ bool xml_node::is(std::string const& name) const
     return false;
 }
 
-xml_node &xml_node::add_child(std::string && name, unsigned line, bool is_text)
+xml_node & xml_node::add_child(const char * name, unsigned line, bool is_text)
 {
-    children_.emplace_back(tree_, std::move(name), line, is_text);
+    children_.emplace_back(tree_, name, line, is_text);
     return children_.back();
 }
 
 void xml_node::add_attribute(const char * name, const char * value)
 {
-    attributes_.emplace(name,xml_attribute(value));
+    auto result = attributes_.emplace(name,xml_attribute(value));
+    if (!result.second)
+    {
+        MAPNIK_LOG_ERROR(xml_tree) << "ignoring duplicate attribute '" << name << "'";
+    }
 }
 
 xml_node::attribute_map const& xml_node::get_attributes() const
@@ -423,7 +429,7 @@ compile_get_opt_attr(justify_alignment_e);
 compile_get_opt_attr(text_upright_e);
 compile_get_opt_attr(halo_rasterizer_e);
 compile_get_opt_attr(expression_ptr);
-compile_get_opt_attr(font_feature_settings_ptr);
+compile_get_opt_attr(font_feature_settings);
 compile_get_attr(std::string);
 compile_get_attr(filter_mode_e);
 compile_get_attr(point_placement_e);

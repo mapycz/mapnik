@@ -34,7 +34,7 @@
 #include <mapnik/group/group_layout_manager.hpp>
 #include <mapnik/group/group_symbolizer_helper.hpp>
 #include <mapnik/group/group_symbolizer_properties.hpp>
-#include <mapnik/text/placements_list.hpp>
+#include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/util/conversions.hpp>
 #include <mapnik/util/variant.hpp>
 #include <mapnik/label_collision_detector.hpp>
@@ -57,8 +57,8 @@ struct virtual_renderer_common : private mapnik::noncopyable
         height_(common.height_),
         scale_factor_(common.scale_factor_),
         vars_(common.vars_),
-        shared_font_engine_(common.shared_font_engine_),
-        font_engine_(*shared_font_engine_),
+        shared_font_library_(common.shared_font_library_),
+        font_library_(*shared_font_library_),
         font_manager_(common.font_manager_),
         query_extent_(common.query_extent_),
         t_(common.t_),
@@ -69,9 +69,9 @@ struct virtual_renderer_common : private mapnik::noncopyable
     double & scale_factor_;
     attributes & vars_;
     // TODO: dirty hack for cairo renderer, figure out how to remove this
-    std::shared_ptr<freetype_engine> & shared_font_engine_;
-    freetype_engine & font_engine_;
-    face_manager<freetype_engine> & font_manager_;
+    std::shared_ptr<font_library> & shared_font_library_;
+    font_library & font_library_;
+    face_manager_freetype & font_manager_;
     box2d<double> & query_extent_;
     view_transform & t_;
     std::shared_ptr<label_collision_detector4> detector_;
@@ -97,7 +97,7 @@ struct virtual_renderer_common : private mapnik::noncopyable
 // stores all the arguments necessary to re-render this point
 // symbolizer at a later time.
 
-struct point_render_thunk
+struct point_render_thunk : noncopyable
 {
     pixel_position pos_;
     marker_ptr marker_;
@@ -108,22 +108,36 @@ struct point_render_thunk
     point_render_thunk(pixel_position const& pos, marker const& m,
                        agg::trans_affine const& tr, double opacity,
                        composite_mode_e comp_op);
+    point_render_thunk(point_render_thunk && rhs)
+      : pos_(std::move(rhs.pos_)),
+        marker_(std::move(rhs.marker_)),
+        tr_(std::move(rhs.tr_)),
+        opacity_(std::move(rhs.opacity_)),
+        comp_op_(std::move(rhs.comp_op_)) {}
 };
 
-struct text_render_thunk
+using helper_ptr = std::unique_ptr<text_symbolizer_helper>;
+
+struct text_render_thunk : noncopyable
 {
-    // need to keep these around, annoyingly, as the glyph_position
-    // struct keeps a pointer to the glyph_info, so we have to
-    // ensure the lifetime is the same.
-    placements_list placements_;
-    std::shared_ptr<std::vector<glyph_info> > glyphs_;
+    // helper is stored here in order
+    // to keep in scope the text rendering structures
+    helper_ptr helper_;
+    placements_list const& placements_;
     double opacity_;
     composite_mode_e comp_op_;
     halo_rasterizer_enum halo_rasterizer_;
 
-    text_render_thunk(placements_list const&    placements,
+    text_render_thunk(helper_ptr && helper,
                       double opacity, composite_mode_e comp_op,
                       halo_rasterizer_enum halo_rasterizer);
+    text_render_thunk(text_render_thunk && rhs)
+      : helper_(std::move(rhs.helper_)),
+        placements_(std::move(rhs.placements_)),
+        opacity_(std::move(rhs.opacity_)),
+        comp_op_(std::move(rhs.comp_op_)),
+        halo_rasterizer_(std::move(rhs.halo_rasterizer_)) {}
+
 };
 
 // Variant type for render thunks to allow us to re-render them
@@ -131,7 +145,7 @@ struct text_render_thunk
 
 using render_thunk = util::variant<point_render_thunk,
                                    text_render_thunk>;
-using render_thunk_ptr = std::shared_ptr<render_thunk>;
+using render_thunk_ptr = std::unique_ptr<render_thunk>;
 using render_thunk_list = std::list<render_thunk_ptr>;
 
 // Base class for extracting the bounding boxes associated with placing
@@ -163,7 +177,7 @@ struct render_thunk_extractor : public util::static_visitor<>
     }
 
 private:
-    void extract_text_thunk(text_symbolizer_helper & helper, text_symbolizer const& sym) const;
+    void extract_text_thunk(helper_ptr && helper, text_symbolizer const& sym) const;
 
     box2d<double> & box_;
     render_thunk_list & thunks_;

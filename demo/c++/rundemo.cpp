@@ -25,8 +25,10 @@
 #include <mapnik/rule.hpp>
 #include <mapnik/feature_type_style.hpp>
 #include <mapnik/graphics.hpp>
+#include <mapnik/symbolizer.hpp>
 #include <mapnik/text/placements/dummy.hpp>
 #include <mapnik/text/text_properties.hpp>
+#include <mapnik/text/formatting/text.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/agg_renderer.hpp>
@@ -214,7 +216,7 @@ int main ( int argc , char** argv)
                 placement_finder->defaults.format_defaults.fill = color(0,0,0);
                 placement_finder->defaults.format_defaults.halo_fill = color(255,255,200);
                 placement_finder->defaults.format_defaults.halo_radius = 1.0;
-                placement_finder->defaults.set_old_style_expression(parse_expression("[GEONAME]"));
+                placement_finder->defaults.set_format_tree(std::make_shared<mapnik::formatting::text_node>(parse_expression("[GEONAME]")));
                 put<text_placements_ptr>(text_sym, keys::text_placements_, placement_finder);
                 r.append(std::move(text_sym));
             }

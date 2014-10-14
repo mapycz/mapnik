@@ -37,6 +37,7 @@
 #include <mapnik/config_error.hpp>
 #include <mapnik/evaluate_global_attributes.hpp>
 #include <mapnik/parse_transform.hpp>
+#include <mapnik/util/dasharray_parser.hpp>
 #include <mapnik/util/variant.hpp>
 
 namespace mapnik {
@@ -395,7 +396,7 @@ struct set_symbolizer_property_impl<Symbolizer,dash_array,false>
         {
             std::vector<double> buf;
             dash_array dash;
-            if (util::parse_dasharray((*str).begin(),(*str).end(),buf) && util::add_dashes(buf,dash))
+            if (util::parse_dasharray(*str,buf) && util::add_dashes(buf,dash))
             {
                 put(sym,key,dash);
             }
@@ -436,7 +437,7 @@ struct set_symbolizer_property_impl<Symbolizer, T, true>
         boost::optional<std::string> enum_str = node.get_opt_attr<std::string>(name);
         if (enum_str)
         {
-            boost::optional<T> enum_val = detail::enum_traits<T>::from_string(*enum_str);
+            boost::optional<value_type> enum_val = detail::enum_traits<value_type>::from_string(*enum_str);
             if (enum_val)
             {
                 put(sym, key, *enum_val);
@@ -450,7 +451,7 @@ struct set_symbolizer_property_impl<Symbolizer, T, true>
                     auto result = pre_evaluate_expression<value>(*val);
                     if (std::get<1>(result))
                     {
-                        boost::optional<T> enum_val = detail::enum_traits<T>::from_string(std::get<0>(result).to_string());
+                        boost::optional<value_type> enum_val = detail::enum_traits<value_type>::from_string(std::get<0>(result).to_string());
                         if (enum_val)
                         {
                             put(sym, key, *enum_val);

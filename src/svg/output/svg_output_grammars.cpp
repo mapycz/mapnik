@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko, Jean-Francois Doyon
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,17 +20,12 @@
  *
  *****************************************************************************/
 
-#include <mapnik/geometry.hpp>
-#include <mapnik/wkt/wkt_generator_grammar_impl.hpp>
-#include <mapnik/json/feature_generator_grammar_impl.hpp>
-#include <mapnik/json/geometry_generator_grammar_impl.hpp>
-#include <mapnik/svg/geometry_svg_generator_impl.hpp>
+#include <mapnik/svg/output/svg_output_attributes.hpp>
+#include <mapnik/svg/output/svg_output_grammars.hpp>
+#include <mapnik/svg/output/svg_output_grammars_impl.hpp>
 #include <string>
 
-using sink_type = std::back_insert_iterator<std::string>;
-template struct mapnik::json::feature_generator_grammar<sink_type>;
-template struct mapnik::json::geometry_generator_grammar<sink_type>;
-template struct mapnik::json::multi_geometry_generator_grammar<sink_type>;
-template struct mapnik::svg::svg_path_generator<sink_type, mapnik::geometry_type>;
-template struct mapnik::wkt::wkt_generator<sink_type, mapnik::geometry_type>;
-template struct mapnik::wkt::wkt_multi_generator<sink_type, mapnik::geometry_container>;
+template struct mapnik::svg::svg_path_attributes_grammar<std::ostream_iterator<char> >;
+template struct mapnik::svg::svg_path_dash_array_grammar<std::ostream_iterator<char> >;
+template struct mapnik::svg::svg_rect_attributes_grammar<std::ostream_iterator<char> >;
+template struct mapnik::svg::svg_root_attributes_grammar<std::ostream_iterator<char> >;

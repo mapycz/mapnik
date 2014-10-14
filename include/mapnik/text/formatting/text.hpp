@@ -22,13 +22,16 @@
 #ifndef FORMATTING_TEXT_HPP
 #define FORMATTING_TEXT_HPP
 
+// mapnik
 #include <mapnik/text/formatting/base.hpp>
-#include <mapnik/feature.hpp>
 
 // boost
 #include <boost/property_tree/ptree_fwd.hpp>
 
 namespace mapnik {
+
+class feature_impl;
+
 namespace formatting {
 class MAPNIK_DECL text_node: public node {
 public:
@@ -36,7 +39,7 @@ public:
     text_node(std::string text): node(), text_(parse_expression(text)) {}
     void to_xml(boost::property_tree::ptree &xml) const;
     static node_ptr from_xml(xml_node const& xml, fontset_map const& fontsets);
-    virtual void apply(evaluated_format_properties_ptr p, feature_impl const& feature, attributes const& vars, text_layout &output) const;
+    virtual void apply(evaluated_format_properties_ptr const& p, feature_impl const& feature, attributes const& vars, text_layout &output) const;
     virtual void add_expressions(expression_set &output) const;
 
     void set_text(expression_ptr text);

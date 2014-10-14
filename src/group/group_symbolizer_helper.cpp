@@ -38,12 +38,12 @@
 namespace mapnik {
 
 group_symbolizer_helper::group_symbolizer_helper(
-        const group_symbolizer &sym, const feature_impl &feature,
+        group_symbolizer const& sym, feature_impl const& feature,
         attributes const& vars,
-        const proj_transform &prj_trans,
+        proj_transform const& prj_trans,
         unsigned width, unsigned height, double scale_factor,
-        const view_transform &t, DetectorType &detector,
-        const box2d<double> &query_extent)
+        view_transform const& t, DetectorType & detector,
+        box2d<double> const& query_extent)
     : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent),
       detector_(detector)
 {}
@@ -63,23 +63,11 @@ pixel_position_list const& group_symbolizer_helper::get()
     {
         for (auto const& geom : geometries_to_process_)
         {
-            if (clipped_)
-            {
-                using clipped_geometry_type = agg::conv_clip_polyline<geometry_type>;
-                using path_type = transform_path_adapter<view_transform,clipped_geometry_type>;
-
-                clipped_geometry_type clipped(*geom);
-                clipped.clip_box(query_extent_.minx(), query_extent_.miny(),
-                                 query_extent_.maxx(), query_extent_.maxy());
-                path_type path(t_, clipped, prj_trans_);
-                find_line_placements(path);
-            }
-            else
-            {
-                using path_type = transform_path_adapter<view_transform,geometry_type>;
-                path_type path(t_, *geom, prj_trans_);
-                find_line_placements(path);
-            }
+            // TODO to support clipped geometries this needs to use
+            // vertex_converters
+            using path_type = transform_path_adapter<view_transform,geometry_type>;
+            path_type path(t_, *geom, prj_trans_);
+            find_line_placements(path);
         }
     }
 
@@ -107,7 +95,7 @@ bool group_symbolizer_helper::find_line_placements(T & path)
         pp.forward(spacing/2.0);
         do
         {
-            tolerance_iterator tolerance_offset(placement_->properties.label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
+            tolerance_iterator tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(pp);
@@ -154,20 +142,20 @@ bool group_symbolizer_helper::check_point_placement(pixel_position const& pos)
     return true;
 }
 
-bool group_symbolizer_helper::collision(const box2d<double> &box, const value_unicode_string &repeat_key) const
+bool group_symbolizer_helper::collision(box2d<double> const& box, value_unicode_string const& repeat_key) const
 {
     if (!detector_.extent().intersects(box)
             ||
-        (placement_->properties.avoid_edges && !query_extent_.contains(box))
+        (text_props_->avoid_edges && !query_extent_.contains(box))
             ||
-        (placement_->properties.minimum_padding > 0 &&
-         !query_extent_.contains(box + (scale_factor_ * placement_->properties.minimum_padding)))
+        (text_props_->minimum_padding > 0 &&
+         !query_extent_.contains(box + (scale_factor_ * text_props_->minimum_padding)))
             ||
-        (!placement_->properties.allow_overlap &&
-            ((repeat_key.length() == 0 && !detector_.has_placement(box, placement_->properties.minimum_distance * scale_factor_))
+        (!text_props_->allow_overlap &&
+            ((repeat_key.length() == 0 && !detector_.has_placement(box, text_props_->margin * scale_factor_))
                 ||
-             (repeat_key.length() > 0  && !detector_.has_placement(box, placement_->properties.minimum_distance * scale_factor_,
-                                                                   repeat_key, placement_->properties.repeat_distance * scale_factor_))))
+             (repeat_key.length() > 0  && !detector_.has_placement(box, text_props_->margin * scale_factor_,
+                                                                   repeat_key, text_props_->repeat_distance * scale_factor_))))
         )
     {
         return true;
@@ -178,10 +166,10 @@ bool group_symbolizer_helper::collision(const box2d<double> &box, const value_un
 double group_symbolizer_helper::get_spacing(double path_length) const
 {
     int num_labels = 1;
-    if (placement_->properties.label_spacing > 0)
+    if (text_props_->label_spacing > 0)
     {
         num_labels = static_cast<int>(std::floor(
-            path_length / (placement_->properties.label_spacing * scale_factor_)));
+            path_length / (text_props_->label_spacing * scale_factor_)));
     }
     if (num_labels <= 0)
     {

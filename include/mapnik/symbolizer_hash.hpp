@@ -24,7 +24,7 @@
 #define MAPNIK_SYMBOLIZER_HASH_HPP
 
 // mapnik
-#include <mapnik/symbolizer.hpp>
+#include <mapnik/symbolizer_base.hpp>
 #include <mapnik/util/variant.hpp>
 // stl
 #include <typeinfo>
@@ -35,9 +35,14 @@ namespace mapnik {
 
 struct property_value_hash_visitor : util::static_visitor<std::size_t>
 {
-    std::size_t operator() (color val) const
+    std::size_t operator() (color const& val) const
     {
         return val.rgba();
+    }
+
+    std::size_t operator() (font_feature_settings const& val) const
+    {
+        return 0; //FIXME
     }
 
     std::size_t operator() (transform_type const& val) const

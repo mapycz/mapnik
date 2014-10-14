@@ -15,6 +15,7 @@ To trigger parallel compilation you can pass a JOBS value to make:
     $ JOBS=4 make
 ```
 
+(Note that compiling Mapnik needs several GBytes of RAM. If you use parallel compiliation it needs more.)
 
 To use a Python interpreter that is not named `python` for your build, do
 something like the following instead:
@@ -49,7 +50,7 @@ For troubleshooting help see https://github.com/mapnik/mapnik/wiki/InstallationT
 
 Build system dependencies are:
 
- * C++ compiler (like g++ or clang++)
+ * C++ compiler supporting `-std=c++11` (like >= g++ 4.8 or >= clang++ 3.4)
  * >= 2 GB RAM (> 5 GB for g++)
  * Python 2.4-2.7 
  * Scons (a copy is bundled)
@@ -57,18 +58,18 @@ Build system dependencies are:
 Mapnik Core depends on:
 
  * Boost
-    - >= 1.47 is required.
+    - >= 1.47 is required and >= 1.56 recommended
     - These libraries are used:
       - filesystem
       - system
-      - thread (if mapnik threadsafe support is required, default on)
+      - thread (for python bindings only)
       - regex (optionally built with icu regex support)
       - program_options (optionally for mapnik command line programs)
  * libicuuc >= 4.0 (ideally >= 4.2) - International Components for Unicode
  * libz - Zlib compression
  * libfreetype - Freetype2 for font support (Install requires freetype-config)
  * libxml2 - XML parsing (Install requires xml2-config)
- * libharfbuzz - an OpenType text shaping engine
+ * libharfbuzz - an OpenType text shaping engine (>=0.9.34 needed for CSS font-feature-settings support)
 
 Mapnik Core optionally depends on:
 

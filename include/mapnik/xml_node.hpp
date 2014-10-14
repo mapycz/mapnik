@@ -52,6 +52,8 @@ public:
     ~node_not_found() throw ();
 private:
     std::string node_name_;
+protected:
+    mutable std::string msg_;
 };
 
 class attribute_not_found: public std::exception
@@ -63,6 +65,8 @@ public:
 private:
     std::string node_name_;
     std::string attribute_name_;
+protected:
+    mutable std::string msg_;
 };
 
 class more_than_one_child: public std::exception
@@ -73,6 +77,8 @@ public:
     ~more_than_one_child() throw ();
 private:
     std::string node_name_;
+protected:
+    mutable std::string msg_;
 };
 
 class xml_node
@@ -88,7 +94,7 @@ public:
     bool is_text() const;
     bool is(std::string const& name) const;
 
-    xml_node & add_child(std::string && name, unsigned line=0, bool is_text = false);
+    xml_node & add_child(const char * name, unsigned line=0, bool is_text = false);
     void add_attribute(const char * name, const char * value);
     attribute_map const& get_attributes() const;
 

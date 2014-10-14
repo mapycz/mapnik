@@ -31,10 +31,11 @@
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/gradient.hpp>
-#include <mapnik/text/placements_list.hpp>
+#include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/vertex.hpp>
 #include <mapnik/noncopyable.hpp>
-#include <mapnik/symbolizer.hpp>
+#include <mapnik/symbolizer_base.hpp>
+#include <mapnik/symbolizer_enumerations.hpp>
 
 // stl
 #include <memory>
@@ -51,7 +52,6 @@
 
 namespace mapnik {
 
-class text_path;
 template <typename T> class box2d;
 
 using ErrorStatus = cairo_status_t;
@@ -78,18 +78,18 @@ void check_object_status_and_throw_exception(T const& object)
 class cairo_face : private mapnik::noncopyable
 {
 public:
-    cairo_face(std::shared_ptr<freetype_engine> const& engine, face_ptr const& face);
+    cairo_face(std::shared_ptr<font_library> const& library, face_ptr const& face);
     ~cairo_face();
     cairo_font_face_t * face() const;
 private:
     class handle
     {
     public:
-        handle(std::shared_ptr<freetype_engine> const& engine, face_ptr const& face)
-            : engine_(engine), face_(face) {}
+        handle(std::shared_ptr<font_library> const& library, face_ptr const& face)
+            : library_(library), face_(face) {}
 
     private:
-        std::shared_ptr<freetype_engine> engine_;
+        std::shared_ptr<font_library> library_;
         face_ptr face_;
     };
 
@@ -109,12 +109,12 @@ using cairo_face_ptr = std::shared_ptr<cairo_face>;
 class cairo_face_manager : private mapnik::noncopyable
 {
 public:
-    cairo_face_manager(std::shared_ptr<freetype_engine> engine);
+    cairo_face_manager(std::shared_ptr<font_library> library);
     cairo_face_ptr get_face(face_ptr face);
 
 private:
     using cairo_face_cache = std::map<face_ptr,cairo_face_ptr>;
-    std::shared_ptr<freetype_engine> font_engine_;
+    std::shared_ptr<font_library> font_library_;
     cairo_face_cache cache_;
 };
 
@@ -195,7 +195,7 @@ private:
 class cairo_gradient : private mapnik::noncopyable
 {
 public:
-    cairo_gradient(const mapnik::gradient &grad, double opacity=1.0)
+    cairo_gradient(mapnik::gradient const& grad, double opacity=1.0)
     {
         double x1,x2,y1,y2,rad;
         grad.get_control_points(x1,y1,x2,y2,rad);
@@ -203,7 +203,7 @@ public:
         {
             pattern_ = cairo_pattern_create_linear(x1, y1, x2, y2);
         }
-        else if (grad.get_gradient_type() == RADIAL)
+        else
         {
             pattern_ = cairo_pattern_create_radial(x1, y1, 0,  x2, y2, rad);
         }
@@ -319,9 +319,9 @@ public:
     void restore();
     void show_glyph(unsigned long index, pixel_position const& pos);
     void glyph_path(unsigned long index, pixel_position const& pos);
-    void add_text(glyph_positions_ptr pos,
+    void add_text(glyph_positions const& pos,
                   cairo_face_manager & manager,
-                  face_manager<freetype_engine> & font_manager,
+                  face_manager_freetype & font_manager,
                   composite_mode_e comp_op = src_over,
                   composite_mode_e halo_comp_op = src_over,
                   double scale_factor = 1.0);

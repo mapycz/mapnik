@@ -23,12 +23,15 @@
 #if defined(SVG_RENDERER)
 
 // mapnik
+#include <mapnik/symbolizer.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/transform_path_adapter.hpp>
 #include <mapnik/svg/output/svg_renderer.hpp>
 #include <mapnik/svg/geometry_svg_generator_impl.hpp>
 #include <mapnik/svg/output/svg_output_grammars.hpp>
 #include <mapnik/svg/output/svg_output_attributes.hpp>
+#include <mapnik/symbolizer_dispatch.hpp>
+
 // boost
 #include <boost/spirit/include/karma.hpp>
 
@@ -88,7 +91,7 @@ bool svg_renderer<OutputIterator>::process(rule::symbolizers const& syms,
         {
             process_path = true;
         }
-        util::apply_visitor(symbol_dispatch(*this, feature, prj_trans), sym);
+        util::apply_visitor(symbolizer_dispatch<svg_renderer<OutputIterator>>(*this, feature, prj_trans), sym);
     }
 
     if (process_path)

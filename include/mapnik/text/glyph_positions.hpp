@@ -24,7 +24,6 @@
 //mapnik
 #include <mapnik/box2d.hpp>
 #include <mapnik/pixel_position.hpp>
-#include <mapnik/text/glyph_info.hpp>
 #include <mapnik/text/rotation.hpp>
 #include <mapnik/marker_cache.hpp>
 
@@ -43,8 +42,8 @@ struct glyph_info;
 struct glyph_position
 {
     glyph_position(glyph_info const& _glyph, pixel_position const& _pos, rotation const& _rot)
-        : glyph(&_glyph), pos(_pos), rot(_rot) { }
-    glyph_info const* glyph;
+        : glyph(_glyph), pos(_pos), rot(_rot) { }
+    glyph_info const& glyph;
     pixel_position pos;
     rotation rot;
 };
@@ -69,14 +68,15 @@ public:
     using const_iterator = std::vector<glyph_position>::const_iterator;
     glyph_positions();
 
+    std::size_t size() const { return data_.size(); };
     const_iterator begin() const;
     const_iterator end() const;
 
-    void push_back(glyph_info const& glyph, pixel_position offset, rotation const& rot);
+    void emplace_back(glyph_info const& glyph, pixel_position offset, rotation const& rot);
     void reserve(unsigned count);
 
     pixel_position const& get_base_point() const;
-    void set_base_point(pixel_position base_point);
+    void set_base_point(pixel_position const& base_point);
     void set_marker(marker_info_ptr marker, pixel_position const& marker_pos);
     marker_info_ptr marker() const;
     pixel_position const& marker_pos() const;

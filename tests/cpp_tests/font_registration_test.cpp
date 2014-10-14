@@ -1,5 +1,7 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/util/fs.hpp>
+#include <mapnik/map.hpp>
+#include <mapnik/load_map.hpp>
 #include <mapnik/debug.hpp>
 
 #include <boost/detail/lightweight_test.hpp>
@@ -26,15 +28,54 @@ int main(int argc, char** argv)
 
         BOOST_TEST(set_working_dir(args));
 
+
+        // grab references to global statics of registered/cached fonts
+        auto const& global_mapping = mapnik::freetype_engine::get_mapping();
+        auto const& global_cache = mapnik::freetype_engine::get_cache();
+
+        // mapnik.Map object has parallel structure for localized fonts
+        mapnik::Map m(1,1);
+        auto const& local_mapping = m.get_font_file_mapping();
+        auto const& local_cache = m.get_font_memory_cache();
+
+        // should be empty to start
+        BOOST_TEST( global_mapping.empty() );
+        BOOST_TEST( global_cache.empty() );
+        BOOST_TEST( local_mapping.empty() );
+        BOOST_TEST( local_cache.empty() );
+
         std::string fontdir("fonts/");
 
         BOOST_TEST( mapnik::util::exists( fontdir ) );
         BOOST_TEST( mapnik::util::is_directory( fontdir ) );
 
+        // test map cached fonts
+        BOOST_TEST( m.register_fonts(fontdir , false ) );
+        BOOST_TEST( m.get_font_memory_cache().size() == 0 );
+        BOOST_TEST( m.get_font_file_mapping().size() == 1 );
+        BOOST_TEST( m.load_fonts() );
+        BOOST_TEST( m.get_font_memory_cache().size() == 1 );
+        BOOST_TEST( m.register_fonts(fontdir , true ) );
+        BOOST_TEST( m.get_font_file_mapping().size() == 22 );
+        BOOST_TEST( m.load_fonts() );
+        BOOST_TEST( m.get_font_memory_cache().size() == 22 );
+
+        // copy discards memory cache but not file mapping
+        mapnik::Map m2(m);
+        BOOST_TEST( m2.get_font_memory_cache().size() == 0 );
+        BOOST_TEST( m2.get_font_file_mapping().size() == 22 );
+        BOOST_TEST( m2.load_fonts() );
+        BOOST_TEST( m2.get_font_memory_cache().size() == 22 );
+
+        // test font-directory from XML
+        mapnik::Map m3(1,1);
+        mapnik::load_map_string(m3,"<Map font-directory=\"fonts/\"></Map>");
+        BOOST_TEST( m3.get_font_memory_cache().size() == 0 );
+        BOOST_TEST( m3.load_fonts() );
+        BOOST_TEST( m3.get_font_memory_cache().size() == 1 );
+
         std::vector<std::string> face_names;
-
         std::string foo("foo");
-
         // fake directories
         BOOST_TEST( !mapnik::freetype_engine::register_fonts(foo , true ) );
         face_names = mapnik::freetype_engine::face_names();
@@ -77,7 +118,7 @@ int main(int argc, char** argv)
         face_names = mapnik::freetype_engine::face_names();
         BOOST_TEST( face_names.size() == 1 );
 
-        // register a single dejavu font
+        // single dejavu font in separate location
         std::string dejavu_bold_oblique("tests/data/fonts/DejaVuSansMono-BoldOblique.ttf");
         BOOST_TEST( mapnik::freetype_engine::register_font(dejavu_bold_oblique) );
         face_names = mapnik::freetype_engine::face_names();
@@ -117,6 +158,18 @@ int main(int argc, char** argv)
             }
         }
         BOOST_TEST( found_dejavu2 );
+
+        // now that global registry is populated
+        // now test that a map only loads new fonts
+        mapnik::Map m4(1,1);
+        BOOST_TEST( m4.register_fonts(fontdir , true ) );
+        BOOST_TEST( m4.get_font_memory_cache().size() == 0 );
+        BOOST_TEST( m4.get_font_file_mapping().size() == 22 );
+        BOOST_TEST( !m4.load_fonts() );
+        BOOST_TEST( m4.get_font_memory_cache().size() == 0 );
+        BOOST_TEST( m4.register_fonts(dejavu_bold_oblique, false) );
+        BOOST_TEST( m4.load_fonts() );
+        BOOST_TEST( m4.get_font_memory_cache().size() == 1 );
 
         // check that we can correctly read a .ttc containing
         // multiple valid faces
