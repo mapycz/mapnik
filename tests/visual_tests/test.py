@@ -9,6 +9,7 @@ import shutil
 import os.path
 from compare import compare, compare_grids
 import platform
+import subprocess
 
 try:
     import json
@@ -33,7 +34,12 @@ if 'Linux' == platform.uname()[0]:
     # which is older than the 1.12.14 version we used on OS X
     # to generate the expected images, so we'll rachet back the threshold
     # https://github.com/mapnik/mapnik/issues/1868
-    cairo_threshold = 230
+    if 'wheezy' in subprocess.check_output(["lsb_release", "-sd"]):
+        # Use higher threshold on Debian Wheezy due to old Cairo libs.
+        # Seznam doesn't use Cairo renderer anyway.
+        cairo_threshold = 500
+    else:
+        cairo_threshold = 230
     agg_threshold = 12
     grid_threshold = 6
 

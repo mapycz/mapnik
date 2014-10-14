@@ -5,6 +5,7 @@ import shutil
 import mapnik
 from nose.tools import *
 from utilities import execution_path, run_all
+import subprocess
 
 def setup():
     # All of the paths used are relative, if we run the tests
@@ -165,6 +166,9 @@ if mapnik.has_pycairo():
                     msg = 'diff in size (%s) between actual (%s) and expected(%s)' % (diff,test_cairo_file,'tests/python_tests/'+ expected_cairo_file)
                     if os.uname()[0] == 'Darwin':
                         eq_( diff < 2100, True, msg)
+                    elif os.uname()[0] == 'Linux' and 'wheezy' in subprocess.check_output(["lsb_release", "-sd"]):
+                        # Use higher threshold on Debian Wheezy due to old Cairo libs.
+                        eq_( diff < 24000, True, msg)
                     else:
                         eq_( diff < 23000, True, msg)
                     os.remove(test_cairo_file)
