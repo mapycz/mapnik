@@ -293,6 +293,7 @@ files = {
     'postgis-inline':{'sizes':[(512,512)]},
     'text-line-wrap':{'sizes':[(512,512)]},
     'text-data-binding': {'sizes': [(500, 500)]},
+    'layer-buffer-size': {'sizes': [(200, 200)], 'bbox': mapnik.Box2d(-1, -1, 1, 1)},
     }
 
 class Reporting:
