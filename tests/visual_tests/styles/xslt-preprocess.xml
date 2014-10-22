@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="#stylesheet"?>
+<!DOCTYPE Map [
+<!ATTLIST xsl:stylesheet id ID #REQUIRED>
+]>
+<Map background-color="white">
+    <xsl:stylesheet id="stylesheet" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+        <xsl:output method="xml" indent="yes"/>
+
+        <xsl:template match="xsl:stylesheet" />
+
+        <xsl:template match="node()|@*">
+            <xsl:copy>
+                <xsl:apply-templates select="node()|@*"/>
+            </xsl:copy>
+        </xsl:template>
+
+        <xsl:template match="LineSymbolizer[@marker-begin|@marker-end]">
+            <xsl:element name="LineSymbolizer">
+                <xsl:copy-of select="@*[name() != 'marker-begin' and name() != 'marker-end']"/>
+            </xsl:element>
+            <xsl:apply-templates select="@marker-begin" />
+            <xsl:apply-templates select="@marker-end" />
+        </xsl:template>
+
+        <xsl:template name="set-marker">
+            <xsl:attribute name="ignore-placement">true</xsl:attribute>
+            <xsl:attribute name="stroke-width">0</xsl:attribute>
+            <xsl:attribute name="width">
+                <xsl:choose>
+                    <xsl:when test="../@stroke-width">
+                        <xsl:value-of select="../@stroke-width" />
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:text>1</xsl:text>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:attribute>
+            <xsl:attribute name="height">
+                <xsl:choose>
+                    <xsl:when test="../@stroke-width">
+                        <xsl:value-of select="../@stroke-width" />
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:text>1</xsl:text>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:attribute>
+            <xsl:attribute name="fill">
+                <xsl:choose>
+                    <xsl:when test="../@stroke">
+                        <xsl:value-of select="../@stroke" />
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:text>black</xsl:text>
+                    </xsl:otherwise>
+                </xsl:choose>
+            </xsl:attribute>
+            <xsl:copy-of select="../@geometry-transform"/>
+            <xsl:copy-of select="../@offset"/>
+            <xsl:copy-of select="../@simplify"/>
+            <xsl:copy-of select="../@clip"/>
+        </xsl:template>
+
+        <xsl:template match="@marker-begin">
+            <xsl:element name="MarkersSymbolizer">
+                <xsl:attribute name="placement">vertex-first</xsl:attribute>
+                <xsl:call-template name="set-marker" />
+            </xsl:element>
+        </xsl:template>
+
+        <xsl:template match="@marker-end">
+            <xsl:element name="MarkersSymbolizer">
+                <xsl:attribute name="placement">vertex-last</xsl:attribute>
+                <xsl:call-template name="set-marker" />
+            </xsl:element>
+        </xsl:template>
+    </xsl:stylesheet>
+    <Style name="lines">
+        <Rule>
+            <LineSymbolizer
+                marker-begin="circle"
+                stroke-width="20"
+                stroke="red"
+                geometry-transform="translate(0, -50)"
+                />
+            <LineSymbolizer
+                marker-end="circle"
+                stroke-width="20"
+                stroke="green"
+                />
+            <LineSymbolizer
+                marker-begin="circle"
+                marker-end="circle"
+                stroke-width="20"
+                stroke="blue"
+                geometry-transform="translate(0, 50)"
+                />
+        </Rule>
+    </Style>
+    <Layer name="layer">
+        <StyleName>lines</StyleName>
+        <Datasource>
+            <Parameter name="type">csv</Parameter>
+            <Parameter name="inline">
+            wkt, placement
+            "LINESTRING(0 0, 10 0)"
+            </Parameter>
+        </Datasource>
+    </Layer>
+</Map>
