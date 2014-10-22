@@ -36,6 +36,12 @@
 #include <libxml/parserInternals.h>
 #include <libxml/xinclude.h>
 
+// libxslt
+#include <libxslt/xslt.h>
+#include <libxslt/xsltInternals.h>
+#include <libxslt/transform.h>
+#include <libxslt/xsltutils.h>
+
 // stl
 #include <stdexcept>
 
@@ -92,12 +98,30 @@ public:
                 throw config_error(msg, error->line, error->file);
             }
         }
+
+        xmlDocPtr res = preprocess(doc);
+
+        if (res)
+        {
+            xmlFreeDoc(doc);
+            doc = res;
+        }
+
         load(doc, node);
     }
 
     void load(const int fd, xml_node &node)
     {
         xmlDocPtr doc = xmlCtxtReadFd(ctx_, fd, url_, encoding_, options_);
+
+        xmlDocPtr res = preprocess(doc);
+
+        if (res)
+        {
+            xmlFreeDoc(doc);
+            doc = res;
+        }
+
         load(doc, node);
     }
 
@@ -113,7 +137,37 @@ public:
         // NOTE: base_path here helps libxml2 resolve entities correctly: https://github.com/mapnik/mapnik/issues/440
         xmlDocPtr doc = xmlCtxtReadMemory(ctx_, buffer.data(), buffer.length(), base_path.c_str(), encoding_, options_);
 
+        xmlDocPtr res = preprocess(doc);
+
+        if (res)
+        {
+            xmlFreeDoc(doc);
+            doc = res;
+        }
+
         load(doc, node);
+    }
+
+    xmlDocPtr preprocess(xmlDocPtr doc)
+    {
+        xsltStylesheetPtr style = xsltLoadStylesheetPI(doc);
+
+        if (style)
+        {
+            xsltTransformContextPtr transform_ctx = xsltNewTransformContext(style, doc);
+
+            if (transform_ctx)
+            {
+                xsltSetCtxtParseOptions(transform_ctx, options_);
+                xmlDocPtr res = xsltApplyStylesheetUser(style, doc, NULL, NULL, NULL, transform_ctx);
+                xsltFreeTransformContext(transform_ctx);
+                xsltFreeStylesheet(style);
+                return res;
+            }
+
+            xsltFreeStylesheet(style);
+        }
+        return NULL;
     }
 
     void load(const xmlDocPtr doc, xml_node &node)

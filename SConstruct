@@ -89,6 +89,7 @@ pretty_dep_names = {
     'pkg-config':'pkg-config tool | more info: http://pkg-config.freedesktop.org',
     'pg_config':'pg_config program | try setting PG_CONFIG SCons option',
     'xml2-config':'xml2-config program | try setting XML2_CONFIG SCons option',
+    'xslt':'XSLT C library | configure with XSLT_LIBS & XSLT_INCLUDES',
     'libxml2':'libxml2 library | try setting XML2_CONFIG SCons option to point to location of xml2-config program',
     'gdal-config':'gdal-config program | try setting GDAL_CONFIG SCons option',
     'freetype-config':'freetype-config program | try setting FREETYPE_CONFIG SCons option',
@@ -404,6 +405,8 @@ opts.AddVariables(
     BoolVariable('COLOR_PRINT', 'Print build status information in color', 'True'),
     BoolVariable('SAMPLE_INPUT_PLUGINS', 'Compile and install sample plugins', 'False'),
     BoolVariable('BIGINT', 'Compile support for 64-bit integers in mapnik::value', 'True'),
+    PathVariable('XSLT_INCLUDES', 'Search path for libxslt include files', '/usr/include/libxslt', PathVariable.PathAccept),
+    PathVariable('XSLT_LIBS', 'Search path for libxslt library', '/usr/' + LIBDIR_SCHEMA_DEFAULT, PathVariable.PathAccept)
     )
 
 # variables to pickle after successful configure step
@@ -472,6 +475,7 @@ pickle_store = [# Scons internal variables
         'SQLITE_LINKFLAGS',
         'BOOST_LIB_VERSION_FROM_HEADER',
         'BIGINT',
+        'XSLT',
         'HOST'
         ]
 
@@ -1213,7 +1217,7 @@ if not preconfigured:
 
     # Adding the required prerequisite library directories to the include path for
     # compiling and the library path for linking, respectively.
-    for required in ('ICU', 'SQLITE', 'HB'):
+    for required in ('ICU', 'SQLITE', 'HB', 'XSLT'):
         inc_path = env['%s_INCLUDES' % required]
         lib_path = env['%s_LIBS' % required]
         env.AppendUnique(CPPPATH = os.path.realpath(inc_path))
@@ -1242,7 +1246,8 @@ if not preconfigured:
     REQUIRED_LIBSHEADERS = [
         ['z', 'zlib.h', True,'C'],
         [env['ICU_LIB_NAME'],'unicode/unistr.h',True,'C++'],
-        ['harfbuzz', 'harfbuzz/hb.h',True,'C++']
+        ['harfbuzz', 'harfbuzz/hb.h',True,'C++'],
+        ['xslt', 'xslt.h', True, 'C']
     ]
 
     OPTIONAL_LIBSHEADERS = []
