@@ -25,7 +25,6 @@
 
 #include <string>
 #include <sstream>
-#include <mapnik/debug.hpp>
 #include <boost/spirit/home/support/info.hpp>
 
 namespace mapnik { namespace json {
@@ -35,7 +34,7 @@ struct error_handler
 {
     using result_type = void;
     void operator() (
-        Iterator first, Iterator last,
+        Iterator, Iterator last,
         Iterator err_pos, boost::spirit::info const& what) const
     {
         std::stringstream s;

@@ -122,6 +122,8 @@ files = {
     'geometry-transform-translate': {'sizes':[(200,200)]},
     'geometry-transform-translate-patterns': {'sizes':[(200,200)]},
     'geometry-transform-translate-patterns-svg': {'sizes':[(200,200)]},
+    'geometry-transform-scale': {'sizes': [(500, 500)]},
+    'geometry-transform-scale-patterns': {'sizes': [(500, 500)]},
     'marker-interior-position': {'sizes':[(600,400)]},
     'marker-svg-opacity':{},
     'marker-svg-opacity2':{},
@@ -296,6 +298,7 @@ files = {
     'marker-recenter-collide':{'sizes':[(256,128)], 'bbox':mapnik.Box2d(-1,-0.5,1,0.5)},
     'postgis-inline':{'sizes':[(512,512)]},
     'text-line-wrap':{'sizes':[(512,512)]},
+    'text-data-binding': {'sizes': [(500, 500)]},
     'xslt-preprocess':{'sizes':[(600,400)], 'bbox': mapnik.Box2d(-1, -1, 11, 1)},
     }
 

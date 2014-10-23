@@ -46,8 +46,12 @@
 #include <mapnik/group/group_layout.hpp>
 #include <mapnik/group/group_symbolizer_properties.hpp>
 #include <mapnik/util/variant.hpp>
+
 // boost
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedef"
 #include <boost/algorithm/string.hpp>
+#pragma GCC diagnostic pop
 #include <boost/optional.hpp>
 #include <boost/version.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -143,7 +147,7 @@ public:
 
     void operator() ( mapnik::enumeration_wrapper const& e) const
     {
-        auto const& convert_fun_ptr(std::get<2>(meta_));
+        auto const& convert_fun_ptr(std::get<1>(meta_));
         if ( convert_fun_ptr )
         {
             node_.put("<xmlattr>." + std::string(std::get<0>(meta_)), convert_fun_ptr(e));
@@ -287,7 +291,7 @@ public:
     }
 
     template <typename T>
-    void operator () ( T const& val ) const {}
+    void operator () ( T const& ) const {}
 
 private:
     ptree & parent_node_;

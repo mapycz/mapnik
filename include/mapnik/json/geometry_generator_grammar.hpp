@@ -31,10 +31,14 @@
 #include <mapnik/vertex.hpp>    // for CommandType::SEG_MOVETO
 
 // boost
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-local-typedef"
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/fusion/adapted/std_tuple.hpp>
 #include <boost/math/special_functions/trunc.hpp> // for vc++ and android whose c++11 libs lack std::trunc
+#pragma GCC diagnostic pop
 
 //stl
 #include <tuple>
@@ -108,7 +112,7 @@ template <typename T>
 struct json_coordinate_policy : karma::real_policies<T>
 {
     using base_type = boost::spirit::karma::real_policies<T>;
-    static int floatfield(T n) { return base_type::fmtflags::fixed; }
+    static int floatfield(T) { return base_type::fmtflags::fixed; }
 
     static unsigned precision(T n)
     {

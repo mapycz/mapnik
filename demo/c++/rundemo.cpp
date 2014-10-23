@@ -45,18 +45,16 @@
 #include <iostream>
 
 
-int main ( int argc , char** argv)
+int main ( int, char** )
 {
     using namespace mapnik;
-    const std::string srs_lcc="+proj=lcc +ellps=GRS80 +lat_0=49 +lon_0=-95 +lat+1=49 +lat_2=77 \
-                           +datum=NAD83 +units=m +no_defs";
-    const std::string srs_merc="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 \
-                           +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over";
+    const std::string srs_lcc="+proj=lcc +ellps=GRS80 +lat_0=49 +lon_0=-95 +lat+1=49 +lat_2=77 +datum=NAD83 +units=m +no_defs";
+    const std::string srs_merc="+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0.0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs +over";
 
     try {
         std::cout << " running demo ... \n";
         datasource_cache::instance().register_datasources("plugins/input/");
-        freetype_engine::register_font("fonts/dejavu-fonts-ttf-2.33/ttf/DejaVuSans.ttf");
+        freetype_engine::register_font("fonts/dejavu-fonts-ttf-2.34/ttf/DejaVuSans.ttf");
 
         Map m(800,600);
         m.set_background(parse_color("white"));
