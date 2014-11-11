@@ -304,6 +304,7 @@ files = {
     'simplify-zhao-saalfeld': {'sizes': [(500, 1000)]},
     'simplify-visvalingam-whyatt': {'sizes': [(500, 1000)]},
     'simplify-douglas-peucker': {'sizes': [(500, 1000)]},
+    'layer-buffer-size': {'sizes': [(200, 200)], 'bbox': mapnik.Box2d(-1, -1, 1, 1)},
     }
 
 class Reporting:
