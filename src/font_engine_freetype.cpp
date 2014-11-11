@@ -66,11 +66,10 @@ bool freetype_engine::is_font_file(std::string const& file_name)
     std::transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
     return boost::algorithm::ends_with(fn,std::string(".ttf")) ||
         boost::algorithm::ends_with(fn,std::string(".otf")) ||
+        boost::algorithm::ends_with(fn,std::string(".woff"))||
         boost::algorithm::ends_with(fn,std::string(".ttc")) ||
         boost::algorithm::ends_with(fn,std::string(".pfa")) ||
         boost::algorithm::ends_with(fn,std::string(".pfb")) ||
-        boost::algorithm::ends_with(fn,std::string(".ttc")) ||
-        boost::algorithm::ends_with(fn,std::string(".woff"))||
         // Plus OSX custom ext
         boost::algorithm::ends_with(fn,std::string(".dfont"));
 }
@@ -327,9 +326,9 @@ face_ptr freetype_engine::create_face(std::string const& family_name,
         itr = global_font_file_mapping.find(family_name);
         if (itr != global_font_file_mapping.end())
         {
-            auto mem_font_itr = global_memory_fonts_.find(itr->second.second);
+            auto mem_font_itr = global_memory_fonts.find(itr->second.second);
             // if font already in memory, use it
-            if (mem_font_itr != global_memory_fonts_.end())
+            if (mem_font_itr != global_memory_fonts.end())
             {
                 FT_Face face;
                 FT_Error error = FT_New_Memory_Face(library.get(),
@@ -351,7 +350,7 @@ face_ptr freetype_engine::create_face(std::string const& family_name,
 #ifdef MAPNIK_THREADSAFE
             mapnik::scoped_lock lock(mutex_);
 #endif
-            auto result = global_memory_fonts_.emplace(itr->second.second, std::make_pair(std::move(file.data()),file.size()));
+            auto result = global_memory_fonts.emplace(itr->second.second, std::make_pair(std::move(file.data()),file.size()));
             FT_Face face;
             FT_Error error = FT_New_Memory_Face(library.get(),
                                                 reinterpret_cast<FT_Byte const*>(result.first->second.first.get()), // data
@@ -361,7 +360,7 @@ face_ptr freetype_engine::create_face(std::string const& family_name,
             if (error)
             {
                 // we can't load font, erase it.
-                global_memory_fonts_.erase(result.first);
+                global_memory_fonts.erase(result.first);
                 return face_ptr();
             }
             return std::make_shared<font_face>(face);

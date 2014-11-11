@@ -300,6 +300,10 @@ files = {
     'text-line-wrap':{'sizes':[(512,512)]},
     'text-data-binding': {'sizes': [(500, 500)]},
     'xslt-preprocess':{'sizes':[(600,400)], 'bbox': mapnik.Box2d(-1, -1, 11, 1)},
+    'simplify-radial-distance': {'sizes': [(500, 1000)]},
+    'simplify-zhao-saalfeld': {'sizes': [(500, 1000)]},
+    'simplify-visvalingam-whyatt': {'sizes': [(500, 1000)]},
+    'simplify-douglas-peucker': {'sizes': [(500, 1000)]},
     }
 
 class Reporting:

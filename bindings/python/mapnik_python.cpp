@@ -28,7 +28,6 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-local-typedef"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-
 #include "python_to_value.hpp"
 #include <boost/python/args.hpp>        // for keywords, arg, etc
 #include <boost/python/converter/from_python.hpp>
@@ -202,13 +201,16 @@ void render(mapnik::Map const& map,
 
 void render_with_vars(mapnik::Map const& map,
             mapnik::image_32& image,
-            boost::python::dict const& d)
+            boost::python::dict const& d,
+            double scale_factor = 1.0,
+            unsigned offset_x = 0u,
+            unsigned offset_y = 0u)
 {
     mapnik::attributes vars = mapnik::dict2attr(d);
     mapnik::request req(map.width(),map.height(),map.get_current_extent());
     req.set_buffer_size(map.buffer_size());
     python_unblock_auto_block b;
-    mapnik::agg_renderer<mapnik::image_32> ren(map,req,vars,image,1,0,0);
+    mapnik::agg_renderer<mapnik::image_32> ren(map,req,vars,image,scale_factor,offset_x,offset_y);
     ren.apply();
 }
 
@@ -580,12 +582,15 @@ bool has_pycairo()
 }
 
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedef"
 BOOST_PYTHON_FUNCTION_OVERLOADS(load_map_overloads, load_map, 2, 4)
 BOOST_PYTHON_FUNCTION_OVERLOADS(load_map_string_overloads, load_map_string, 2, 4)
 BOOST_PYTHON_FUNCTION_OVERLOADS(save_map_overloads, save_map, 2, 3)
 BOOST_PYTHON_FUNCTION_OVERLOADS(save_map_to_string_overloads, save_map_to_string, 1, 2)
 BOOST_PYTHON_FUNCTION_OVERLOADS(render_overloads, render, 2, 5)
 BOOST_PYTHON_FUNCTION_OVERLOADS(render_with_detector_overloads, render_with_detector, 3, 6)
+#pragma GCC diagnostic pop
 
 BOOST_PYTHON_MODULE(_mapnik)
 {
@@ -707,7 +712,15 @@ BOOST_PYTHON_MODULE(_mapnik)
         "\n"
         );
 
-    def("render_with_vars",&render_with_vars);
+    def("render_with_vars",&render_with_vars,
+        (arg("map"),
+         arg("image"),
+         arg("vars"),
+         arg("scale_factor")=1.0,
+         arg("offset_x")=0,
+         arg("offset_y")=0
+        )
+        );
 
     def("render", &render, render_overloads(
             "\n"
