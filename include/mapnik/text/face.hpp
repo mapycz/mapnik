@@ -26,6 +26,9 @@
 #include <mapnik/text/glyph_info.hpp>
 #include <mapnik/config.hpp>
 #include <mapnik/noncopyable.hpp>
+#include <mapnik/text/text_properties.hpp>
+
+#include <harfbuzz/hb.h>
 
 // freetype2
 extern "C"
@@ -64,6 +67,8 @@ public:
         return face_;
     }
 
+    double get_char_height(double size, evaluated_format_properties_ptr const& f) const;
+
     bool set_character_sizes(double size);
     bool set_unscaled_character_sizes();
 
@@ -73,6 +78,7 @@ public:
 
 private:
     FT_Face face_;
+    mutable double char_height_;
 };
 using face_ptr = std::shared_ptr<font_face>;
 
