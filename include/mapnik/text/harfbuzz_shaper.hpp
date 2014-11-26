@@ -139,10 +139,7 @@ static void shape_text(text_line & line,
                     line.add_glyph(std::move(g), scale_factor);
                 }
             }
-            if (num_glyphs > 0)
-            {
-                line.update_max_char_height(face->get_char_height(size, text_item.format_));
-            }
+            line.update_max_char_height(face->get_char_height(size, text_item.format_));
             break; //When we reach this point the current font had all glyphs.
         }
     }

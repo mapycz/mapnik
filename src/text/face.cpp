@@ -32,19 +32,19 @@ namespace mapnik
 {
 
 font_face::font_face(FT_Face face)
-    : face_(face), char_height_(.0) {}
+    : face_(face) {}
 
 double font_face::get_char_height(double size, evaluated_format_properties_ptr const& f) const
 {
-    if (char_height_ != 0.0) return char_height_;
     glyph_info tmp(0, 0, f);
     tmp.glyph_index = FT_Get_Char_Index(face_, 'X');
+    double char_height = .0;
     if (glyph_dimensions(tmp))
     {
         tmp.scale_multiplier = size / face_->units_per_EM;
-        char_height_ = tmp.height();
+        char_height = tmp.height();
     }
-    return char_height_;
+    return char_height;
 }
 
 bool font_face::set_character_sizes(double size)

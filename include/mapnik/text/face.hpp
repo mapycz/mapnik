@@ -28,8 +28,6 @@
 #include <mapnik/noncopyable.hpp>
 #include <mapnik/text/text_properties.hpp>
 
-#include <harfbuzz/hb.h>
-
 // freetype2
 extern "C"
 {
@@ -78,7 +76,6 @@ public:
 
 private:
     FT_Face face_;
-    mutable double char_height_;
 };
 using face_ptr = std::shared_ptr<font_face>;
 
