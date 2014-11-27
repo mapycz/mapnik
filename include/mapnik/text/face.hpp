@@ -41,6 +41,7 @@ extern "C"
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 namespace mapnik
 {
@@ -76,6 +77,10 @@ public:
 
 private:
     FT_Face face_;
+
+    using height_cache_map = std::map<double, double>;
+    mutable height_cache_map height_cache_;
+    mutable std::mutex height_cache_mutext_;
 };
 using face_ptr = std::shared_ptr<font_face>;
 

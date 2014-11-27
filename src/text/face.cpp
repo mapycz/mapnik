@@ -32,19 +32,27 @@ namespace mapnik
 {
 
 font_face::font_face(FT_Face face)
-    : face_(face) {}
+    : face_(face), height_cache_(), height_cache_mutext_() {}
 
 double font_face::get_char_height(double size, evaluated_format_properties_ptr const& f) const
 {
-    glyph_info tmp(0, 0, f);
-    tmp.glyph_index = FT_Get_Char_Index(face_, 'X');
-    double char_height = .0;
-    if (glyph_dimensions(tmp))
+    std::lock_guard<std::mutex> lock(height_cache_mutext_);
+    height_cache_map::iterator pos = height_cache_.find(size);
+    if (pos == height_cache_.end())
     {
-        tmp.scale_multiplier = size / face_->units_per_EM;
-        char_height = tmp.height();
+        glyph_info tmp(0, 0, f);
+        tmp.glyph_index = FT_Get_Char_Index(face_, 'X');
+        if (glyph_dimensions(tmp))
+        {
+            tmp.scale_multiplier = size / face_->units_per_EM;
+            pos = height_cache_.emplace(size, tmp.height()).first;
+        }
+        else
+        {
+            return .0;
+        }
     }
-    return char_height;
+    return pos->second;
 }
 
 bool font_face::set_character_sizes(double size)
