@@ -20,9 +20,7 @@
  *
  *****************************************************************************/
 
-#ifdef HAVE_LIBXML2
-#error HAVE_LIBXML2 defined but compiling rapidxml_loader.cpp!
-#endif
+#ifndef HAVE_LIBXML2
 
 // mapnik
 #include <mapnik/config_error.hpp>
@@ -162,3 +160,5 @@ void read_xml_string(std::string const& str, xml_node & node, std::string const&
 }
 
 } // end of namespace mapnik
+
+#endif
