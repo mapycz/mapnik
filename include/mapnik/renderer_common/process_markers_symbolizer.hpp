@@ -66,12 +66,12 @@ struct render_marker_symbolizer_visitor
 
         // https://github.com/mapnik/mapnik/issues/1316
         bool snap_to_pixels = !mapnik::marker_cache::instance().is_uri(filename_);
-        
+
         agg::trans_affine geom_tr;
         auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
         if (transform) evaluate_transform(geom_tr, feature_, common_.vars_, *transform, common_.scale_factor_);
         agg::trans_affine image_tr = agg::trans_affine_scaling(common_.scale_factor_);
-                
+
         boost::optional<svg_path_ptr> const& stock_vector_marker = mark.get_data();
 
         // special case for simple ellipse markers
@@ -106,8 +106,8 @@ struct render_marker_symbolizer_visitor
                                           affine_transform_tag,
                                           simplify_tag, smooth_tag,
                                           offset_transform_tag>;
-            vertex_converter_type converter(clip_box_, 
-                                            rasterizer_dispatch, 
+            vertex_converter_type converter(clip_box_,
+                                            rasterizer_dispatch,
                                             sym_,
                                             common_.t_,
                                             prj_trans_,
@@ -159,8 +159,8 @@ struct render_marker_symbolizer_visitor
                                           affine_transform_tag,
                                           simplify_tag, smooth_tag,
                                           offset_transform_tag>;
-            vertex_converter_type converter(clip_box_, 
-                                            rasterizer_dispatch, 
+            vertex_converter_type converter(clip_box_,
+                                            rasterizer_dispatch,
                                             sym_,
                                             common_.t_,
                                             prj_trans_,
@@ -184,20 +184,20 @@ struct render_marker_symbolizer_visitor
             apply_markers_multi(feature_, common_.vars_, converter, sym_);
         }
     }
-    
-    void operator() (marker_rgba8 const& mark) 
+
+    void operator() (marker_rgba8 const& mark)
     {
         using namespace mapnik::svg;
         bool clip = get<value_bool, keys::clip>(sym_, feature_, common_.vars_);
         double offset = get<value_double, keys::offset>(sym_, feature_, common_.vars_);
         double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym_, feature_, common_.vars_);
         double smooth = get<value_double, keys::smooth>(sym_, feature_, common_.vars_);
-        
+
         agg::trans_affine geom_tr;
         auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
         if (transform) evaluate_transform(geom_tr, feature_, common_.vars_, *transform, common_.scale_factor_);
         agg::trans_affine image_tr = agg::trans_affine_scaling(common_.scale_factor_);
-                
+
         setup_transform_scaling(image_tr, mark.width(), mark.height(), feature_, common_.vars_, sym_);
         auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
         if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform);
@@ -223,8 +223,8 @@ struct render_marker_symbolizer_visitor
                                       affine_transform_tag,
                                       simplify_tag, smooth_tag,
                                       offset_transform_tag>;
-        vertex_converter_type converter(clip_box_, 
-                                        rasterizer_dispatch, 
+        vertex_converter_type converter(clip_box_,
+                                        rasterizer_dispatch,
                                         sym_,
                                         common_.t_,
                                         prj_trans_,
