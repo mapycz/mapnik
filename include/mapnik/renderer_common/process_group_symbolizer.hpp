@@ -80,6 +80,7 @@ struct virtual_renderer_common : private util::noncopyable
     box2d<double> & query_extent_;
     view_transform & t_;
     std::shared_ptr<label_collision_detector4> detector_;
+    symbol_cache symbol_cache_;
 };
 
 

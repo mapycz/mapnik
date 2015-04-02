@@ -47,19 +47,20 @@ public:
     class get_point_visitor
     {
     public:
-        get_point_visitor(double &x, double &y, double &angle, bool ignore_placement)
-            : x_(x), y_(y), angle_(angle), ignore_placement_(ignore_placement)
+        get_point_visitor(double &x, double &y, double &angle, box2d<double> &box, bool ignore_placement)
+            : x_(x), y_(y), angle_(angle), box_(box), ignore_placement_(ignore_placement)
         {
         }
 
         template <typename T>
         bool operator()(T &placement) const
         {
-            return placement.get_point(x_, y_, angle_, ignore_placement_);
+            return placement.get_point(x_, y_, angle_, box_, ignore_placement_);
         }
 
     private:
         double &x_, &y_, &angle_;
+        box2d<double> &box_;
         bool ignore_placement_;
     };
 
@@ -72,9 +73,9 @@ public:
     }
 
     // Get next point where the marker should be placed. Returns true if a place is found, false if none is found.
-    bool get_point(double &x, double &y, double &angle, bool ignore_placement)
+    bool get_point(double &x, double &y, double &angle, box2d<double> &box, bool ignore_placement)
     {
-        return util::apply_visitor(get_point_visitor(x, y, angle, ignore_placement), placement_);
+        return util::apply_visitor(get_point_visitor(x, y, angle, box, ignore_placement), placement_);
     }
 
 private:

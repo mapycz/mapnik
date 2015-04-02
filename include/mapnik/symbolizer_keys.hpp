@@ -92,6 +92,7 @@ enum class keys : std::uint8_t
     direction,
     avoid_edges,
     ff_settings,
+    key,
     MAX_SYMBOLIZER_KEY
 };
 

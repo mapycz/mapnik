@@ -60,7 +60,7 @@ public:
         first_point_ = true;
     }
 
-    bool get_point(double &x, double &y, double &angle, bool ignore_placement)
+    bool get_point(double &x, double &y, double &angle, box2d<double> &box, bool ignore_placement)
     {
         if (this->done_)
         {
@@ -69,7 +69,7 @@ public:
 
         if (this->locator_.type() == mapnik::geometry_type::types::Point)
         {
-            return markers_point_placement<Locator, Detector>::get_point(x, y, angle, ignore_placement);
+            return markers_point_placement<Locator, Detector>::get_point(x, y, angle, box, ignore_placement);
         }
 
         double move = spacing_;
@@ -101,7 +101,7 @@ public:
                     {
                         continue;
                     }
-                    box2d<double> box = this->perform_transform(angle, x, y);
+                    box = this->perform_transform(angle, x, y);
                     if ((this->params_.avoid_edges && !this->detector_.extent().contains(box))
                         || (!this->params_.allow_overlap && !this->detector_.has_placement(box)))
                     {

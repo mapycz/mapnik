@@ -43,7 +43,7 @@ struct render_marker_symbolizer_visitor
                                      markers_symbolizer const& sym,
                                      mapnik::feature_impl & feature,
                                      proj_transform const& prj_trans,
-                                     RendererType const& common,
+                                     RendererType & common,
                                      box2d<double> const& clip_box,
                                      ContextType const& renderer_context)
         : filename_(filename),
@@ -56,7 +56,7 @@ struct render_marker_symbolizer_visitor
 
     void operator() (marker_null const&) {}
 
-    void operator() (marker_svg const& mark) 
+    void operator() (marker_svg const& mark)
     {
         using namespace mapnik::svg;
         bool clip = get<value_bool, keys::clip>(sym_, feature_, common_.vars_);
@@ -97,7 +97,8 @@ struct render_marker_symbolizer_visitor
                                                      feature_,
                                                      common_.vars_,
                                                      snap_to_pixels,
-                                                     renderer_context_);
+                                                     renderer_context_,
+                                                     common_.symbol_cache_);
 
             using vertex_converter_type = vertex_converter<vector_dispatch_type,clip_line_tag,
                                           clip_poly_tag,
@@ -149,7 +150,8 @@ struct render_marker_symbolizer_visitor
                                                      feature_,
                                                      common_.vars_,
                                                      snap_to_pixels,
-                                                     renderer_context_);
+                                                     renderer_context_,
+                                                     common_.symbol_cache_);
 
             using vertex_converter_type = vertex_converter<vector_dispatch_type,clip_line_tag,
                                           clip_poly_tag,
@@ -212,7 +214,8 @@ struct render_marker_symbolizer_visitor
                                                  common_.scale_factor_,
                                                  feature_,
                                                  common_.vars_,
-                                                 renderer_context_);
+                                                 renderer_context_,
+                                                 common_.symbol_cache_);
 
         using vertex_converter_type = vertex_converter<raster_dispatch_type,clip_line_tag,
                                       clip_poly_tag,
@@ -251,7 +254,7 @@ struct render_marker_symbolizer_visitor
     markers_symbolizer const& sym_;
     mapnik::feature_impl & feature_;
     proj_transform const& prj_trans_;
-    RendererType const& common_;
+    RendererType & common_;
     box2d<double> const& clip_box_;
     ContextType const& renderer_context_;
 };
@@ -260,7 +263,7 @@ template <typename VD, typename RD, typename RendererType, typename ContextType>
 void render_markers_symbolizer(markers_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans,
-                               RendererType const& common,
+                               RendererType & common,
                                box2d<double> const& clip_box,
                                ContextType const& renderer_context)
 {
