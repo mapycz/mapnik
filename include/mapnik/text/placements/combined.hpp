@@ -30,30 +30,30 @@ namespace mapnik {
     class text_placements_info_combined;
     class feature_impl;
     struct attribute;
-    
+
     class text_placements_combined: public text_placements
     {
-        
+
     public:
         text_placements_combined(text_placements_ptr simple_placement, text_placements_ptr list_placement);
         text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const;
         virtual void add_expressions(expression_set & output) const;
         static text_placements_ptr from_xml(xml_node const& xml, fontset_map const& fontsets, bool is_shield);
-        
+
         text_placements_ptr get_simple_placement() { return simple_placement_; }
         text_placements_ptr get_list_placement() { return list_placement_; }
-        
+
     private:
         text_placements_ptr simple_placement_;
         text_placements_ptr list_placement_;
-        
+
         friend class text_placements_info_combined;
     };
-    
-    
+
+
     class text_placement_info_combined: public text_placement_info
     {
-        
+
     public:
         text_placement_info_combined(text_placements_combined const* parent, double scale_factor, text_placement_info_ptr simple_placement_info, text_placement_info_ptr list_placement_info);
         bool next() const;
@@ -61,10 +61,10 @@ namespace mapnik {
     private:
         text_placement_info_ptr simple_placement_info_;
         text_placement_info_ptr list_placement_info_;
-        
+
         void apply_simple_placement() const;
     };
-    
+
 } //namespace
 
 #endif

@@ -40,12 +40,12 @@ text_placements_combined::text_placements_combined(text_placements_ptr simple_pl
 text_placement_info_ptr text_placements_combined::get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const
 {
     text_placement_info_ptr simple_placement_info = simple_placement_->get_placement_info(scale_factor, feature, vars);
-    
+
     text_placement_info_ptr list_placement_info = list_placement_->get_placement_info(scale_factor, feature, vars);
-    
+
     return std::make_shared<text_placement_info_combined>(this, scale_factor, simple_placement_info, list_placement_info);
 }
-    
+
 void text_placements_combined::add_expressions(expression_set & output) const
 {
     simple_placement_->add_expressions(output);
@@ -64,22 +64,22 @@ text_placements_ptr text_placements_combined::from_xml(xml_node const& xml, font
     }
     return text_placements_ptr();
 }
-    
+
 //text_placement_info_combined class
-    
+
 text_placement_info_combined::text_placement_info_combined(text_placements_combined const* parent, double scale_factor, text_placement_info_ptr simple_placement_info, text_placement_info_ptr list_placement_info)
 : text_placement_info(parent, scale_factor),
   simple_placement_info_(simple_placement_info),
   list_placement_info_(list_placement_info)
 {
 }
-    
+
 void text_placement_info_combined::reset_state()
 {
     simple_placement_info_->reset_state();
     list_placement_info_->reset_state();
 }
-    
+
 bool text_placement_info_combined::next() const
 {
     //logic to get the next combined point placement
@@ -88,7 +88,7 @@ bool text_placement_info_combined::next() const
         //try the simple placement first
         if(simple_placement_info_->next())
         {
-            apply_simple_placement(); 
+            apply_simple_placement();
         }
         else if(list_placement_info_->next()) //try the list placement options
         {
@@ -109,11 +109,11 @@ bool text_placement_info_combined::next() const
     }
     return false;
 }
-    
+
 void text_placement_info_combined::apply_simple_placement() const
 {
     properties.format_defaults.text_size = simple_placement_info_->properties.format_defaults.text_size;
     properties.layout_defaults.dir = simple_placement_info_->properties.layout_defaults.dir;
 }
-    
+
 }//namespace

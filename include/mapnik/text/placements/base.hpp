@@ -61,7 +61,7 @@ public:
 
     // Scale factor used by the renderer.
     double scale_factor;
-    
+
     //reset the state for the placement
     virtual void reset_state() = 0;
 
