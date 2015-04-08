@@ -161,7 +161,7 @@ void render_thunk_extractor::operator()(text_symbolizer const& sym) const
         common_.width_, common_.height_,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
-        clip_box, agg::trans_affine());
+        clip_box, agg::trans_affine(), common_.symbol_cache_);
 
     extract_text_thunk(std::move(helper), sym);
 }
@@ -174,7 +174,7 @@ void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
         common_.width_, common_.height_,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
-        clip_box, agg::trans_affine());
+        clip_box, agg::trans_affine(), common_.symbol_cache_);
 
     extract_text_thunk(std::move(helper), sym);
 }

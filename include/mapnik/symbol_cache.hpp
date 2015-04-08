@@ -40,17 +40,18 @@ class symbol_cache : util::noncopyable
 public:
     using box_type = box2d<double>;
 
-    struct item
+    struct symbol
     {
-        item(box_type const & box) : box(box) { }
+        symbol(box_type const & box) : box(box) { }
         box_type box;
     };
 
     void insert(std::string const & key, box_type const & value);
+    symbol const& get(std::string const & key) const;
+    bool contains(std::string const & key) const;
 
 private:
-    using list_type = std::vector<item>;
-    std::map<std::string, list_type> boxes;
+    std::map<std::string, symbol> items;
 };
 
 }

@@ -37,7 +37,7 @@ struct attribute;
 class MAPNIK_DECL text_placements_dummy: public text_placements
 {
 public:
-    text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const;
+    text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars, symbol_cache const& sc) const;
     friend class text_placement_info_dummy;
 };
 

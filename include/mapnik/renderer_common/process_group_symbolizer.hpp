@@ -376,7 +376,7 @@ void render_group_symbolizer(group_symbolizer const& sym,
     group_symbolizer_helper helper(sym, feature, vars, prj_trans,
                                    common.width_, common.height_,
                                    common.scale_factor_, common.t_,
-                                   *common.detector_, clipping_extent);
+                                   *common.detector_, clipping_extent, common.symbol_cache_);
 
     for (size_t i = 0; i < matches.size(); ++i)
     {

@@ -36,11 +36,12 @@ struct attribute;
 class text_placements_simple: public text_placements
 {
 public:
-    text_placements_simple(symbolizer_base::value_type const& positions);
+    text_placements_simple(symbolizer_base::value_type const& positions, boost::optional<expression_ptr> const& anchor_key);
     text_placements_simple(symbolizer_base::value_type const& positions,
                            std::vector<directions_e> && direction,
-                           std::vector<int> && text_sizes);
-    text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const;
+                           std::vector<int> && text_sizes,
+                           boost::optional<expression_ptr> const& anchor_key);
+    text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars, symbol_cache const& sc) const;
     std::string get_positions() const;
     static text_placements_ptr from_xml(xml_node const& xml, fontset_map const& fontsets, bool is_shield);
     void init_positions(std::string const& positions) const;
@@ -48,6 +49,7 @@ public:
     std::vector<int> text_sizes_;
 private:
     symbolizer_base::value_type positions_;
+    boost::optional<expression_ptr> anchor_key_;
     friend class text_placement_info_simple;
 };
 
@@ -58,7 +60,9 @@ class text_placement_info_simple : public text_placement_info
 public:
     text_placement_info_simple(text_placements_simple const* parent,
                                std::string const& evaluated_positions,
-                               double scale_factor);
+                               double scale_factor,
+                               double dx,
+                               double dy);
     bool next() const;
     virtual void reset_state() {state = 0; position_state = 0;}
 protected:

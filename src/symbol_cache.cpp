@@ -28,14 +28,17 @@ namespace mapnik
 
 void symbol_cache::insert(std::string const & key, box_type const & box)
 {
-    auto i = boxes.find(key);
+    items.emplace(key, box);
+}
 
-    if (i == boxes.end())
-    {
-        i = boxes.emplace(key, list_type()).first;
-    }
+symbol_cache::symbol const& symbol_cache::get(std::string const & key) const
+{
+    return items.at(key);
+}
 
-    (*i).second.emplace_back(box);
+bool symbol_cache::contains(std::string const & key) const
+{
+    return items.find(key) != items.end();
 }
 
 }

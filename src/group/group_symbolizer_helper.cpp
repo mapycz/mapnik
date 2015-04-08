@@ -43,8 +43,9 @@ group_symbolizer_helper::group_symbolizer_helper(
         proj_transform const& prj_trans,
         unsigned width, unsigned height, double scale_factor,
         view_transform const& t, DetectorType & detector,
-        box2d<double> const& query_extent)
-    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent),
+        box2d<double> const& query_extent,
+        symbol_cache const& sc)
+    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
       detector_(detector)
 {}
 

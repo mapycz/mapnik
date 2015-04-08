@@ -37,12 +37,10 @@ text_placements_combined::text_placements_combined(text_placements_ptr simple_pl
 {
 }
 
-text_placement_info_ptr text_placements_combined::get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const
+text_placement_info_ptr text_placements_combined::get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars, symbol_cache const& sc) const
 {
-    text_placement_info_ptr simple_placement_info = simple_placement_->get_placement_info(scale_factor, feature, vars);
-
-    text_placement_info_ptr list_placement_info = list_placement_->get_placement_info(scale_factor, feature, vars);
-
+    text_placement_info_ptr simple_placement_info = simple_placement_->get_placement_info(scale_factor, feature, vars, sc);
+    text_placement_info_ptr list_placement_info = list_placement_->get_placement_info(scale_factor, feature, vars, sc);
     return std::make_shared<text_placement_info_combined>(this, scale_factor, simple_placement_info, list_placement_info);
 }
 

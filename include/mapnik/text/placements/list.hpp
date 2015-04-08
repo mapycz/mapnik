@@ -34,7 +34,7 @@ class text_placements_list: public text_placements
 {
 public:
     text_placements_list();
-    text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const;
+    text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars, symbol_cache const& sc) const;
     virtual void add_expressions(expression_set & output) const;
     text_symbolizer_properties & add();
     text_symbolizer_properties & get(unsigned i);

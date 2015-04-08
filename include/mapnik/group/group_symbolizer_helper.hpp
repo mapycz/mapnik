@@ -61,7 +61,8 @@ public:
                             double scale_factor,
                             view_transform const& t,
                             DetectorType &detector,
-                            box2d<double> const& query_extent);
+                            box2d<double> const& query_extent,
+                            symbol_cache const& sc);
 
     inline void add_box_element(box2d<double> const& box, value_unicode_string const& repeat_key = "")
     {

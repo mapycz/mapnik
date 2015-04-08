@@ -94,7 +94,7 @@ struct vector_markers_dispatch : util::noncopyable
         agg::trans_affine_translation recenter(-center.x, -center.y);
         agg::trans_affine tr = recenter * marker_trans_;
         direction_enum direction = get<direction_enum, keys::direction>(sym_, feature_, vars_);
-        boost::optional<std::string> key = get_optional<std::string>(sym_, keys::key, feature_, vars_);
+        boost::optional<std::string> key = get_optional<std::string>(sym_, keys::symbol_key, feature_, vars_);
         markers_placement_params params { src_->bounding_box(), tr, spacing * scale_factor_, max_error, allow_overlap, avoid_edges, direction };
         markers_placement_finder<T, Detector> placement_finder(
             placement_method, path, detector_, params);
@@ -161,7 +161,7 @@ struct raster_markers_dispatch : util::noncopyable
         value_double max_error = get<value_double, keys::max_error>(sym_, feature_, vars_);
         box2d<double> bbox(0,0, src_.width(),src_.height());
         direction_enum direction = get<direction_enum, keys::direction>(sym_, feature_, vars_);
-        boost::optional<std::string> key = get_optional<std::string>(sym_, keys::key, feature_, vars_);
+        boost::optional<std::string> key = get_optional<std::string>(sym_, keys::symbol_key, feature_, vars_);
         markers_placement_params params { bbox, marker_trans_, spacing * scale_factor_, max_error, allow_overlap, avoid_edges, direction };
         markers_placement_finder<T, label_collision_detector4> placement_finder(
             placement_method, path, detector_, params);

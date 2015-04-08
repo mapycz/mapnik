@@ -49,7 +49,8 @@ base_symbolizer_helper::base_symbolizer_helper(
         proj_transform const& prj_trans,
         unsigned width, unsigned height, double scale_factor,
         view_transform const& t,
-        box2d<double> const& query_extent)
+        box2d<double> const& query_extent,
+        symbol_cache const& sc)
     : sym_(sym),
       feature_(feature),
       vars_(vars),
@@ -58,7 +59,7 @@ base_symbolizer_helper::base_symbolizer_helper(
       dims_(0, 0, width, height),
       query_extent_(query_extent),
       scale_factor_(scale_factor),
-      info_ptr_(mapnik::get<text_placements_ptr>(sym_, keys::text_placements_)->get_placement_info(scale_factor,feature_,vars_)),
+      info_ptr_(mapnik::get<text_placements_ptr>(sym_, keys::text_placements_)->get_placement_info(scale_factor,feature_,vars_, sc)),
       text_props_(evaluate_text_properties(info_ptr_->properties,feature_,vars_))
 {
     initialize_geometries();
@@ -182,8 +183,9 @@ text_symbolizer_helper::text_symbolizer_helper(
         unsigned width, unsigned height, double scale_factor,
         view_transform const& t, FaceManagerT & font_manager,
         DetectorT &detector, box2d<double> const& query_extent,
-        agg::trans_affine const& affine_trans)
-    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent),
+        agg::trans_affine const& affine_trans,
+        symbol_cache const& sc)
+    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
       finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
     adapter_(finder_,false),
     converter_(query_extent_, adapter_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
@@ -274,8 +276,9 @@ text_symbolizer_helper::text_symbolizer_helper(
         proj_transform const& prj_trans,
         unsigned width, unsigned height, double scale_factor,
         view_transform const& t, FaceManagerT & font_manager,
-        DetectorT & detector, box2d<double> const& query_extent, agg::trans_affine const& affine_trans)
-    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent),
+        DetectorT & detector, box2d<double> const& query_extent, agg::trans_affine const& affine_trans,
+        symbol_cache const& sc)
+    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
       finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
       adapter_(finder_,true),
       converter_(query_extent_, adapter_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
@@ -345,7 +348,8 @@ template text_symbolizer_helper::text_symbolizer_helper(
     face_manager_freetype & font_manager,
     label_collision_detector4 &detector,
     box2d<double> const& query_extent,
-    agg::trans_affine const&);
+    agg::trans_affine const&,
+    symbol_cache const& sc);
 
 template text_symbolizer_helper::text_symbolizer_helper(
     shield_symbolizer const& sym,
@@ -359,5 +363,6 @@ template text_symbolizer_helper::text_symbolizer_helper(
     face_manager_freetype & font_manager,
     label_collision_detector4 &detector,
     box2d<double> const& query_extent,
-    agg::trans_affine const&);
+    agg::trans_affine const&,
+    symbol_cache const& sc);
 } //namespace
