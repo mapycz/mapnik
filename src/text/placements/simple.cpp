@@ -29,6 +29,7 @@
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/expression_string.hpp>
+#include <mapnik/text/placements/dummy.hpp>
 
 // boost
 #pragma GCC diagnostic push
@@ -172,6 +173,10 @@ text_placement_info_ptr text_placements_simple::get_placement_info(double scale_
             // Add 0.5 to ensure boxes won't intersect.
             dx += sym.box.width() / 2.0 + .5;
             dy += sym.box.height() / 2.0 + .5;
+        }
+        else
+        {
+            return std::make_shared<text_placement_info_dummy>(this, scale_factor, 1);
         }
     }
 
