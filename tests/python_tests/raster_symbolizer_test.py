@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from nose.tools import *
-from utilities import execution_path, run_all, contains_word, get_unique_colors
+from nose.tools import eq_
+from utilities import execution_path, run_all, get_unique_colors
 
 import os, mapnik
 
@@ -52,9 +52,14 @@ def test_dataraster_coloring():
 
         im = mapnik.Image(_map.width,_map.height)
         mapnik.render(_map, im)
-        imdata = im.tostring()
-        # we have some values in the [20,30) interval so check that they're colored
-        assert contains_word('\xff\xff\x00\xff', imdata)
+        expected_file = './images/support/dataraster_coloring.png'
+        actual_file = '/tmp/' + os.path.basename(expected_file)
+        im.save(actual_file,'png32')
+        if not os.path.exists(expected_file) or os.environ.get('UPDATE'):
+            im.save(expected_file,'png32')
+        actual = mapnik.Image.open(actual_file)
+        expected = mapnik.Image.open(expected_file)
+        eq_(actual.tostring('png32'),expected.tostring('png32'), 'failed comparing actual (%s) and expected (%s)' % (actual_file,expected_file))
 
 def test_dataraster_query_point():
     srs = '+init=epsg:32630'
@@ -134,7 +139,7 @@ def test_raster_with_alpha_blends_correctly_with_background():
         mim = mapnik.Image(WIDTH, HEIGHT)
 
         mapnik.render(map, mim)
-        imdata = mim.tostring()
+        mim.tostring()
         # All white is expected
         eq_(get_unique_colors(mim),['rgba(254,254,254,255)'])
 
@@ -165,8 +170,14 @@ def test_raster_warping():
 
         im = mapnik.Image(_map.width,_map.height)
         mapnik.render(_map, im)
-        imdata = im.tostring()
-        assert contains_word('\xff\xff\x00\xff', imdata)
+        expected_file = './images/support/raster_warping.png'
+        actual_file = '/tmp/' + os.path.basename(expected_file)
+        im.save(actual_file,'png32')
+        if not os.path.exists(expected_file) or os.environ.get('UPDATE'):
+            im.save(expected_file,'png32')
+        actual = mapnik.Image.open(actual_file)
+        expected = mapnik.Image.open(expected_file)
+        eq_(actual.tostring('png32'),expected.tostring('png32'), 'failed comparing actual (%s) and expected (%s)' % (actual_file,expected_file))
 
 def test_raster_warping_does_not_overclip_source():
     lyrSrs = "+init=epsg:32630"
@@ -192,7 +203,14 @@ def test_raster_warping_does_not_overclip_source():
 
         im = mapnik.Image(_map.width,_map.height)
         mapnik.render(_map, im)
-        assert im.view(0,200,1,1).tostring()=='\xff\xff\x00\xff'
+        expected_file = './images/support/raster_warping_does_not_overclip_source.png'
+        actual_file = '/tmp/' + os.path.basename(expected_file)
+        im.save(actual_file,'png32')
+        if not os.path.exists(expected_file) or os.environ.get('UPDATE'):
+            im.save(expected_file,'png32')
+        actual = mapnik.Image.open(actual_file)
+        expected = mapnik.Image.open(expected_file)
+        eq_(actual.tostring('png32'),expected.tostring('png32'), 'failed comparing actual (%s) and expected (%s)' % (actual_file,expected_file))
 
 if __name__ == "__main__":
     setup()

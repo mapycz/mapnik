@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
 // mapnik
 #include <mapnik/global.hpp>
 #include <mapnik/palette.hpp>
-#include <mapnik/noncopyable.hpp>
+#include <mapnik/util/noncopyable.hpp>
 
 // stl
 #include <algorithm>
@@ -52,7 +52,7 @@ struct RGBAPolicy
 };
 
 template <typename T, typename InsertPolicy = RGBAPolicy >
-class hextree : private mapnik::noncopyable
+class hextree : private util::noncopyable
 {
     struct node
     {
@@ -393,7 +393,7 @@ private:
     // clip extreme alfa values
     void create_palette_rek(std::vector<rgba> & palette, node * itr) const
     {
-        if (itr->count >= 3)
+        if (itr->count != 0)
         {
             unsigned count = itr->count;
             byte a = byte(itr->alphas/float(count));

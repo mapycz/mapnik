@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -79,8 +79,8 @@ public:
                 {
                     for (std::size_t i=0; i<(*pos_)->num_geometries();++i)
                     {
-                        geometry_type & geom = (*pos_)->get_geometry(i);
-                        if (bbox_.intersects(geom.envelope()))
+                        geometry_type const& geom = (*pos_)->get_geometry(i);
+                        if (bbox_.intersects(::mapnik::envelope(geom)))
                         {
                             return *pos_++;
                         }

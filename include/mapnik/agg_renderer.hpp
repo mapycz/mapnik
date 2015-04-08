@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,17 +26,15 @@
 // mapnik
 #include <mapnik/config.hpp>            // for MAPNIK_DECL
 #include <mapnik/feature_style_processor.hpp>
-#include <mapnik/noncopyable.hpp>       // for noncopyable
+#include <mapnik/util/noncopyable.hpp>       // for noncopyable
 #include <mapnik/rule.hpp>              // for rule, symbolizers
 #include <mapnik/box2d.hpp>     // for box2d
-#include <mapnik/color.hpp>     // for color
 #include <mapnik/view_transform.hpp>    // for view_transform
 #include <mapnik/image_compositing.hpp>  // for composite_mode_e
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/request.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/renderer_common.hpp>
-#include <mapnik/image_data.hpp>
 // stl
 #include <memory>
 
@@ -50,17 +48,19 @@ namespace mapnik {
   class feature_type_style;
   class label_collision_detector4;
   class layer;
-  class marker;
+  class color;
+  struct marker;
   class proj_transform;
   struct rasterizer;
-  class image_32;
+  struct rgba8_t;
+  template<typename T> class image;
 }
 
 namespace mapnik {
 
 template <typename T0, typename T1=label_collision_detector4>
 class MAPNIK_DECL agg_renderer : public feature_style_processor<agg_renderer<T0> >,
-                                 private mapnik::noncopyable
+                                 private util::noncopyable
 {
 
 public:
@@ -122,6 +122,9 @@ public:
     void process(debug_symbolizer const& sym,
                  feature_impl & feature,
                  proj_transform const& prj_trans);
+    void process(dot_symbolizer const& sym,
+                 mapnik::feature_impl & feature,
+                 proj_transform const& prj_trans);
 
     inline bool process(rule::symbolizers const&,
                         mapnik::feature_impl&,
@@ -168,7 +171,7 @@ private:
     void setup(Map const& m);
 };
 
-extern template class MAPNIK_DECL agg_renderer<image_32>;
+extern template class MAPNIK_DECL agg_renderer<image<rgba8_t>>;
 
 } // namespace mapnik
 

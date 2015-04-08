@@ -32,7 +32,7 @@
 #include <mapnik/debug.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/raster.hpp>
-#include <mapnik/image_data.hpp>
+#include <mapnik/image.hpp>
 #include <mapnik/util/conversions.hpp>
 #include <mapnik/util/trim.hpp>
 #include <mapnik/box2d.hpp> // for box2d
@@ -178,25 +178,15 @@ typedef enum {
 
 }
 
-using mapnik::box2d;
-
 template<typename T>
-void read_data_band(mapnik::raster_ptr raster,
+mapnik::raster_ptr read_data_band(mapnik::box2d<double> const& bbox,
                     uint16_t width, uint16_t height,
                     bool hasnodata, T reader)
 {
-  mapnik::image_data_32 & image = raster->data_;
-
-  // Start with plain white (ABGR or RGBA depending on endiannes)
-  // TODO: set to transparent instead?
-  image.set(0xffffffff);
-
-  raster->premultiplied_alpha_ = true;
-
-  float* data = (float*)image.getBytes();
+  mapnik::image_gray32f image(width, height);
+  float* data = image.getData();
   double val;
   val = reader(); // nodata value, need to read anyway
-  if ( hasnodata ) raster->set_nodata(val);
   for (int y=0; y<height; ++y) {
     for (int x=0; x<width; ++x) {
       val = reader();
@@ -204,16 +194,14 @@ void read_data_band(mapnik::raster_ptr raster,
       data[off] = val;
     }
   }
+  mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(bbox, image, 1.0);
+  if ( hasnodata ) raster->set_nodata(val);
+  return raster;
 }
 
-void
-pgraster_wkb_reader::read_indexed(mapnik::raster_ptr raster)
+mapnik::raster_ptr pgraster_wkb_reader::read_indexed(mapnik::box2d<double> const& bbox,
+                                                     uint16_t width, uint16_t height)
 {
-  mapnik::image_data_32 & image = raster->data_;
-
-  // Start with all zeroes
-  image.set(0);
-
   uint8_t type = read_uint8(&ptr_);
 
   int pixtype = BANDTYPE_PIXTYPE(type);
@@ -227,7 +215,7 @@ pgraster_wkb_reader::read_indexed(mapnik::raster_ptr raster)
   if ( offline ) {
     MAPNIK_LOG_WARN(pgraster) << "pgraster_wkb_reader: offline band "
           " unsupported";
-    return;
+    return mapnik::raster_ptr();
   }
 
   MAPNIK_LOG_DEBUG(pgraster) << "pgraster_wkb_reader: reading " << height_ << "x" << width_ << " pixels";
@@ -240,27 +228,27 @@ pgraster_wkb_reader::read_indexed(mapnik::raster_ptr raster)
     case PT_8BSI:
       // mapnik does not support signed anyway
     case PT_8BUI:
-      read_data_band(raster, width_, height_, hasnodata,
+      return read_data_band(bbox, width_, height_, hasnodata,
                      boost::bind(read_uint8, &ptr_));
       break;
     case PT_16BSI:
       // mapnik does not support signed anyway
     case PT_16BUI:
-      read_data_band(raster, width_, height_, hasnodata,
+      return read_data_band(bbox, width_, height_, hasnodata,
                      boost::bind(read_uint16, &ptr_, endian_));
       break;
     case PT_32BSI:
       // mapnik does not support signed anyway
     case PT_32BUI:
-      read_data_band(raster, width_, height_, hasnodata,
+      return read_data_band(bbox, width_, height_, hasnodata,
                      boost::bind(read_uint32, &ptr_, endian_));
       break;
     case PT_32BF:
-      read_data_band(raster, width_, height_, hasnodata,
+      return read_data_band(bbox, width_, height_, hasnodata,
                      boost::bind(read_float32, &ptr_, endian_));
       break;
     case PT_64BF:
-      read_data_band(raster, width_, height_, hasnodata,
+      return read_data_band(bbox, width_, height_, hasnodata,
                      boost::bind(read_float64, &ptr_, endian_));
       break;
     default:
@@ -270,28 +258,25 @@ pgraster_wkb_reader::read_indexed(mapnik::raster_ptr raster)
       //MAPNIK_LOG_WARN(pgraster) << err.str();
       throw mapnik::datasource_exception(err.str());
   }
-
+  return mapnik::raster_ptr();
 }
 
 template<typename T>
-void read_grayscale_band(mapnik::raster_ptr raster,
+mapnik::raster_ptr read_grayscale_band(mapnik::box2d<double> const& bbox,
                          uint16_t width, uint16_t height,
                          bool hasnodata, T reader)
 {
-  mapnik::image_data_32 & image = raster->data_;
-
+  mapnik::image_rgba8 image(width,height, true, true);
   // Start with plain white (ABGR or RGBA depending on endiannes)
   // TODO: set to transparent instead?
   image.set(0xffffffff);
 
-  raster->premultiplied_alpha_ = true;
 
   int val;
   uint8_t * data = image.getBytes();
-  int ps = 4; // sizeof(image_data::pixel_type)
+  int ps = 4; // sizeof(image::pixel_type)
   int off;
   val = reader(); // nodata value, need to read anyway
-  if ( hasnodata ) raster->set_nodata(val);
   for (int y=0; y<height; ++y) {
     for (int x=0; x<width; ++x) {
       val = reader();
@@ -302,10 +287,13 @@ void read_grayscale_band(mapnik::raster_ptr raster,
       data[off+2] = val;
     }
   }
+  mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(bbox, image, 1.0);
+  if ( hasnodata ) raster->set_nodata(val);
+  return raster;
 }
 
-void
-pgraster_wkb_reader::read_grayscale(mapnik::raster_ptr raster)
+mapnik::raster_ptr pgraster_wkb_reader::read_grayscale(mapnik::box2d<double> const& bbox,
+                                                       uint16_t width, uint16_t height)
 {
   uint8_t type = read_uint8(&ptr_);
 
@@ -320,7 +308,7 @@ pgraster_wkb_reader::read_grayscale(mapnik::raster_ptr raster)
   if ( offline ) {
     MAPNIK_LOG_WARN(pgraster) << "pgraster_wkb_reader: offline band "
           " unsupported";
-    return;
+    return mapnik::raster_ptr();
   }
 
   switch (pixtype) {
@@ -331,19 +319,19 @@ pgraster_wkb_reader::read_grayscale(mapnik::raster_ptr raster)
     case PT_8BSI:
       // mapnik does not support signed anyway
     case PT_8BUI:
-      read_grayscale_band(raster, width_, height_, hasnodata,
+      return read_grayscale_band(bbox, width_, height_, hasnodata,
                           boost::bind(read_uint8, &ptr_));
       break;
     case PT_16BSI:
       // mapnik does not support signed anyway
     case PT_16BUI:
-      read_grayscale_band(raster, width_, height_, hasnodata,
+      return read_grayscale_band(bbox, width_, height_, hasnodata,
                           boost::bind(read_uint16, &ptr_, endian_));
       break;
     case PT_32BSI:
       // mapnik does not support signed anyway
     case PT_32BUI:
-      read_grayscale_band(raster, width_, height_, hasnodata,
+      return read_grayscale_band(bbox, width_, height_, hasnodata,
                           boost::bind(read_uint32, &ptr_, endian_));
       break;
     default:
@@ -353,19 +341,15 @@ pgraster_wkb_reader::read_grayscale(mapnik::raster_ptr raster)
       //MAPNIK_LOG_WARN(pgraster) << err.str();
       throw mapnik::datasource_exception(err.str());
   }
-
+  return mapnik::raster_ptr();
 }
 
-void
-pgraster_wkb_reader::read_rgba(mapnik::raster_ptr raster)
+mapnik::raster_ptr pgraster_wkb_reader::read_rgba(mapnik::box2d<double> const& bbox,
+                                                  uint16_t width, uint16_t height)
 {
-  mapnik::image_data_32 & image = raster->data_;
-
+  mapnik::image_rgba8 im(width, height, true, true);
   // Start with plain white (ABGR or RGBA depending on endiannes)
-  image.set(0xffffffff);
-  //raster->set_nodata(0xffffffff);
-
-  raster->premultiplied_alpha_ = true;
+  im.set(0xffffffff);
 
   uint8_t nodataval;
   for (int bn=0; bn<numBands_; ++bn) {
@@ -398,8 +382,8 @@ pgraster_wkb_reader::read_rgba(mapnik::raster_ptr raster)
             << " nodataval " << tmp << " != band 0 nodataval " << nodataval;
     }
 
-    int ps = 4; // sizeof(image_data::pixel_type)
-    uint8_t * image_data = image.getBytes();
+    int ps = 4; // sizeof(image::pixel_type)
+    uint8_t * image_data = im.getBytes();
     for (int y=0; y<height_; ++y) {
       for (int x=0; x<width_; ++x) {
         uint8_t val = read_uint8(&ptr_);
@@ -411,6 +395,9 @@ pgraster_wkb_reader::read_rgba(mapnik::raster_ptr raster)
       }
     }
   }
+  mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(bbox, im, 1.0);
+  raster->set_nodata(0xffffffff);
+  return raster;
 }
 
 mapnik::raster_ptr
@@ -458,28 +445,30 @@ pgraster_wkb_reader::get_raster() {
       return mapnik::raster_ptr();
     }
 
-    box2d<double> ext(ipX,ipY,ipX+(width_*scaleX),ipY+(height_*scaleY));
+    mapnik::box2d<double> ext(ipX,ipY,ipX+(width_*scaleX),ipY+(height_*scaleY));
     MAPNIK_LOG_DEBUG(pgraster) << "pgraster_wkb_reader: Raster extent=" << ext;
 
-    mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(ext, width_, height_, 1.0);
-
-    if ( bandno_ ) {
-      if ( bandno_ != 1 ) {
-        MAPNIK_LOG_WARN(pgraster) << "pgraster_wkb_reader: "
+    if ( bandno_ )
+    {
+      if ( bandno_ != 1 )
+      {
+          MAPNIK_LOG_WARN(pgraster) << "pgraster_wkb_reader: "
               "reading bands other than 1st as indexed is unsupported";
-        return mapnik::raster_ptr();
+          return mapnik::raster_ptr();
       }
       MAPNIK_LOG_DEBUG(pgraster) << "pgraster_wkb_reader: requested band " << bandno_;
-      read_indexed(raster);
+      return read_indexed(ext, width_, height_);
     }
-    else {
-      switch (numBands_) {
+    else
+    {
+      switch (numBands_)
+      {
         case 1:
-          read_grayscale(raster);
+          return read_grayscale(ext, width_, height_);
           break;
         case 3:
         case 4:
-          read_rgba(raster);
+          return read_rgba(ext, width_, height_);
           break;
         default:
           std::ostringstream err;
@@ -491,7 +480,5 @@ pgraster_wkb_reader::get_raster() {
           return mapnik::raster_ptr();
       }
     }
-
-    return raster;
-
+    return mapnik::raster_ptr();
 }

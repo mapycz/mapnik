@@ -41,18 +41,18 @@ void render_point_symbolizer(point_symbolizer const &sym,
                              F render_marker)
 {
     std::string filename = get<std::string,keys::file>(sym,feature, common.vars_);
-    boost::optional<mapnik::marker_ptr> marker = filename.empty()
-       ? std::make_shared<mapnik::marker>()
+    mapnik::marker const& mark = filename.empty()
+       ? mapnik::marker(std::move(mapnik::marker_rgba8()))
        : marker_cache::instance().find(filename, true);
 
-    if (marker)
+    if (!mark.is<mapnik::marker_null>())
     {
         value_double opacity = get<value_double,keys::opacity>(sym, feature, common.vars_);
         value_bool allow_overlap = get<value_bool, keys::allow_overlap>(sym, feature, common.vars_);
         value_bool ignore_placement = get<value_bool, keys::ignore_placement>(sym, feature, common.vars_);
         point_placement_enum placement= get<point_placement_enum, keys::point_placement_type>(sym, feature, common.vars_);
 
-        box2d<double> const& bbox = (*marker)->bounding_box();
+        box2d<double> const& bbox = mark.bounding_box();
         coord2d center = bbox.center();
 
         agg::trans_affine tr;
@@ -66,17 +66,18 @@ void render_point_symbolizer(point_symbolizer const &sym,
         for (std::size_t i=0; i<feature.num_geometries(); ++i)
         {
             geometry_type const& geom = feature.get_geometry(i);
+            vertex_adapter va(geom);
             double x;
             double y;
             double z=0;
             if (placement == CENTROID_POINT_PLACEMENT)
             {
-                if (!label::centroid(geom, x, y))
+                if (!label::centroid(va, x, y))
                     return;
             }
             else
             {
-                if (!label::interior_position(geom ,x, y))
+                if (!label::interior_position(va ,x, y))
                     return;
             }
 
@@ -88,7 +89,7 @@ void render_point_symbolizer(point_symbolizer const &sym,
             {
 
                 render_marker(pixel_position(x, y),
-                              **marker,
+                              mark,
                               tr,
                               opacity);
 
@@ -101,4 +102,4 @@ void render_point_symbolizer(point_symbolizer const &sym,
 
 } // namespace mapnik
 
-#endif /* MAPNIK_RENDERER_COMMON_PROCESS_POINT_SYMBOLIZER_HPP */
+#endif // MAPNIK_RENDERER_COMMON_PROCESS_POINT_SYMBOLIZER_HPP

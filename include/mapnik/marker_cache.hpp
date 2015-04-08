@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
 // mapnik
 #include <mapnik/utils.hpp>
 #include <mapnik/config.hpp>
-#include <mapnik/noncopyable.hpp>
+#include <mapnik/util/noncopyable.hpp>
 
 // boost
 #include <boost/unordered_map.hpp>
@@ -36,21 +36,18 @@
 namespace mapnik
 {
 
-class marker;
-
-using marker_ptr = std::shared_ptr<marker>;
-
+struct marker;
 
 class MAPNIK_DECL marker_cache :
         public singleton <marker_cache, CreateUsingNew>,
-        private mapnik::noncopyable
+        private util::noncopyable
 {
     friend class CreateUsingNew<marker_cache>;
 private:
     marker_cache();
     ~marker_cache();
-    bool insert_marker(std::string const& key, marker_ptr path);
-    boost::unordered_map<std::string,marker_ptr> marker_cache_;
+    bool insert_marker(std::string const& key, marker && path);
+    boost::unordered_map<std::string, mapnik::marker> marker_cache_;
     bool insert_svg(std::string const& name, std::string const& svg_string);
     boost::unordered_map<std::string,std::string> svg_cache_;
 public:
@@ -59,7 +56,7 @@ public:
     inline bool is_uri(std::string const& path) { return is_svg_uri(path) || is_image_uri(path); }
     bool is_svg_uri(std::string const& path);
     bool is_image_uri(std::string const& path);
-    boost::optional<marker_ptr> find(std::string const& key, bool update_cache = false);
+    marker const& find(std::string const& key, bool update_cache = false);
     void clear();
 };
 

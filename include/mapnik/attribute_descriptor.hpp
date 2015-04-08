@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,16 +46,16 @@ public:
                          int precision=-1)
         : name_(name),
           type_(type),
-          primary_key_(primary_key),
           size_(size),
-          precision_(precision) {}
+          precision_(precision),
+          primary_key_(primary_key) {}
 
     attribute_descriptor(attribute_descriptor const& other)
         : name_(other.name_),
           type_(other.type_),
-          primary_key_(other.primary_key_),
           size_(other.size_),
-          precision_(other.precision_) {}
+          precision_(other.precision_),
+          primary_key_(other.primary_key_) {}
 
     attribute_descriptor& operator=(attribute_descriptor const& other)
     {
@@ -67,9 +67,9 @@ public:
         {
             name_=other.name_;
             type_=other.type_;
-            primary_key_=other.primary_key_;
             size_=other.size_;
             precision_=other.precision_;
+            primary_key_=other.primary_key_;
             return *this;
         }
     }
@@ -102,9 +102,9 @@ public:
 private:
     std::string name_;
     unsigned int type_;
-    bool primary_key_;
     int size_;
     int precision_;
+    bool primary_key_;
 };
 
 }

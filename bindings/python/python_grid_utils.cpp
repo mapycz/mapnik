@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -248,7 +248,7 @@ void write_features(T const& grid_type,
         return;
     }
 
-    std::set<std::string> const& attributes = grid_type.property_names();
+    std::set<std::string> const& attributes = grid_type.get_fields();
     typename T::feature_type::const_iterator feat_end = g_features.end();
     for ( std::string const& key_item :key_order )
     {
@@ -369,7 +369,7 @@ void render_layer_for_grid(mapnik::Map const& map,
         boost::python::extract<std::string> name(fields[i]);
         if (name.check())
         {
-            grid.add_property_name(name());
+            grid.add_field(name());
         }
         else
         {
@@ -379,8 +379,8 @@ void render_layer_for_grid(mapnik::Map const& map,
         }
     }
 
-    // copy property names
-    std::set<std::string> attributes = grid.property_names();
+    // copy field names
+    std::set<std::string> attributes = grid.get_fields();
     // todo - make this a static constant
     std::string known_id_key = "__id__";
     if (attributes.find(known_id_key) != attributes.end())

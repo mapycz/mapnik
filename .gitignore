@@ -1,10 +1,14 @@
 .DS_Store
+*.gcov
+*.gcda
+*.gcno
 *~
 *.o
 *.pyc
 *.os
 *.so
 *.a
+*.swp
 *.dylib
 plugins/input/*.input
 plugins/input/templates/*.input
@@ -13,6 +17,8 @@ bindings/python/mapnik/paths.py
 config.cache
 config.log
 config.py
+mason_packages/
+.mason/
 .sconf_temp/
 .sconsign.dblite
 demo/viewer/viewer.ini
@@ -44,3 +50,4 @@ demo/viewer/ui_about.h
 demo/viewer/ui_info.h
 demo/viewer/ui_layer_info.h
 tests/cpp_tests/*-bin
+tests/cxx/run

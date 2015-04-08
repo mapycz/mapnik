@@ -34,11 +34,14 @@ struct error_handler
 {
     using result_type = void;
     void operator() (
-        Iterator, Iterator last,
+        Iterator, Iterator,
         Iterator err_pos, boost::spirit::info const& what) const
     {
         std::stringstream s;
-        s << what << " expected but got: " << std::string(err_pos, std::min(err_pos + 16,last));
+        auto start = err_pos;
+        std::advance(err_pos,16);
+        auto end = err_pos;
+        s << what << " expected but got: " << std::string(start, end);
         throw std::runtime_error(s.str());
     }
 };

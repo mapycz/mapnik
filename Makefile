@@ -12,7 +12,26 @@ all: mapnik
 install:
 	$(PYTHON) scons/scons.py -j$(JOBS) --config=cache --implicit-cache --max-drift=1 install
 
-mapnik:
+src/json/libmapnik-json.a:
+	# we first build memory intensive files with -j2
+	$(PYTHON) scons/scons.py -j2 \
+		--config=cache --implicit-cache --max-drift=1 \
+		src/json/libmapnik-json.a \
+		src/wkt/libmapnik-wkt.a \
+		src/css_color_grammar.os \
+		src/expression_grammar.os \
+		src/transform_expression_grammar.os \
+		src/image_filter_types.os \
+		src/renderer_common/process_group_symbolizer.os \
+		src/agg/process_markers_symbolizer.os \
+		src/agg/process_group_symbolizer.os \
+		src/grid/process_markers_symbolizer.os \
+		src/grid/process_group_symbolizer.os \
+		src/cairo/process_markers_symbolizer.os \
+		src/cairo/process_group_symbolizer.os \
+
+mapnik: src/json/libmapnik-json.a
+	# then install the rest with -j$(JOBS)
 	$(PYTHON) scons/scons.py -j$(JOBS) --config=cache --implicit-cache --max-drift=1
 
 clean:
@@ -27,7 +46,6 @@ clean:
 	@find ./ -name "*.so" -exec rm {} \;
 	@find ./ -name "*.o" -exec rm {} \;
 	@find ./ -name "*.a" -exec rm {} \;
-	@find ./ -name "*.pyc" -exec rm {} \;
 	@if test -e "bindings/python/mapnik/paths.py"; then rm "bindings/python/mapnik/paths.py"; fi
 
 distclean:
@@ -67,8 +85,9 @@ demo:
 pep8:
 	# https://gist.github.com/1903033
 	# gsed on osx
-	@pep8 -r --select=W293 -q --filename=*.py `pwd`/tests/ | xargs gsed -i 's/^[ \r\t]*$//'
-	@pep8 -r --select=W391 -q --filename=*.py `pwd`/tests/ | xargs gsed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}'
+	@pep8 -r --select=W293 -q --filename=*.py `pwd`/tests/ | xargs gsed -i 's/^[ \r\t]*$$//'
+	@pep8 -r --select=W391 -q --filename=*.py `pwd`/tests/ | xargs gsed -i -e :a -e '/^\n*$$/{$$d;N;ba' -e '}'
+	@pep8 -r --select=W391 -q --filename=*.py `pwd`/tests/ | xargs ged -i '/./,/^$$/!d'
 
 grind:
 	@for FILE in tests/cpp_tests/*-bin; do \

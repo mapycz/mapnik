@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@
 
 // mapnik
 #include <mapnik/config.hpp>
-#include <mapnik/image_data.hpp>
+#include <mapnik/image.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/grid/grid_view.hpp>
 #include <mapnik/global.hpp>
@@ -35,7 +35,6 @@
 #include <mapnik/util/conversions.hpp>
 
 // stl
-#include <cstdint>
 #include <map>
 #include <set>
 #include <cmath>
@@ -49,8 +48,8 @@ template <typename T>
 class MAPNIK_DECL hit_grid
 {
 public:
-    using value_type = T;
-    using data_type = mapnik::image_data<value_type>;
+    using value_type = typename T::type;
+    using data_type = mapnik::image<T>;
     using lookup_type = std::string;
     // mapping between pixel id and key
     using feature_key_type = std::map<value_type, lookup_type>;
@@ -62,7 +61,6 @@ private:
     unsigned height_;
     std::string key_;
     data_type data_;
-    unsigned int resolution_;
     std::string id_name_;
     bool painted_;
     std::set<std::string> names_;
@@ -72,7 +70,7 @@ private:
 
 public:
 
-    hit_grid(int width, int height, std::string const& key, unsigned int resolution);
+    hit_grid(int width, int height, std::string const& key);
 
     hit_grid(hit_grid<T> const& rhs);
 
@@ -97,12 +95,12 @@ public:
 
     void add_feature(mapnik::feature_impl const& feature);
 
-    inline void add_property_name(std::string const& name)
+    inline void add_field(std::string const& name)
     {
         names_.insert(name);
     }
 
-    inline std::set<std::string> const& property_names() const
+    inline std::set<std::string> const& get_fields() const
     {
         return names_;
     }
@@ -127,16 +125,6 @@ public:
         key_ = key;
     }
 
-    inline unsigned int get_resolution() const
-    {
-        return resolution_;
-    }
-
-    inline void set_resolution(unsigned int res)
-    {
-        resolution_ = res;
-    }
-
     inline data_type const& data() const
     {
         return data_;
@@ -147,12 +135,12 @@ public:
         return data_;
     }
 
-    inline T const * raw_data() const
+    inline value_type const * raw_data() const
     {
         return data_.getData();
     }
 
-    inline T* raw_data()
+    inline value_type* raw_data()
     {
         return data_.getData();
     }
@@ -165,7 +153,7 @@ public:
     inline mapnik::grid_view get_view(unsigned x, unsigned y, unsigned w, unsigned h)
     {
         return mapnik::grid_view(x,y,w,h,
-                                 data_,key_,id_name_,resolution_,names_,f_keys_,features_);
+                                 data_,key_,id_name_,names_,f_keys_,features_);
     }
 
 private:
@@ -195,7 +183,7 @@ public:
         return height_;
     }
 
-    inline void set_rectangle(value_type id,image_data_32 const& data,int x0,int y0)
+    inline void set_rectangle(value_type id,image_rgba8 const& data,int x0,int y0)
     {
         box2d<int> ext0(0,0,width_,height_);
         box2d<int> ext1(x0,y0,x0+data.width(),y0+data.height());
@@ -222,10 +210,9 @@ public:
             }
         }
     }
-
 };
 
-using grid = hit_grid<mapnik::value_integer>;
+using grid = hit_grid<mapnik::value_integer_pixel>;
 
 }
 #endif //MAPNIK_GRID_HPP

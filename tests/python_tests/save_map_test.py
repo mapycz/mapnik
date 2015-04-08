@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from nose.tools import *
+from nose.tools import eq_
 from utilities import execution_path, run_all
 import tempfile
 
-import os, sys, glob, mapnik
+import os, glob, mapnik
 
 default_logging_severity = mapnik.logger.get_severity()
 
@@ -27,7 +27,7 @@ def compare_map(xml):
     except RuntimeError, e:
         # only test datasources that we have installed
         if not 'Could not create datasource' in str(e) \
-           and not 'Bad connection' in str(e):
+           and not 'could not connect' in str(e):
             raise RuntimeError(str(e))
         return
     (handle, test_map) = tempfile.mkstemp(suffix='.xml', prefix='mapnik-temp-map1-')
@@ -62,6 +62,13 @@ def test_compare_map():
         compare_map(m)
 
     for m in glob.glob("../visual_tests/styles/*.xml"):
+        compare_map(m)
+
+# TODO - enforce that original xml does not equal first saved xml
+def test_compare_map_deprecations():
+    dep = glob.glob("../data/deprecated_maps/*.xml")
+    dep = [os.path.normpath(p) for p in dep]
+    for m in dep:
         compare_map(m)
 
 if __name__ == "__main__":

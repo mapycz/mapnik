@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2006 Artem Pavlenko, Jean-Francois Doyon
+ * Copyright (C) 2014 Artem Pavlenko, Jean-Francois Doyon
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -107,6 +107,9 @@ boost::python::dict describe(std::shared_ptr<mapnik::datasource> const& ds)
     description["name"] = ld.get_name();
     description["geometry_type"] = ds->get_geometry_type();
     description["encoding"] = ld.get_encoding();
+    for (auto const& param : ld.get_extra_parameters()) {
+        description[param.first] = param.second;
+    }
     return description;
 }
 

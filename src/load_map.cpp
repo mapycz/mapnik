@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +50,7 @@
 #include <mapnik/util/conversions.hpp>
 #include <mapnik/util/trim.hpp>
 #include <mapnik/marker_cache.hpp>
-#include <mapnik/noncopyable.hpp>
+#include <mapnik/util/noncopyable.hpp>
 #include <mapnik/util/fs.hpp>
 #include <mapnik/image_filter_types.hpp>
 #include <mapnik/projection.hpp>
@@ -65,10 +65,9 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/static_assert.hpp>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-local-typedef"
-#include <boost/algorithm/string.hpp>
-#pragma GCC diagnostic pop
+
+// stl
+#include <algorithm>
 
 // agg
 #include "agg_trans_affine.h"
@@ -84,7 +83,7 @@ constexpr unsigned name2int(const char *str, int off = 0)
     return !str[off] ? 5381 : (name2int(str, off+1)*33) ^ str[off];
 }
 
-class map_parser : mapnik::noncopyable
+class map_parser : util::noncopyable
 {
 public:
     map_parser(Map & map, bool strict, std::string const& filename = "") :
@@ -119,6 +118,7 @@ private:
     void parse_markers_symbolizer(rule & rule, xml_node const& node);
     void parse_group_symbolizer(rule &rule, xml_node const& node);
     void parse_debug_symbolizer(rule & rule, xml_node const& node);
+    void parse_dot_symbolizer(rule & rule, xml_node const& node);
     void parse_group_rule(group_symbolizer_properties &prop, xml_node const& node);
     void parse_simple_layout(group_symbolizer_properties &prop, xml_node const& node);
     void parse_pair_layout(group_symbolizer_properties &prop, xml_node const& node);
@@ -382,8 +382,8 @@ void map_parser::parse_map_include(Map & map, xml_node const& node)
                         mapnik::value_bool b;
                         mapnik::value_integer i;
                         mapnik::value_double d;
-                        if (mapnik::util::string2bool(val,b)) params[key] = b;
-                        else if (mapnik::util::string2int(val,i)) params[key] = i;
+                        if (mapnik::util::string2int(val,i)) params[key] = i;
+                        else if (mapnik::util::string2bool(val,b)) params[key] = b;
                         else if (mapnik::util::string2double(val,d)) params[key] = d;
                         else params[key] = val;
                     }
@@ -853,6 +853,11 @@ void map_parser::parse_symbolizers(rule & rule, xml_node const & node)
             parse_debug_symbolizer(rule, sym_node);
             sym_node.set_processed(true);
             break;
+        case name2int("DotSymbolizer"):
+            parse_dot_symbolizer(rule, sym_node);
+            sym_node.set_processed(true);
+            break;
+
         default:
             break;
         }
@@ -899,6 +904,25 @@ void map_parser::parse_point_symbolizer(rule & rule, xml_node const & node)
             put(sym, keys::file, parse_path(filename));
         }
 
+        rule.append(std::move(sym));
+    }
+    catch (config_error const& ex)
+    {
+        ex.append_context(node);
+        throw;
+    }
+}
+
+void map_parser::parse_dot_symbolizer(rule & rule, xml_node const & node)
+{
+    try
+    {
+        dot_symbolizer sym;
+        set_symbolizer_property<symbolizer_base,color>(sym, keys::fill, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::opacity, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::width, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::height, node);
+        set_symbolizer_property<symbolizer_base,composite_mode_e>(sym, keys::comp_op, node);
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
@@ -971,6 +995,7 @@ void map_parser::parse_markers_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
         set_symbolizer_property<symbolizer_base,marker_placement_enum>(sym, keys::markers_placement_type, node);
         set_symbolizer_property<symbolizer_base,marker_multi_policy_enum>(sym, keys::markers_multipolicy, node);
+        set_symbolizer_property<symbolizer_base,direction_enum>(sym, keys::direction, node);
         parse_stroke(sym,node);
         rule.append(std::move(sym));
     }
@@ -1246,10 +1271,10 @@ void map_parser::parse_raster_symbolizer(rule & rule, xml_node const & node)
         if (mode)
         {
             std::string mode_string = *mode;
-            if (boost::algorithm::find_first(mode_string,"_"))
+            if (mode_string.find('_') != std::string::npos)
             {
                 MAPNIK_LOG_ERROR(raster_symbolizer) << "'mode' values using \"_\" are deprecated and will be removed in Mapnik 3.x, use \"-\"instead";
-                boost::algorithm::replace_all(mode_string,"_","-");
+                std::replace(mode_string.begin(), mode_string.end(), '_', '-');
             }
             put(raster_sym, keys::mode, mode_string);
         }
@@ -1578,7 +1603,7 @@ void map_parser::ensure_exists(std::string const& file_path)
     if (marker_cache::instance().is_uri(file_path))
         return;
     // validate that the filename exists if it is not a dynamic PathExpression
-    if (!boost::algorithm::find_first(file_path,"[") && !boost::algorithm::find_first(file_path,"]"))
+    if (file_path.find('[') == std::string::npos && file_path.find(']') == std::string::npos)
     {
         if (!mapnik::util::exists(file_path))
         {

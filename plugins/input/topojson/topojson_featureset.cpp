@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,20 +38,14 @@
 #include <boost/range/adaptor/reversed.hpp>
 #include <boost/range/adaptor/sliced.hpp>
 #include <boost/geometry.hpp>
-#include <boost/geometry/algorithms/simplify.hpp>
-#include <boost/geometry/geometries/register/point.hpp>
-#include <boost/geometry/geometries/register/linestring.hpp>
 #pragma GCC diagnostic pop
 
 #include "topojson_featureset.hpp"
 
-BOOST_GEOMETRY_REGISTER_POINT_2D(mapnik::topojson::coordinate, double, boost::geometry::cs::cartesian, x, y)
-BOOST_GEOMETRY_REGISTER_LINESTRING(std::vector<mapnik::topojson::coordinate>)
-
 namespace mapnik { namespace topojson {
 
 struct attribute_value_visitor
-    :  mapnik::util::static_visitor<mapnik::value>
+
 {
 public:
     attribute_value_visitor(mapnik::transcoder const& tr)
@@ -84,7 +78,7 @@ void assign_properties(mapnik::feature_impl & feature, T const& geom, mapnik::tr
 }
 
 template <typename Context>
-struct feature_generator : public mapnik::util::static_visitor<mapnik::feature_ptr>
+struct feature_generator
 {
     feature_generator(Context & ctx,  mapnik::transcoder const& tr, topology const& topo, std::size_t feature_id)
         : ctx_(ctx),
@@ -235,16 +229,11 @@ struct feature_generator : public mapnik::util::static_visitor<mapnik::feature_p
                     processed_coords.emplace_back(coordinate{x,y});
                 }
 
-
-                // simplify
-                std::vector<mapnik::topojson::coordinate> simplified(processed_coords.size());
-                boost::geometry::simplify(processed_coords, simplified, 2);
-
                 using namespace boost::adaptors;
 
                 if (reverse)
                 {
-                    for (auto const& c : simplified | reversed | sliced(0, simplified.size()-1))
+                    for (auto const& c : processed_coords | reversed | sliced(0, processed_coords.size()-1))
                     {
                         if (first)
                         {
@@ -256,7 +245,7 @@ struct feature_generator : public mapnik::util::static_visitor<mapnik::feature_p
                 }
                 else
                 {
-                    for (auto const& c : simplified | sliced(0, simplified.size()-1))
+                    for (auto const& c : processed_coords | sliced(0, processed_coords.size()-1))
                     {
                         if (first)
                         {
@@ -372,12 +361,8 @@ mapnik::feature_ptr topojson_featureset::next()
 {
     if (index_itr_ != index_end_)
     {
-#if BOOST_VERSION >= 105600
         topojson_datasource::item_type const& item = *index_itr_++;
         std::size_t index = item.second;
-#else
-        std::size_t index = *index_itr_++;
-#endif
         if ( index < topo_.geometries.size())
         {
             mapnik::topojson::geometry const& geom = topo_.geometries[index];

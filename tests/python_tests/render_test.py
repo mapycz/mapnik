@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from nose.tools import *
+from nose.tools import eq_,raises
 import tempfile
 import os, mapnik
-from nose.tools import *
 from utilities import execution_path, run_all
 
 def setup():
@@ -25,7 +24,7 @@ def test_simplest_render():
 
 def test_render_image_to_string():
     im = mapnik.Image(256, 256)
-    im.background = mapnik.Color('black')
+    im.fill(mapnik.Color('black'))
     eq_(im.painted(),False)
     eq_(im.is_solid(),True)
     s = im.tostring()
@@ -33,7 +32,7 @@ def test_render_image_to_string():
 
 def test_non_solid_image():
     im = mapnik.Image(256, 256)
-    im.background = mapnik.Color('black')
+    im.fill(mapnik.Color('black'))
     eq_(im.painted(),False)
     eq_(im.is_solid(),True)
     # set one pixel to a different color
@@ -43,7 +42,7 @@ def test_non_solid_image():
 
 def test_non_solid_image_view():
     im = mapnik.Image(256, 256)
-    im.background = mapnik.Color('black')
+    im.fill(mapnik.Color('black'))
     view = im.view(0,0,256,256)
     eq_(view.is_solid(),True)
     # set one pixel to a different color
@@ -61,13 +60,13 @@ def test_setting_alpha():
     im1 = mapnik.Image(w,h)
     # white, half transparent
     c1 = mapnik.Color('rgba(255,255,255,.5)')
-    im1.background = c1
+    im1.fill(c1)
     eq_(im1.painted(),False)
     eq_(im1.is_solid(),True)
     # pure white
     im2 = mapnik.Image(w,h)
     c2 = mapnik.Color('rgba(255,255,255,1)')
-    im2.background = c2
+    im2.fill(c2)
     im2.set_alpha(c1.a/255.0)
     eq_(im2.painted(),False)
     eq_(im2.is_solid(),True)
@@ -75,7 +74,7 @@ def test_setting_alpha():
 
 def test_render_image_to_file():
     im = mapnik.Image(256, 256)
-    im.background = mapnik.Color('black')
+    im.fill(mapnik.Color('black'))
     if mapnik.has_jpeg():
         im.save('test.jpg')
     im.save('test.png', 'png')
@@ -230,7 +229,8 @@ if 'shape' in mapnik.DatasourceCache.plugin_names():
             expected_file = './images/support/marker-text-line-scale-factor-%s.png' % size
             actual_file = '/tmp/' + os.path.basename(expected_file)
             im.save(actual_file,'png32')
-            #im.save(expected_file,'png32')
+            if os.environ.get('UPDATE'):
+                im.save(expected_file,'png32')
             # we save and re-open here so both png8 images are ready as full color png
             actual = mapnik.Image.open(actual_file)
             expected = mapnik.Image.open(expected_file)

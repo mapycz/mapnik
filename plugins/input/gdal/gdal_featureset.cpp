@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@
 #include <mapnik/make_unique.hpp>
 #include <mapnik/global.hpp>
 #include <mapnik/debug.hpp>
-#include <mapnik/image_data.hpp>
+#include <mapnik/image.hpp>
 #include <mapnik/raster.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/feature.hpp>
@@ -80,7 +80,6 @@ gdal_featureset::~gdal_featureset()
 {
     MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Closing Dataset=" << &dataset_;
 
-    GDALClose(&dataset_);
 }
 
 feature_ptr gdal_featureset::next()
@@ -199,34 +198,104 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
 
         if (im_width > 0 && im_height > 0)
         {
-            mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, im_width, im_height, filter_factor);
-            feature->set_raster(raster);
-            mapnik::image_data_32 & image = raster->data_;
-            image.set(0xffffffff);
-
             MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Image Size=(" << im_width << "," << im_height << ")";
             MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Reading band=" << band_;
-
             if (band_ > 0) // we are querying a single band
             {
+                GDALRasterBand * band = dataset_.GetRasterBand(band_);
                 if (band_ > nbands_)
                 {
                     std::ostringstream s;
                     s << "GDAL Plugin: " << band_ << " is an invalid band, dataset only has " << nbands_ << "bands";
                     throw datasource_exception(s.str());
                 }
-                float* imageData = reinterpret_cast<float*>(image.getBytes());
-                GDALRasterBand * band = dataset_.GetRasterBand(band_);
-                raster_nodata = band->GetNoDataValue(&raster_has_nodata);
-                raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
-                                                 imageData, image.width(), image.height(),
-                                                 GDT_Float32, 0, 0);
-                if (raster_io_error == CE_Failure) {
-                    throw datasource_exception(CPLGetLastErrorMsg());
+                GDALDataType band_type = band->GetRasterDataType();
+                switch (band_type)
+                {
+                case GDT_Byte:
+                {
+                    mapnik::image_gray8 image(im_width, im_height);
+                    image.set(std::numeric_limits<std::uint8_t>::max());
+                    raster_nodata = band->GetNoDataValue(&raster_has_nodata);
+                    raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
+                                                     image.getData(), image.width(), image.height(),
+                                                     GDT_Byte, 0, 0);
+                    if (raster_io_error == CE_Failure)
+                    {
+                        throw datasource_exception(CPLGetLastErrorMsg());
+                    }
+                    mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, image, filter_factor);
+                    // set nodata value to be used in raster colorizer
+                    if (nodata_value_) raster->set_nodata(*nodata_value_);
+                    else raster->set_nodata(raster_nodata);
+                    feature->set_raster(raster);
+                    break;
+                }
+                case GDT_Float64:
+                case GDT_Float32:
+                {
+                    mapnik::image_gray32f image(im_width, im_height);
+                    image.set(std::numeric_limits<float>::max());
+                    raster_nodata = band->GetNoDataValue(&raster_has_nodata);
+                    raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
+                                                     image.getData(), image.width(), image.height(),
+                                                     GDT_Float32, 0, 0);
+                    if (raster_io_error == CE_Failure)
+                    {
+                        throw datasource_exception(CPLGetLastErrorMsg());
+                    }
+                    mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, image, filter_factor);
+                    // set nodata value to be used in raster colorizer
+                    if (nodata_value_) raster->set_nodata(*nodata_value_);
+                    else raster->set_nodata(raster_nodata);
+                    feature->set_raster(raster);
+                    break;
+                }
+                case GDT_UInt16:
+                {
+                    mapnik::image_gray16 image(im_width, im_height);
+                    image.set(std::numeric_limits<std::uint16_t>::max());
+                    raster_nodata = band->GetNoDataValue(&raster_has_nodata);
+                    raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
+                                                     image.getData(), image.width(), image.height(),
+                                                     GDT_UInt16, 0, 0);
+                    if (raster_io_error == CE_Failure)
+                    {
+                        throw datasource_exception(CPLGetLastErrorMsg());
+                    }
+                    mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, image, filter_factor);
+                    // set nodata value to be used in raster colorizer
+                    if (nodata_value_) raster->set_nodata(*nodata_value_);
+                    else raster->set_nodata(raster_nodata);
+                    feature->set_raster(raster);
+                    break;
+                }
+                default:
+                case GDT_Int16:
+                {
+                    mapnik::image_gray16s image(im_width, im_height);
+                    image.set(std::numeric_limits<std::int16_t>::max());
+                    raster_nodata = band->GetNoDataValue(&raster_has_nodata);
+                    raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
+                                                     image.getData(), image.width(), image.height(),
+                                                     GDT_Int16, 0, 0);
+                    if (raster_io_error == CE_Failure)
+                    {
+                        throw datasource_exception(CPLGetLastErrorMsg());
+                    }
+                    mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, image, filter_factor);
+                    // set nodata value to be used in raster colorizer
+                    if (nodata_value_) raster->set_nodata(*nodata_value_);
+                    else raster->set_nodata(raster_nodata);
+                    feature->set_raster(raster);
+                    break;
+                }
                 }
             }
             else // working with all bands
             {
+                mapnik::image_rgba8 image(im_width, im_height);
+                image.set(std::numeric_limits<std::uint32_t>::max());
                 for (int i = 0; i < nbands_; ++i)
                 {
                     GDALRasterBand * band = dataset_.GetRasterBand(i + 1);
@@ -306,7 +375,10 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
                     raster_nodata = red->GetNoDataValue(&raster_has_nodata);
                     GDALColorTable *color_table = red->GetColorTable();
                     bool has_nodata = nodata_value_ || raster_has_nodata;
-                    if (has_nodata && !color_table)
+
+                    // we can deduce the alpha channel from nodata in the Byte case
+                    // by reusing the reading of R,G,B bands directly
+                    if (has_nodata && !color_table && red->GetRasterDataType() != GDT_Byte)
                     {
                         double apply_nodata = nodata_value_ ? *nodata_value_ : raster_nodata;
                         // read the data in and create an alpha channel from the nodata values
@@ -332,20 +404,62 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
                             }
                         }
                     }
-                    raster_io_error = red->RasterIO(GF_Read, x_off, y_off, width, height, image.getBytes() + 0,
-                                                    image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
-                    if (raster_io_error == CE_Failure) {
-                        throw datasource_exception(CPLGetLastErrorMsg());
+
+                    /* Use dataset RasterIO in priority in 99.9% of the cases */
+                    if( red->GetBand() == 1 && green->GetBand() == 2 && blue->GetBand() == 3 )
+                    {
+                        int nBandsToRead = 3;
+                        if( alpha != NULL && alpha->GetBand() == 4 && !raster_has_nodata )
+                        {
+                            nBandsToRead = 4;
+                            alpha = NULL; // to avoid reading it again afterwards
+                        }
+                        raster_io_error = dataset_.RasterIO(GF_Read, x_off, y_off, width, height,
+                                                            image.getBytes(),
+                                                            image.width(), image.height(), GDT_Byte,
+                                                            nBandsToRead, NULL,
+                                                            4, 4 * image.width(), 1);
+                        if (raster_io_error == CE_Failure) {
+                            throw datasource_exception(CPLGetLastErrorMsg());
+                        }
                     }
-                    raster_io_error = green->RasterIO(GF_Read, x_off, y_off, width, height, image.getBytes() + 1,
-                                                      image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
-                    if (raster_io_error == CE_Failure) {
-                        throw datasource_exception(CPLGetLastErrorMsg());
+                    else
+                    {
+                        raster_io_error = red->RasterIO(GF_Read, x_off, y_off, width, height, image.getBytes() + 0,
+                                                        image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
+                        if (raster_io_error == CE_Failure) {
+                            throw datasource_exception(CPLGetLastErrorMsg());
+                        }
+                        raster_io_error = green->RasterIO(GF_Read, x_off, y_off, width, height, image.getBytes() + 1,
+                                                        image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
+                        if (raster_io_error == CE_Failure) {
+                            throw datasource_exception(CPLGetLastErrorMsg());
+                        }
+                        raster_io_error = blue->RasterIO(GF_Read, x_off, y_off, width, height, image.getBytes() + 2,
+                                                        image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
+                        if (raster_io_error == CE_Failure) {
+                            throw datasource_exception(CPLGetLastErrorMsg());
+                        }
                     }
-                    raster_io_error = blue->RasterIO(GF_Read, x_off, y_off, width, height, image.getBytes() + 2,
-                                                     image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
-                    if (raster_io_error == CE_Failure) {
-                        throw datasource_exception(CPLGetLastErrorMsg());
+
+                    // In the case we skipped initializing the alpha channel
+                    if (has_nodata && !color_table && red->GetRasterDataType() == GDT_Byte)
+                    {
+                        double apply_nodata = nodata_value_ ? *nodata_value_ : raster_nodata;
+                        if( apply_nodata >= 0 && apply_nodata <= 255 )
+                        {
+                            int len = image.width() * image.height();
+                            GByte* pabyBytes = (GByte*) image.getBytes();
+                            for (int i = 0; i < len; ++i)
+                            {
+                                // TODO - we assume here the nodata value for the red band applies to all bands
+                                // more details about this at http://trac.osgeo.org/gdal/ticket/2734
+                                if (std::fabs(apply_nodata - pabyBytes[4*i]) < nodata_tolerance_)
+                                    pabyBytes[4*i + 3] = 0;
+                                else
+                                    pabyBytes[4*i + 3] = 255;
+                            }
+                        }
                     }
                 }
                 else if (grey)
@@ -363,7 +477,8 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
                         raster_io_error = grey->RasterIO(GF_Read, x_off, y_off, width, height,
                                                          imageData, image.width(), image.height(),
                                                          GDT_Float32, 0, 0);
-                        if (raster_io_error == CE_Failure) {
+                        if (raster_io_error == CE_Failure)
+                        {
                             throw datasource_exception(CPLGetLastErrorMsg());
                         }
                         int len = image.width() * image.height();
@@ -379,19 +494,26 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
                             }
                         }
                     }
+
                     raster_io_error = grey->RasterIO(GF_Read, x_off, y_off, width, height, image.getBytes() + 0,
                                                      image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
-                    if (raster_io_error == CE_Failure) {
+                    if (raster_io_error == CE_Failure)
+                    {
                         throw datasource_exception(CPLGetLastErrorMsg());
                     }
+
                     raster_io_error = grey->RasterIO(GF_Read,x_off, y_off, width, height, image.getBytes() + 1,
                                                      image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
-                    if (raster_io_error == CE_Failure) {
+                    if (raster_io_error == CE_Failure)
+                    {
                         throw datasource_exception(CPLGetLastErrorMsg());
                     }
+
                     raster_io_error = grey->RasterIO(GF_Read,x_off, y_off, width, height, image.getBytes() + 2,
                                                      image.width(), image.height(), GDT_Byte, 4, 4 * image.width());
-                    if (raster_io_error == CE_Failure) {
+
+                    if (raster_io_error == CE_Failure)
+                    {
                         throw datasource_exception(CPLGetLastErrorMsg());
                     }
 
@@ -435,15 +557,11 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
                         MAPNIK_LOG_WARN(gdal) << "warning: nodata value (" << raster_nodata << ") used to set transparency instead of alpha band";
                     }
                 }
-            }
-            // set nodata value to be used in raster colorizer
-            if (nodata_value_)
-            {
-                raster->set_nodata(*nodata_value_);
-            }
-            else
-            {
-                raster->set_nodata(raster_nodata);
+                mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, image, filter_factor);
+                // set nodata value to be used in raster colorizer
+                if (nodata_value_) raster->set_nodata(*nodata_value_);
+                else raster->set_nodata(raster_nodata);
+                feature->set_raster(raster);
             }
             // report actual/original source nodata in feature attributes
             if (raster_has_nodata)

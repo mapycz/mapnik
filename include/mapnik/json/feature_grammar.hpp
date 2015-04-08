@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,11 +42,9 @@ namespace mapnik { namespace json {
 namespace qi = boost::spirit::qi;
 namespace phoenix = boost::phoenix;
 namespace fusion = boost::fusion;
-namespace standard_wide =  boost::spirit::standard_wide;
-using standard_wide::space_type;
 
 class attribute_value_visitor
-    : public mapnik::util::static_visitor<mapnik::value>
+
 {
 public:
     attribute_value_visitor(mapnik::transcoder const& tr)
@@ -99,7 +97,6 @@ struct feature_grammar :
     // start
     // generic JSON
     generic_json<Iterator> json_;
-
     // geoJSON
     qi::rule<Iterator,void(FeatureType&),space_type> feature; // START
     qi::rule<Iterator,space_type> feature_type;
@@ -107,7 +104,9 @@ struct feature_grammar :
     qi::rule<Iterator,void(FeatureType &),space_type> properties;
     qi::rule<Iterator,qi::locals<std::string>, void(FeatureType &),space_type> attributes;
     qi::rule<Iterator, json_value(), space_type> attribute_value;
-
+    qi::rule<Iterator, qi::locals<std::int32_t>, std::string(), space_type> stringify_object;
+    qi::rule<Iterator, qi::locals<std::int32_t>, std::string(), space_type> stringify_array;
+    // functions
     phoenix::function<put_property> put_property_;
     phoenix::function<extract_geometry> extract_geometry_;
     // error handler

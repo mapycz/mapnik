@@ -23,8 +23,11 @@
 #if defined(HAVE_CAIRO)
 
 // mapnik
+#include <mapnik/marker.hpp>
+#include <mapnik/svg/svg_path_adapter.hpp>
 #include <mapnik/make_unique.hpp>
 #include <mapnik/cairo/cairo_renderer.hpp>
+#include <mapnik/cairo/cairo_render_vector.hpp>
 
 // mapnik symbolizer generics
 #include <mapnik/renderer_common/process_group_symbolizer.hpp>
@@ -43,7 +46,7 @@ namespace {
 // to render it, and the boxes themselves should already be
 // in the detector from the placement_finder.
 template <typename T>
-struct thunk_renderer : public util::static_visitor<>
+struct thunk_renderer
 {
     using renderer_type = cairo_renderer<T>;
 
@@ -56,11 +59,32 @@ struct thunk_renderer : public util::static_visitor<>
           common_(common), offset_(offset)
     {}
 
-    void operator()(point_render_thunk const &thunk) const
+    void operator()(vector_marker_render_thunk const &thunk) const
     {
-        pixel_position new_pos(thunk.pos_.x + offset_.x, thunk.pos_.y + offset_.y);
-        ren_.render_marker(new_pos, *thunk.marker_, thunk.tr_, thunk.opacity_,
-                           thunk.comp_op_);
+        cairo_save_restore guard(context_);
+        context_.set_operator(thunk.comp_op_);
+
+        svg::vertex_stl_adapter<svg::svg_path_storage> stl_storage(thunk.src_->source());
+        svg::svg_path_adapter svg_path(stl_storage);
+
+        agg::trans_affine offset_tr = thunk.tr_;
+        offset_tr.translate(offset_.x, offset_.y);
+        mapnik::render_vector_marker(context_,
+                                     svg_path,
+                                     thunk.attrs_,
+                                     thunk.src_->bounding_box(),
+                                     offset_tr,
+                                     thunk.opacity_);
+    }
+
+    void operator()(raster_marker_render_thunk const& thunk) const
+    {
+        cairo_save_restore guard(context_);
+        context_.set_operator(thunk.comp_op_);
+
+        agg::trans_affine offset_tr = thunk.tr_;
+        offset_tr.translate(offset_.x, offset_.y);
+        context_.add_image(offset_tr, thunk.src_, thunk.opacity_);
     }
 
     void operator()(text_render_thunk const &thunk) const
@@ -73,11 +97,12 @@ struct thunk_renderer : public util::static_visitor<>
             offset_,
             [&] (glyph_positions_ptr glyphs)
             {
-                if (glyphs->marker())
+                marker_info_ptr mark = glyphs->get_marker();
+                if (mark)
                 {
                     ren_.render_marker(glyphs->marker_pos(),
-                                       *(glyphs->marker()->marker),
-                                       glyphs->marker()->transform,
+                                       mark->marker_,
+                                       mark->transform_,
                                        thunk.opacity_, thunk.comp_op_);
                 }
                 context_.add_text(*glyphs, face_manager_, src_over, src_over, common_.scale_factor_);
@@ -87,7 +112,7 @@ struct thunk_renderer : public util::static_visitor<>
     template <typename T0>
     void operator()(T0 const &) const
     {
-        // TODO: warning if unimplemented?
+        throw std::runtime_error("Rendering of this type is not supported by the cairo renderer.");
     }
 
 private:

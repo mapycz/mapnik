@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,7 +43,6 @@
 #include <mapnik/path_expression.hpp>
 #include "mapnik_enumeration.hpp"
 #include "mapnik_svg.hpp"
-#include <mapnik/graphics.hpp>
 #include <mapnik/expression_node.hpp>
 #include <mapnik/value_error.hpp>
 #include <mapnik/marker_cache.hpp> // for known_svg_prefix_
@@ -105,7 +104,7 @@ std::shared_ptr<mapnik::symbolizer_base::value_type> numeric_wrapper(const objec
     return result;
 }
 
-struct extract_python_object : public mapnik::util::static_visitor<boost::python::object>
+struct extract_python_object
 {
     using result_type = boost::python::object;
 
@@ -153,7 +152,7 @@ std::size_t hash_impl_2(T const& sym)
     return mapnik::symbolizer_hash::value<T>(sym);
 }
 
-struct extract_underlying_type_visitor : mapnik::util::static_visitor<boost::python::object>
+struct extract_underlying_type_visitor
 {
     template <typename T>
     boost::python::object operator() (T const& sym) const

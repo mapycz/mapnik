@@ -7,14 +7,15 @@
 #if defined(HAVE_CAIRO)
 #include <mapnik/cairo/cairo_renderer.hpp>
 #endif
-#include <mapnik/graphics.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/font_engine_freetype.hpp>
-#include <mapnik/image_data.hpp>
+#include <mapnik/image.hpp>
 #include <mapnik/image_reader.hpp>
 #include <mapnik/scale_denominator.hpp>
 #include <mapnik/feature_style_processor.hpp>
+#include <mapnik/projection.hpp>
+#include <mapnik/layer.hpp>
 
 #include <vector>
 #include <algorithm>
@@ -28,19 +29,19 @@ bool compare_images(std::string const& src_fn,std::string const& dest_fn)
     {
         throw mapnik::image_reader_exception("Failed to load: " + dest_fn);
     }
-    std::shared_ptr<image_32> image_ptr1 = std::make_shared<image_32>(reader1->width(),reader1->height());
-    reader1->read(0,0,image_ptr1->data());
+    std::shared_ptr<image_rgba8> image_ptr1 = std::make_shared<image_rgba8>(reader1->width(),reader1->height());
+    reader1->read(0,0,*image_ptr1);
 
     std::unique_ptr<mapnik::image_reader> reader2(mapnik::get_image_reader(src_fn,"png"));
     if (!reader2.get())
     {
         throw mapnik::image_reader_exception("Failed to load: " + src_fn);
     }
-    std::shared_ptr<image_32> image_ptr2 = std::make_shared<image_32>(reader2->width(),reader2->height());
-    reader2->read(0,0,image_ptr2->data());
+    std::shared_ptr<image_rgba8> image_ptr2 = std::make_shared<image_rgba8>(reader2->width(),reader2->height());
+    reader2->read(0,0,*image_ptr2);
 
-    image_data_32 const& dest = image_ptr1->data();
-    image_data_32 const& src = image_ptr2->data();
+    image_rgba8 const& dest = *image_ptr1;
+    image_rgba8 const& src = *image_ptr2;
 
     unsigned int width = src.width();
     unsigned int height = src.height();
@@ -65,9 +66,6 @@ int main(int argc, char** argv)
         args.push_back(argv[i]);
     }
     bool quiet = std::find(args.begin(), args.end(), "-q")!=args.end();
-    // TODO - re-enable if we can control the freetype/cairo versions used
-    // https://github.com/mapnik/mapnik/issues/1868
-    /*
     std::string expected("./tests/cpp_tests/support/map-request-marker-text-line-expected.png");
     std::string expected_cairo("./tests/cpp_tests/support/map-request-marker-text-line-expected-cairo.png");
     try {
@@ -79,36 +77,41 @@ int main(int argc, char** argv)
         mapnik::Map m(256,256);
         mapnik::load_map(m,"./tests/data/good_maps/marker-text-line.xml",false);
         m.zoom_all();
-        mapnik::image_32 im(m.width(),m.height());
+        mapnik::image_rgba8 im(m.width(),m.height());
         double scale_factor = 1.2;
 
         // render normally with apply() and just map and image
-        mapnik::agg_renderer<mapnik::image_32> renderer1(m,im,scale_factor);
+        mapnik::agg_renderer<mapnik::image_rgba8> renderer1(m,im,scale_factor);
         renderer1.apply();
         std::string actual1("/tmp/map-request-marker-text-line-actual1.png");
         //mapnik::save_to_file(im,expected);
         mapnik::save_to_file(im,actual1);
-        BOOST_TEST(compare_images(actual1,expected));
+        // TODO - re-enable if we can control the freetype/cairo versions used
+        // https://github.com/mapnik/mapnik/issues/1868
+        //BOOST_TEST(compare_images(actual1,expected));
 
         // reset image
-        im.clear();
+        mapnik::fill(im, 0);
 
         // set up a mapnik::request object
         mapnik::request req(m.width(),m.height(),m.get_current_extent());
         req.set_buffer_size(m.buffer_size());
 
         // render using apply() and mapnik::request
-        mapnik::agg_renderer<mapnik::image_32> renderer2(m,req,im,scale_factor);
+        mapnik::attributes vars;
+        mapnik::agg_renderer<mapnik::image_rgba8> renderer2(m,req,vars,im,scale_factor);
         renderer2.apply();
         std::string actual2("/tmp/map-request-marker-text-line-actual2.png");
         mapnik::save_to_file(im,actual2);
-        BOOST_TEST(compare_images(actual2,expected));
+        // TODO - re-enable if we can control the freetype/cairo versions used
+        // https://github.com/mapnik/mapnik/issues/1868
+        //BOOST_TEST(compare_images(actual2,expected));
 
         // reset image
-        im.clear();
+        mapnik::fill(im, 0);
 
         // render with apply_to_layer api and mapnik::request params passed to apply_to_layer
-        mapnik::agg_renderer<mapnik::image_32> renderer3(m,req,im,scale_factor);
+        mapnik::agg_renderer<mapnik::image_rgba8> renderer3(m,req,vars,im,scale_factor);
         renderer3.start_map_processing(m);
         mapnik::projection map_proj(m.srs(),true);
         double scale_denom = mapnik::scale_denominator(req.scale(),map_proj.is_geographic());
@@ -134,7 +137,9 @@ int main(int argc, char** argv)
         renderer3.end_map_processing(m);
         std::string actual3("/tmp/map-request-marker-text-line-actual3.png");
         mapnik::save_to_file(im,actual3);
-        BOOST_TEST(compare_images(actual3,expected));
+        // TODO - re-enable if we can control the freetype/cairo versions used
+        // https://github.com/mapnik/mapnik/issues/1868
+        //BOOST_TEST(compare_images(actual3,expected));
 
         // also test cairo
 #if defined(HAVE_CAIRO)
@@ -142,19 +147,20 @@ int main(int argc, char** argv)
             cairo_image_surface_create(CAIRO_FORMAT_ARGB32,req.width(),req.height()),
             mapnik::cairo_surface_closer());
         mapnik::cairo_ptr image_context = (mapnik::create_context(image_surface));
-        mapnik::cairo_renderer<mapnik::cairo_ptr> png_render(m,req,image_context,scale_factor);
+        mapnik::cairo_renderer<mapnik::cairo_ptr> png_render(m,req,vars,image_context,scale_factor);
         png_render.apply();
         //cairo_surface_write_to_png(&*image_surface, expected_cairo.c_str());
         std::string actual_cairo("/tmp/map-request-marker-text-line-actual4.png");
         cairo_surface_write_to_png(&*image_surface, actual_cairo.c_str());
-        BOOST_TEST(compare_images(actual_cairo,expected_cairo));
+        // TODO - re-enable if we can control the freetype/cairo versions used
+        // https://github.com/mapnik/mapnik/issues/1868
+        //BOOST_TEST(compare_images(actual_cairo,expected_cairo));
 #endif
         // TODO - test grid_renderer
 
     } catch (std::exception const& ex) {
         std::clog << ex.what() << "\n";
     }
-    */
     if (!::boost::detail::test_errors()) {
         if (quiet) std::clog << "\x1b[1;32m.\x1b[0m";
         else std::clog << "C++ Map Request rendering hook: \x1b[1;32m✓ \x1b[0m\n";

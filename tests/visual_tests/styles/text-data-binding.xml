@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE Map>
 <Map background-color="white" srs="+proj=latlong +datum=WGS84">
+    <Parameters>
+        <Parameter name="sizes">500, 500</Parameter>
+    </Parameters>
 
     <Layer name="l1" srs="+proj=latlong +datum=WGS84">
         <StyleName>text</StyleName>
         <Datasource>
             <Parameter name="type">sqlite</Parameter>
+            <Parameter name="use_spatial_index">false</Parameter>
             <Parameter name="file">../data/text-data-binding.sqlite</Parameter>
             <Parameter name="table">text_layer</Parameter>
             <Parameter name="extent">-1,-1,1,1</Parameter>
@@ -15,6 +19,7 @@
         <StyleName>circular</StyleName>
         <Datasource>
             <Parameter name="type">sqlite</Parameter>
+            <Parameter name="use_spatial_index">false</Parameter>
             <Parameter name="file">../data/text-data-binding.sqlite</Parameter>
             <Parameter name="table">circular_layer</Parameter>
             <Parameter name="extent">-1,-1,1,1</Parameter>

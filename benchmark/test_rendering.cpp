@@ -2,7 +2,6 @@
 #include <mapnik/map.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/load_map.hpp>
-#include <mapnik/graphics.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/font_engine_freetype.hpp>
@@ -55,14 +54,20 @@ public:
         } else {
             m.zoom_all();
         }
-        mapnik::image_32 im(m.width(),m.height());
-        mapnik::agg_renderer<mapnik::image_32> ren(m,im,scale_factor_);
+        mapnik::image_rgba8 im(m.width(),m.height());
+        mapnik::agg_renderer<mapnik::image_rgba8> ren(m,im,scale_factor_);
         ren.apply();
-        if (!preview_.empty()) mapnik::save_to_file(im,preview_);
+        if (!preview_.empty()) {
+            std::clog << "preview available at " << preview_ << "\n";
+            mapnik::save_to_file(im,preview_);
+        }
         return true;
     }
-    void operator()() const
+    bool operator()() const
     {
+        if (!preview_.empty()) {
+            return false;
+        }
         mapnik::Map m(width_,height_);
         mapnik::load_map(m,xml_);
         if (extent_.valid()) {
@@ -72,10 +77,11 @@ public:
         }
         for (unsigned i=0;i<iterations_;++i)
         {
-            mapnik::image_32 im(m.width(),m.height());
-            mapnik::agg_renderer<mapnik::image_32> ren(m,im,scale_factor_);
+            mapnik::image_rgba8 im(m.width(),m.height());
+            mapnik::agg_renderer<mapnik::image_rgba8> ren(m,im,scale_factor_);
             ren.apply();
         }
+        return true;
     }
 };
 

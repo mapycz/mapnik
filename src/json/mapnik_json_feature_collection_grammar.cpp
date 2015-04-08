@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko, Jean-Francois Doyon
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,5 +24,5 @@
 #include <mapnik/json/feature_collection_grammar_impl.hpp>
 #include <string>
 
-using iterator_type = std::string::const_iterator;
-template struct mapnik::json::feature_collection_grammar<iterator_type,mapnik::feature_impl> ;
+using iterator_type = char const*;
+template struct mapnik::json::feature_collection_grammar<iterator_type,mapnik::feature_impl, mapnik::json::default_feature_callback> ;

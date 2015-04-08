@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,7 +21,6 @@
  *****************************************************************************/
 
 // mapnik
-#include <mapnik/graphics.hpp>
 #include <mapnik/agg_helpers.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
@@ -32,6 +31,7 @@
 #include <mapnik/marker_helpers.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
+#include <mapnik/agg_render_marker.hpp>
 #include <mapnik/svg/svg_renderer_agg.hpp>
 #include <mapnik/svg/svg_storage.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
@@ -58,6 +58,109 @@
 #include <boost/optional.hpp>
 
 namespace mapnik {
+
+namespace detail {
+
+template <typename SvgRenderer, typename Detector, typename RendererContext>
+struct vector_markers_rasterizer_dispatch : public vector_markers_dispatch<Detector>
+{
+    using renderer_base = typename SvgRenderer::renderer_base;
+    using vertex_source_type = typename SvgRenderer::vertex_source_type;
+    using attribute_source_type = typename SvgRenderer::attribute_source_type;
+    using pixfmt_type = typename renderer_base::pixfmt_type;
+
+    using BufferType = typename std::tuple_element<0,RendererContext>::type;
+    using RasterizerType = typename std::tuple_element<1,RendererContext>::type;
+
+    vector_markers_rasterizer_dispatch(svg_path_ptr const& src,
+                                       vertex_source_type & path,
+                                       svg_attribute_type const& attrs,
+                                       agg::trans_affine const& marker_trans,
+                                       symbolizer_base const& sym,
+                                       Detector & detector,
+                                       double scale_factor,
+                                       feature_impl & feature,
+                                       attributes const& vars,
+                                       bool snap_to_pixels,
+                                       RendererContext const& renderer_context)
+: vector_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+        buf_(std::get<0>(renderer_context)),
+        pixf_(buf_),
+        renb_(pixf_),
+        svg_renderer_(path, attrs),
+        ras_(std::get<1>(renderer_context)),
+        snap_to_pixels_(snap_to_pixels)
+    {
+        pixf_.comp_op(static_cast<agg::comp_op_e>(get<composite_mode_e, keys::comp_op>(sym, feature, vars)));
+    }
+
+    ~vector_markers_rasterizer_dispatch() {}
+
+    void render_marker(agg::trans_affine const& marker_tr, double opacity)
+    {
+        render_vector_marker(svg_renderer_, ras_, renb_, this->src_->bounding_box(),
+                             marker_tr, opacity, snap_to_pixels_);
+    }
+
+private:
+    BufferType & buf_;
+    pixfmt_type pixf_;
+    renderer_base renb_;
+    SvgRenderer svg_renderer_;
+    RasterizerType & ras_;
+    bool snap_to_pixels_;
+};
+
+template <typename Detector, typename RendererContext>
+struct raster_markers_rasterizer_dispatch : public raster_markers_dispatch<Detector>
+{
+    using BufferType = typename std::remove_reference<typename std::tuple_element<0,RendererContext>::type>::type;
+    using RasterizerType = typename std::tuple_element<1,RendererContext>::type;
+
+    using color_type = agg::rgba8;
+    using order_type = agg::order_rgba;
+    using pixel_type = agg::pixel32_type;
+    using blender_type = agg::comp_op_adaptor_rgba_pre<color_type, order_type>; // comp blender
+    using pixfmt_comp_type = agg::pixfmt_custom_blend_rgba<blender_type, BufferType>;
+    using renderer_base = agg::renderer_base<pixfmt_comp_type>;
+
+    raster_markers_rasterizer_dispatch(image_rgba8 const& src,
+                                       agg::trans_affine const& marker_trans,
+                                       symbolizer_base const& sym,
+                                       Detector & detector,
+                                       double scale_factor,
+                                       feature_impl & feature,
+                                       attributes const& vars,
+                                       RendererContext const& renderer_context,
+                                       bool snap_to_pixels = false)
+    : raster_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+        buf_(std::get<0>(renderer_context)),
+        pixf_(buf_),
+        renb_(pixf_),
+        ras_(std::get<1>(renderer_context)),
+        snap_to_pixels_(snap_to_pixels)
+    {
+        pixf_.comp_op(static_cast<agg::comp_op_e>(get<composite_mode_e, keys::comp_op>(sym, feature, vars)));
+    }
+
+    ~raster_markers_rasterizer_dispatch() {}
+
+    void render_marker(agg::trans_affine const& marker_tr, double opacity)
+    {
+        // In the long term this should be a visitor pattern based on the type of render this->src_ provided that converts 
+        // the destination pixel type required.   
+        render_raster_marker(renb_, ras_, this->src_, marker_tr, opacity, this->scale_factor_, snap_to_pixels_);
+    }
+
+private:
+    BufferType & buf_;
+    pixfmt_comp_type pixf_;
+    renderer_base renb_;
+    RasterizerType & ras_;
+    bool snap_to_pixels_;
+};
+
+}
 
 template <typename T0, typename T1>
 void agg_renderer<T0,T1>::process(markers_symbolizer const& sym,
@@ -89,19 +192,19 @@ void agg_renderer<T0,T1>::process(markers_symbolizer const& sym,
         gamma_ = gamma;
     }
 
-    buf_type render_buffer(current_buffer_->raw_data(), current_buffer_->width(), current_buffer_->height(), current_buffer_->width() * 4);
+    buf_type render_buffer(current_buffer_->getBytes(), current_buffer_->width(), current_buffer_->height(), current_buffer_->getRowSize());
     box2d<double> clip_box = clipping_extent(common_);
 
     auto renderer_context = std::tie(render_buffer,*ras_ptr,pixmap_);
     using context_type = decltype(renderer_context);
-    using vector_dispatch_type = vector_markers_rasterizer_dispatch<svg_renderer_type, detector_type, context_type>;
-    using raster_dispatch_type = raster_markers_rasterizer_dispatch<detector_type, context_type>;
+    using vector_dispatch_type = detail::vector_markers_rasterizer_dispatch<svg_renderer_type, detector_type, context_type>;
+    using raster_dispatch_type = detail::raster_markers_rasterizer_dispatch<detector_type, context_type>;
 
     render_markers_symbolizer<vector_dispatch_type, raster_dispatch_type>(
         sym, feature, prj_trans, common_, clip_box, renderer_context);
 }
 
-template void agg_renderer<image_32>::process(markers_symbolizer const&,
+template void agg_renderer<image_rgba8>::process(markers_symbolizer const&,
                                               mapnik::feature_impl &,
                                               proj_transform const&);
 }

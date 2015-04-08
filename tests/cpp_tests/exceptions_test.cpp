@@ -1,9 +1,9 @@
 #include <boost/detail/lightweight_test.hpp>
 #include <iostream>
 #include <mapnik/projection.hpp>
+#include <mapnik/unicode.hpp>
 #include <mapnik/map.hpp>
 #include <mapnik/save_map.hpp>
-#include <mapnik/graphics.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/memory_datasource.hpp>
 #include <mapnik/feature_type_style.hpp>
@@ -53,6 +53,13 @@ int main(int argc, char** argv)
         BOOST_TEST(true);
     }
 
+    try {
+        mapnik::transcoder tr("bogus encoding");
+        BOOST_TEST(false);
+    } catch (...) {
+        BOOST_TEST(true);
+    }
+
     mapnik::Map map(256,256);
     mapnik::rule r;
     r.set_filter(mapnik::parse_expression("[foo]='bar'"));
@@ -75,8 +82,8 @@ int main(int argc, char** argv)
             mapnik::Map m = map;
             m.add_layer(l);
             m.zoom_all();
-            mapnik::image_32 im(m.width(),m.height());
-            mapnik::agg_renderer<mapnik::image_32> ren(m,im);
+            mapnik::image_rgba8 im(m.width(),m.height());
+            mapnik::agg_renderer<mapnik::image_rgba8> ren(m,im);
             //std::clog << mapnik::save_map_to_string(m) << "\n";
             BOOST_TEST(true);
             // should throw here with "CSV Plugin: no attribute 'foo'. Valid attributes are: x,y."

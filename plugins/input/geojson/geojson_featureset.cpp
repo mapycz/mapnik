@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,12 +42,8 @@ mapnik::feature_ptr geojson_featureset::next()
 {
     if (index_itr_ != index_end_)
     {
-#if BOOST_VERSION >= 105600
         geojson_datasource::item_type const& item = *index_itr_++;
-        std::size_t index = item.second;
-#else
-        std::size_t index = *index_itr_++;
-#endif
+        std::size_t index = item.second.first;
         if ( index < features_.size())
         {
             return features_.at(index);

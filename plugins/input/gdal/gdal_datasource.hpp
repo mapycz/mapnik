@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,6 +56,7 @@ public:
     mapnik::layer_descriptor get_descriptor() const;
 private:
     GDALDataset* open_dataset() const;
+    GDALDataset* dataset_;
     mapnik::box2d<double> extent_;
     std::string dataset_name_;
     int band_;

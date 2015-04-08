@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,15 +41,17 @@ void render_building_symbolizer(mapnik::feature_impl &feature,
     {
         if (geom.size() > 2)
         {
+
             const std::unique_ptr<geometry_type> frame(new geometry_type(geometry_type::types::LineString));
             const std::unique_ptr<geometry_type> roof(new geometry_type(geometry_type::types::Polygon));
             std::deque<segment_t> face_segments;
             double x0 = 0;
             double y0 = 0;
             double x,y;
-            geom.rewind(0);
-            for (unsigned cm = geom.vertex(&x, &y); cm != SEG_END;
-                 cm = geom.vertex(&x, &y))
+            vertex_adapter va(geom);
+            va.rewind(0);
+            for (unsigned cm = va.vertex(&x, &y); cm != SEG_END;
+                 cm = va.vertex(&x, &y))
             {
                 if (cm == SEG_MOVETO)
                 {
@@ -84,9 +86,9 @@ void render_building_symbolizer(mapnik::feature_impl &feature,
 
             }
 
-            geom.rewind(0);
-            for (unsigned cm = geom.vertex(&x, &y); cm != SEG_END;
-                 cm = geom.vertex(&x, &y))
+            va.rewind(0);
+            for (unsigned cm = va.vertex(&x, &y); cm != SEG_END;
+                 cm = va.vertex(&x, &y))
             {
                 if (cm == SEG_MOVETO)
                 {

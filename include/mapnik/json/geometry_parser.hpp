@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2012 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,10 +37,10 @@ namespace mapnik { namespace json {
 inline bool from_geojson(std::string const& json, geometry_container & paths)
 {
     using namespace boost::spirit;
-    static const geometry_grammar<std::string::const_iterator> g;
-    standard_wide::space_type space;
-    std::string::const_iterator start = json.begin();
-    std::string::const_iterator end = json.end();
+    static const geometry_grammar<char const*> g;
+    ascii::space_type space;
+    char const* start = json.c_str();
+    char const* end = start + json.length();
     return qi::phrase_parse(start, end, (g)(boost::phoenix::ref(paths)), space);
 }
 

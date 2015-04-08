@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2012 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -427,6 +427,7 @@ compile_get_opt_attr(vertical_alignment_e);
 compile_get_opt_attr(horizontal_alignment_e);
 compile_get_opt_attr(justify_alignment_e);
 compile_get_opt_attr(text_upright_e);
+compile_get_opt_attr(direction_e);
 compile_get_opt_attr(halo_rasterizer_e);
 compile_get_opt_attr(expression_ptr);
 compile_get_opt_attr(font_feature_settings);

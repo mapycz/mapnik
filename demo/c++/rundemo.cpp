@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,6 @@
 #include <mapnik/layer.hpp>
 #include <mapnik/rule.hpp>
 #include <mapnik/feature_type_style.hpp>
-#include <mapnik/graphics.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/text/placements/dummy.hpp>
 #include <mapnik/text/text_properties.hpp>
@@ -37,9 +36,11 @@
 #include <mapnik/image_util.hpp>
 #include <mapnik/unicode.hpp>
 #include <mapnik/save_map.hpp>
+#include <mapnik/cairo_io.hpp>
 
 #if defined(HAVE_CAIRO)
 #include <mapnik/cairo/cairo_renderer.hpp>
+#include <mapnik/cairo/cairo_image_util.hpp>
 #endif
 
 #include <iostream>
@@ -304,8 +305,8 @@ int main ( int, char** )
 
         m.zoom_to_box(box2d<double>(-8024477.28459,5445190.38849,-7381388.20071,5662941.44855));
 
-        image_32 buf(m.width(),m.height());
-        agg_renderer<image_32> ren(m,buf);
+        image_rgba8 buf(m.width(),m.height());
+        agg_renderer<image_rgba8> ren(m,buf);
         ren.apply();
         std::string msg("These maps have been rendered using AGG in the current directory:\n");
 #ifdef HAVE_JPEG
@@ -352,8 +353,9 @@ int main ( int, char** )
         cairo_surface_write_to_png(&*image_surface, "cairo-demo.png");
         // but we can also benefit from quantization by converting
         // to a mapnik image object and then saving that
-        image_32 im(image_surface);
-        save_to_file(im, "cairo-demo256.png","png8");
+        mapnik::image_rgba8 im_data(cairo_image_surface_get_width(&*image_surface), cairo_image_surface_get_height(&*image_surface));
+        cairo_image_to_rgba8(im_data, image_surface);
+        save_to_file(im_data, "cairo-demo256.png","png8");
         cairo_surface_finish(&*image_surface);
 
         std::cout << "Three maps have been rendered using Cairo in the current directory:\n"

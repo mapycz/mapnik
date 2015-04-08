@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
 // mapnik
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/marker_cache.hpp>
+#include <mapnik/marker_helpers.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/feature_factory.hpp>
 #include <mapnik/renderer_common.hpp>
@@ -38,7 +39,9 @@
 #include <mapnik/util/conversions.hpp>
 #include <mapnik/util/variant.hpp>
 #include <mapnik/label_collision_detector.hpp>
-#include <mapnik/noncopyable.hpp>
+#include <mapnik/util/noncopyable.hpp>
+#include <mapnik/svg/svg_path_adapter.hpp>
+#include <mapnik/svg/svg_path_attributes.hpp>
 
 // agg
 #include <agg_trans_affine.h>
@@ -49,9 +52,11 @@ class proj_transform;
 struct glyph_info;
 class text_symbolizer_helper;
 
-struct virtual_renderer_common : private mapnik::noncopyable
-{
+using svg::svg_path_adapter;
+using svg_attribute_type = agg::pod_bvector<svg::path_attributes>;
 
+struct virtual_renderer_common : private util::noncopyable
+{
     virtual_renderer_common(renderer_common & common) :
         width_(common.width_),
         height_(common.height_),
@@ -97,28 +102,56 @@ struct virtual_renderer_common : private mapnik::noncopyable
 // stores all the arguments necessary to re-render this point
 // symbolizer at a later time.
 
-struct point_render_thunk : noncopyable
+struct vector_marker_render_thunk  : util::noncopyable
 {
-    pixel_position pos_;
-    marker_ptr marker_;
+    svg_path_ptr src_;
+    svg_attribute_type attrs_;
     agg::trans_affine tr_;
     double opacity_;
     composite_mode_e comp_op_;
+    bool snap_to_pixels_;
 
-    point_render_thunk(pixel_position const& pos, marker const& m,
-                       agg::trans_affine const& tr, double opacity,
-                       composite_mode_e comp_op);
-    point_render_thunk(point_render_thunk && rhs)
-      : pos_(std::move(rhs.pos_)),
-        marker_(std::move(rhs.marker_)),
+    vector_marker_render_thunk(svg_path_ptr const& src,
+                               svg_attribute_type const& attrs,
+                               agg::trans_affine const& marker_trans,
+                               double opacity,
+                               composite_mode_e comp_op,
+                               bool snap_to_pixels);
+
+    vector_marker_render_thunk(vector_marker_render_thunk && rhs)
+      : src_(std::move(rhs.src_)),
+        attrs_(std::move(rhs.attrs_)),
         tr_(std::move(rhs.tr_)),
         opacity_(std::move(rhs.opacity_)),
-        comp_op_(std::move(rhs.comp_op_)) {}
+        comp_op_(std::move(rhs.comp_op_)),
+        snap_to_pixels_(std::move(rhs.snap_to_pixels_)) {}
+};
+
+struct raster_marker_render_thunk  : util::noncopyable
+{
+    image_rgba8 const& src_;
+    agg::trans_affine tr_;
+    double opacity_;
+    composite_mode_e comp_op_;
+    bool snap_to_pixels_;
+
+    raster_marker_render_thunk(image_rgba8 const& src,
+                               agg::trans_affine const& marker_trans,
+                               double opacity,
+                               composite_mode_e comp_op,
+                               bool snap_to_pixels);
+
+    raster_marker_render_thunk(raster_marker_render_thunk && rhs)
+      : src_(rhs.src_),
+        tr_(std::move(rhs.tr_)),
+        opacity_(std::move(rhs.opacity_)),
+        comp_op_(std::move(rhs.comp_op_)),
+        snap_to_pixels_(std::move(rhs.snap_to_pixels_)) {}
 };
 
 using helper_ptr = std::unique_ptr<text_symbolizer_helper>;
 
-struct text_render_thunk : noncopyable
+struct text_render_thunk : util::noncopyable
 {
     // helper is stored here in order
     // to keep in scope the text rendering structures
@@ -131,6 +164,7 @@ struct text_render_thunk : noncopyable
     text_render_thunk(helper_ptr && helper,
                       double opacity, composite_mode_e comp_op,
                       halo_rasterizer_enum halo_rasterizer);
+
     text_render_thunk(text_render_thunk && rhs)
       : helper_(std::move(rhs.helper_)),
         placements_(std::move(rhs.placements_)),
@@ -143,7 +177,8 @@ struct text_render_thunk : noncopyable
 // Variant type for render thunks to allow us to re-render them
 // via a static visitor later.
 
-using render_thunk = util::variant<point_render_thunk,
+using render_thunk = util::variant<vector_marker_render_thunk,
+                                   raster_marker_render_thunk,
                                    text_render_thunk>;
 using render_thunk_ptr = std::unique_ptr<render_thunk>;
 using render_thunk_list = std::list<render_thunk_ptr>;
@@ -154,7 +189,7 @@ using render_thunk_list = std::list<render_thunk_ptr>;
 // The bounding boxes can be used for layout, and the thunks are
 // used to re-render at locations according to the group layout.
 
-struct render_thunk_extractor : public util::static_visitor<>
+struct render_thunk_extractor
 {
     render_thunk_extractor(box2d<double> & box,
                            render_thunk_list & thunks,
@@ -164,7 +199,7 @@ struct render_thunk_extractor : public util::static_visitor<>
                            virtual_renderer_common & common,
                            box2d<double> const& clipping_extent);
 
-    void operator()(point_symbolizer const& sym) const;
+    void operator()(markers_symbolizer const& sym) const;
 
     void operator()(text_symbolizer const& sym) const;
 
@@ -205,7 +240,7 @@ void render_offset_placements(placements_list const& placements,
         glyphs->set_base_point(base_point + offset);
 
         // update the position of any marker
-        marker_info_ptr marker_info = glyphs->marker();
+        marker_info_ptr marker_info = glyphs->get_marker();
         pixel_position marker_pos = glyphs->marker_pos();
         if (marker_info)
         {

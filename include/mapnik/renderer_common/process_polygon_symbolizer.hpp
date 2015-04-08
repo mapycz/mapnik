@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,11 +58,12 @@ void render_polygon_symbolizer(polygon_symbolizer const &sym,
     if (simplify_tolerance > 0.0) converter.template set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter.template set<smooth_tag>(); // optional smooth converter
 
-    for (geometry_type & geom : feature.paths())
+    for (geometry_type const& geom : feature.paths())
     {
         if (geom.size() > 2)
         {
-            converter.apply(geom);
+            vertex_adapter va(geom);
+            converter.apply(va);
         }
     }
 

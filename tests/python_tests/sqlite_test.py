@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
-from nose.tools import *
+from nose.tools import eq_, raises
 from utilities import execution_path, run_all
+import os
+import mapnik
 
-import os, mapnik
 
 def setup():
     # All of the paths used are relative, if we run the tests
@@ -304,7 +305,7 @@ if 'sqlite' in mapnik.DatasourceCache.plugin_names():
             query.add_property_name(fld)
         # also add an invalid one, triggering throw
         query.add_property_name('bogus')
-        fs = ds.features(query)
+        ds.features(query)
 
     def test_intersects_token1():
         ds = mapnik.SQLite(file='../data/sqlite/empty.db',
@@ -367,6 +368,44 @@ if 'sqlite' in mapnik.DatasourceCache.plugin_names():
         eq_(feat['alias'],'test')
         eq_(len(feat.geometries()),1)
         eq_(feat.geometries()[0].to_wkt(),'Point(0 0)')
+
+    def test_db_with_one_untyped_column():
+        # form up an in-memory test db
+        wkb = '010100000000000000000000000000000000000000'
+        ds = mapnik.SQLite(file=':memory:',
+            table='test1',
+            initdb='''
+                create table test1 (geometry BLOB, untyped);
+                insert into test1 values (x'%s', 'untyped');
+            ''' % wkb,
+            extent='-180,-60,180,60',
+            use_spatial_index=False,
+            key_field='rowid'
+        )
+
+        # ensure the untyped column is found
+        eq_(len(ds.fields()),2)
+        eq_(ds.fields(),['rowid', 'untyped'])
+        eq_(ds.field_types(),['int', 'str'])
+
+    def test_db_with_one_untyped_column_using_subquery():
+        # form up an in-memory test db
+        wkb = '010100000000000000000000000000000000000000'
+        ds = mapnik.SQLite(file=':memory:',
+            table='(SELECT rowid, geometry, untyped FROM test1)',
+            initdb='''
+                create table test1 (geometry BLOB, untyped);
+                insert into test1 values (x'%s', 'untyped');
+            ''' % wkb,
+            extent='-180,-60,180,60',
+            use_spatial_index=False,
+            key_field='rowid'
+        )
+
+        # ensure the untyped column is found
+        eq_(len(ds.fields()),3)
+        eq_(ds.fields(),['rowid', 'untyped', 'rowid'])
+        eq_(ds.field_types(),['int', 'str', 'int'])
 
 
     def test_that_64bit_int_fields_work():

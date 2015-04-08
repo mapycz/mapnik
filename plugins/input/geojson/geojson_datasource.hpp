@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2012 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,11 +44,7 @@
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry.hpp>
 #include <boost/version.hpp>
-#if BOOST_VERSION >= 105600
 #include <boost/geometry/index/rtree.hpp>
-#else
-#include <boost/geometry/extensions/index/rtree/rtree.hpp>
-#endif
 #pragma GCC diagnostic pop
 
 // stl
@@ -59,7 +55,6 @@
 #include <deque>
 
 
-#if BOOST_VERSION >= 105600
 template <std::size_t Max, std::size_t Min>
 struct geojson_linear : boost::geometry::index::linear<Max,Min> {};
 
@@ -83,21 +78,12 @@ struct options_type<geojson_linear<Max,Min> >
 
 }}}}}
 
-#endif //BOOST_VERSION >= 105600
-
 class geojson_datasource : public mapnik::datasource
 {
 public:
-    using point_type = boost::geometry::model::point<double, 2, boost::geometry::cs::cartesian>;
-    using box_type = boost::geometry::model::box<point_type>;
-
-#if BOOST_VERSION >= 105600
-    using item_type = std::pair<box_type,std::size_t>;
+    using box_type = mapnik::box2d<double>;
+    using item_type = std::pair<box_type, std::pair<std::size_t, std::size_t> >;
     using spatial_index_type = boost::geometry::index::rtree<item_type,geojson_linear<16,4> >;
-#else
-    using item_type = std::size_t;
-    using spatial_index_type = boost::geometry::index::rtree<box_type,std::size_t>;
-#endif
 
     // constructor
     geojson_datasource(mapnik::parameters const& params);
@@ -109,8 +95,11 @@ public:
     mapnik::box2d<double> envelope() const;
     mapnik::layer_descriptor get_descriptor() const;
     boost::optional<mapnik::datasource::geometry_t> get_geometry_type() const;
-    template <typename T>
-    void parse_geojson(T const& buffer);
+    //
+    template <typename Iterator>
+    void parse_geojson(Iterator start, Iterator end);
+    template <typename Iterator>
+    void initialise_index(Iterator start, Iterator end);
 private:
     mapnik::datasource::datasource_t type_;
     mapnik::layer_descriptor desc_;
@@ -119,6 +108,7 @@ private:
     mapnik::box2d<double> extent_;
     std::vector<mapnik::feature_ptr> features_;
     std::unique_ptr<spatial_index_type> tree_;
+    bool cache_features_ = true;
 };
 
 

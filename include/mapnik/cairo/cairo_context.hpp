@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,13 +27,14 @@
 // mapnik
 #include <mapnik/debug.hpp>
 #include <mapnik/color.hpp>
-#include <mapnik/image_data.hpp>
+#include <mapnik/image.hpp>
+#include <mapnik/image_any.hpp>
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/gradient.hpp>
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/vertex.hpp>
-#include <mapnik/noncopyable.hpp>
+#include <mapnik/util/noncopyable.hpp>
 #include <mapnik/symbolizer_base.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 
@@ -75,7 +76,7 @@ void check_object_status_and_throw_exception(T const& object)
     check_status_and_throw_exception(object.get_status());
 }
 
-class cairo_face : private mapnik::noncopyable
+class cairo_face : private util::noncopyable
 {
 public:
     cairo_face(std::shared_ptr<font_library> const& library, face_ptr const& face);
@@ -106,7 +107,7 @@ private:
 
 using cairo_face_ptr = std::shared_ptr<cairo_face>;
 
-class cairo_face_manager : private mapnik::noncopyable
+class cairo_face_manager : private util::noncopyable
 {
 public:
     cairo_face_manager(std::shared_ptr<font_library> library);
@@ -118,10 +119,10 @@ private:
     cairo_face_cache cache_;
 };
 
-class cairo_pattern : private mapnik::noncopyable
+class cairo_pattern : private util::noncopyable
 {
 public:
-    explicit cairo_pattern(image_data_32 const& data, double opacity = 1.0)
+    explicit cairo_pattern(image_rgba8 const& data, double opacity = 1.0)
     {
         int pixels = data.width() * data.height();
         const unsigned int *in_ptr = data.getData();
@@ -192,7 +193,7 @@ private:
 };
 
 
-class cairo_gradient : private mapnik::noncopyable
+class cairo_gradient : private util::noncopyable
 {
 public:
     cairo_gradient(mapnik::gradient const& grad, double opacity=1.0)
@@ -276,10 +277,9 @@ inline cairo_ptr create_context(cairo_surface_ptr const& surface)
     return cairo_ptr(cairo_create(&*surface),cairo_closer());
 }
 
-class cairo_context : private mapnik::noncopyable
+class cairo_context : private util::noncopyable
 {
 public:
-
     cairo_context(cairo_ptr const& cairo);
 
     inline ErrorStatus get_status() const
@@ -308,8 +308,8 @@ public:
     void paint();
     void set_pattern(cairo_pattern const& pattern);
     void set_gradient(cairo_gradient const& pattern, box2d<double> const& bbox);
-    void add_image(double x, double y, image_data_32 & data, double opacity = 1.0);
-    void add_image(agg::trans_affine const& tr, image_data_32 & data, double opacity = 1.0);
+    void add_image(double x, double y, image_rgba8 const& data, double opacity = 1.0);
+    void add_image(agg::trans_affine const& tr, image_rgba8 const& data, double opacity = 1.0);
     void set_font_face(cairo_face_manager & manager, face_ptr face);
     void set_font_matrix(cairo_matrix_t const& matrix);
     void set_matrix(cairo_matrix_t const& matrix);

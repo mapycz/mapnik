@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,7 +29,7 @@
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/text/rotation.hpp>
-#include <mapnik/noncopyable.hpp>
+#include <mapnik/util/noncopyable.hpp>
 
 namespace mapnik
 {
@@ -42,7 +42,7 @@ class vertex_cache;
 class text_placement_info;
 struct glyph_info;
 
-class placement_finder : mapnik::noncopyable
+class placement_finder : util::noncopyable
 {
 public:
     placement_finder(feature_impl const& feature,
@@ -76,7 +76,7 @@ private:
     bool collision(box2d<double> const& box, const value_unicode_string &repeat_key, bool line_placement) const;
     // Adds marker to glyph_positions and to collision detector. Returns false if there is a collision.
     bool add_marker(glyph_positions_ptr glyphs, pixel_position const& pos) const;
-    // Maps upright==auto, left_only and right_only to left,right to simplify processing.
+    // Maps upright==auto, left-only and right-only to left,right to simplify processing.
     // angle = angle of at start of line (to estimate best option for upright==auto)
     text_upright_e simplify_upright(text_upright_e upright, double angle) const;
     box2d<double> get_bbox(text_layout const& layout, glyph_info const& glyph, pixel_position const& pos, rotation const& rot);

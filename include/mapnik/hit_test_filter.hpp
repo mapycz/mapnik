@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,9 +40,10 @@ public:
 
     bool pass(feature_impl & feature)
     {
-        for (geometry_type & geom : feature.paths())
+        for (geometry_type const& geom : feature.paths())
         {
-            if (label::hit_test(geom, x_,y_,tol_))
+            vertex_adapter va(geom);
+            if (label::hit_test(va, x_,y_,tol_))
                 return true;
         }
         return false;

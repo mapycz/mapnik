@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
 
 // mapnik
 #include <mapnik/make_unique.hpp>
-#include <mapnik/graphics.hpp>
+#include <mapnik/image_any.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_rasterizer.hpp>
@@ -54,11 +54,11 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
                                   mapnik::feature_impl & feature,
                                   proj_transform const& prj_trans)
 {
-    using path_type = transform_path_adapter<view_transform,geometry_type>;
+    using path_type = transform_path_adapter<view_transform, vertex_adapter>;
     using ren_base = agg::renderer_base<agg::pixfmt_rgba32_pre>;
     using renderer = agg::renderer_scanline_aa_solid<ren_base>;
 
-    agg::rendering_buffer buf(current_buffer_->raw_data(),current_buffer_->width(),current_buffer_->height(), current_buffer_->width() * 4);
+    agg::rendering_buffer buf(current_buffer_->getBytes(),current_buffer_->width(),current_buffer_->height(), current_buffer_->getRowSize());
     agg::pixfmt_rgba32_pre pixf(buf);
     ren_base renb(pixf);
 
@@ -85,15 +85,19 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
 
     render_building_symbolizer(
         feature, height,
-        [&,r,g,b,a,opacity](geometry_type &faces) {
-            path_type faces_path (this->common_.t_,faces,prj_trans);
+        [&,r,g,b,a,opacity](geometry_type const& faces)
+        {
+            vertex_adapter va(faces);
+            path_type faces_path (this->common_.t_,va,prj_trans);
             ras_ptr->add_path(faces_path);
             ren.color(agg::rgba8_pre(int(r*0.8), int(g*0.8), int(b*0.8), int(a * opacity)));
             agg::render_scanlines(*ras_ptr, sl, ren);
             this->ras_ptr->reset();
         },
-        [&,r,g,b,a,opacity](geometry_type &frame) {
-            path_type path(common_.t_,frame,prj_trans);
+        [&,r,g,b,a,opacity](geometry_type const& frame)
+        {
+            vertex_adapter va(frame);
+            path_type path(common_.t_,va, prj_trans);
             agg::conv_stroke<path_type> stroke(path);
             stroke.width(common_.scale_factor_);
             ras_ptr->add_path(stroke);
@@ -101,16 +105,17 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
             agg::render_scanlines(*ras_ptr, sl, ren);
             ras_ptr->reset();
         },
-        [&,r,g,b,a,opacity](geometry_type &roof) {
-            path_type roof_path (common_.t_,roof,prj_trans);
+        [&,r,g,b,a,opacity](geometry_type const& roof)
+        {
+            vertex_adapter va(roof);
+            path_type roof_path (common_.t_,va,prj_trans);
             ras_ptr->add_path(roof_path);
             ren.color(agg::rgba8_pre(r, g, b, int(a * opacity)));
             agg::render_scanlines(*ras_ptr, sl, ren);
         });
 }
 
-template void agg_renderer<image_32>::process(building_symbolizer const&,
+template void agg_renderer<image_rgba8>::process(building_symbolizer const&,
                                               mapnik::feature_impl &,
                                               proj_transform const&);
-
 }

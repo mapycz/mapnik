@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,12 +61,13 @@ pixel_position_list const& group_symbolizer_helper::get()
     }
     else
     {
-        for (auto const& geom : geometries_to_process_)
+        for (auto const* geom : geometries_to_process_)
         {
             // TODO to support clipped geometries this needs to use
             // vertex_converters
-            using path_type = transform_path_adapter<view_transform,geometry_type>;
-            path_type path(t_, *geom, prj_trans_);
+            using path_type = transform_path_adapter<view_transform,vertex_adapter>;
+            vertex_adapter va(*geom);
+            path_type path(t_, va, prj_trans_);
             find_line_placements(path);
         }
     }
@@ -146,10 +147,10 @@ bool group_symbolizer_helper::collision(box2d<double> const& box, value_unicode_
 {
     if (!detector_.extent().intersects(box)
             ||
-        (text_props_->avoid_edges && !query_extent_.contains(box))
+        (text_props_->avoid_edges && !dims_.contains(box))
             ||
         (text_props_->minimum_padding > 0 &&
-         !query_extent_.contains(box + (scale_factor_ * text_props_->minimum_padding)))
+         !dims_.contains(box + (scale_factor_ * text_props_->minimum_padding)))
             ||
         (!text_props_->allow_overlap &&
             ((repeat_key.length() == 0 && !detector_.has_placement(box, text_props_->margin * scale_factor_))

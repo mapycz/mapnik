@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,8 +72,7 @@ struct get_first
     typename geometry_type::value_type const operator() (Geometry const& geom) const
     {
         typename Geometry::value_type coord;
-        geom.rewind(0);
-        std::get<0>(coord) = geom.vertex(&std::get<1>(coord),&std::get<2>(coord));
+        std::get<0>(coord) = geom.cont_.get_vertex(0, &std::get<1>(coord),&std::get<2>(coord));
         return coord;
     }
 };

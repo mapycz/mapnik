@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -159,6 +159,10 @@ postgis_datasource::postgis_datasource(parameters const& params)
                 geometry_table_ = geometry_table_.substr(0);
             }
 
+            // NOTE: geometry_table_ how should ideally be a table name, but
+            // there are known edge cases where this will break down and
+            // geometry_table_ may even be empty: https://github.com/mapnik/mapnik/issues/2718
+
             // If we do not know both the geometry_field and the srid
             // then first attempt to fetch the geometry name from a geometry_columns entry.
             // This will return no records if we are querying a bogus table returned
@@ -166,7 +170,7 @@ postgis_datasource::postgis_datasource(parameters const& params)
             // the table parameter references a table, view, or subselect not
             // registered in the geometry columns.
             geometryColumn_ = geometry_field_;
-            if (geometryColumn_.empty() || srid_ == 0)
+            if (!geometry_table_.empty() && (geometryColumn_.empty() || srid_ == 0))
             {
 #ifdef MAPNIK_STATS
                 mapnik::progress_timer __stats2__(std::clog, "postgis_datasource::init(get_srid_and_geometry_column)");
@@ -195,6 +199,8 @@ postgis_datasource::postgis_datasource(parameters const& params)
                     if (rs->next())
                     {
                         geometryColumn_ = rs->getValue("f_geometry_column");
+                        // only accept srid from geometry_tables if
+                        // user has not provided as option
                         if (srid_ == 0)
                         {
                             const char* srid_c = rs->getValue("srid");
@@ -211,37 +217,46 @@ postgis_datasource::postgis_datasource(parameters const& params)
                     }
                     rs->close();
                 }
-                catch (mapnik::datasource_exception const& ex) {
+                catch (mapnik::datasource_exception const& ex)
+                {
                     // let this pass on query error and use the fallback below
                     MAPNIK_LOG_WARN(postgis) << "postgis_datasource: metadata query failed: " << ex.what();
                 }
+            }
 
-                // If we still do not know the srid then we can try to fetch
-                // it from the 'table_' parameter, which should work even if it is
-                // a subselect as long as we know the geometry_field to query
-                if (! geometryColumn_.empty() && srid_ <= 0)
+            // If we still do not know the srid then we can try to fetch
+            // it from the 'geometry_table_' parameter, which should work even if it is
+            // a subselect as long as we know the geometry_field to query
+            if (!geometryColumn_.empty() && srid_ <= 0)
+            {
+                std::ostringstream s;
+
+                s << "SELECT ST_SRID(\"" << geometryColumn_ << "\") AS srid FROM ";
+                if (!geometry_table_.empty())
                 {
-                    s.str("");
+                    s << geometry_table_;
+                }
+                else
+                {
+                    s << populate_tokens(table_);
+                }
+                s << " WHERE \"" << geometryColumn_ << "\" IS NOT NULL LIMIT 1;";
 
-                    s << "SELECT ST_SRID(\"" << geometryColumn_ << "\") AS srid FROM "
-                      << populate_tokens(table_) << " WHERE \"" << geometryColumn_ << "\" IS NOT NULL LIMIT 1;";
-
-                    shared_ptr<ResultSet> rs = conn->executeQuery(s.str());
-                    if (rs->next())
+                shared_ptr<ResultSet> rs = conn->executeQuery(s.str());
+                if (rs->next())
+                {
+                    const char* srid_c = rs->getValue("srid");
+                    if (srid_c != nullptr)
                     {
-                        const char* srid_c = rs->getValue("srid");
-                        if (srid_c != nullptr)
+                        int result = 0;
+                        const char * end = srid_c + std::strlen(srid_c);
+                        if (mapnik::util::string2int(srid_c, end, result))
                         {
-                            int result = 0;
-                            const char * end = srid_c + std::strlen(srid_c);
-                            if (mapnik::util::string2int(srid_c, end, result))
-                            {
-                                srid_ = result;
-                            }
+                            srid_ = result;
                         }
                     }
-                    rs->close();
                 }
+                rs->close();
             }
 
             // detect primary key
@@ -442,6 +457,14 @@ postgis_datasource::postgis_datasource(parameters const& params)
         // Close explicitly the connection so we can 'fork()' without sharing open connections
         conn->close();
 
+        // Finally, add unique metadata to layer descriptor
+        mapnik::parameters & extra_params = desc_.get_extra_parameters();
+        // explicitly make copies of values due to https://github.com/mapnik/mapnik/issues/2651
+        extra_params["srid"] = srid_;
+        if (!key_field_.empty())
+        {
+            extra_params["key_field"] = key_field_;
+        }
     }
 }
 

@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2012 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -139,7 +139,7 @@ boost::gil::rgba8_view_t rgba8_view(Image & img)
     using boost::gil::interleaved_view;
     using boost::gil::rgba8_pixel_t;
     return interleaved_view(img.width(), img.height(),
-                            reinterpret_cast<rgba8_pixel_t*>(img.raw_data()),
+                            reinterpret_cast<rgba8_pixel_t*>(img.getBytes()),
                             img.width() * sizeof(rgba8_pixel_t));
 }
 
@@ -391,17 +391,17 @@ template <typename Src, typename Filter>
 void apply_filter(Src & src, Filter const& filter)
 {
     {
-        src.demultiply();
+        demultiply_alpha(src);
         double_buffer<Src> tb(src);
         apply_convolution_3x3(tb.src_view, tb.dst_view, filter);
     } // ensure ~double_buffer() is called before premultiplying
-    src.premultiply();
+    premultiply_alpha(src);
 }
 
 template <typename Src>
 void apply_filter(Src & src, agg_stack_blur const& op)
 {
-    agg::rendering_buffer buf(src.raw_data(),src.width(),src.height(), src.width() * 4);
+    agg::rendering_buffer buf(src.getBytes(),src.width(),src.height(), src.getRowSize());
     agg::pixfmt_rgba32_pre pixf(buf);
     agg::stack_blur_rgba32(pixf,op.rx,op.ry);
 }
@@ -761,7 +761,7 @@ void apply_filter(Src & src, invert const& /*op*/)
 }
 
 template <typename Src>
-struct filter_visitor : util::static_visitor<void>
+struct filter_visitor
 {
     filter_visitor(Src & src)
     : src_(src) {}
@@ -775,7 +775,7 @@ struct filter_visitor : util::static_visitor<void>
     Src & src_;
 };
 
-struct filter_radius_visitor : util::static_visitor<void>
+struct filter_radius_visitor
 {
     int & radius_;
     filter_radius_visitor(int & radius)

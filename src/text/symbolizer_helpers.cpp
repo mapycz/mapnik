@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -58,7 +58,7 @@ base_symbolizer_helper::base_symbolizer_helper(
       dims_(0, 0, width, height),
       query_extent_(query_extent),
       scale_factor_(scale_factor),
-      info_ptr_(mapnik::get<text_placements_ptr>(sym_, keys::text_placements_)->get_placement_info(scale_factor)),
+      info_ptr_(mapnik::get<text_placements_ptr>(sym_, keys::text_placements_)->get_placement_info(scale_factor,feature_,vars_)),
       text_props_(evaluate_text_properties(info_ptr_->properties,feature_,vars_))
 {
     initialize_geometries();
@@ -70,8 +70,8 @@ struct largest_bbox_first
 {
     bool operator() (geometry_type const* g0, geometry_type const* g1) const
     {
-        box2d<double> b0 = g0->envelope();
-        box2d<double> b1 = g1->envelope();
+        box2d<double> b0 = ::mapnik::envelope(*g0);
+        box2d<double> b1 = ::mapnik::envelope(*g1);
         return b0.width()*b0.height() > b1.width()*b1.height();
     }
 };
@@ -89,7 +89,7 @@ void base_symbolizer_helper::initialize_geometries() const
         {
             if (minimum_path_length > 0)
             {
-                box2d<double> gbox = t_.forward(geom.envelope(), prj_trans_);
+                box2d<double> gbox = t_.forward(::mapnik::envelope(geom), prj_trans_);
                 if (gbox.width() < minimum_path_length)
                 {
                     continue;
@@ -129,12 +129,13 @@ void base_symbolizer_helper::initialize_points() const
     for (auto * geom_ptr : geometries_to_process_)
     {
         geometry_type const& geom = *geom_ptr;
+        vertex_adapter va(geom);
         if (how_placed == VERTEX_PLACEMENT)
         {
-            geom.rewind(0);
-            for(unsigned i = 0; i < geom.size(); ++i)
+            va.rewind(0);
+            for(unsigned i = 0; i < va.size(); ++i)
             {
-                geom.vertex(&label_x, &label_y);
+                va.vertex(&label_x, &label_y);
                 prj_trans_.backward(label_x, label_y, z);
                 t_.forward(&label_x, &label_y);
                 points_.emplace_back(label_x, label_y);
@@ -147,15 +148,15 @@ void base_symbolizer_helper::initialize_points() const
             // https://github.com/mapnik/mapnik/issues/1350
             if (geom.type() == geometry_type::types::LineString)
             {
-                success = label::middle_point(geom, label_x,label_y);
+                success = label::middle_point(va, label_x,label_y);
             }
             else if (how_placed == POINT_PLACEMENT)
             {
-                success = label::centroid(geom, label_x, label_y);
+                success = label::centroid(va, label_x, label_y);
             }
             else if (how_placed == INTERIOR_PLACEMENT)
             {
-                success = label::interior_position(geom, label_x, label_y);
+                success = label::interior_position(va, label_x, label_y);
             }
             else
             {
@@ -227,8 +228,8 @@ bool text_symbolizer_helper::next_line_placement() const
             geo_itr_ = geometries_to_process_.begin();
             continue; //Reexecute size check
         }
-
-        converter_.apply(**geo_itr_);
+        vertex_adapter va(**geo_itr_);
+        converter_.apply(va);
         if (adapter_.status())
         {
             //Found a placement
@@ -301,13 +302,13 @@ void text_symbolizer_helper::init_marker() const
 {
     std::string filename = mapnik::get<std::string,keys::file>(sym_, feature_, vars_);
     if (filename.empty()) return;
-    boost::optional<mapnik::marker_ptr> marker = marker_cache::instance().find(filename, true);
-    if (!marker) return;
+    mapnik::marker const& marker = marker_cache::instance().find(filename, true);
+    if (marker.is<marker_null>()) return;
     agg::trans_affine trans;
     auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
     if (image_transform) evaluate_transform(trans, feature_, vars_, *image_transform);
-    double width = (*marker)->width();
-    double height = (*marker)->height();
+    double width = marker.width();
+    double height = marker.height();
     double px0 = - 0.5 * width;
     double py0 = - 0.5 * height;
     double px1 = 0.5 * width;
@@ -328,7 +329,7 @@ void text_symbolizer_helper::init_marker() const
     value_double shield_dy = mapnik::get<value_double, keys::shield_dy>(sym_, feature_, vars_);
     pixel_position marker_displacement;
     marker_displacement.set(shield_dx,shield_dy);
-    finder_.set_marker(std::make_shared<marker_info>(*marker, trans), bbox, unlock_image, marker_displacement);
+    finder_.set_marker(std::make_shared<marker_info>(marker, trans), bbox, unlock_image, marker_displacement);
 }
 
 

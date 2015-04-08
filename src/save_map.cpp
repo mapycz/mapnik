@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -46,6 +46,7 @@
 #include <mapnik/group/group_layout.hpp>
 #include <mapnik/group/group_symbolizer_properties.hpp>
 #include <mapnik/util/variant.hpp>
+#include <mapnik/util/variant_io.hpp>
 
 // boost
 #pragma GCC diagnostic push
@@ -135,7 +136,7 @@ void serialize_group_symbolizer_properties(ptree & sym_node,
                                            bool explicit_defaults);
 
 template <typename Meta>
-class serialize_symbolizer_property : public util::static_visitor<>
+class serialize_symbolizer_property
 {
 public:
     serialize_symbolizer_property(Meta const& meta,
@@ -225,7 +226,7 @@ private:
     bool explicit_defaults_;
 };
 
-class serialize_symbolizer : public util::static_visitor<>
+class serialize_symbolizer
 {
 public:
     serialize_symbolizer( ptree & r , bool explicit_defaults)
@@ -255,7 +256,7 @@ private:
     bool explicit_defaults_;
 };
 
-class serialize_group_layout : public util::static_visitor<>
+class serialize_group_layout
 {
 public:
     serialize_group_layout(ptree & parent_node, bool explicit_defaults)

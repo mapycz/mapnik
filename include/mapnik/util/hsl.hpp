@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,11 +62,14 @@ inline void hsl2rgb(double h, double s, double l,
     if (!s) {
         r = g = b = l;
     }
-    double m2 = (l <= 0.5) ? l * (s + 1.0) : l + s - l * s;
-    double m1 = l * 2.0 - m2;
-    r = hue_to_rgb(m1, m2, h + 1.0/3.0);
-    g = hue_to_rgb(m1, m2, h);
-    b = hue_to_rgb(m1, m2, h - 1.0/3.0);
+    else
+    {
+        double m2 = (l <= 0.5) ? l * (s + 1.0) : l + s - l * s;
+        double m1 = l * 2.0 - m2;
+        r = hue_to_rgb(m1, m2, h + 1.0/3.0);
+        g = hue_to_rgb(m1, m2, h);
+        b = hue_to_rgb(m1, m2, h - 1.0/3.0);
+    }
 }
 
 }

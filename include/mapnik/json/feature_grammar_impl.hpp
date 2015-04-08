@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2012 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,8 +35,6 @@ feature_grammar<Iterator,FeatureType,ErrorHandler>::feature_grammar(mapnik::tran
     qi::lit_type lit;
     qi::long_long_type long_long;
     qi::double_type double_;
-    qi::no_skip_type no_skip;
-    standard_wide::char_type char_;
     qi::_val_type _val;
     qi::_1_type _1;
     qi::_2_type _2;
@@ -45,15 +43,14 @@ feature_grammar<Iterator,FeatureType,ErrorHandler>::feature_grammar(mapnik::tran
     qi::_a_type _a;
     qi::_r1_type _r1;
     qi::eps_type eps;
-
+    qi::char_type char_;
     using qi::fail;
     using qi::on_error;
     using phoenix::new_;
     using phoenix::construct;
 
     // generic json types
-    json_.value =  json_.object | json_.array | json_.string_
-        | json_.number
+    json_.value =  json_.object | json_.array | json_.string_ | json_.number
         ;
 
     json_.pairs = json_.key_value % lit(',')
@@ -77,20 +74,6 @@ feature_grammar<Iterator,FeatureType,ErrorHandler>::feature_grammar(mapnik::tran
         | lit("null")[_val = construct<value_null>()]
         ;
 
-    json_.unesc_char.add
-        ("\\\"", '\"') // quotation mark
-        ("\\\\", '\\') // reverse solidus
-        ("\\/", '/')   // solidus
-        ("\\b", '\b')  // backspace
-        ("\\f", '\f')  // formfeed
-        ("\\n", '\n')  // newline
-        ("\\r", '\r')  // carrige return
-        ("\\t", '\t')  // tab
-        ;
-
-    json_.string_ %= lit('"') >> no_skip[*(json_.unesc_char | "\\u" >> json_.hex4 | (char_ - lit('"')))] >> lit('"')
-        ;
-
     // geojson types
     feature_type = lit("\"type\"")
         >> lit(':')
@@ -110,7 +93,14 @@ feature_grammar<Iterator,FeatureType,ErrorHandler>::feature_grammar(mapnik::tran
     attributes = (json_.string_ [_a = _1] > lit(':') > attribute_value [put_property_(_r1,_a,_1)]) % lit(',')
         ;
 
-    attribute_value %= json_.number | json_.string_  ;
+    attribute_value %= json_.number | json_.string_ | stringify_object | stringify_array
+        ;
+
+    stringify_object %= char_('{')[_a = 1 ] >> *(eps(_a > 0) >> (char_('{')[_a +=1] | char_('}')[_a -=1] | char_))
+        ;
+
+    stringify_array %= char_('[')[_a = 1 ] >> *(eps(_a > 0) >> (char_('[')[_a +=1] | char_(']')[_a -=1] | char_))
+        ;
 
     feature.name("Feature");
     feature_type.name("type");

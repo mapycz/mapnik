@@ -31,17 +31,27 @@ plugin_sources = Split(
   %(PLUGIN_NAME)s_types.cpp
   %(PLUGIN_NAME)s_datasource.cpp
   %(PLUGIN_NAME)s_featureset.cpp
-  spatial_classesm.cpp      
-  spatial_classeso.cpp      
+  spatial_classesm.cpp
+  spatial_classeso.cpp
   """ % locals()
 )
 
-libraries = [ 'occi', 'ociei' ]
+libraries = [ 'clntsh', 'occi' ]
 libraries.append('boost_system%s' % env['BOOST_APPEND'])
 libraries.append(env['ICU_LIB_NAME'])
 
 if env['PLUGIN_LINKING'] == 'shared':
     libraries.append(env['MAPNIK_NAME'])
+
+    # libocci.dylib, at least for 11.2 links to libstdc++
+    # so we defer symbol resolution to runtime in order to
+    # dodge linking errors like
+    # Undefined symbols for architecture x86_64:
+    #   "std::string::_Rep::_M_destroy(std::allocator<char> const&)", referenced from:
+    #      RegisterClasses(oracle::occi::Environment*) in spatial_classesm.os
+
+    if env['PLATFORM'] == 'Darwin':
+        plugin_env.Append(LINKFLAGS='-undefined dynamic_lookup')
 
     TARGET = plugin_env.SharedLibrary('../%s' % PLUGIN_NAME,
                                       SHLIBPREFIX='',

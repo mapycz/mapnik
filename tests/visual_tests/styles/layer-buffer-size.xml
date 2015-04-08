@@ -2,10 +2,15 @@
 <!DOCTYPE Map>
 <Map background-color="white">
 
+    <Parameters>
+        <Parameter name="sizes">200, 200</Parameter>
+    </Parameters>
+
     <Layer name="layer" buffer-size="400">
         <StyleName>My Style</StyleName>
         <Datasource>
             <Parameter name="type">csv</Parameter>
+            <Parameter name="extent">-1, -1, 1, 1</Parameter>
             <Parameter name="inline">
                 wkt
                 "LINESTRING(-8 0, 8 0)

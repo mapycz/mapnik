@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,7 @@ std::string to_hex(const char* blob, unsigned size)
     return s.str();
 }
 
-enum wkbByteOrder {
+enum wkbByteOrder : std::uint8_t {
     wkbXDR=0,
     wkbNDR=1
 };
@@ -238,17 +238,17 @@ template<typename GeometryType>
 wkb_buffer_ptr to_wkb(GeometryType const& g, wkbByteOrder byte_order )
 {
     wkb_buffer_ptr wkb;
-
-    switch (g.type())
+    vertex_adapter va(g);
+    switch (va.type())
     {
     case mapnik::geometry_type::types::Point:
-        wkb = to_point_wkb(g, byte_order);
+        wkb = to_point_wkb(va, byte_order);
         break;
     case mapnik::geometry_type::types::LineString:
-        wkb = to_line_string_wkb(g, byte_order);
+        wkb = to_line_string_wkb(va, byte_order);
         break;
     case mapnik::geometry_type::types::Polygon:
-        wkb = to_polygon_wkb(g, byte_order);
+        wkb = to_polygon_wkb(va, byte_order);
         break;
     default:
         break;
@@ -258,6 +258,11 @@ wkb_buffer_ptr to_wkb(GeometryType const& g, wkbByteOrder byte_order )
 
 wkb_buffer_ptr to_wkb(geometry_container const& paths, wkbByteOrder byte_order )
 {
+    if (paths.size() < 1)
+    {
+        return nullptr;
+    }
+
     if (paths.size() == 1)
     {
         // single geometry

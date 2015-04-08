@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,10 +37,10 @@ struct pixel_position;
 template <typename T> class box2d;
 namespace svg { struct path_attributes; }
 
-void render_vector_marker(cairo_context & context, pixel_position const& pos,
-                          svg::svg_path_adapter & svg_path, box2d<double> const& bbox,
+void render_vector_marker(cairo_context & context, svg::svg_path_adapter & svg_path,
                           agg::pod_bvector<svg::path_attributes> const & attributes,
-                          agg::trans_affine const& tr, double opacity, bool recenter);
+                          box2d<double> const& bbox, agg::trans_affine const& tr,
+                          double opacity);
 
 }
 

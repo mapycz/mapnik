@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2013 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,70 +17,25 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */
+ *
+ *****************************************************************************/
 
 #ifndef MAPNIK_POLYGON_CLIPPER_HPP
 #define MAPNIK_POLYGON_CLIPPER_HPP
 
 // stl
 #include <iostream>
+#include <iomanip>
 #include <deque>
 
 // mapnik
 #include <mapnik/box2d.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/geometry.hpp>
+#include <mapnik/util/boost_geometry_adapters.hpp>
 
 // boost
 #include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/register/point.hpp>
-
-BOOST_GEOMETRY_REGISTER_POINT_2D(mapnik::coord2d, double, cs::cartesian, x, y)
-
-// register mapnik::box2d<double>
-namespace boost { namespace geometry { namespace traits
-{
-
-template<> struct tag<mapnik::box2d<double> > { using type = box_tag; };
-
-template<> struct point_type<mapnik::box2d<double> > { using type = mapnik::coord2d; };
-
-template <>
-struct indexed_access<mapnik::box2d<double>, min_corner, 0>
-{
-    using ct = coordinate_type<mapnik::coord2d>::type;
-    static inline ct get(mapnik::box2d<double> const& b) { return b.minx();}
-    static inline void set(mapnik::box2d<double> &b, ct const& value) { b.set_minx(value); }
-};
-
-template <>
-struct indexed_access<mapnik::box2d<double>, min_corner, 1>
-{
-    using ct = coordinate_type<mapnik::coord2d>::type;
-    static inline ct get(mapnik::box2d<double> const& b) { return b.miny();}
-    static inline void set(mapnik::box2d<double> &b, ct const& value) { b.set_miny(value); }
-};
-
-template <>
-struct indexed_access<mapnik::box2d<double>, max_corner, 0>
-{
-    using ct = coordinate_type<mapnik::coord2d>::type;
-    static inline ct get(mapnik::box2d<double> const& b) { return b.maxx();}
-    static inline void set(mapnik::box2d<double> &b, ct const& value) { b.set_maxx(value); }
-};
-
-template <>
-struct indexed_access<mapnik::box2d<double>, max_corner, 1>
-{
-    using ct = coordinate_type<mapnik::coord2d>::type;
-    static inline ct get(mapnik::box2d<double> const& b) { return b.maxy();}
-    static inline void set(mapnik::box2d<double> &b , ct const& value) { b.set_maxy(value); }
-};
-
-}}}
 
 namespace mapnik {
 
@@ -112,7 +67,9 @@ struct polygon_clipper
     polygon_clipper(box2d<double> const& clip_box, Geometry & geom)
         :state_(clip),
          clip_box_(clip_box),
-         geom_(geom)
+         geom_(geom),
+         output_(),
+         output_adapter_(output_)
     {
         init();
     }
@@ -131,7 +88,7 @@ struct polygon_clipper
 
     void rewind(unsigned path_id)
     {
-        if (state_ == clip) output_.rewind(path_id);
+        if (state_ == clip) output_adapter_.rewind(path_id);
         else geom_.rewind(path_id);
     }
 
@@ -140,7 +97,7 @@ struct polygon_clipper
         switch (state_)
         {
         case clip:
-            return output_.vertex(x,y);
+            return output_adapter_.vertex(x,y);
         case no_clip:
             return geom_.vertex(x,y);
         case ignore:
@@ -275,6 +232,7 @@ private:
     box2d<double> clip_box_;
     Geometry & geom_;
     mapnik::geometry_type output_;
+    mapnik::vertex_adapter output_adapter_;
 
 };
 

@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -200,7 +200,7 @@ public:
                 {
                     for (unsigned i=0; i<paths.size(); ++i)
                     {
-                        mapnik::box2d<double> const& bbox = paths[i].envelope();
+                        mapnik::box2d<double> const& bbox = ::mapnik::envelope(paths[i]);
                         if (bbox.valid())
                         {
                             if (first)
@@ -288,13 +288,14 @@ public:
                     {
                         for (unsigned i=0; i<paths.size(); ++i)
                         {
+                            auto b = ::mapnik::envelope(paths[i]);
                             if (i==0)
                             {
-                                bbox = paths[i].envelope();
+                                bbox = b;
                             }
                             else
                             {
-                                bbox.expand_to_include(paths[i].envelope());
+                                bbox.expand_to_include(b);
                             }
                         }
                     }
@@ -374,7 +375,7 @@ public:
                 {
                     for (unsigned i=0; i<paths.size(); ++i)
                     {
-                        mapnik::box2d<double> const& bbox = paths[i].envelope();
+                        mapnik::box2d<double> const& bbox = ::mapnik::envelope(paths[i]);
                         if (bbox.valid())
                         {
                             const int type_oid = rs->column_type(1);
@@ -684,8 +685,8 @@ public:
                     desc.add_descriptor(mapnik::attribute_descriptor(fld_name, mapnik::String));
                 }
                 else if (boost::algorithm::contains(fld_type, "real") ||
-                         boost::algorithm::contains(fld_type, "float") ||
-                         boost::algorithm::contains(fld_type, "double"))
+                         boost::algorithm::contains(fld_type, "floa") ||
+                         boost::algorithm::contains(fld_type, "doub"))
                 {
                     desc.add_descriptor(mapnik::attribute_descriptor(fld_name, mapnik::Double));
                 }
@@ -701,14 +702,17 @@ public:
                     // "Column Affinity" says default to "Numeric" but for now we pass..
                     //desc_.add_descriptor(attribute_descriptor(fld_name,mapnik::Double));
 
+                    desc.add_descriptor(mapnik::attribute_descriptor(fld_name, mapnik::String));
+
 #ifdef MAPNIK_LOG
                     // Do not fail when we specify geometry_field in XML file
                     if (field.empty())
                     {
                         MAPNIK_LOG_DEBUG(sqlite) << "Column '"
                                                  << std::string(fld_name)
-                                                 << "' unhandled due to unknown type: "
-                                                 << fld_type;
+                                                 << "' unhandled due to unknown type: '"
+                                                 << fld_type
+                                                 << "', using String";
                     }
 #endif
                 }

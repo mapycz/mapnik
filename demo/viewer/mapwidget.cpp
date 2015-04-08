@@ -1,6 +1,6 @@
 /* This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * Mapnik is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,7 +22,6 @@
 
 #include <boost/bind.hpp>
 #include <mapnik/agg_renderer.hpp>
-#include <mapnik/graphics.hpp>
 #include <mapnik/layer.hpp>
 #include <mapnik/projection.hpp>
 #include <mapnik/scale_denominator.hpp>
@@ -32,6 +31,7 @@
 #include <mapnik/feature_kv_iterator.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/util/timer.hpp>
+#include <mapnik/cairo/cairo_image_util.hpp>
 
 #ifdef HAVE_CAIRO
 // cairo
@@ -41,7 +41,7 @@
 #include "mapwidget.hpp"
 #include "info_dialog.hpp"
 
-using mapnik::image_32;
+using mapnik::image_rgba8;
 using mapnik::Map;
 using mapnik::layer;
 using mapnik::box2d;
@@ -190,21 +190,22 @@ void MapWidget::mousePressEvent(QMouseEvent* e)
                                                                 std::get<1>(*itr).to_string().c_str()));
                       }
 
-                      using path_type = mapnik::transform_path_adapter<mapnik::view_transform,mapnik::geometry_type>;
+                      using path_type = mapnik::transform_path_adapter<mapnik::view_transform,mapnik::vertex_adapter>;
 
                      for  (unsigned i=0; i<feat->num_geometries();++i)
                      {
-                        mapnik::geometry_type & geom = feat->get_geometry(i);
-                        path_type path(t,geom,prj_trans);
-                        if (geom.size() > 0)
+                        mapnik::geometry_type const& geom = feat->get_geometry(i);
+                        mapnik::vertex_adapter va(geom);
+                        path_type path(t,va,prj_trans);
+                        if (va.size() > 0)
                         {
                            QPainterPath qpath;
                            double x,y;
-                           path.vertex(&x,&y);
+                           va.vertex(&x,&y);
                            qpath.moveTo(x,y);
                            for (unsigned j = 1; j < geom.size(); ++j)
                            {
-                              path.vertex(&x,&y);
+                              va.vertex(&x,&y);
                               qpath.lineTo(x,y);
                            }
                            QPainter painter(&pix_);
@@ -478,7 +479,7 @@ void MapWidget::zoomToLevel(int level)
 
 void MapWidget::export_to_file(unsigned ,unsigned ,std::string const&,std::string const&)
 {
-   //image_32 image(width,height);
+   //image_rgba8 image(width,height);
    //agg_renderer renderer(map,image);
    //renderer.apply();
    //image.saveToFile(filename,type);
@@ -495,14 +496,14 @@ void render_agg(mapnik::Map const& map, double scaling_factor, QPixmap & pix)
     unsigned width=map.width();
     unsigned height=map.height();
 
-    image_32 buf(width,height);
-    mapnik::agg_renderer<image_32> ren(map,buf,scaling_factor);
+    image_rgba8 buf(width,height);
+    mapnik::agg_renderer<image_rgba8> ren(map,buf,scaling_factor);
 
     try
     {
         mapnik::auto_cpu_timer t(std::clog, "rendering took: ");
         ren.apply();
-        QImage image((uchar*)buf.raw_data(),width,height,QImage::Format_ARGB32);
+        QImage image((uchar*)buf.getData(),width,height,QImage::Format_ARGB32);
         pix = QPixmap::fromImage(image.rgbSwapped());
     }
     //catch (mapnik::config_error & ex)
@@ -539,8 +540,9 @@ void render_cairo(mapnik::Map const& map, double scaling_factor, QPixmap & pix)
         mapnik::cairo_renderer<mapnik::cairo_ptr> renderer(map, cairo, scaling_factor);
         renderer.apply();
     }
-    image_32 buf(image_surface);
-    QImage image((uchar*)buf.raw_data(),buf.width(),buf.height(),QImage::Format_ARGB32);
+    mapnik::image_rgba8 data(map.width(), map.height());
+    mapnik::cairo_image_to_rgba8(data, image_surface);
+    QImage image((uchar*)data.getBytes(),data.width(),data.height(),QImage::Format_ARGB32);
     pix = QPixmap::fromImage(image.rgbSwapped());
 #endif
 }

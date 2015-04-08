@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -78,8 +78,57 @@ private:
 
     value_type v_;
     const path_type *vertices_;
-    unsigned pos_;
 };
+
+// specialization for mapnik::geometry_type - vertex interface has been removed
+template <>
+class path_iterator<geometry_type>
+    : public boost::iterator_facade< path_iterator<geometry_type>,
+                                     std::tuple<unsigned,double,double> const,
+                                     boost::forward_traversal_tag
+                                     >
+{
+
+public:
+    using path_type = mapnik::geometry_type;
+    using value_type = std::tuple<unsigned, double, double>;
+    using size_type = path_type::size_type;
+    path_iterator()
+        : v_(mapnik::SEG_END,0,0),
+          vertices_(),
+          pos_(0)
+    {}
+
+    explicit path_iterator(path_type const& vertices)
+        : vertices_(&vertices),
+          pos_(0)
+    {
+        increment();
+    }
+
+private:
+    friend class boost::iterator_core_access;
+
+    void increment()
+    {
+        std::get<0>(v_) = vertices_->cont_.get_vertex(pos_++, &std::get<1>(v_), &std::get<2>(v_));
+    }
+
+    bool equal( path_iterator const& other) const
+    {
+        return std::get<0>(v_) == std::get<0>(other.v_);
+    }
+
+    value_type const& dereference() const
+    {
+        return v_;
+    }
+
+    value_type v_;
+    const path_type *vertices_;
+    size_type pos_;
+};
+
 
 }}
 

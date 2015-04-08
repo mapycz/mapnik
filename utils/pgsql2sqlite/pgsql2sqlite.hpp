@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2009 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -391,7 +391,7 @@ void pgsql2sqlite(Connection conn,
                             && feat.num_geometries() > 0)
                         {
                             geometry_type const& geom=feat.get_geometry(0);
-                            box2d<double> bbox = geom.envelope();
+                            box2d<double> bbox = ::mapnik::envelope(geom);
                             if (bbox.valid())
                             {
                                 sqlite::record_type rec;

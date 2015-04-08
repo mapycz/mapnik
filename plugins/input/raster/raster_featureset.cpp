@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2011 Artem Pavlenko
+ * Copyright (C) 2014 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,12 +22,13 @@
 
 // mapnik
 #include <mapnik/debug.hpp>
-#include <mapnik/image_data.hpp>
+#include <mapnik/image.hpp>
 #include <mapnik/raster.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/image_reader.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/feature_factory.hpp>
+#include <mapnik/util/variant.hpp>
 
 // boost
 #pragma GCC diagnostic push
@@ -42,7 +43,7 @@
 using mapnik::query;
 using mapnik::image_reader;
 using mapnik::feature_ptr;
-using mapnik::image_data_32;
+using mapnik::image_rgba8;
 using mapnik::raster;
 using mapnik::feature_factory;
 
@@ -113,10 +114,8 @@ feature_ptr raster_featureset<LookupPolicy>::next()
                                                             rem.maxx() + x_off + width,
                                                             rem.maxy() + y_off + height);
                         intersect = t.backward(feature_raster_extent);
-
-                        mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, width, height, 1.0);
-                        reader->read(x_off, y_off, raster->data_);
-                        raster->premultiplied_alpha_ = reader->premultiplied_alpha();
+                        mapnik::image_any data = reader->read(x_off, y_off, width, height);
+                        mapnik::raster_ptr raster = std::make_shared<mapnik::raster>(intersect, std::move(data), 1.0);
                         feature->set_raster(raster);
                     }
                 }

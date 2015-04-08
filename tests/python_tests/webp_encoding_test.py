@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
 import os, mapnik
-from timeit import Timer, time
-from nose.tools import *
+from nose.tools import raises,eq_
 from utilities import execution_path, run_all
 
 def setup():
@@ -60,7 +58,7 @@ if mapnik.has_webp():
         im = mapnik.Image(256,256)
         im.tostring('webp:quality=-1')
 
-    generate = False
+    generate = os.environ.get('UPDATE')
 
     def test_expected_encodings():
         fails = []
@@ -84,7 +82,7 @@ if mapnik.has_webp():
 
             for opt in opts:
                 im = mapnik.Image(256,256)
-                im.background = mapnik.Color('green')
+                im.fill(mapnik.Color('green'))
                 expected = gen_filepath('solid',opt)
                 actual = os.path.join(tmp_dir,os.path.basename(expected))
                 if generate or not os.path.exists(expected):
@@ -125,7 +123,7 @@ if mapnik.has_webp():
         try:
             # create partial transparency image
             im = mapnik.Image(256,256)
-            im.background = mapnik.Color('rgba(255,255,255,.5)')
+            im.fill(mapnik.Color('rgba(255,255,255,.5)'))
             c2 = mapnik.Color('rgba(255,255,0,.2)')
             c3 = mapnik.Color('rgb(0,255,255)')
             for y in range(0,im.height()/2):
@@ -151,8 +149,7 @@ if mapnik.has_webp():
                 # this will happen if libweb is old, since it cannot open images created by more recent webp
                 print 'warning, cannot open webp expected image (your libwebp is likely too old)'
                 return
-            # disabled to avoid failures on ubuntu when using old webp packages
-            #eq_(t0_len,len(expected_bytes))
+            eq_(t0_len,len(expected_bytes))
         except RuntimeError, e:
             print e
 
