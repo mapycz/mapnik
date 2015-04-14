@@ -239,6 +239,7 @@ source = Split(
     text/placements/list.cpp
     text/placements/simple.cpp
     text/placements/combined.cpp
+    text/placements/angle.cpp
     group/group_layout_manager.cpp
     group/group_rule.cpp
     group/group_symbolizer_helper.cpp
