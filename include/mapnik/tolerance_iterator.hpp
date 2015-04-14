@@ -28,16 +28,30 @@
 namespace mapnik
 {
 
+struct exponential_function
+{
+    double operator()(double const& linear_position, double const& tolerance) const
+    {
+        return std::pow(1.3, linear_position) * linear_position / (4.0 * tolerance) + linear_position;
+    }
+};
+
+template <typename Function>
 class tolerance_iterator
 {
 public:
-    tolerance_iterator(double label_position_tolerance, double spacing)
-        : tolerance_(label_position_tolerance > 0 ?
-                        label_position_tolerance : spacing/2.0),
+    tolerance_iterator(double label_position_tolerance, double spacing, Function function)
+        : tolerance_(label_position_tolerance > 0 ? label_position_tolerance : spacing / 2.0),
           linear_position_(1.0),
           value_(0),
           initialized_(false),
-          values_tried_(0)
+          values_tried_(0),
+          function_(function)
+    {
+    }
+
+    tolerance_iterator(double label_position_tolerance, double spacing)
+        : tolerance_iterator(label_position_tolerance, spacing, Function())
     {
     }
 
@@ -73,14 +87,14 @@ public:
         }
         if (value_ == 0)
         {
-            value_ = linear_position_;
-            return true;
+            value_ = function_(linear_position_, tolerance_);
+            return value_ <= tolerance_;
         }
         value_ = -value_;
         if (value_ > 0)
         {
-            value_ = std::pow(1.3, linear_position_) * linear_position_ / (4.0 * tolerance_) + linear_position_;
             linear_position_ += 1.0;
+            value_ = function_(linear_position_, tolerance_);
         }
         if (value_ > tolerance_)
         {
@@ -94,6 +108,7 @@ private:
     double value_;
     bool initialized_;
     unsigned values_tried_;
+    Function function_;
 };
 
 }//ns mapnik

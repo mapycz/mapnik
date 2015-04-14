@@ -97,7 +97,7 @@ bool group_symbolizer_helper::find_line_placements(T & path)
         pp.forward(spacing/2.0);
         do
         {
-            tolerance_iterator tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
+            tolerance_iterator<exponential_function> tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(pp);

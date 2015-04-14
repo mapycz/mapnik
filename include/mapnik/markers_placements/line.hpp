@@ -87,7 +87,7 @@ public:
 
         while (path_.forward(move))
         {
-            tolerance_iterator tolerance_offset(spacing_ * this->params_.max_error, 0.0);
+            tolerance_iterator<exponential_function> tolerance_offset(spacing_ * this->params_.max_error, 0.0);
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(path_);
