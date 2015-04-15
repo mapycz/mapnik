@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+<Map background-color="white" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Parameters>
+        <Parameter name="sizes">400,400</Parameter>
+    </Parameters>
+
+    <Layer name="points" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>points</StyleName>
+        <Datasource>
+            <Parameter name="type">csv</Parameter>
+            <Parameter name="extent">-1, -1, 1, 1</Parameter>
+            <Parameter name="inline">
+                wkt, key
+                POINT(0 0), "xxx"
+            </Parameter>
+        </Datasource>
+    </Layer>
+
+    <Layer name="texts" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>texts</StyleName>
+        <Datasource>
+            <Parameter name="type">csv</Parameter>
+            <Parameter name="extent">-1, -1, 1, 1</Parameter>
+            <Parameter name="inline">
+                wkt, key, angle, color
+                POINT(0 0), "xxx", 0.0, "rgb(200, 200, 200)"
+                POINT(0 0), "xxx", 30.0, "rgb(188, 188, 188)"
+                POINT(0 0), "xxx", 60.0, "rgb(175, 175, 175)"
+                POINT(0 0), "xxx", 90.0, "rgb(162, 162, 162)"
+                POINT(0 0), "xxx", 120.0, "rgb(150, 150, 150)"
+                POINT(0 0), "xxx", 150.0, "rgb(138, 138, 138)"
+                POINT(0 0), "xxx", 180.0, "rgb(125, 125, 125)"
+                POINT(0 0), "xxx", 210.0, "rgb(112, 112, 112)"
+                POINT(0 0), "xxx", 240.0, "rgb(100, 100, 100)"
+                POINT(0 0), "xxx", 270.0, "rgb(88, 88, 88)"
+                POINT(0 0), "xxx", 300.0, "rgb(75, 75, 75)"
+                POINT(0 0), "xxx", 330.0, "rgb(62, 62, 62)"
+                POINT(0 0), "xxx", 360.0, "rgb(50, 50, 50)"
+            </Parameter>
+        </Datasource>
+    </Layer>
+
+    <Style name="points">
+        <Rule>
+            <MarkersSymbolizer key="[key]" transform="scale(4)" />
+            <DebugSymbolizer />
+        </Rule>
+    </Style>
+
+    <Style name="texts">
+        <Rule>
+            <TextSymbolizer
+                face-name="DejaVu Sans Book"
+                size="26"
+                placement="point"
+                placement-type="angle"
+                angle="[angle]"
+                anchor-key="[key]"
+                fill="[color]"
+                allow-overlap="true"
+                >
+                "Multiline\ntext"
+            </TextSymbolizer>
+            <DebugSymbolizer />
+        </Rule>
+    </Style>
+</Map>
