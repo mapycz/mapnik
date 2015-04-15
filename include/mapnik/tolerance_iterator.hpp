@@ -102,8 +102,17 @@ public:
         }
         return true;
     }
+
+    void reset()
+    {
+        linear_position_ = 1.0;
+        value_ = .0;
+        initialized_ = false;
+        values_tried_ = 0;
+    }
+
 private:
-    double tolerance_;
+    const double tolerance_;
     double linear_position_;
     double value_;
     bool initialized_;
