@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE Map>
+<Map background-color="white" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Parameters>
+        <Parameter name="sizes">400,400</Parameter>
+    </Parameters>
+
+    <Layer name="points" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>points</StyleName>
+        <Datasource>
+            <Parameter name="type">csv</Parameter>
+            <Parameter name="extent">-1, -1, 1, 1</Parameter>
+            <Parameter name="inline">
+                wkt, key
+                POINT(0 0), "x"
+                POINT(0 0.2), "y"
+                POINT(0 -0.2), "y"
+                POINT(0.2 0), "y"
+                POINT(-0.2 0), "y"
+            </Parameter>
+        </Datasource>
+    </Layer>
+
+    <Layer name="texts" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>texts</StyleName>
+        <Datasource>
+            <Parameter name="type">csv</Parameter>
+            <Parameter name="extent">-1, -1, 1, 1</Parameter>
+            <Parameter name="inline">
+                wkt, key, angle, tolerance, step
+                POINT(0 0), "x", 180, 90, 90
+            </Parameter>
+        </Datasource>
+    </Layer>
+
+    <Style name="points">
+        <Rule>
+            <MarkersSymbolizer key="[key]" allow-overlap="true" transform="scale(4)" />
+            <DebugSymbolizer />
+        </Rule>
+    </Style>
+
+    <Style name="texts">
+        <Rule>
+            <TextSymbolizer
+                face-name="DejaVu Sans Book"
+                size="26"
+                placement="point"
+                placement-type="angle"
+                angle="[angle]"
+                tolerance="[tolerance]"
+                anchor-key="[key]"
+                step="[step]"
+                >
+                <Placement allow-overlap="true" />
+                [angle]
+            </TextSymbolizer>
+            <DebugSymbolizer />
+        </Rule>
+    </Style>
+</Map>
