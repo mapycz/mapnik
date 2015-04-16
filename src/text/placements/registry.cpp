@@ -23,7 +23,9 @@
 #include <mapnik/text/placements/registry.hpp>
 #include <mapnik/text/placements/simple.hpp>
 #include <mapnik/text/placements/list.hpp>
+#include <mapnik/text/placements/combined.hpp>
 #include <mapnik/text/placements/dummy.hpp>
+#include <mapnik/text/placements/angle.hpp>
 #include <mapnik/config_error.hpp>
 
 namespace mapnik
@@ -35,6 +37,8 @@ registry::registry()
 {
     register_name("simple", &text_placements_simple::from_xml);
     register_name("list", &text_placements_list::from_xml);
+    register_name("combined", &text_placements_combined::from_xml);
+    register_name("angle", &text_placements_angle::from_xml);
     register_name("dummy", &text_placements_list::from_xml);
 }
 

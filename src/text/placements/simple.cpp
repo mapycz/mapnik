@@ -29,6 +29,7 @@
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/expression_string.hpp>
+#include <mapnik/text/placements/dummy.hpp>
 
 // boost
 #pragma GCC diagnostic push
@@ -105,7 +106,9 @@ bool parse_positions(std::string const& evaluated_positions,
 
 text_placement_info_simple::text_placement_info_simple(text_placements_simple const* parent,
                            std::string const& evaluated_positions,
-                           double scale_factor)
+                           double scale_factor,
+                           double dx,
+                           double dy)
 : text_placement_info(parent, scale_factor),
   state(0),
   position_state(0),
@@ -121,6 +124,9 @@ text_placement_info_simple::text_placement_info_simple(text_placements_simple co
             MAPNIK_LOG_ERROR(text_placements) << "text_placements_simple with no valid placements! ('"<< evaluated_positions <<"')";
         }
     }
+
+    properties.layout_defaults.dx = dx;
+    properties.layout_defaults.dy = dy;
 }
 
 bool text_placement_info_simple::next() const
@@ -150,23 +156,47 @@ bool text_placement_info_simple::next_position_only() const
     return true;
 }
 
-text_placement_info_ptr text_placements_simple::get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const
+text_placement_info_ptr text_placements_simple::get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars, symbol_cache const& sc) const
 {
     std::string evaluated_positions = util::apply_visitor(extract_value<std::string>(feature,vars), positions_);
-    return std::make_shared<text_placement_info_simple>(this, evaluated_positions, scale_factor);
+
+    double dx = util::apply_visitor(extract_value<double>(feature, vars), defaults.layout_defaults.dx);
+    double dy = util::apply_visitor(extract_value<double>(feature, vars), defaults.layout_defaults.dy);
+
+    if (anchor_key_)
+    {
+        std::string evaluated_anchor_key = util::apply_visitor(extract_value<std::string>(feature, vars), static_cast<symbolizer_base::value_type>(*anchor_key_));
+
+        if (sc.contains(evaluated_anchor_key))
+        {
+            symbol_cache::symbol const& sym = sc.get(evaluated_anchor_key);
+            // Add 0.5 to ensure boxes won't intersect.
+            dx += sym.box.width() / 2.0 + .5;
+            dy += sym.box.height() / 2.0 + .5;
+        }
+        else
+        {
+            return std::make_shared<text_placement_info_dummy>(this, scale_factor, 1);
+        }
+    }
+
+    return std::make_shared<text_placement_info_simple>(this, evaluated_positions, scale_factor, dx, dy);
 }
 
-text_placements_simple::text_placements_simple(symbolizer_base::value_type const& positions)
+text_placements_simple::text_placements_simple(symbolizer_base::value_type const& positions, boost::optional<expression_ptr> const& anchor_key)
  : direction_(),
    text_sizes_(),
-   positions_(positions) { }
+   positions_(positions),
+   anchor_key_(anchor_key) { }
 
 text_placements_simple::text_placements_simple(symbolizer_base::value_type const& positions,
                                                std::vector<directions_e> && direction,
-                                               std::vector<int> && text_sizes)
+                                               std::vector<int> && text_sizes,
+                                               boost::optional<expression_ptr> const& anchor_key)
  : direction_(direction),
    text_sizes_(text_sizes),
-   positions_(positions) { }
+   positions_(positions),
+   anchor_key_(anchor_key) { }
 
 namespace detail {
     struct serialize_positions
@@ -199,6 +229,8 @@ std::string text_placements_simple::get_positions() const
 
 text_placements_ptr text_placements_simple::from_xml(xml_node const& xml, fontset_map const& fontsets, bool is_shield)
 {
+    boost::optional<expression_ptr> anchor_key = xml.get_opt_attr<expression_ptr>("anchor-key");
+
     // TODO - handle X cleaner
     std::string placements_string = xml.get_attr<std::string>("placements", "X");
     // like set_property_from_xml in properties_util.hpp
@@ -206,7 +238,7 @@ text_placements_ptr text_placements_simple::from_xml(xml_node const& xml, fontse
     {
         if (placements_string == "X")
         {
-            text_placements_ptr ptr = std::make_shared<text_placements_simple>(placements_string);
+            text_placements_ptr ptr = std::make_shared<text_placements_simple>(placements_string, anchor_key);
             ptr->defaults.from_xml(xml, fontsets, is_shield);
             return ptr;
         }
@@ -218,7 +250,7 @@ text_placements_ptr text_placements_simple::from_xml(xml_node const& xml, fontse
                 boost::optional<expression_ptr> val = xml.get_opt_attr<expression_ptr>("placements");
                 if (val)
                 {
-                    text_placements_ptr ptr = std::make_shared<text_placements_simple>(*val);
+                    text_placements_ptr ptr = std::make_shared<text_placements_simple>(*val, anchor_key);
                     ptr->defaults.from_xml(xml, fontsets, is_shield);
                     return ptr;
                 }
@@ -239,12 +271,12 @@ text_placements_ptr text_placements_simple::from_xml(xml_node const& xml, fontse
                 }
                 else
                 {
-                    text_placements_ptr ptr = std::make_shared<text_placements_simple>(placements_string,std::move(direction),std::move(text_sizes));
+                    text_placements_ptr ptr = std::make_shared<text_placements_simple>(placements_string,std::move(direction),std::move(text_sizes), anchor_key);
                     ptr->defaults.from_xml(xml, fontsets, is_shield);
                     return ptr;
                 }
             }
-            text_placements_ptr ptr = std::make_shared<text_placements_simple>(placements_string);
+            text_placements_ptr ptr = std::make_shared<text_placements_simple>(placements_string, anchor_key);
             ptr->defaults.from_xml(xml, fontsets, is_shield);
             return ptr;
         }

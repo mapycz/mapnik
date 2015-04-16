@@ -38,6 +38,7 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/label_collision_detector.hpp>
+#include <mapnik/symbol_cache.hpp>
 
 // agg
 #include "agg_trans_affine.h"
@@ -65,14 +66,16 @@ struct vector_markers_dispatch : util::noncopyable
                             Detector & detector,
                             double scale_factor,
                             feature_impl & feature,
-                            attributes const& vars)
+                            attributes const& vars,
+                            symbol_cache &sc)
     : src_(src),
         marker_trans_(marker_trans),
         sym_(sym),
         detector_(detector),
         feature_(feature),
         vars_(vars),
-        scale_factor_(scale_factor)
+        scale_factor_(scale_factor),
+        symbol_cache_(sc)
     {}
 
     virtual ~vector_markers_dispatch() {}
@@ -91,16 +94,22 @@ struct vector_markers_dispatch : util::noncopyable
         agg::trans_affine_translation recenter(-center.x, -center.y);
         agg::trans_affine tr = recenter * marker_trans_;
         direction_enum direction = get<direction_enum, keys::direction>(sym_, feature_, vars_);
+        boost::optional<std::string> key = get_optional<std::string>(sym_, keys::symbol_key, feature_, vars_);
         markers_placement_params params { src_->bounding_box(), tr, spacing * scale_factor_, max_error, allow_overlap, avoid_edges, direction };
         markers_placement_finder<T, Detector> placement_finder(
             placement_method, path, detector_, params);
         double x, y, angle = .0;
-        while (placement_finder.get_point(x, y, angle, ignore_placement))
+        box2d<double> box;
+        while (placement_finder.get_point(x, y, angle, box, ignore_placement))
         {
             agg::trans_affine matrix = tr;
             matrix.rotate(angle);
             matrix.translate(x, y);
             render_marker(matrix, opacity);
+            if (key)
+            {
+                symbol_cache_.insert(*key, box);
+            }
         }
     }
 
@@ -114,6 +123,7 @@ protected:
     feature_impl & feature_;
     attributes const& vars_;
     double scale_factor_;
+    symbol_cache &symbol_cache_;
 };
 
 template <typename Detector>
@@ -125,14 +135,16 @@ struct raster_markers_dispatch : util::noncopyable
                             Detector & detector,
                             double scale_factor,
                             feature_impl & feature,
-                            attributes const& vars)
+                            attributes const& vars,
+                            symbol_cache &sc)
     : src_(src),
         marker_trans_(marker_trans),
         sym_(sym),
         detector_(detector),
         feature_(feature),
         vars_(vars),
-        scale_factor_(scale_factor)
+        scale_factor_(scale_factor),
+        symbol_cache_(sc)
     {}
 
     virtual ~raster_markers_dispatch() {}
@@ -149,16 +161,22 @@ struct raster_markers_dispatch : util::noncopyable
         value_double max_error = get<value_double, keys::max_error>(sym_, feature_, vars_);
         box2d<double> bbox(0,0, src_.width(),src_.height());
         direction_enum direction = get<direction_enum, keys::direction>(sym_, feature_, vars_);
+        boost::optional<std::string> key = get_optional<std::string>(sym_, keys::symbol_key, feature_, vars_);
         markers_placement_params params { bbox, marker_trans_, spacing * scale_factor_, max_error, allow_overlap, avoid_edges, direction };
         markers_placement_finder<T, label_collision_detector4> placement_finder(
             placement_method, path, detector_, params);
         double x, y, angle = .0;
-        while (placement_finder.get_point(x, y, angle, ignore_placement))
+        box2d<double> box;
+        while (placement_finder.get_point(x, y, angle, box, ignore_placement))
         {
             agg::trans_affine matrix = marker_trans_;
             matrix.rotate(angle);
             matrix.translate(x, y);
             render_marker(matrix, opacity);
+            if (key)
+            {
+                symbol_cache_.insert(*key, box);
+            }
         }
     }
 
@@ -172,6 +190,7 @@ protected:
     feature_impl & feature_;
     attributes const& vars_;
     double scale_factor_;
+    symbol_cache &symbol_cache_;
 };
 
 void build_ellipse(symbolizer_base const& sym, mapnik::feature_impl & feature, attributes const& vars, svg_storage_type & marker_ellipse, svg::svg_path_adapter & svg_path);

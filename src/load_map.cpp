@@ -872,6 +872,13 @@ void map_parser::parse_symbolizer_base(symbolizer_base &sym, xml_node const& nod
     set_symbolizer_property<symbolizer_base,composite_mode_e>(sym, keys::comp_op, node);
     set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::geometry_transform, node);
     set_symbolizer_property<symbolizer_base,simplify_algorithm_e>(sym, keys::simplify_algorithm, node);
+
+    optional<std::string> symbol_key = node.get_opt_attr<std::string>("key");
+
+    if (symbol_key)
+    {
+        put(sym, keys::symbol_key, parse_expression(*symbol_key));
+    }
 }
 
 void map_parser::parse_point_symbolizer(rule & rule, xml_node const & node)

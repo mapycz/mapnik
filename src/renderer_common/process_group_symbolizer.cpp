@@ -73,8 +73,9 @@ struct vector_marker_thunk_dispatch : public vector_markers_dispatch<Detector>
                                  feature_impl & feature,
                                  attributes const& vars,
                                  bool snap_to_pixels,
-                                 RendererContext const& renderer_context)
-        : vector_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+                                 RendererContext const& renderer_context,
+                                 symbol_cache &sc)
+        : vector_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars, sc),
           attrs_(attrs), comp_op_(get<composite_mode_e, keys::comp_op>(sym, feature, vars)),
           snap_to_pixels_(snap_to_pixels), thunks_(std::get<0>(renderer_context))
     {}
@@ -105,8 +106,9 @@ struct raster_marker_thunk_dispatch : public raster_markers_dispatch<Detector>
                                  feature_impl & feature,
                                  attributes const& vars,
                                  RendererContext const& renderer_context,
+                                 symbol_cache &sc,
                                  bool snap_to_pixels = false)
-        : raster_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+        : raster_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars, sc),
           comp_op_(get<composite_mode_e, keys::comp_op>(sym, feature, vars)),
           snap_to_pixels_(snap_to_pixels), thunks_(std::get<0>(renderer_context))
     {}
@@ -159,7 +161,7 @@ void render_thunk_extractor::operator()(text_symbolizer const& sym) const
         common_.width_, common_.height_,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
-        clip_box, agg::trans_affine());
+        clip_box, agg::trans_affine(), common_.symbol_cache_);
 
     extract_text_thunk(std::move(helper), sym);
 }
@@ -172,7 +174,7 @@ void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
         common_.width_, common_.height_,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
-        clip_box, agg::trans_affine());
+        clip_box, agg::trans_affine(), common_.symbol_cache_);
 
     extract_text_thunk(std::move(helper), sym);
 }

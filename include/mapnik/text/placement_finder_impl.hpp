@@ -87,7 +87,7 @@ bool placement_finder::find_line_placements(T & path, bool points)
 
         do
         {
-            tolerance_iterator tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
+            tolerance_iterator<exponential_function> tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(pp);

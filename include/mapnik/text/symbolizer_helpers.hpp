@@ -25,6 +25,7 @@
 //mapnik
 #include <mapnik/text/placement_finder.hpp>
 #include <mapnik/vertex_converters.hpp>
+#include <mapnik/symbol_cache.hpp>
 
 namespace mapnik {
 
@@ -68,7 +69,8 @@ public:
                            unsigned height,
                            double scale_factor,
                            view_transform const& t,
-                           box2d<double> const& query_extent);
+                           box2d<double> const& query_extent,
+                           symbol_cache const& sc);
 
 protected:
     void initialize_geometries() const;
@@ -118,7 +120,8 @@ public:
                            FaceManagerT & font_manager,
                            DetectorT & detector,
                            box2d<double> const& query_extent,
-                           agg::trans_affine const&);
+                           agg::trans_affine const&,
+                           symbol_cache const& sc);
 
     template <typename FaceManagerT, typename DetectorT>
     text_symbolizer_helper(shield_symbolizer const& sym,
@@ -132,7 +135,8 @@ public:
                            FaceManagerT & font_manager,
                            DetectorT & detector,
                            box2d<double> const& query_extent,
-                           agg::trans_affine const&);
+                           agg::trans_affine const&,
+                           symbol_cache const& sc);
 
     // Return all placements.
     placements_list const& get() const;

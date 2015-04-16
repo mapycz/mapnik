@@ -29,6 +29,7 @@
 #include <mapnik/view_transform.hpp>    // for view_transform
 #include <mapnik/attribute.hpp>
 #include <mapnik/util/noncopyable.hpp>
+#include <mapnik/symbol_cache.hpp>
 
 // fwd declarations to speed up compile
 namespace mapnik {
@@ -61,6 +62,7 @@ struct renderer_common : private util::noncopyable
     box2d<double> query_extent_;
     view_transform t_;
     std::shared_ptr<label_collision_detector4> detector_;
+    symbol_cache symbol_cache_;
 
 private:
     renderer_common(Map const &m, unsigned width, unsigned height, double scale_factor,

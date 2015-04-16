@@ -60,8 +60,9 @@ struct vector_markers_dispatch_cairo  : public vector_markers_dispatch<Detector>
                                   feature_impl & feature,
                                   mapnik::attributes const& vars,
                                   bool snap_to_pixels,
-                                  RendererContext const& renderer_context)
-    : vector_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+                                  RendererContext const& renderer_context,
+                                  symbol_cache & sc)
+    : vector_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars, sc),
         path_(path),
         attr_(attrs),
         ctx_(std::get<0>(renderer_context))
@@ -93,8 +94,9 @@ struct raster_markers_dispatch_cairo : public raster_markers_dispatch<Detector>
                                   double scale_factor,
                                   feature_impl & feature,
                                   mapnik::attributes const& vars,
-                                  RendererContext const& renderer_context)
-    : raster_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+                                  RendererContext const& renderer_context,
+                                  symbol_cache & sc)
+    : raster_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars, sc),
         ctx_(std::get<0>(renderer_context)) {}
 
     ~raster_markers_dispatch_cairo() {}

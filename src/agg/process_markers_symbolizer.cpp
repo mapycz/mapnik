@@ -82,8 +82,9 @@ struct vector_markers_rasterizer_dispatch : public vector_markers_dispatch<Detec
                                        feature_impl & feature,
                                        attributes const& vars,
                                        bool snap_to_pixels,
-                                       RendererContext const& renderer_context)
-: vector_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+                                       RendererContext const& renderer_context,
+                                       symbol_cache &sc)
+: vector_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars, sc),
         buf_(std::get<0>(renderer_context)),
         pixf_(buf_),
         renb_(pixf_),
@@ -132,8 +133,9 @@ struct raster_markers_rasterizer_dispatch : public raster_markers_dispatch<Detec
                                        feature_impl & feature,
                                        attributes const& vars,
                                        RendererContext const& renderer_context,
+                                       symbol_cache &sc,
                                        bool snap_to_pixels = false)
-    : raster_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars),
+    : raster_markers_dispatch<Detector>(src, marker_trans, sym, detector, scale_factor, feature, vars, sc),
         buf_(std::get<0>(renderer_context)),
         pixf_(buf_),
         renb_(pixf_),

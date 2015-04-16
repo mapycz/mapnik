@@ -71,7 +71,7 @@ struct extract_value<value_bool>
             return boost::optional<value_bool>(result);
         return boost::optional<value_bool>();
     }
-    
+
     static inline boost::optional<value_bool> do_extract_from_bool(value_bool const& source)
     {
         return boost::optional<value_bool>(source);

@@ -71,7 +71,7 @@ public:
     }
 
     // Get next point where the marker should be placed. Returns true if a place is found, false if none is found.
-    bool get_point(double &x, double &y, double &angle, bool ignore_placement)
+    bool get_point(double &x, double &y, double &angle, box2d<double> &box, bool ignore_placement)
     {
         if (done_)
         {
@@ -96,7 +96,7 @@ public:
         }
 
         angle = 0;
-        box2d<double> box = perform_transform(angle, x, y);
+        box = perform_transform(angle, x, y);
 
         if (params_.avoid_edges && !detector_.extent().contains(box))
         {

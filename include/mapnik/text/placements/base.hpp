@@ -27,6 +27,7 @@
 #include <mapnik/config.hpp>
 #include <mapnik/text/text_properties.hpp>
 #include <mapnik/text/formatting/base.hpp>
+#include <mapnik/symbol_cache.hpp>
 
 namespace mapnik
 {
@@ -62,6 +63,9 @@ public:
     // Scale factor used by the renderer.
     double scale_factor;
 
+    //reset the state for the placement
+    virtual void reset_state() = 0;
+
 };
 
 using text_placement_info_ptr = std::shared_ptr<text_placement_info>;
@@ -87,7 +91,7 @@ public:
     //     return text_placement_info_ptr(new text_placement_info_XXX(this));
     // }
 
-    virtual text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars) const = 0;
+    virtual text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars, symbol_cache const& sc) const = 0;
     // Get a list of all expressions used in any placement.
     // This function is used to collect attributes.
 

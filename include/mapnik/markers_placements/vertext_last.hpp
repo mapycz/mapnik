@@ -39,7 +39,7 @@ public:
         : markers_point_placement<Locator, Detector>(std::move(rhs))
     {}
 
-    bool get_point(double &x, double &y, double &angle, bool ignore_placement)
+    bool get_point(double &x, double &y, double &angle, box2d<double> &box, bool ignore_placement)
     {
         if (this->done_)
         {
@@ -80,7 +80,7 @@ public:
             }
         }
 
-        box2d<double> box = this->perform_transform(angle, x, y);
+        box = this->perform_transform(angle, x, y);
         if (this->params_.avoid_edges && !this->detector_.extent().contains(box))
         {
             return false;

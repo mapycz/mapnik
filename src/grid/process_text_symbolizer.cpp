@@ -46,7 +46,7 @@ void grid_renderer<T>::process(text_symbolizer const& sym,
         common_.width_, common_.height_,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
-        clip_box, tr);
+        clip_box, tr, common_.symbol_cache_);
     bool placement_found = false;
 
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);

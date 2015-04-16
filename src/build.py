@@ -240,6 +240,8 @@ source = Split(
     text/placements/dummy.cpp
     text/placements/list.cpp
     text/placements/simple.cpp
+    text/placements/combined.cpp
+    text/placements/angle.cpp
     group/group_layout_manager.cpp
     group/group_rule.cpp
     group/group_symbolizer_helper.cpp
@@ -250,6 +252,7 @@ source = Split(
     renderer_common/render_pattern.cpp
     renderer_common/process_group_symbolizer.cpp
     math.cpp
+    symbol_cache.cpp
     """
     )
 

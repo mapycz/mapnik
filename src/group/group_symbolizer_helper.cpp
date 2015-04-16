@@ -43,8 +43,9 @@ group_symbolizer_helper::group_symbolizer_helper(
         proj_transform const& prj_trans,
         unsigned width, unsigned height, double scale_factor,
         view_transform const& t, DetectorType & detector,
-        box2d<double> const& query_extent)
-    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent),
+        box2d<double> const& query_extent,
+        symbol_cache const& sc)
+    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
       detector_(detector)
 {}
 
@@ -96,7 +97,7 @@ bool group_symbolizer_helper::find_line_placements(T & path)
         pp.forward(spacing/2.0);
         do
         {
-            tolerance_iterator tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
+            tolerance_iterator<exponential_function> tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(pp);
