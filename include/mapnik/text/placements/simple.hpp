@@ -42,6 +42,7 @@ public:
                            std::vector<int> && text_sizes,
                            boost::optional<expression_ptr> const& anchor_key);
     text_placement_info_ptr get_placement_info(double scale_factor, feature_impl const& feature, attributes const& vars, symbol_cache const& sc) const;
+    virtual void add_expressions(expression_set & output) const;
     std::string get_positions() const;
     static text_placements_ptr from_xml(xml_node const& xml, fontset_map const& fontsets, bool is_shield);
     void init_positions(std::string const& positions) const;

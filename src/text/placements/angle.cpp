@@ -112,6 +112,10 @@ text_placement_info_ptr text_placements_angle::get_placement_info(double scale_f
 void text_placements_angle::add_expressions(expression_set & output) const
 {
     list_placement_->add_expressions(output);
+    if (is_expression(angle_)) output.insert(util::get<expression_ptr>(angle_));
+    if (is_expression(tolerance_)) output.insert(util::get<expression_ptr>(tolerance_));
+    if (is_expression(step_)) output.insert(util::get<expression_ptr>(step_));
+    if (anchor_key_) output.insert(*anchor_key_);
 }
 
 text_placements_ptr text_placements_angle::from_xml(xml_node const& xml, fontset_map const& fontsets, bool is_shield)

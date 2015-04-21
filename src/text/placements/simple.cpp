@@ -183,6 +183,11 @@ text_placement_info_ptr text_placements_simple::get_placement_info(double scale_
     return std::make_shared<text_placement_info_simple>(this, evaluated_positions, scale_factor, dx, dy);
 }
 
+void text_placements_simple::add_expressions(expression_set & output) const
+{
+    if (anchor_key_) output.insert(*anchor_key_);
+}
+
 text_placements_simple::text_placements_simple(symbolizer_base::value_type const& positions, boost::optional<expression_ptr> const& anchor_key)
  : direction_(),
    text_sizes_(),
