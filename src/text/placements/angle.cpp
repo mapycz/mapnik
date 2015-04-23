@@ -223,7 +223,7 @@ void text_placement_info_angle::get_point(double angle, double &x, double &y) co
     else if (angle >= M_PI + corner && angle <= 2 * M_PI - corner)
     {
         x = dx_;
-        y = -dy_ * std::tan(angle - M_PI_2 * 3);
+        y = -dx_ * std::tan(angle - M_PI_2 * 3);
     }
     else
     {
