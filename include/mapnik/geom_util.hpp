@@ -27,8 +27,7 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/coord.hpp>
 #include <mapnik/vertex.hpp>
-#include <mapnik/geometry.hpp> // for geometry_type::types (TODO: avoid this interdependence)
-
+#include <mapnik/geometry_types.hpp>
 // stl
 #include <cmath>
 #include <vector>
@@ -377,6 +376,7 @@ bool centroid(PathType & path, double & x, double & y)
 }
 
 // Compute centroid over a set of paths
+#if 0
 template <typename Iter>
 bool centroid_geoms(Iter start, Iter end, double & x, double & y)
 {
@@ -445,6 +445,8 @@ bool centroid_geoms(Iter start, Iter end, double & x, double & y)
   return true;
 }
 
+#endif
+
 template <typename PathType>
 bool hit_test(PathType & path, double x, double y, double tol)
 {
@@ -453,6 +455,8 @@ bool hit_test(PathType & path, double x, double y, double tol)
     double y0 = 0;
     double x1 = 0;
     double y1 = 0;
+    double start_x = 0;
+    double start_y = 0;
     path.rewind(0);
     unsigned command = path.vertex(&x0, &y0);
     if (command == SEG_END)
@@ -460,23 +464,26 @@ bool hit_test(PathType & path, double x, double y, double tol)
         return false;
     }
     unsigned count = 0;
-    mapnik::geometry_type::types geom_type = static_cast<mapnik::geometry_type::types>(path.type());
+    mapnik::geometry::geometry_types geom_type = static_cast<mapnik::geometry::geometry_types>(path.type());
     while (SEG_END != (command = path.vertex(&x1, &y1)))
     {
-        if (command == SEG_CLOSE)
-        {
-            continue;
-        }
         ++count;
         if (command == SEG_MOVETO)
         {
             x0 = x1;
             y0 = y1;
+            start_x = x0;
+            start_y = y0;
             continue;
+        }
+        else if (command == SEG_CLOSE)
+        {
+            x1 = start_x;
+            y1 = start_y;
         }
         switch(geom_type)
         {
-        case mapnik::geometry_type::types::Polygon:
+        case mapnik::geometry::geometry_types::Polygon:
         {
             if ((((y1 <= y) && (y < y0)) ||
                  ((y0 <= y) && (y < y1))) &&
@@ -484,7 +491,7 @@ bool hit_test(PathType & path, double x, double y, double tol)
                 inside=!inside;
             break;
         }
-        case mapnik::geometry_type::types::LineString:
+        case mapnik::geometry::geometry_types::LineString:
         {
             double distance = point_to_segment_distance(x,y,x0,y0,x1,y1);
             if (distance < tol)

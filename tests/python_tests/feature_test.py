@@ -14,7 +14,7 @@ def test_default_constructor():
 def test_feature_geo_interface():
     ctx = mapnik.Context()
     feat = mapnik.Feature(ctx,1)
-    feat.add_geometries_from_wkt('Point (0 0)')
+    feat.geometry = mapnik.Geometry.from_wkt('Point (0 0)')
     eq_(feat.__geo_interface__['geometry'],{u'type': u'Point', u'coordinates': [0, 0]})
 
 def test_python_extended_constructor():
@@ -23,7 +23,7 @@ def test_python_extended_constructor():
     context.push('foo')
     f = mapnik.Feature(context,1)
     wkt = 'POLYGON ((35 10, 10 20, 15 40, 45 45, 35 10),(20 30, 35 35, 30 20, 20 30))'
-    f.add_geometries_from_wkt(wkt)
+    f.geometry = mapnik.Geometry.from_wkt(wkt)
     f['foo'] = 'bar'
     eq_(f['foo'], 'bar')
     eq_(f.envelope(),mapnik.Box2d(10.0,10.0,45.0,45.0))
@@ -38,20 +38,13 @@ def test_python_extended_constructor():
 def test_add_geom_wkb():
 # POLYGON ((30 10, 10 20, 20 40, 40 40, 30 10))
     wkb = '010300000001000000050000000000000000003e4000000000000024400000000000002440000000000000344000000000000034400000000000004440000000000000444000000000000044400000000000003e400000000000002440'
-    context = mapnik.Context()
-    f = mapnik.Feature(context,1)
-    eq_(len(f.geometries()), 0)
-    f.add_geometries_from_wkb(unhexlify(wkb))
-    eq_(len(f.geometries()), 1)
-    e = mapnik.Box2d()
-    eq_(e.valid(), False)
-    for g in f.geometries():
-        if not e.valid():
-            e = g.envelope()
-        else:
-            e +=g.envelope()
-
-    eq_(e, f.envelope())
+    geometry = mapnik.Geometry.from_wkb(unhexlify(wkb))
+    eq_(geometry.is_valid(), False) # False because winding order is wrong according to OGC or because end point != first point
+    eq_(geometry.is_simple(), True)
+    eq_(geometry.envelope(), mapnik.Box2d(10.0,10.0,40.0,40.0))
+    geometry.correct()
+    # valid after calling correct
+    eq_(geometry.is_valid(), True)
 
 def test_feature_expression_evaluation():
     context = mapnik.Context()

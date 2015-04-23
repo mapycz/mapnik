@@ -23,13 +23,17 @@
 #ifndef MAPNIK_RENDERER_COMMON_PROCESS_POINT_SYMBOLIZER_HPP
 #define MAPNIK_RENDERER_COMMON_PROCESS_POINT_SYMBOLIZER_HPP
 
-#include <mapnik/geom_util.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/proj_transform.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/label_collision_detector.hpp>
+#include <mapnik/geometry_centroid.hpp>
+#include <mapnik/geometry_type.hpp>
+#include <mapnik/geometry_types.hpp>
+#include <mapnik/vertex_adapters.hpp>
+#include <mapnik/geom_util.hpp>
 
 namespace mapnik {
 
@@ -64,43 +68,40 @@ void render_point_symbolizer(point_symbolizer const &sym,
         agg::trans_affine recenter_tr = recenter * tr;
         box2d<double> label_ext = bbox * recenter_tr * agg::trans_affine_scaling(common.scale_factor_);
 
-        for (std::size_t i=0; i<feature.num_geometries(); ++i)
+        mapnik::geometry::geometry<double> const& geometry = feature.get_geometry();
+        mapnik::geometry::point<double> pt;
+        if (placement == CENTROID_POINT_PLACEMENT)
         {
-            geometry_type const& geom = feature.get_geometry(i);
-            vertex_adapter va(geom);
-            double x;
-            double y;
-            double z=0;
-            if (placement == CENTROID_POINT_PLACEMENT)
+            if (!geometry::centroid(geometry, pt)) return;
+        }
+        else if (mapnik::geometry::geometry_type(geometry) == mapnik::geometry::geometry_types::Polygon)
+        {
+            auto const& poly = mapnik::util::get<geometry::polygon<double> >(geometry);
+            geometry::polygon_vertex_adapter<double> va(poly);
+            if (!label::interior_position(va ,pt.x, pt.y))
+                return;
+        }
+        double x = pt.x;
+        double y = pt.y;
+        double z = 0;
+        prj_trans.backward(x,y,z);
+        common.t_.forward(&x,&y);
+        label_ext.re_center(x,y);
+        if (allow_overlap ||
+            common.detector_->has_placement(label_ext))
+        {
+
+            render_marker(pixel_position(x, y),
+                          mark,
+                          tr,
+                          opacity);
+
+            if (!ignore_placement)
+                common.detector_->insert(label_ext);
+
+            if (key)
             {
-                if (!label::centroid(va, x, y))
-                    return;
-            }
-            else
-            {
-                if (!label::interior_position(va ,x, y))
-                    return;
-            }
-
-            prj_trans.backward(x,y,z);
-            common.t_.forward(&x,&y);
-            label_ext.re_center(x,y);
-            if (allow_overlap ||
-                common.detector_->has_placement(label_ext))
-            {
-
-                render_marker(pixel_position(x, y),
-                              mark,
-                              tr,
-                              opacity);
-
-                if (!ignore_placement)
-                    common.detector_->insert(label_ext);
-
-                if (key)
-                {
-                    common.symbol_cache_.insert(*key, label_ext);
-                }
+                common.symbol_cache_.insert(*key, label_ext);
             }
         }
     }
