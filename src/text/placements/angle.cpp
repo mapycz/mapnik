@@ -32,16 +32,22 @@ namespace
 
 using namespace mapnik;
 
+double normalize_angle(double angle)
+{
+    angle = std::fmod(angle, M_PI * 2.0);
+    if (angle < 0)
+    {
+        angle += M_PI * 2.0;
+    }
+    return angle;
+}
+
 double extract_angle(feature_impl const& feature,
                      attributes const& vars,
                      symbolizer_base::value_type const& angle_expression)
 {
-    int angle = util::apply_visitor(extract_value<value_integer>(feature, vars), angle_expression) % 360;
-    if (angle < 0)
-    {
-        angle += 360;
-    }
-    return angle * (M_PI / 180.0);
+    double angle = util::apply_visitor(extract_value<value_double>(feature, vars), angle_expression);
+    return normalize_angle(angle * (M_PI / 180.0));
 }
 
 symbolizer_base::value_type get_opt(xml_node const& xml, std::string const& name, double default_value = .0)
@@ -167,7 +173,7 @@ bool text_placement_info_angle::try_next_angle() const
 {
     if (tolerance_iterator_.next())
     {
-        double angle = angle_ + tolerance_iterator_.get();
+        double angle = normalize_angle(angle_ + tolerance_iterator_.get());
         double dx, dy;
         get_point(angle, dx, dy);
         properties.layout_defaults.dx = dx;
