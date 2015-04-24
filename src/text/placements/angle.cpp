@@ -50,10 +50,10 @@ double extract_angle(feature_impl const& feature,
     return normalize_angle(angle * (M_PI / 180.0));
 }
 
-symbolizer_base::value_type get_opt(xml_node const& xml, std::string const& name, double default_value = .0)
+symbolizer_base::value_type get_opt(xml_node const& xml, std::string const& name)
 {
     boost::optional<expression_ptr> expression = xml.get_opt_attr<expression_ptr>(name);
-    return expression ? *expression : static_cast<symbolizer_base::value_type>(default_value);
+    return expression ? *expression : static_cast<symbolizer_base::value_type>(.0);
 }
 
 }
@@ -89,7 +89,7 @@ text_placement_info_ptr text_placements_angle::get_placement_info(double scale_f
     double tolerance = extract_angle(feature, vars, tolerance_);
     double step = extract_angle(feature, vars, step_);
 
-    if (step == .0)
+    if (std::abs(step) < std::numeric_limits<double>::epsilon())
     {
         step = default_step;
     }
@@ -128,7 +128,7 @@ text_placements_ptr text_placements_angle::from_xml(xml_node const& xml, fontset
 {
     symbolizer_base::value_type angle = get_opt(xml, "angle");
     symbolizer_base::value_type tolerance = get_opt(xml, "tolerance");
-    symbolizer_base::value_type step = get_opt(xml, "step", default_step);
+    symbolizer_base::value_type step = get_opt(xml, "step");
     boost::optional<expression_ptr> anchor_key = xml.get_opt_attr<expression_ptr>("anchor-key");
 
     text_placements_ptr list_placement_ptr = text_placements_list::from_xml(xml, fontsets, is_shield);
