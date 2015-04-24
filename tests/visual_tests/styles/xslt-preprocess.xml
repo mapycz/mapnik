@@ -4,6 +4,11 @@
 <!ATTLIST xsl:stylesheet id ID #REQUIRED>
 ]>
 <Map background-color="white">
+    <Parameters>
+        <Parameter name="sizes">600,400</Parameter>
+        <Parameter name="bbox">-1, -1, 11, 1</Parameter>
+    </Parameters>
+
     <xsl:stylesheet id="stylesheet" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
         <xsl:output method="xml" indent="yes"/>
 
