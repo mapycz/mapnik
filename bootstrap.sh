@@ -119,7 +119,7 @@ BENCHMARK = True
 CPP_TESTS = True
 PGSQL2SQLITE = True
 BINDINGS = 'python'
-XMLPARSER = 'ptree'
+XMLPARSER = 'libxml2'
 SVG2PNG = True
 SAMPLE_INPUT_PLUGINS = True
 " > ./config.py
