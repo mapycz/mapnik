@@ -1283,6 +1283,7 @@ if not preconfigured:
         if env.get('XML2_LIBS'):
             lib_path = env['XML2_LIBS']
             env.AppendUnique(LIBPATH = fix_path(lib_path))
+        env['HAS_LIBXML2'] = True
     elif conf.parse_config('XML2_CONFIG',checks='--cflags'):
         env['HAS_LIBXML2'] = True
     else:
