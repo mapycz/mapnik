@@ -66,6 +66,7 @@ struct direction_name : qi::symbols<char, directions_e>
             ("NW", NORTHWEST)
             ("SW", SOUTHWEST)
             ("X" , EXACT_POSITION)
+            ("C" , CENTER)
             ;
     }
 
