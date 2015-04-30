@@ -1,0 +1,67 @@
+<Map srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs" background-color="white">
+    <Parameters>
+        <Parameter name="sizes">400,400</Parameter>
+        <Parameter name="bbox">-90, 0, 0, 90</Parameter>
+    </Parameters>
+    <Style name="test_style">
+        <Rule>
+            <MarkersSymbolizer/>
+            <TextSymbolizer
+                face-name="DejaVu Sans Book"
+                placement="point"
+                dx="5"
+                dy="-5"
+                size="10"
+                fill="green"
+                justify-alignment="left"
+                allow-overlap="false"
+                clip="false"
+                placement-type="combined"
+                placements="N,NE,E,SE,S,SW,W,NW">
+                [name]
+                <Placement dx="10" dy="-10"  fill="blue"/>
+                <Placement dx="10" dy="10"  fill="blue"/>
+                <Placement dx="15" dy="-15"  fill="orange"/>
+                <Placement dx="15" dy="15"  fill="orange"/>
+                <Placement dx="20" dy="-20"  fill="yellow"/>
+                <Placement dx="20" dy="20"  fill="yellow"/>
+                <Placement dx="25" dy="-25"  fill="red"/>
+                <Placement dx="25" dy="25"  fill="red"/>
+                <Placement dx="35" dy="-35"  fill="purple"/>
+                <Placement dx="35" dy="35"  fill="purple"/>
+                <Placement dx="45" dy="-45"  fill="rgb(50,50,180)"/>
+                <Placement dx="45" dy="45"  fill="rgb(50,50,180)"/>
+            </TextSymbolizer>
+        </Rule>
+    </Style>
+
+    <Layer name="test_layer" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>test_style</StyleName>
+        <Datasource>
+            <Parameter name="type">csv</Parameter>
+            <Parameter name="inline">
+                id|name|wkt
+                1|1st label|Point(-45 45)
+                2|2nd label|Point(-45 45)
+                3|3rd label|Point(-45 45)
+                4|4th label|Point(-45 45)
+                5|5th label|Point(-45 45)
+                6|6th label|Point(-45 45)
+                7|7th label|Point(-45 45)
+                8|8th label|Point(-45 45)
+                9|9th label|Point(-45 45)
+                10|10th label|Point(-45 45)
+                11|11th label|Point(-45 45)
+                12|12th label|Point(-45 45)
+                13|13th label|Point(-45 45)
+                14|14th label|Point(-45 45)
+                15|15th label|Point(-45 45)
+                16|16th label|Point(-45 45)
+                17|17th label|Point(-45 45)
+                18|18th label|Point(-45 45)
+                19|19th label|Point(-45 45)
+                20|20th label|Point(-45 45)
+            </Parameter>
+        </Datasource>
+    </Layer>
+</Map>
