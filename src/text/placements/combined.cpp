@@ -70,6 +70,7 @@ text_placement_info_combined::text_placement_info_combined(text_placements_combi
   simple_placement_info_(simple_placement_info),
   list_placement_info_(list_placement_info)
 {
+    list_placement_info_->next();
 }
 
 void text_placement_info_combined::reset_state()
