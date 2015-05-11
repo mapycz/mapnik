@@ -187,6 +187,7 @@ text_placement_info_ptr text_placements_simple::get_placement_info(double scale_
 void text_placements_simple::add_expressions(expression_set & output) const
 {
     if (anchor_key_) output.insert(*anchor_key_);
+    if (is_expression(positions_)) output.insert(util::get<expression_ptr>(positions_));
 }
 
 text_placements_simple::text_placements_simple(symbolizer_base::value_type const& positions, boost::optional<expression_ptr> const& anchor_key)
