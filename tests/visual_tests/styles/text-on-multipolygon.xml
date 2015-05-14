@@ -1,0 +1,40 @@
+<Map
+    background-color="white"
+    srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+    <Parameters>
+        <Parameter name="sizes">400,400</Parameter>
+    </Parameters>
+
+    <Style name="polygon">
+        <Rule>
+            <PolygonSymbolizer fill="#800000" />
+            <LineSymbolizer
+                stroke-width="12"
+                stroke="rgb(255, 100, 100)"
+                />
+        </Rule>
+    </Style>
+
+    <Style name="text">
+        <Rule>
+            <TextSymbolizer
+                face-name="DejaVu Sans Book"
+                size="14"
+                placement="line"
+                spacing="40"
+                largest-bbox-only="false"
+                >
+                "Text"
+            </TextSymbolizer>
+        </Rule>
+    </Style>
+
+    <Layer name="bug" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>polygon</StyleName>
+        <StyleName>text</StyleName>
+        <Datasource>
+            <Parameter name="type">shape</Parameter>
+            <Parameter name="file">../../data/shp/poly-multihole.shp</Parameter>
+        </Datasource>
+    </Layer>
+</Map>
