@@ -208,7 +208,7 @@ vertex_cache::vertex_cache(T & path)
             current_subpath_->add_segment(new_x, new_y, 0);
             first = false;
         }
-        if (agg::is_line_to(cmd))
+        else if (agg::is_line_to(cmd))
         {
             if (first)
             {
@@ -220,7 +220,7 @@ vertex_cache::vertex_cache(T & path)
             double segment_length = std::sqrt(dx*dx + dy*dy);
             current_subpath_->add_segment(new_x, new_y, segment_length);
         }
-        if (agg::is_closed(cmd) && !current_subpath_->vector.empty())
+        else if (agg::is_closed(cmd) && !current_subpath_->vector.empty())
         {
             segment const & first_segment = current_subpath_->vector[0];
             double dx = old_x - first_segment.pos.x;
