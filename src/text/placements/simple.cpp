@@ -132,6 +132,7 @@ text_placement_info_simple::text_placement_info_simple(text_placements_simple co
 
 bool text_placement_info_simple::next() const
 {
+    //std::cerr << "C: " << direction_.size() << std::endl;
     while (true)
     {
         if (state > 0)
@@ -146,6 +147,7 @@ bool text_placement_info_simple::next() const
         }
         else break;
     }
+    //std::cerr << "B: true; " << direction_.size() << std::endl;
     return true;
 }
 
@@ -188,6 +190,7 @@ void text_placements_simple::add_expressions(expression_set & output) const
 {
     if (anchor_key_) output.insert(*anchor_key_);
     if (is_expression(positions_)) output.insert(util::get<expression_ptr>(positions_));
+    text_placements::add_expressions(output);
 }
 
 text_placements_simple::text_placements_simple(symbolizer_base::value_type const& positions, boost::optional<expression_ptr> const& anchor_key)

@@ -122,6 +122,7 @@ void text_placements_angle::add_expressions(expression_set & output) const
     if (is_expression(tolerance_)) output.insert(util::get<expression_ptr>(tolerance_));
     if (is_expression(step_)) output.insert(util::get<expression_ptr>(step_));
     if (anchor_key_) output.insert(*anchor_key_);
+    text_placements::add_expressions(output);
 }
 
 text_placements_ptr text_placements_angle::from_xml(xml_node const& xml, fontset_map const& fontsets, bool is_shield)
