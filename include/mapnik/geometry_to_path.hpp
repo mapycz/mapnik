@@ -75,10 +75,19 @@ struct geometry_to_path
         bool first = true;
         for (auto const& pt : poly.exterior_ring)
         {
-            //point pt_new;
-            //Transformer::apply(pt, pt_new);
-            if (first) { p_.move_to(pt.x, pt.y); first=false;}
-            else p_.line_to(pt.x, pt.y);
+            if (first)
+            {
+                p_.move_to(pt.x, pt.y);
+                first=false;
+            }
+            else
+            {
+                p_.line_to(pt.x, pt.y);
+            }
+        }
+        if (!first)
+        {
+            p_.close_path();
         }
         // interior
         for (auto const& ring : poly.interior_rings)
@@ -86,10 +95,18 @@ struct geometry_to_path
             first = true;
             for (auto const& pt : ring)
             {
-                //point pt_new;
-                //Transformer::apply(pt, pt_new);
-                if (first) { p_.move_to(pt.x, pt.y); first=false;}
-                else p_.line_to(pt.x, pt.y);
+                if (first) {
+                    p_.move_to(pt.x, pt.y);
+                    first=false;
+                }
+                else
+                {
+                    p_.line_to(pt.x, pt.y);
+                }
+            }
+            if (!first)
+            {
+                p_.close_path();
             }
         }
     }

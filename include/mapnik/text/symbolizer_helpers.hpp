@@ -44,7 +44,7 @@ struct placement_finder_adapter
           points_on_line_(points_on_line) {}
 
     template <typename PathT>
-    void add_path(PathT & path)
+    void add_path(PathT & path) const
     {
         status_ = finder_.find_line_placements(path, points_on_line_);
     }
@@ -57,7 +57,7 @@ struct placement_finder_adapter
 
 };
 
-using vertex_converter_type = vertex_converter<placement_finder_adapter<placement_finder>,clip_line_tag , transform_tag, affine_transform_tag, simplify_tag, smooth_tag>;
+using vertex_converter_type = vertex_converter<clip_line_tag , transform_tag, affine_transform_tag, simplify_tag, smooth_tag>;
 
 class base_symbolizer_helper
 {

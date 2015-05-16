@@ -6,9 +6,7 @@
 
 todo
 
-- gdal shared lib / avoid dlclose atexit crash
-- clang debs to s3
-- docs for base setup: sudo apt-get -y install zlib1g-dev python-dev make git python-dev
+- docs for base setup: sudo apt-get -y install zlib1g-dev make git
 - shrink icu data
 '
 
@@ -20,7 +18,6 @@ function setup_mason() {
         (cd ./.mason && git pull)
     fi
     export MASON_DIR=$(pwd)/.mason
-    #if [[ $(uname -s) == 'Linux' ]]; then source ./.mason/scripts/setup_cpp11_toolchain.sh; fi
     export PATH=$(pwd)/.mason:$PATH
     export CXX=${CXX:-clang++}
     export CC=${CC:-clang}
@@ -28,47 +25,43 @@ function setup_mason() {
 
 function install() {
     MASON_PLATFORM_ID=$(mason env MASON_PLATFORM_ID)
-    if [[ ! -d ./mason_packages/${MASON_PLATFORM_ID}/${1}/ ]]; then
+    if [[ ! -d ./mason_packages/${MASON_PLATFORM_ID}/${1}/${2} ]]; then
         mason install $1 $2
         mason link $1 $2
     fi
 }
 
 function install_mason_deps() {
-    install freetype 2.5.4
-    install harfbuzz 2cd5323
-    install jpeg_turbo 1.4.0
-    install libxml2 2.9.2
-    install libpng 1.6.16
-    install webp 0.4.2
-    install icu 54.1
-    install proj 4.8.0
-    install libtiff 4.0.4beta
-    install boost 1.57.0
-    install boost_libsystem 1.57.0
-    install boost_libthread 1.57.0
-    install boost_libfilesystem 1.57.0
-    install boost_libprogram_options 1.57.0
-    install boost_libregex 1.57.0
-    install boost_libpython 1.57.0
-    install libpq 9.4.0
-    install sqlite 3.8.8.1
-    install gdal 1.11.1
-    install expat 2.1.0
-    install pixman 0.32.6
-    install cairo 1.12.18
-}
-
-function setup_nose() {
-    if [[ ! -d $(pwd)/nose-1.3.4 ]]; then
-        curl -s -O https://pypi.python.org/packages/source/n/nose/nose-1.3.4.tar.gz
-        tar -xzf nose-1.3.4.tar.gz
-    fi
-    export PYTHONPATH=$(pwd)/nose-1.3.4:${PYTHONPATH}
+    install gdal 1.11.2 &
+    install boost 1.57.0 &
+    install boost_libsystem 1.57.0 &
+    install boost_libthread 1.57.0 &
+    install boost_libfilesystem 1.57.0 &
+    install boost_libprogram_options 1.57.0 &
+    install boost_libregex 1.57.0 &
+    install boost_libpython 1.57.0 &
+    install freetype 2.5.5 &
+    install harfbuzz 0.9.40 &
+    install jpeg_turbo 1.4.0 &
+    install libxml2 2.9.2 &
+    install libpng 1.6.16 &
+    install webp 0.4.2 &
+    install icu 54.1 &
+    install proj 4.8.0 &
+    install libtiff 4.0.4beta &
+    install libpq 9.4.0 &
+    install sqlite 3.8.8.1 &
+    install expat 2.1.0 &
+    install pixman 0.32.6 &
+    install cairo 1.12.18 &
+    wait
 }
 
 MASON_LINKED_ABS=$(pwd)/mason_packages/.link
 MASON_LINKED_REL=./mason_packages/.link
+export C_INCLUDE_PATH="${MASON_LINKED_ABS}/include"
+export CPLUS_INCLUDE_PATH="${MASON_LINKED_ABS}/include"
+export LIBRARY_PATH="${MASON_LINKED_ABS}/lib"
 
 function make_config() {
     if [[ $(uname -s) == 'Darwin' ]]; then
@@ -114,7 +107,6 @@ CAIRO_INCLUDES = '${MASON_LINKED_REL}/include'
 CAIRO_LIBS = '${MASON_LINKED_REL}/lib'
 SQLITE_INCLUDES = '${MASON_LINKED_REL}/include'
 SQLITE_LIBS = '${MASON_LINKED_REL}/lib'
-FRAMEWORK_PYTHON = False
 BENCHMARK = True
 CPP_TESTS = True
 PGSQL2SQLITE = True
@@ -125,16 +117,17 @@ SAMPLE_INPUT_PLUGINS = True
 " > ./config.py
 }
 
+# NOTE: the `mapnik-settings.env` is used by test/run (which is run by `make test`)
 function setup_runtime_settings() {
-    export PROJ_LIB=${MASON_LINKED_ABS}/share/proj
-    export ICU_DATA=${MASON_LINKED_ABS}/share/icu/54.1
-    export GDAL_DATA=${MASON_LINKED_ABS}/share/gdal
+    echo "export PROJ_LIB=${MASON_LINKED_ABS}/share/proj" > mapnik-settings.env
+    echo "export ICU_DATA=${MASON_LINKED_ABS}/share/icu/54.1" >> mapnik-settings.env
+    echo "export GDAL_DATA=${MASON_LINKED_ABS}/share/gdal" >> mapnik-settings.env
+    source mapnik-settings.env
 }
 
 function main() {
     setup_mason
     install_mason_deps
-    setup_nose
     make_config
     setup_runtime_settings
     echo "Ready, now run:"

@@ -25,24 +25,21 @@
 
 // mapnik
 #include <mapnik/image.hpp>
-#include <mapnik/image_util.hpp>
 #include <mapnik/svg/svg_storage.hpp>
-#include <mapnik/svg/svg_path_attributes.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
-#include <mapnik/util/noncopyable.hpp>
 #include <mapnik/util/variant.hpp>
 
 // agg
 #include "agg_array.h"
-
-// boost
-#include <boost/optional.hpp>
 
 // stl
 #include <memory>
 
 namespace mapnik
 {
+
+struct image_any;
+namespace svg { struct path_attributes; }
 
 using attr_storage = agg::pod_bvector<mapnik::svg::path_attributes>;
 using svg_storage_type = mapnik::svg::svg_storage<mapnik::svg::svg_path_storage,attr_storage>;
@@ -137,6 +134,7 @@ private:
 
 struct marker_null 
 {
+    marker_null() = default;
 public:
     box2d<double> bounding_box() const
     {
@@ -152,9 +150,9 @@ public:
     }
 };
 
-using marker_base = util::variant<marker_svg, 
+using marker_base = util::variant<marker_null, 
                                   marker_rgba8,
-                                  marker_null>;
+                                  marker_svg>;
 namespace detail {
 
 struct get_marker_bbox_visitor

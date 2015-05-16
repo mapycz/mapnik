@@ -290,7 +290,7 @@ text_symbolizer_helper::text_symbolizer_helper(
     : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
       finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
     adapter_(finder_,false),
-    converter_(query_extent_, adapter_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
+    converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
 
     // setup vertex converter
@@ -320,11 +320,11 @@ placements_list const& text_symbolizer_helper::get() const
     return finder_.placements();
 }
 
-class process_line_placement_visitor
+class apply_line_placement_visitor
 {
 public:
-    process_line_placement_visitor(vertex_converter_type & converter,
-                                   placement_finder_adapter<placement_finder> const & adapter)
+    apply_line_placement_visitor(vertex_converter_type & converter,
+                                 placement_finder_adapter<placement_finder> const & adapter)
         : converter_(converter), adapter_(adapter)
     {
     }
@@ -332,14 +332,14 @@ public:
     bool operator()(geometry::line_string<double> const & geo) const
     {
         geometry::line_string_vertex_adapter<double> va(geo);
-        converter_.apply(va);
+        converter_.apply(va, adapter_);
         return adapter_.status();
     }
 
     bool operator()(geometry::polygon<double> const & geo) const
     {
         geometry::polygon_vertex_adapter<double> va(geo);
-        converter_.apply(va);
+        converter_.apply(va, adapter_);
         return adapter_.status();
     }
 
@@ -367,7 +367,7 @@ bool text_symbolizer_helper::next_line_placement() const
             continue; //Reexecute size check
         }
 
-        if (mapnik::util::apply_visitor(process_line_placement_visitor(converter_, adapter_), *geo_itr_))
+        if (mapnik::util::apply_visitor(apply_line_placement_visitor(converter_, adapter_), *geo_itr_))
         {
             //Found a placement
             geo_itr_ = geometries_to_process_.erase(geo_itr_);
@@ -417,7 +417,7 @@ text_symbolizer_helper::text_symbolizer_helper(
     : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
       finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
       adapter_(finder_,true),
-      converter_(query_extent_, adapter_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
+      converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
    // setup vertex converter
     value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
@@ -441,13 +441,13 @@ void text_symbolizer_helper::init_marker() const
 {
     std::string filename = mapnik::get<std::string,keys::file>(sym_, feature_, vars_);
     if (filename.empty()) return;
-    mapnik::marker const& marker = marker_cache::instance().find(filename, true);
-    if (marker.is<marker_null>()) return;
+    std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
+    if (marker->is<marker_null>()) return;
     agg::trans_affine trans;
     auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
     if (image_transform) evaluate_transform(trans, feature_, vars_, *image_transform);
-    double width = marker.width();
-    double height = marker.height();
+    double width = marker->width();
+    double height = marker->height();
     double px0 = - 0.5 * width;
     double py0 = - 0.5 * height;
     double px1 = 0.5 * width;

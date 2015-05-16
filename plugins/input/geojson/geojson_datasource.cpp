@@ -27,8 +27,13 @@
 #include <algorithm>
 
 // boost
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-local-typedef"
 #include <boost/algorithm/string.hpp>
 #include <boost/spirit/include/qi.hpp>
+#pragma GCC diagnostic pop
+
 // mapnik
 #include <mapnik/boolean.hpp>
 #include <mapnik/unicode.hpp>
@@ -45,6 +50,7 @@
 #include <mapnik/util/file_io.hpp>
 #include <mapnik/util/geometry_to_ds_type.hpp>
 #include <mapnik/make_unique.hpp>
+#include <mapnik/geometry_adapters.hpp>
 #include <mapnik/json/feature_collection_grammar.hpp>
 #include <mapnik/json/extract_bounding_box_grammar_impl.hpp>
 

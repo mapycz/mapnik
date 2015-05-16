@@ -15,10 +15,11 @@
 #include <mapnik/geometry_is_empty.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/color.hpp>
+#include <boost/geometry.hpp>
 // agg
 #include "agg_conv_clip_polygon.h"
 // clipper
-#include "agg_conv_clipper.h"
+#include "clipper.hpp"
 #include "agg_path_storage.h"
 // rendering
 #include "agg_basics.h"
@@ -45,7 +46,7 @@ void render(mapnik::geometry::multi_polygon<double> const& geom,
     mapnik::box2d<double> padded_extent(155,134,665,466);//extent;
     padded_extent.pad(10);
     mapnik::view_transform tr(im.width(),im.height(),padded_extent,0,0);
-    agg::rendering_buffer buf(im.getBytes(),im.width(),im.height(), im.getRowSize());
+    agg::rendering_buffer buf(im.bytes(),im.width(),im.height(), im.row_size());
     agg::pixfmt_rgba32_plain pixf(buf);
     ren_base renb(pixf);
     renderer ren(renb);
@@ -196,7 +197,7 @@ public:
             while ((cmd = clipped.vertex(&x, &y)) != mapnik::SEG_END) {
                 count++;
             }
-            unsigned expected_count = 31;
+            unsigned expected_count = 30;
             if (count != expected_count) {
                 std::clog << "test1: clipping failed: processed " << count << " verticies but expected " << expected_count << "\n";
                 valid = false;
@@ -206,134 +207,6 @@ public:
     }
 };
 
-class test2 : public benchmark::test_case
-{
-    std::string wkt_in_;
-    mapnik::box2d<double> extent_;
-    std::string expected_;
-public:
-    using poly_clipper = agg::conv_clipper<mapnik::geometry::polygon_vertex_adapter<double>, agg::path_storage>;
-    test2(mapnik::parameters const& params,
-          std::string const& wkt_in,
-          mapnik::box2d<double> const& extent)
-     : test_case(params),
-       wkt_in_(wkt_in),
-       extent_(extent),
-       expected_("./benchmark/data/polygon_clipping_clipper") {}
-    bool validate() const
-    {
-        mapnik::geometry::geometry<double> geom;
-        if (!mapnik::from_wkt(wkt_in_, geom))
-        {
-            throw std::runtime_error("Failed to parse WKT");
-        }
-        if (mapnik::geometry::is_empty(geom))
-        {
-            std::clog << "empty geom!\n";
-            return false;
-        }
-        if (!geom.is<mapnik::geometry::polygon<double>>())
-        {
-            std::clog << "not a polygon!\n";
-            return false;
-        }
-        mapnik::geometry::polygon<double> & poly = mapnik::util::get<mapnik::geometry::polygon<double>>(geom);
-        agg::path_storage ps;
-        ps.move_to(extent_.minx(), extent_.miny());
-        ps.line_to(extent_.minx(), extent_.maxy());
-        ps.line_to(extent_.maxx(), extent_.maxy());
-        ps.line_to(extent_.maxx(), extent_.miny());
-        ps.close_polygon();
-        mapnik::geometry::polygon_vertex_adapter<double> va(poly);
-        poly_clipper clipped(va,ps,
-                             agg::clipper_and,
-                             agg::clipper_non_zero,
-                             agg::clipper_non_zero,
-                             1);
-        unsigned cmd;
-        double x,y;
-        clipped.rewind(0);
-        mapnik::geometry::polygon<double> poly2;
-        mapnik::geometry::linear_ring<double> ring;
-        // TODO: handle resulting multipolygon
-        // exterior ring
-        while (true)
-        {
-            cmd = clipped.vertex(&x, &y);
-            ring.add_coord(x,y);
-            if (cmd == mapnik::SEG_CLOSE) break;
-        }
-        poly2.set_exterior_ring(std::move(ring));
-        // interior ring
-        ring.clear();
-        while ((cmd = clipped.vertex(&x, &y)) != mapnik::SEG_END)
-        {
-            ring.add_coord(x,y);
-        }
-        poly2.add_hole(std::move(ring));
-        mapnik::geometry::correct(poly2);
-        std::string expect = expected_+".png";
-        std::string actual = expected_+"_actual.png";
-        mapnik::geometry::multi_polygon<double> mp;
-        mp.emplace_back(poly2);
-        auto env = mapnik::geometry::envelope(mp);
-        if (!mapnik::util::exists(expect) || (std::getenv("UPDATE") != nullptr))
-        {
-            std::clog << "generating expected image: " << expect << "\n";
-            render(mp,env,expect);
-        }
-        render(mp,env,actual);
-        return benchmark::compare_images(actual,expect);
-    }
-    bool operator()() const
-    {
-        mapnik::geometry::geometry<double> geom;
-        if (!mapnik::from_wkt(wkt_in_, geom))
-        {
-            throw std::runtime_error("Failed to parse WKT");
-        }
-        if (mapnik::geometry::is_empty(geom))
-        {
-            std::clog << "empty geom!\n";
-            return false;
-        }
-        if (!geom.is<mapnik::geometry::polygon<double>>())
-        {
-            std::clog << "not a polygon!\n";
-            return false;
-        }
-        mapnik::geometry::polygon<double> const& poly = mapnik::util::get<mapnik::geometry::polygon<double>>(geom);
-        agg::path_storage ps;
-        ps.move_to(extent_.minx(), extent_.miny());
-        ps.line_to(extent_.minx(), extent_.maxy());
-        ps.line_to(extent_.maxx(), extent_.maxy());
-        ps.line_to(extent_.maxx(), extent_.miny());
-        ps.close_polygon();
-        bool valid = true;
-        for (unsigned i=0;i<iterations_;++i)
-        {
-            unsigned count = 0;
-            mapnik::geometry::polygon_vertex_adapter<double> va(poly);
-            poly_clipper clipped(va,ps,
-                                 agg::clipper_and,
-                                 agg::clipper_non_zero,
-                                 agg::clipper_non_zero,
-                                 1);
-            clipped.rewind(0);
-            unsigned cmd;
-            double x,y;
-            while ((cmd = clipped.vertex(&x, &y)) != mapnik::SEG_END) {
-                count++;
-            }
-            unsigned expected_count = 31;
-            if (count != expected_count) {
-                std::clog << "test2: clipping failed: processed " << count << " verticies but expected " << expected_count << "\n";
-                valid = false;
-            }
-        }
-        return valid;
-    }
-};
 
 class test3 : public benchmark::test_case
 {
@@ -434,6 +307,43 @@ public:
     }
 };
 
+inline void process_polynode_branch(ClipperLib::PolyNode* polynode,
+                             mapnik::geometry::multi_polygon<double> & mp)
+{
+    mapnik::geometry::polygon<double> polygon;
+    mapnik::geometry::linear_ring<double> outer;
+    for (auto const& pt : polynode->Contour)
+    {
+        outer.emplace_back(static_cast<double>(pt.x),static_cast<double>(pt.y));
+    }
+    if (outer.front() != outer.back())
+    {
+        outer.emplace_back(outer.front().x, outer.front().y);
+    }
+    polygon.set_exterior_ring(std::move(outer));
+    for (auto * ring : polynode->Childs)
+    {
+        mapnik::geometry::linear_ring<double> inner;
+        for (auto const& pt : ring->Contour)
+        {
+            inner.emplace_back(static_cast<double>(pt.x),static_cast<double>(pt.y));
+        }
+        if (inner.front() != inner.back())
+        {
+            inner.emplace_back(inner.front().x, inner.front().y);
+        }
+        polygon.add_hole(std::move(inner));
+    }
+    mp.emplace_back(std::move(polygon));
+    for (auto * ring : polynode->Childs)
+    {
+        for (auto * sub_ring : ring->Childs)
+        {
+            process_polynode_branch(sub_ring, mp);
+        }
+    }
+}
+
 class test4 : public benchmark::test_case
 {
     std::string wkt_in_;
@@ -475,6 +385,11 @@ public:
             double y = pt.y;
             path.emplace_back(static_cast<ClipperLib::cInt>(x),static_cast<ClipperLib::cInt>(y));
         }
+        double area = ClipperLib::Area(path);
+        if (area > 0)
+        {
+            std::reverse(path.begin(), path.end());
+        }
         if (!clipper.AddPath(path, ClipperLib::ptSubject, true))
         {
             std::clog << "ptSubject ext failed!\n";
@@ -487,6 +402,11 @@ public:
                 double x = pt.x;
                 double y = pt.y;
                 path.emplace_back(static_cast<ClipperLib::cInt>(x),static_cast<ClipperLib::cInt>(y));
+            }
+            area = ClipperLib::Area(path);
+            if (area < 0)
+            {
+                std::reverse(path.begin(), path.end());
             }
             if (!clipper.AddPath(path, ClipperLib::ptSubject, true))
             {
@@ -507,39 +427,17 @@ public:
         }
 
         ClipperLib::PolyTree polygons;
-        clipper.Execute(ClipperLib::ctIntersection, polygons, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
+        clipper.Execute(ClipperLib::ctIntersection, polygons);// ClipperLib::pftNonZero);
         clipper.Clear();
-        ClipperLib::PolyNode* polynode = polygons.GetFirst();
         mapnik::geometry::multi_polygon<double> mp;
-        mp.emplace_back();
-        bool first = true;
-        while (polynode)
+        for (auto * polynode : polygons.Childs)
         {
-            if (!polynode->IsHole())
-            {
-                if (first) first = false;
-                else mp.emplace_back(); // start new polygon
-                for (auto const& pt : polynode->Contour)
-                {
-                    mp.back().exterior_ring.add_coord(pt.x, pt.y);
-                }
-                // childrens are interior rings
-                for (auto const* ring : polynode->Childs)
-                {
-                    mapnik::geometry::linear_ring<double> hole;
-                    for (auto const& pt : ring->Contour)
-                    {
-                        hole.add_coord(pt.x, pt.y);
-                    }
-                    mp.back().add_hole(std::move(hole));
-                }
-            }
-            polynode = polynode->GetNext();
+             process_polynode_branch(polynode, mp);
         }
         std::string expect = expected_+".png";
         std::string actual = expected_+"_actual.png";
-        mapnik::geometry::geometry<double> geom2(mp);
-        auto env = mapnik::geometry::envelope(geom2);
+        //mapnik::geometry::geometry<double> geom2(mp);
+        auto env = mapnik::geometry::envelope(mp);
         if (!mapnik::util::exists(expect) || (std::getenv("UPDATE") != nullptr))
         {
             std::clog << "generating expected image: " << expect << "\n";
@@ -615,10 +513,6 @@ int main(int argc, char** argv)
     {
         test1 test_runner(params,wkt_in,clipping_box);
         run(test_runner,"clipping polygon with agg");
-    }
-    {
-        test2 test_runner(params,wkt_in,clipping_box);
-        run(test_runner,"clipping polygon with clipper");
     }
     {
         test3 test_runner(params,wkt_in,clipping_box);

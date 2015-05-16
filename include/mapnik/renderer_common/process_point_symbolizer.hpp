@@ -45,11 +45,11 @@ void render_point_symbolizer(point_symbolizer const &sym,
                              F render_marker)
 {
     std::string filename = get<std::string,keys::file>(sym,feature, common.vars_);
-    mapnik::marker const& mark = filename.empty()
-       ? mapnik::marker(std::move(mapnik::marker_rgba8()))
+    std::shared_ptr<mapnik::marker const> mark = filename.empty()
+       ? std::make_shared<mapnik::marker const>(std::move(mapnik::marker_rgba8()))
        : marker_cache::instance().find(filename, true);
-
-    if (!mark.is<mapnik::marker_null>())
+    
+    if (!mark->is<mapnik::marker_null>())
     {
         value_double opacity = get<value_double,keys::opacity>(sym, feature, common.vars_);
         value_bool allow_overlap = get<value_bool, keys::allow_overlap>(sym, feature, common.vars_);
@@ -57,7 +57,7 @@ void render_point_symbolizer(point_symbolizer const &sym,
         point_placement_enum placement= get<point_placement_enum, keys::point_placement_type>(sym, feature, common.vars_);
         boost::optional<std::string> key = get_optional<std::string>(sym, keys::symbol_key, feature, common.vars_);
 
-        box2d<double> const& bbox = mark.bounding_box();
+        box2d<double> const& bbox = mark->bounding_box();
         coord2d center = bbox.center();
 
         agg::trans_affine tr;
@@ -92,7 +92,7 @@ void render_point_symbolizer(point_symbolizer const &sym,
         {
 
             render_marker(pixel_position(x, y),
-                          mark,
+                          *mark,
                           tr,
                           opacity);
 

@@ -26,11 +26,6 @@
 // mapnik
 #include <mapnik/config.hpp>
 #include <mapnik/pixel_types.hpp>
-//#include <mapnik/image.hpp>
-//#include <mapnik/image_any.hpp>
-//#include <mapnik/image_view.hpp>
-//#include <mapnik/image_view_any.hpp>
-//#include <mapnik/color.hpp>
 
 // boost
 #pragma GCC diagnostic push
@@ -53,15 +48,15 @@ struct image_view_any;
 template <typename T> class image_view;
 class color;
 
-class ImageWriterException : public std::exception
+class image_writer_exception : public std::exception
 {
 private:
     std::string message_;
 public:
-    ImageWriterException(std::string const& message)
+    image_writer_exception(std::string const& message)
         : message_(message) {}
 
-    ~ImageWriterException() throw() {}
+    ~image_writer_exception() throw() {}
 
     virtual const char* what() const throw()
     {
@@ -147,6 +142,12 @@ MAPNIK_DECL void set_alpha (image_any & image, float opacity);
 template <typename T>
 MAPNIK_DECL void set_alpha (T & image, float opacity);
 
+// MULTIPLY ALPHA
+MAPNIK_DECL void multiply_alpha (image_any & image, float opacity);
+
+template <typename T>
+MAPNIK_DECL void multiply_alpha (T & image, float opacity);
+
 // SET GRAYSCALE TO ALPHA
 MAPNIK_DECL void set_grayscale_to_alpha (image_any & image);
 MAPNIK_DECL void set_grayscale_to_alpha (image_any & image, color const& c);
@@ -210,7 +211,7 @@ MAPNIK_DECL void set_rectangle (T & dst, T const& src, int x = 0, int y = 0);
 template <typename T>
 inline bool check_bounds (T const& data, std::size_t x, std::size_t y)
 {
-    return (x < static_cast<int>(data.width()) && y < static_cast<int>(data.height()));
+    return (x < data.width() && y < data.height());
 }
 
 // COMPOSITE_PIXEL
@@ -414,7 +415,6 @@ void add_border(T & image)
         image(image.width()-1,y) = 0xffff0000; // blue
     }
 }
-
 }
 
 #endif // MAPNIK_IMAGE_UTIL_HPP

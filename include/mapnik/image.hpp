@@ -39,7 +39,10 @@ struct MAPNIK_DECL buffer
     ~buffer();
 
     buffer& operator=(buffer rhs);
-    bool operator!() const;
+    inline bool operator!() const
+    {
+        return (data_ == nullptr)? true : false;
+    }
 
     void swap(buffer & rhs);
     unsigned char* data();
@@ -73,7 +76,7 @@ class image
 public:
     using pixel = T;
     using pixel_type = typename T::type;
-    static const image_dtype dtype = T::id;
+    static constexpr image_dtype dtype = T::id;
     static constexpr std::size_t pixel_size = sizeof(pixel_type);
 private:
     detail::image_dimensions<65535> dimensions_;
@@ -85,36 +88,35 @@ private:
     bool painted_;
 public:
     image();
-    image(int width, 
-          int height, 
-          bool initialize = true, 
-          bool premultiplied = false, 
+    image(int width,
+          int height,
+          bool initialize = true,
+          bool premultiplied = false,
           bool painted = false);
     image(image<T> const& rhs);
     image(image<T> && rhs) noexcept;
     image<T>& operator=(image<T> rhs);
-    image<T>const& operator=(image<T> const& rhs) const;
     bool operator==(image<T> const& rhs) const;
     bool operator<(image<T> const& rhs) const;
 
     void swap(image<T> & rhs);
     pixel_type& operator() (std::size_t i, std::size_t j);
-    const pixel_type& operator() (std::size_t i, std::size_t j) const;
+    pixel_type const& operator() (std::size_t i, std::size_t j) const;
     std::size_t width() const;
     std::size_t height() const;
-    unsigned getSize() const;
-    unsigned getRowSize() const;
+    std::size_t size() const;
+    std::size_t row_size() const;
     void set(pixel_type const& t);
-    const pixel_type* getData() const;
-    pixel_type* getData();
-    const unsigned char* getBytes() const;
-    unsigned char* getBytes();
-    const pixel_type* getRow(std::size_t row) const;
-    const pixel_type* getRow(std::size_t row, std::size_t x0) const;
-    pixel_type* getRow(std::size_t row);
-    pixel_type* getRow(std::size_t row, std::size_t x0);
-    void setRow(std::size_t row, pixel_type const* buf, std::size_t size);
-    void setRow(std::size_t row, std::size_t x0, std::size_t x1, pixel_type const* buf);
+    pixel_type const* data() const;
+    pixel_type* data();
+    unsigned char const* bytes() const;
+    unsigned char* bytes();
+    pixel_type const* get_row(std::size_t row) const;
+    pixel_type const* get_row(std::size_t row, std::size_t x0) const;
+    pixel_type* get_row(std::size_t row);
+    pixel_type* get_row(std::size_t row, std::size_t x0);
+    void set_row(std::size_t row, pixel_type const* buf, std::size_t size);
+    void set_row(std::size_t row, std::size_t x0, std::size_t x1, pixel_type const* buf);
     double get_offset() const;
     void set_offset(double set);
     double get_scaling() const;

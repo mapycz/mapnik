@@ -12,7 +12,13 @@ all: mapnik
 install:
 	$(PYTHON) scons/scons.py -j$(JOBS) --config=cache --implicit-cache --max-drift=1 install
 
+python:
+	if [[ ! -d ./bindings/python ]]; then git clone git@github.com:mapnik/python-mapnik.git --recursive ./bindings/python; else (cd bindings/python && git pull && git submodule update --init); fi;
+	make
+	python bindings/python/test/visual.py -q
+
 mapnik:
+	# then install the rest with -j$(JOBS)
 	$(PYTHON) scons/scons.py -j$(JOBS) --config=cache --implicit-cache --max-drift=1
 
 clean:
@@ -23,11 +29,10 @@ clean:
 	@if test -e ".sconf_temp/"; then rm -r ".sconf_temp/"; fi
 	@find ./ -name "*.pyc" -exec rm {} \;
 	@find ./ -name "*.os" -exec rm {} \;
-	@find ./ -name "*.dylib" -exec rm {} \;
-	@find ./ -name "*.so" -exec rm {} \;
+	@find ./src/ -name "*.dylib" -exec rm {} \;
+	@find ./src/ -name "*.so" -exec rm {} \;
 	@find ./ -name "*.o" -exec rm {} \;
-	@find ./ -name "*.a" -exec rm {} \;
-	@if test -e "bindings/python/mapnik/paths.py"; then rm "bindings/python/mapnik/paths.py"; fi
+	@find ./src/ -name "*.a" -exec rm {} \;
 
 distclean:
 	if test -e "config.py"; then mv "config.py" "config.py.backup"; fi
@@ -40,25 +45,13 @@ rebuild:
 uninstall:
 	@$(PYTHON) scons/scons.py -j$(JOBS) --config=cache --implicit-cache --max-drift=1 uninstall
 
-test:
-	./run_tests
+test/data:
+	git submodule update --init
 
-test-local:
-	make test
+test: ./test/data
+	@./test/run
 
-test-visual:
-	bash -c "source ./localize.sh && python tests/visual_tests/test.py -q"
-
-test-python:
-	bash -c "source ./localize.sh && python tests/run_tests.py -q"
-
-test-cpp:
-	./tests/cpp_tests/run
-
-test-cxx:
-	./tests/cxx/run
-
-check: test-local
+check: test
 
 bench:
 	./benchmark/run
@@ -73,10 +66,14 @@ pep8:
 	@pep8 -r --select=W391 -q --filename=*.py `pwd`/tests/ | xargs gsed -i -e :a -e '/^\n*$$/{$$d;N;ba' -e '}'
 	@pep8 -r --select=W391 -q --filename=*.py `pwd`/tests/ | xargs ged -i '/./,/^$$/!d'
 
+# note: pass --gen-suppressions=yes to create new suppression entries
 grind:
-	@for FILE in tests/cpp_tests/*-bin; do \
-		valgrind --leak-check=full --log-fd=1 $${FILE} | grep definitely; \
+	@source localize.sh && source mapnik-settings.env && \
+	for FILE in test/standalone/*-bin; do \
+		valgrind --suppressions=./test/unit/valgrind.supp --leak-check=full --log-fd=1 $${FILE} | grep definitely; \
 	done
+	@source localize.sh && source mapnik-settings.env && \
+	    valgrind --suppressions=./test/unit/valgrind.supp --leak-check=full --log-fd=1 ./test/unit/run | grep definitely;
 
 render:
 	@for FILE in tests/data/good_maps/*xml; do \

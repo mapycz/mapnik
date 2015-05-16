@@ -54,10 +54,10 @@ void grid_renderer<T>::process(line_pattern_symbolizer const& sym,
 {
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     if (filename.empty()) return;
-    mapnik::marker const& mark = marker_cache::instance().find(filename, true);
-    if (mark.is<mapnik::marker_null>()) return;
+    std::shared_ptr<mapnik::marker const> mark = marker_cache::instance().find(filename, true);
+    if (mark->is<mapnik::marker_null>()) return;
 
-    if (!mark.is<mapnik::marker_rgba8>())
+    if (!mark->is<mapnik::marker_rgba8>())
     {
         MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Only images (not '" << filename << "') are supported in the line_pattern_symbolizer";
         return;
@@ -82,7 +82,7 @@ void grid_renderer<T>::process(line_pattern_symbolizer const& sym,
 
     ras_ptr->reset();
 
-    int stroke_width = mark.width();
+    int stroke_width = mark->width();
 
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
@@ -115,11 +115,10 @@ void grid_renderer<T>::process(line_pattern_symbolizer const& sym,
     put<value_double>(line, keys::simplify_tolerance, value_double(simplify_tolerance));
     put<value_double>(line, keys::smooth, value_double(smooth));
 
-    using vertex_converter_type = vertex_converter<grid_rasterizer,
-                                                   clip_line_tag, transform_tag,
+    using vertex_converter_type = vertex_converter<clip_line_tag, transform_tag,
                                                    offset_transform_tag, affine_transform_tag,
                                                    simplify_tag, smooth_tag, stroke_tag>;
-    vertex_converter_type converter(clipping_extent,*ras_ptr,line,common_.t_,prj_trans,tr,feature,common_.vars_,common_.scale_factor_);
+    vertex_converter_type converter(clipping_extent,line,common_.t_,prj_trans,tr,feature,common_.vars_,common_.scale_factor_);
     if (clip) converter.set<clip_line_tag>(); // optional clip (default: true)
     converter.set<transform_tag>(); // always transform
     if (std::fabs(offset) > 0.0) converter.set<offset_transform_tag>(); // parallel offset
@@ -127,9 +126,9 @@ void grid_renderer<T>::process(line_pattern_symbolizer const& sym,
     if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
     converter.set<stroke_tag>(); //always stroke
-    using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type>;
+    using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type,grid_rasterizer>;
     using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
-    apply_vertex_converter_type apply(converter);
+    apply_vertex_converter_type apply(converter, *ras_ptr);
     mapnik::util::apply_visitor(vertex_processor_type(apply),feature.get_geometry());
 
     // render id

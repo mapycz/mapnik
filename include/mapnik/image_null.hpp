@@ -42,10 +42,10 @@ public:
 private:
 public:
     image() {}
-    image(int width, 
-          int height, 
-          bool initialize = true, 
-          bool premultiplied = false, 
+    image(int width,
+          int height,
+          bool initialize = true,
+          bool premultiplied = false,
           bool painted = false) {}
     image(image<null_t> const& rhs) {}
     image(image<null_t> && rhs) noexcept {}
@@ -56,13 +56,13 @@ public:
 
     std::size_t width() const { return 0; }
     std::size_t height() const { return 0; }
-    unsigned getSize() const { return 0; }
-    unsigned getRowSize() const { return 0; }
+    std::size_t size() const { return 0; }
+    std::size_t row_size() const { return 0; }
     void set(pixel_type const& t) { throw std::runtime_error("Can not set values for null image"); }
     pixel_type& operator() (std::size_t i, std::size_t j) { throw std::runtime_error("Can not get or set values for null image"); }
-    const pixel_type& operator() (std::size_t i, std::size_t j) const { throw std::runtime_error("Can not get or set values for null image"); }
-    const unsigned char* getBytes() const { return nullptr; }
-    unsigned char* getBytes() {return nullptr; }
+    pixel_type const& operator() (std::size_t i, std::size_t j) const { throw std::runtime_error("Can not get or set values for null image"); }
+    unsigned const char* bytes() const { return nullptr; }
+    unsigned char* bytes() {return nullptr; }
     double get_offset() const { return 0.0; }
     void set_offset(double set) {}
     double get_scaling() const { return 1.0; }

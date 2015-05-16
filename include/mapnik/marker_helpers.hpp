@@ -23,21 +23,17 @@
 #ifndef MAPNIK_MARKER_HELPERS_HPP
 #define MAPNIK_MARKER_HELPERS_HPP
 
-#include <mapnik/color.hpp>
 #include <mapnik/feature.hpp>
+#include <mapnik/color.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/geometry_type.hpp>
 #include <mapnik/geometry_centroid.hpp>
 #include <mapnik/symbolizer.hpp>
-#include <mapnik/expression_node.hpp>
-#include <mapnik/expression_evaluator.hpp>
-#include <mapnik/svg/svg_path_attributes.hpp>
 #include <mapnik/svg/svg_converter.hpp>
 #include <mapnik/marker.hpp> // for svg_storage_type
 #include <mapnik/markers_placement.hpp>
 #include <mapnik/attribute.hpp>
 #include <mapnik/box2d.hpp>
-#include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/label_collision_detector.hpp>
 #include <mapnik/symbol_cache.hpp>
@@ -46,16 +42,14 @@
 // agg
 #include "agg_trans_affine.h"
 
-// boost
-#include <boost/optional.hpp>
 // stl
 #include <memory>
-#include <type_traits> // remove_reference
-#include <cmath>
 
 namespace mapnik {
 
 struct clip_poly_tag;
+
+namespace svg { struct path_attributes; }
 
 using svg_attribute_type = agg::pod_bvector<svg::path_attributes>;
 
@@ -67,7 +61,7 @@ struct vector_markers_dispatch : util::noncopyable
                             symbolizer_base const& sym,
                             Detector & detector,
                             double scale_factor,
-                            feature_impl & feature,
+                            feature_impl const& feature,
                             attributes const& vars,
                             symbol_cache &sc)
         : src_(src),
@@ -122,7 +116,7 @@ protected:
     agg::trans_affine const& marker_trans_;
     symbolizer_base const& sym_;
     Detector & detector_;
-    feature_impl & feature_;
+    feature_impl const& feature_;
     attributes const& vars_;
     double scale_factor_;
     symbol_cache &symbol_cache_;
@@ -136,7 +130,7 @@ struct raster_markers_dispatch : util::noncopyable
                             symbolizer_base const& sym,
                             Detector & detector,
                             double scale_factor,
-                            feature_impl & feature,
+                            feature_impl const& feature,
                             attributes const& vars,
                             symbol_cache &sc)
     : src_(src),
@@ -165,7 +159,7 @@ struct raster_markers_dispatch : util::noncopyable
         direction_enum direction = get<direction_enum, keys::direction>(sym_, feature_, vars_);
         boost::optional<std::string> key = get_optional<std::string>(sym_, keys::symbol_key, feature_, vars_);
         markers_placement_params params { bbox, marker_trans_, spacing * scale_factor_, max_error, allow_overlap, avoid_edges, direction };
-        markers_placement_finder<T, label_collision_detector4> placement_finder(
+        markers_placement_finder<T, Detector> placement_finder(
             placement_method, path, detector_, params);
         double x, y, angle = .0;
         box2d<double> box;
@@ -189,7 +183,7 @@ protected:
     agg::trans_affine const& marker_trans_;
     symbolizer_base const& sym_;
     Detector & detector_;
-    feature_impl & feature_;
+    feature_impl const& feature_;
     attributes const& vars_;
     double scale_factor_;
     symbol_cache &symbol_cache_;
@@ -212,11 +206,11 @@ void setup_transform_scaling(agg::trans_affine & tr,
                              symbolizer_base const& sym);
 
 // Apply markers to a feature with multiple geometries
-template <typename Converter>
-void apply_markers_multi(feature_impl const& feature, attributes const& vars, Converter & converter, symbolizer_base const& sym)
+template <typename Converter, typename Processor>
+void apply_markers_multi(feature_impl const& feature, attributes const& vars, Converter & converter, Processor & proc, symbolizer_base const& sym)
 {
     using vertex_converter_type = Converter;
-    using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type>;
+    using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type,Processor>;
     using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
 
     auto const& geom = feature.get_geometry();
@@ -226,7 +220,7 @@ void apply_markers_multi(feature_impl const& feature, attributes const& vars, Co
         || type == geometry::geometry_types::LineString
         || type == geometry::geometry_types::Polygon)
     {
-        apply_vertex_converter_type apply(converter);
+        apply_vertex_converter_type apply(converter, proc);
         mapnik::util::apply_visitor(vertex_processor_type(apply), geom);
     }
     else
@@ -245,7 +239,7 @@ void apply_markers_multi(feature_impl const& feature, attributes const& vars, Co
                 // unset any clipping since we're now dealing with a point
                 converter.template unset<clip_poly_tag>();
                 geometry::point_vertex_adapter<double> va(pt);
-                converter.apply(va);
+                converter.apply(va, proc);
             }
         }
         else if ((placement == MARKER_POINT_PLACEMENT || placement == MARKER_INTERIOR_PLACEMENT) &&
@@ -272,7 +266,7 @@ void apply_markers_multi(feature_impl const& feature, attributes const& vars, Co
                 if (largest)
                 {
                     geometry::polygon_vertex_adapter<double> va(*largest);
-                    converter.apply(va);
+                    converter.apply(va, proc);
                 }
             }
             else
@@ -286,7 +280,7 @@ void apply_markers_multi(feature_impl const& feature, attributes const& vars, Co
             {
                 MAPNIK_LOG_WARN(marker_symbolizer) << "marker_multi_policy != 'each' has no effect with marker_placement != 'point'";
             }
-            apply_vertex_converter_type apply(converter);
+            apply_vertex_converter_type apply(converter, proc);
             mapnik::util::apply_visitor(vertex_processor_type(apply), geom);
         }
     }

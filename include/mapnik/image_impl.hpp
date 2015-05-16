@@ -22,12 +22,12 @@
 
 // mapnik
 #include <mapnik/image.hpp>
+#include <mapnik/pixel_types.hpp>
 
 // stl
-#include <algorithm>
 #include <cassert>
 #include <stdexcept>
-#include <iostream>
+#include <algorithm>
 
 namespace mapnik {
 
@@ -74,18 +74,18 @@ image<T>::image()
       offset_(0.0),
       scaling_(1.0),
       premultiplied_alpha_(false),
-      painted_(false) 
+      painted_(false)
 {}
 
 template <typename T>
 image<T>::image(int width, int height, bool initialize, bool premultiplied, bool painted)
-        : dimensions_(width, height),
-          buffer_(dimensions_.width() * dimensions_.height() * pixel_size),
-          pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
-          offset_(0.0),
-          scaling_(1.0),
-          premultiplied_alpha_(premultiplied),
-          painted_(painted)
+    : dimensions_(width, height),
+      buffer_(dimensions_.width() * dimensions_.height() * pixel_size),
+      pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
+      offset_(0.0),
+      scaling_(1.0),
+      premultiplied_alpha_(premultiplied),
+      painted_(painted)
 {
     if (pData_ && initialize)
     {
@@ -95,24 +95,24 @@ image<T>::image(int width, int height, bool initialize, bool premultiplied, bool
 
 template <typename T>
 image<T>::image(image<T> const& rhs)
-        : dimensions_(rhs.dimensions_),
-          buffer_(rhs.buffer_),
-          pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
-          offset_(rhs.offset_),
-          scaling_(rhs.scaling_),
-          premultiplied_alpha_(rhs.premultiplied_alpha_),
-          painted_(rhs.painted_)
+    : dimensions_(rhs.dimensions_),
+      buffer_(rhs.buffer_),
+      pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
+      offset_(rhs.offset_),
+      scaling_(rhs.scaling_),
+      premultiplied_alpha_(rhs.premultiplied_alpha_),
+      painted_(rhs.painted_)
 {}
 
 template <typename T>
 image<T>::image(image<T> && rhs) noexcept
-        : dimensions_(std::move(rhs.dimensions_)),
-          buffer_(std::move(rhs.buffer_)),
-          pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
-          offset_(rhs.offset_),
-          scaling_(rhs.scaling_),
-          premultiplied_alpha_(rhs.premultiplied_alpha_),
-          painted_(rhs.painted_)
+    : dimensions_(std::move(rhs.dimensions_)),
+    buffer_(std::move(rhs.buffer_)),
+    pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
+    offset_(rhs.offset_),
+    scaling_(rhs.scaling_),
+    premultiplied_alpha_(rhs.premultiplied_alpha_),
+    painted_(rhs.painted_)
 {
     rhs.dimensions_ = { 0, 0 };
     rhs.pData_ = nullptr;
@@ -126,21 +126,15 @@ image<T>& image<T>::operator=(image<T> rhs)
 }
 
 template <typename T>
-image<T> const& image<T>::operator=(image<T> const& rhs) const
-{
-    return rhs;
-}
-
-template <typename T>
 bool image<T>::operator==(image<T> const& rhs) const
 {
-    return rhs.getBytes() == getBytes();
+    return rhs.bytes() == bytes();
 }
 
 template <typename T>
 bool image<T>::operator<(image<T> const& rhs) const
 {
-    return getSize() < rhs.getSize();
+    return size() < rhs.size();
 }
 
 template <typename T>
@@ -181,13 +175,13 @@ inline std::size_t image<T>::height() const
 }
 
 template <typename T>
-inline unsigned image<T>::getSize() const
+inline std::size_t image<T>::size() const
 {
     return dimensions_.height() * dimensions_.width() * pixel_size;
 }
-    
+
 template <typename T>
-inline unsigned image<T>::getRowSize() const
+inline std::size_t image<T>::row_size() const
 {
     return dimensions_.width() * pixel_size;
 }
@@ -199,55 +193,55 @@ inline void image<T>::set(pixel_type const& t)
 }
 
 template <typename T>
-inline const typename image<T>::pixel_type* image<T>::getData() const
+inline const typename image<T>::pixel_type* image<T>::data() const
 {
     return pData_;
 }
 
 template <typename T>
-inline typename image<T>::pixel_type* image<T>::getData()
+inline typename image<T>::pixel_type* image<T>::data()
 {
     return pData_;
 }
 
 template <typename T>
-inline const unsigned char* image<T>::getBytes() const
+inline const unsigned char* image<T>::bytes() const
 {
     return buffer_.data();
 }
 
 template <typename T>
-inline unsigned char* image<T>::getBytes()
+inline unsigned char* image<T>::bytes()
 {
     return buffer_.data();
 }
 
 template <typename T>
-inline const typename image<T>::pixel_type* image<T>::getRow(std::size_t row) const
+inline typename image<T>::pixel_type const* image<T>::get_row(std::size_t row) const
 {
     return pData_ + row * dimensions_.width();
 }
 
 template <typename T>
-inline const typename image<T>::pixel_type* image<T>::getRow(std::size_t row, std::size_t x0) const
+inline const typename image<T>::pixel_type* image<T>::get_row(std::size_t row, std::size_t x0) const
 {
     return pData_ + row * dimensions_.width() + x0;
 }
 
 template <typename T>
-inline typename image<T>::pixel_type* image<T>::getRow(std::size_t row)
+inline typename image<T>::pixel_type* image<T>::get_row(std::size_t row)
 {
     return pData_ + row * dimensions_.width();
 }
 
 template <typename T>
-inline typename image<T>::pixel_type* image<T>::getRow(std::size_t row, std::size_t x0)
+inline typename image<T>::pixel_type* image<T>::get_row(std::size_t row, std::size_t x0)
 {
     return pData_ + row * dimensions_.width() + x0;
 }
 
 template <typename T>
-inline void image<T>::setRow(std::size_t row, pixel_type const* buf, std::size_t size)
+inline void image<T>::set_row(std::size_t row, pixel_type const* buf, std::size_t size)
 {
     assert(row < dimensions_.height());
     assert(size <= dimensions_.width());
@@ -255,7 +249,7 @@ inline void image<T>::setRow(std::size_t row, pixel_type const* buf, std::size_t
 }
 
 template <typename T>
-inline void image<T>::setRow(std::size_t row, std::size_t x0, std::size_t x1, pixel_type const* buf)
+inline void image<T>::set_row(std::size_t row, std::size_t x0, std::size_t x1, pixel_type const* buf)
 {
     assert(row < dimensions_.height());
     assert ((x1 - x0) <= dimensions_.width() );
@@ -281,14 +275,13 @@ inline double image<T>::get_scaling() const
 }
 
 template <typename T>
-inline void image<T>::set_scaling(double set)
+inline void image<T>::set_scaling(double scaling)
 {
-    if (set != 0.0)
+    if (scaling != 0.0)
     {
-        scaling_ = set;
+        scaling_ = scaling;
         return;
     }
-    std::clog << "Can not set scaling to 0.0, offset not set." << std::endl;
 }
 
 template <typename T>
@@ -322,4 +315,3 @@ inline image_dtype image<T>::get_dtype()  const
 }
 
 } // end ns
-

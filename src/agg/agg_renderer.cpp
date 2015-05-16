@@ -53,8 +53,9 @@
 #include "agg_span_allocator.h"
 #include "agg_image_accessors.h"
 #include "agg_span_image_filter_rgba.h"
+
 // boost
-#include <boost/math/special_functions/round.hpp>
+#include <boost/optional.hpp>
 
 // stl
 #include <cmath>
@@ -121,9 +122,9 @@ struct setup_agg_bg_visitor
            opacity_(opacity) {}
 
     void operator() (marker_null const&) {}
-    
+
     void operator() (marker_svg const&) {}
-    
+
     void operator() (marker_rgba8 const& marker)
     {
         mapnik::image_rgba8 const& bg_image = marker.get_data();
@@ -175,12 +176,12 @@ void agg_renderer<T0,T1>::setup(Map const &m)
     if (image_filename)
     {
         // NOTE: marker_cache returns premultiplied image, if needed
-        mapnik::marker const& bg_marker = mapnik::marker_cache::instance().find(*image_filename,true);
+        std::shared_ptr<mapnik::marker const> bg_marker = mapnik::marker_cache::instance().find(*image_filename,true);
         setup_agg_bg_visitor<buffer_type> visitor(pixmap_,
                                      common_,
                                      m.background_image_comp_op(),
                                      m.background_image_opacity());
-        util::apply_visitor(visitor, bg_marker);
+        util::apply_visitor(visitor, *bg_marker);
     }
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Scale=" << m.scale();
 }
@@ -338,7 +339,7 @@ struct agg_render_marker_visitor
 {
     agg_render_marker_visitor(renderer_common & common,
                               buffer_type * current_buffer,
-                              std::unique_ptr<rasterizer> const& ras_ptr, 
+                              std::unique_ptr<rasterizer> const& ras_ptr,
                               gamma_method_enum & gamma_method,
                               double & gamma,
                               pixel_position const& pos,
@@ -375,14 +376,14 @@ struct agg_render_marker_visitor
             gamma_ = 1.0;
         }
         agg::scanline_u8 sl;
-        agg::rendering_buffer buf(current_buffer_->getBytes(),
+        agg::rendering_buffer buf(current_buffer_->bytes(),
                                   current_buffer_->width(),
                                   current_buffer_->height(),
-                                  current_buffer_->getRowSize());
+                                  current_buffer_->row_size());
         pixfmt_comp_type pixf(buf);
         pixf.comp_op(static_cast<agg::comp_op_e>(comp_op_));
         renderer_base renb(pixf);
-        
+
         box2d<double> const& bbox = marker.get_data()->bounding_box();
         coord<double,2> c = bbox.center();
         // center the svg marker on '0,0'
@@ -415,8 +416,6 @@ struct agg_render_marker_visitor
         using blender_type = agg::comp_op_adaptor_rgba_pre<color_type, order_type>; // comp blender
         using pixfmt_comp_type = agg::pixfmt_custom_blend_rgba<blender_type, agg::rendering_buffer>;
         using renderer_base = agg::renderer_base<pixfmt_comp_type>;
-        using renderer_type = agg::renderer_scanline_aa_solid<renderer_base>;
-        using svg_attribute_type = agg::pod_bvector<mapnik::svg::path_attributes>;
 
         ras_ptr_->reset();
         if (gamma_method_ != GAMMA_POWER || gamma_ != 1.0)
@@ -426,14 +425,14 @@ struct agg_render_marker_visitor
             gamma_ = 1.0;
         }
         agg::scanline_u8 sl;
-        agg::rendering_buffer buf(current_buffer_->getBytes(),
+        agg::rendering_buffer buf(current_buffer_->bytes(),
                                   current_buffer_->width(),
                                   current_buffer_->height(),
-                                  current_buffer_->getRowSize());
+                                  current_buffer_->row_size());
         pixfmt_comp_type pixf(buf);
         pixf.comp_op(static_cast<agg::comp_op_e>(comp_op_));
         renderer_base renb(pixf);
-        
+
         double width = marker.width();
         double height = marker.height();
         if (std::fabs(1.0 - common_.scale_factor_) < 0.001
@@ -483,10 +482,10 @@ struct agg_render_marker_visitor
             agg::image_filter_lut filter(filter_kernel, false);
 
             buffer_type const& src = marker.get_data();
-            agg::rendering_buffer marker_buf((unsigned char *)src.getBytes(),
+            agg::rendering_buffer marker_buf((unsigned char *)src.bytes(),
                                              src.width(),
                                              src.height(),
-                                             src.getRowSize());
+                                             src.row_size());
             agg::pixfmt_rgba32_pre marker_pixf(marker_buf);
             using img_accessor_type = agg::image_accessor_clone<agg::pixfmt_rgba32_pre>;
             using interpolator_type = agg::span_interpolator_linear<agg::trans_affine>;
@@ -528,7 +527,7 @@ void agg_renderer<T0,T1>::render_marker(pixel_position const& pos,
 {
     agg_render_marker_visitor<buffer_type> visitor(common_,
                                                    current_buffer_,
-                                                   ras_ptr, 
+                                                   ras_ptr,
                                                    gamma_method_,
                                                    gamma_,
                                                    pos,
@@ -554,10 +553,10 @@ template <typename T0, typename T1>
 void agg_renderer<T0,T1>::debug_draw_box(box2d<double> const& box,
                                      double x, double y, double angle)
 {
-    agg::rendering_buffer buf(current_buffer_->getBytes(),
+    agg::rendering_buffer buf(current_buffer_->bytes(),
                               current_buffer_->width(),
                               current_buffer_->height(),
-                              current_buffer_->getRowSize());
+                              current_buffer_->row_size());
     debug_draw_box(buf, box, x, y, angle);
 }
 
@@ -574,7 +573,7 @@ void agg_renderer<T0,T1>::debug_draw_box(R& buf, box2d<double> const& box,
     renderer_base renb(pixf);
     renderer_type ren(renb);
 
-    // compute tranformation matrix
+    // compute transformation matrix
     agg::trans_affine tr = agg::trans_affine_rotation(angle).translate(x, y);
     // prepare path
     agg::path_storage pbox;

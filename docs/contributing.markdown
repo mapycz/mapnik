@@ -1,5 +1,41 @@
 # Contributing
 
+## Testing
+
+Developers adding new features or fixing bugs should always write tests alongside.
+
+Mapnik has both C++ unit tests in `./test/unit` and visual tests in `./test/visual`.
+
+Test data for the unit and visual tests is pulled in from standalone repos via git submodules.
+
+After building Mapnik (see INSTALL.md), the submodules can be loaded and the tests can be run like:
+
+    make test
+
+Developers with commit access can update test data like:
+
+    cd test/data
+    git remote set-url origin git@github.com:mapnik/test-data
+    git commit -a -m "update test data"
+    git push origin HEAD:master
+
+And the visual test data can up updated like:
+
+    cd test/data-visual
+    git remote set-url origin git@github.com:mapnik/test-data-visual
+    git add styles/* images/*
+    git commit -a -m "add more visual tests"
+    git push origin HEAD:master
+
+After updating the test data you can then do:
+
+    # then go back to mapnik core
+    cd ../../
+    # the submodule should be marked dirty
+    git status
+    # now commit the changes to the submodule
+    git commit test/data test/data-visual -m "update visual tests and data"
+
 ## Community
 
 Mapnik is a creative community focused on making beautiful maps with beautiful software.

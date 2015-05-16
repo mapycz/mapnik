@@ -99,7 +99,7 @@ struct agg_renderer_process_visitor_l
         value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym_, feature_, common_.vars_);
         value_double smooth = get<value_double, keys::smooth>(sym_, feature_, common_.vars_);
 
-        agg::rendering_buffer buf(current_buffer_->getBytes(),current_buffer_->width(),current_buffer_->height(), current_buffer_->getRowSize());
+        agg::rendering_buffer buf(current_buffer_->bytes(),current_buffer_->width(),current_buffer_->height(), current_buffer_->row_size());
         pixfmt_type pixf(buf);
         pixf.comp_op(static_cast<agg::comp_op_e>(get<composite_mode_e, keys::comp_op>(sym_, feature_, common_.vars_)));
         renderer_base ren_base(pixf);
@@ -127,12 +127,12 @@ struct agg_renderer_process_visitor_l
             padding *= common_.scale_factor_;
             clip_box.pad(padding);
         }
-        using vertex_converter_type = vertex_converter<rasterizer_type, clip_line_tag, transform_tag,
+        using vertex_converter_type = vertex_converter<clip_line_tag, transform_tag,
                                                        affine_transform_tag,
                                                        simplify_tag,smooth_tag,
                                                        offset_transform_tag>;
 
-        vertex_converter_type converter(clip_box,ras,sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
+        vertex_converter_type converter(clip_box,sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
 
         if (clip) converter.set<clip_line_tag>(); //optional clip (default: true)
         converter.set<transform_tag>(); //always transform
@@ -141,9 +141,9 @@ struct agg_renderer_process_visitor_l
         converter.set<affine_transform_tag>(); // optional affine transform
         if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
 
-        using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type>;
+        using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type, rasterizer_type>;
         using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
-        apply_vertex_converter_type apply(converter);
+        apply_vertex_converter_type apply(converter, ras);
         mapnik::util::apply_visitor(vertex_processor_type(apply),feature_.get_geometry());
     }
 
@@ -167,8 +167,8 @@ struct agg_renderer_process_visitor_l
         value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym_, feature_, common_.vars_);
         value_double smooth = get<value_double, keys::smooth>(sym_, feature_, common_.vars_);
 
-        agg::rendering_buffer buf(current_buffer_->getBytes(),current_buffer_->width(),
-                                  current_buffer_->height(), current_buffer_->getRowSize());
+        agg::rendering_buffer buf(current_buffer_->bytes(),current_buffer_->width(),
+                                  current_buffer_->height(), current_buffer_->row_size());
         pixfmt_type pixf(buf);
         pixf.comp_op(static_cast<agg::comp_op_e>(get<composite_mode_e, keys::comp_op>(sym_, feature_, common_.vars_)));
         renderer_base ren_base(pixf);
@@ -196,12 +196,12 @@ struct agg_renderer_process_visitor_l
             padding *= common_.scale_factor_;
             clip_box.pad(padding);
         }
-        using vertex_converter_type = vertex_converter<rasterizer_type, clip_line_tag, transform_tag,
+        using vertex_converter_type = vertex_converter<clip_line_tag, transform_tag,
                                                        affine_transform_tag,
                                                        simplify_tag,smooth_tag,
                                                        offset_transform_tag>;
 
-        vertex_converter_type converter(clip_box,ras,sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
+        vertex_converter_type converter(clip_box,sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
 
         if (clip) converter.set<clip_line_tag>(); //optional clip (default: true)
         converter.set<transform_tag>(); //always transform
@@ -210,9 +210,9 @@ struct agg_renderer_process_visitor_l
         converter.set<affine_transform_tag>(); // optional affine transform
         if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
 
-        using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type>;
+        using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type, rasterizer_type>;
         using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
-        apply_vertex_converter_type apply(converter);
+        apply_vertex_converter_type apply(converter, ras);
         mapnik::util::apply_visitor(vertex_processor_type(apply),feature_.get_geometry());
     }
 
@@ -235,7 +235,7 @@ void  agg_renderer<T0,T1>::process(line_pattern_symbolizer const& sym,
 
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     if (filename.empty()) return;
-    mapnik::marker const & marker = marker_cache::instance().find(filename, true);
+    std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
     agg_renderer_process_visitor_l<buffer_type> visitor(common_,
                                          pixmap_,
                                          current_buffer_,
@@ -243,7 +243,7 @@ void  agg_renderer<T0,T1>::process(line_pattern_symbolizer const& sym,
                                          sym,
                                          feature,
                                          prj_trans);
-    util::apply_visitor(visitor, marker);
+    util::apply_visitor(visitor, *marker);
 }
 
 template void agg_renderer<image_rgba8>::process(line_pattern_symbolizer const&,
