@@ -46,12 +46,15 @@ public:
         box_type box;
     };
 
+    using container_type = std::map<std::string, symbol>;
+    using iterator = container_type::const_iterator;
+
     void insert(std::string const & key, box_type const & value);
-    symbol const& get(std::string const & key) const;
-    bool contains(std::string const & key) const;
+    iterator end() const;
+    iterator get(std::string const & key) const;
 
 private:
-    std::map<std::string, symbol> items;
+    container_type items;
 };
 
 }

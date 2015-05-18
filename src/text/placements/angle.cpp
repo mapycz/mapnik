@@ -98,16 +98,15 @@ text_placement_info_ptr text_placements_angle::get_placement_info(double scale_f
     {
         std::string anchor_key = util::apply_visitor(extract_value<std::string>(feature, vars),
             static_cast<symbolizer_base::value_type>(*anchor_key_));
-
-        if (sc.contains(anchor_key))
+        symbol_cache::iterator sym = sc.get(anchor_key);
+        if (sym == sc.end())
         {
-            symbol_cache::symbol const& sym = sc.get(anchor_key);
-            return std::make_shared<text_placement_info_angle>(this,
-                feature, vars, scale_factor, angle, tolerance, step, sym.box, list_placement_info);
+            return std::make_shared<text_placement_info_dummy>(this, scale_factor, 1);
         }
         else
         {
-            return std::make_shared<text_placement_info_dummy>(this, scale_factor, 1);
+            return std::make_shared<text_placement_info_angle>(this,
+                feature, vars, scale_factor, angle, tolerance, step, sym->second.box, list_placement_info);
         }
     }
 

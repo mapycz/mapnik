@@ -169,17 +169,16 @@ text_placement_info_ptr text_placements_simple::get_placement_info(double scale_
     if (anchor_key_)
     {
         std::string evaluated_anchor_key = util::apply_visitor(extract_value<std::string>(feature, vars), static_cast<symbolizer_base::value_type>(*anchor_key_));
-
-        if (sc.contains(evaluated_anchor_key))
+        symbol_cache::iterator sym = sc.get(evaluated_anchor_key);
+        if (sym == sc.end())
         {
-            symbol_cache::symbol const& sym = sc.get(evaluated_anchor_key);
-            // Add 0.5 to ensure boxes won't intersect.
-            dx += sym.box.width() / 2.0 + .5;
-            dy += sym.box.height() / 2.0 + .5;
+            return std::make_shared<text_placement_info_dummy>(this, scale_factor, 1);
         }
         else
         {
-            return std::make_shared<text_placement_info_dummy>(this, scale_factor, 1);
+            // Add 0.5 to ensure boxes won't intersect.
+            dx += sym->second.box.width() / 2.0 + .5;
+            dy += sym->second.box.height() / 2.0 + .5;
         }
     }
 

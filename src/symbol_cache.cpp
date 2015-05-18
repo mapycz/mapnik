@@ -31,14 +31,14 @@ void symbol_cache::insert(std::string const & key, box_type const & box)
     items.emplace(key, box);
 }
 
-symbol_cache::symbol const& symbol_cache::get(std::string const & key) const
+symbol_cache::iterator symbol_cache::end() const
 {
-    return items.at(key);
+    return items.end();
 }
 
-bool symbol_cache::contains(std::string const & key) const
+symbol_cache::iterator symbol_cache::get(std::string const & key) const
 {
-    return items.find(key) != items.end();
+    return items.find(key);
 }
 
 }
