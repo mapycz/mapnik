@@ -361,11 +361,8 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
         boost::optional<feature_type_style const&> style=m_.find_style(style_name);
         if (!style)
         {
-            MAPNIK_LOG_DEBUG(feature_style_processor)
-                << "feature_style_processor: Style=" << style_name
-                << " required for layer=" << lay.name() << " does not exist.";
-
-            continue;
+            throw std::runtime_error("feature_style_processor: Style='" + style_name
+                + "' required for layer='" + lay.name() + "' does not exist.");
         }
 
         std::vector<rule> const& rules = style->get_rules();
