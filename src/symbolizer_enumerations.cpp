@@ -116,6 +116,7 @@ static const char * label_placement_strings[] = {
     "line",
     "vertex",
     "interior",
+    "grid",
     ""
 };
 
