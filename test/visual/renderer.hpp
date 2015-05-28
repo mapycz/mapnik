@@ -28,14 +28,18 @@
 // stl
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 
 // mapnik
 #include <mapnik/map.hpp>
-#include <mapnik/util/fs.hpp>
 #include <mapnik/agg_renderer.hpp>
+#include <mapnik/grid/grid_renderer.hpp>
 #if defined(HAVE_CAIRO)
 #include <mapnik/cairo/cairo_renderer.hpp>
 #include <mapnik/cairo/cairo_image_util.hpp>
+#endif
+#if defined(SVG_RENDERER)
+#include <mapnik/svg/output/svg_renderer.hpp>
 #endif
 
 // boost
@@ -48,6 +52,8 @@ template <typename ImageType>
 struct renderer_base
 {
     using image_type = ImageType;
+
+    static constexpr const char * ext = ".png";
 
     unsigned compare(image_type const & actual, boost::filesystem::path const& reference) const
     {
@@ -93,14 +99,90 @@ struct cairo_renderer : renderer_base<mapnik::image_rgba8>
 };
 #endif
 
-struct grid_renderer : renderer_base<mapnik::image_gray8>
+#if defined(SVG_RENDERER)
+struct svg_renderer : renderer_base<std::string>
 {
-    static constexpr const char * name = "grid";
+    static constexpr const char * name = "svg";
+    static constexpr const char * ext = ".svg";
 
     image_type render(mapnik::Map const & map, double scale_factor) const
     {
+        std::stringstream ss;
+        std::ostream_iterator<char> output_stream_iterator(ss);
+        mapnik::svg_renderer<std::ostream_iterator<char>> ren(map, output_stream_iterator, scale_factor);
+        ren.apply();
+        return ss.str();
+    }
+
+    unsigned compare(image_type const & actual, boost::filesystem::path const& reference) const
+    {
+        std::ifstream stream(reference.string().c_str(),std::ios_base::in|std::ios_base::binary);
+        if (!stream.is_open())
+        {
+            throw std::runtime_error("could not open: '" + reference.string() + "'");
+        }
+        std::string expected(std::istreambuf_iterator<char>(stream.rdbuf()),(std::istreambuf_iterator<char>()));
+        stream.close();
+        return std::fabs(actual.size() - expected.size());
+    }
+
+    void save(image_type const & image, boost::filesystem::path const& path) const
+    {
+        std::ofstream file(path.string().c_str(), std::ios::out | std::ios::trunc | std::ios::binary);
+        if (!file) {
+            throw std::runtime_error((std::string("cannot open file for writing file ") + path.string()).c_str());
+        } else {
+            file << image;
+            file.close();
+        }
+    }
+
+};
+#endif
+
+struct grid_renderer : renderer_base<mapnik::image_rgba8>
+{
+    static constexpr const char * name = "grid";
+
+    void convert(mapnik::grid::data_type const & grid, image_type & image) const
+    {
+        for (std::size_t y = 0; y < grid.height(); ++y)
+        {
+            mapnik::grid::value_type const * grid_row = grid.get_row(y);
+            image_type::pixel_type * image_row = image.get_row(y);
+            for (std::size_t x = 0; x < grid.width(); ++x)
+            {
+                mapnik::grid::value_type val = grid_row[x];
+
+                if (val == mapnik::grid::base_mask)
+                {
+                    image_row[x] = 0;
+                    continue;
+                }
+                if (val < 0)
+                {
+                    throw std::runtime_error("grid renderer: feature id is negative.");
+                }
+
+                val *= 100;
+
+                if (val > 0x00ffffff)
+                {
+                    throw std::runtime_error("grid renderer: feature id is too high.");
+                }
+
+                image_row[x] = val | 0xff000000;
+            }
+        }
+    }
+
+    image_type render(mapnik::Map const & map, double scale_factor) const
+    {
+        mapnik::grid grid(map.width(), map.height(), "__id__");
+        mapnik::grid_renderer<mapnik::grid> ren(map, grid, scale_factor);
+        ren.apply();
         image_type image(map.width(), map.height());
-        // TODO: Render grid here.
+        convert(grid.data(), image);
         return image;
     }
 };
@@ -110,15 +192,15 @@ class renderer
 {
 public:
     renderer(boost::filesystem::path const & output_dir, boost::filesystem::path const & reference_dir, bool overwrite)
-        : output_dir(output_dir), reference_dir(reference_dir), overwrite(overwrite)
+        : ren(), output_dir(output_dir), reference_dir(reference_dir), overwrite(overwrite)
     {
     }
 
     result test(std::string const & name, mapnik::Map const & map, double scale_factor) const
     {
         typename Renderer::image_type image(ren.render(map, scale_factor));
-        boost::filesystem::path reference = reference_dir / image_file_name(name, map.width(), map.height(), scale_factor, true);
-        bool reference_exists = mapnik::util::exists(reference.string());
+        boost::filesystem::path reference = reference_dir / image_file_name(name, map.width(), map.height(), scale_factor, true, Renderer::ext);
+        bool reference_exists = boost::filesystem::exists(reference);
         result res;
 
         res.state = reference_exists ? STATE_OK : STATE_OVERWRITE;
@@ -131,8 +213,8 @@ public:
 
         if (res.diff)
         {
-            ensure_dir(output_dir);
-            boost::filesystem::path path = output_dir / image_file_name(name, map.width(), map.height(), scale_factor);
+            boost::filesystem::create_directories(output_dir);
+            boost::filesystem::path path = output_dir / image_file_name(name, map.width(), map.height(), scale_factor, false, Renderer::ext);
             res.actual_image_path = path;
             res.state = STATE_FAIL;
             ren.save(image, path);
@@ -152,16 +234,17 @@ private:
                                 double width,
                                 double height,
                                 double scale_factor,
-                                bool reference=false) const
+                                bool reference,
+                                std::string const& ext) const
     {
         std::stringstream s;
         s << test_name << '-' << width << '-' << height << '-'
           << std::fixed << std::setprecision(1) << scale_factor
-          << '-' << Renderer::name << (reference ? "-reference" : "") << ".png";
+          << '-' << Renderer::name << (reference ? "-reference" : "") << ext;
         return s.str();
     }
 
-    Renderer ren;
+    const Renderer ren;
     boost::filesystem::path const & output_dir;
     boost::filesystem::path const & reference_dir;
     const bool overwrite;

@@ -39,13 +39,11 @@ severities = ['debug', 'warn', 'error', 'none']
 ICU_INCLUDES_DEFAULT='/usr/include'
 ICU_LIBS_DEFAULT='/usr/'
 
-DEFAULT_CC = "gcc"
-DEFAULT_CXX = "g++"
+DEFAULT_CC = "cc"
+DEFAULT_CXX = "c++"
 DEFAULT_CXX11_CXXFLAGS = " -std=c++11"
 DEFAULT_CXX11_LINKFLAGS = ""
 if sys.platform == 'darwin':
-    DEFAULT_CC = "clang"
-    DEFAULT_CXX = "clang++"
     # homebrew default
     ICU_INCLUDES_DEFAULT='/usr/local/opt/icu4c/include/'
     ICU_LIBS_DEFAULT='/usr/local/opt/icu4c/'
@@ -308,7 +306,7 @@ opts.AddVariables(
     ('WARNING_CXXFLAGS', 'Compiler flags you can set to reduce warning levels which are placed after -Wall.', ''),
 
     # SCons build behavior options
-    ('HOST', 'Set the target host for cross compiling"', ''),
+    ('HOST', 'Set the target host for cross compiling', ''),
     ('CONFIG', "The path to the python file in which to save user configuration options. Currently : '%s'" % SCONS_LOCAL_CONFIG,SCONS_LOCAL_CONFIG),
     BoolVariable('USE_CONFIG', "Use SCons user '%s' file (will also write variables after successful configuration)", 'True'),
     # http://www.scons.org/wiki/GoFastButton
@@ -1740,11 +1738,6 @@ if not preconfigured:
         # c++11 support / https://github.com/mapnik/mapnik/issues/1683
         #  - upgrade to PHOENIX_V3 since that is needed for c++11 compile
         env.Append(CPPDEFINES = '-DBOOST_SPIRIT_USE_PHOENIX_V3=1')
-        if 'clang++' in env['CXX']:
-            #  - workaround boost gil channel_algorithm.hpp narrowing error
-            # TODO - remove when building against >= 1.55
-            # https://github.com/mapnik/mapnik/issues/1970
-            env.Append(CXXFLAGS = '-Wno-c++11-narrowing')
 
         # Enable logging in debug mode (always) and release mode (when specified)
         if env['DEFAULT_LOG_SEVERITY']:

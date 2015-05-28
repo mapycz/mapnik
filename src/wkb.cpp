@@ -27,6 +27,7 @@
 #include <mapnik/wkb.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/util/noncopyable.hpp>
+#include <mapnik/geometry_correct.hpp>
 
 namespace mapnik
 {
@@ -404,11 +405,13 @@ private:
 };
 
 mapnik::geometry::geometry<double> geometry_utils::from_wkb(const char* wkb,
-                                                        unsigned size,
-                                                        wkbFormat format)
+                                                            std::size_t size,
+                                                            wkbFormat format)
 {
     wkb_reader reader(wkb, size, format);
     mapnik::geometry::geometry<double> geom(reader.read());
+    // note: this will only be applied to polygons
+    mapnik::geometry::correct(geom);
     return geom;
 }
 
