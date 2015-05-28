@@ -364,6 +364,7 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
             MAPNIK_LOG_ERROR(feature_style_processor)
                 << "feature_style_processor: Style='" << style_name
                 << "' required for layer='" << lay.name() << "' does not exist.";
+            continue;
         }
 
         std::vector<rule> const& rules = style->get_rules();
