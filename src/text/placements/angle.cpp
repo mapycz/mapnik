@@ -26,6 +26,7 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/text/placements/list.hpp>
 #include <mapnik/text/placements/dummy.hpp>
+#include <mapnik/global.hpp>
 
 namespace
 {
