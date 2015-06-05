@@ -230,25 +230,11 @@ void render_raster_symbolizer(raster_symbolizer const& sym,
             {
                 double image_ratio_x = ext.width() / source->data_.width();
                 double image_ratio_y = ext.height() / source->data_.height();
-                double eps = 1e-5;
-                if ( (std::fabs(image_ratio_x - 1.0) <= eps) &&
-                     (std::fabs(image_ratio_y - 1.0) <= eps) &&
-                     (std::abs(start_x) <= eps) &&
-                     (std::abs(start_y) <= eps) )
-                {
-                    if (source->data_.is<image_rgba8>())
-                    {
-                        composite(util::get<image_rgba8>(source->data_), comp_op, opacity, start_x, start_y);
-                    }
-                }
-                else
-                {
-                    detail::image_dispatcher<F> dispatcher(start_x, start_y, raster_width, raster_height,
-                                                                image_ratio_x, image_ratio_y,
-                                                                scaling_method, source->get_filter_factor(),
-                                                                opacity, comp_op, sym, feature, composite, source->nodata());
-                    util::apply_visitor(dispatcher, source->data_);
-                }
+                detail::image_dispatcher<F> dispatcher(start_x, start_y, raster_width, raster_height,
+                                                            image_ratio_x, image_ratio_y,
+                                                            scaling_method, source->get_filter_factor(),
+                                                            opacity, comp_op, sym, feature, composite, source->nodata());
+                util::apply_visitor(dispatcher, source->data_);
             }
         }
     }
