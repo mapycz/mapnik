@@ -194,7 +194,6 @@ source = Split(
     layer.cpp
     map.cpp
     load_map.cpp
-    memory.cpp
     palette.cpp
     marker_helpers.cpp
     transform_expression_grammar.cpp
@@ -345,12 +344,6 @@ source += Split(
     agg/process_debug_symbolizer.cpp
     """
     )
-
-# clipper
-source += Split(
-    """
-     ../deps/clipper/src/clipper.cpp
-    """)
 
 if env['RUNTIME_LINK'] == "static":
     source += glob.glob('../deps/agg/src/' + '*.cpp')

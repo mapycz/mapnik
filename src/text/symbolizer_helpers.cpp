@@ -117,14 +117,14 @@ struct split_multi_geometries
     {
         for ( auto const& pt : multi_pt )
         {
-            cont_.push_back(std::move(base_symbolizer_helper::geometry_cref(std::cref(pt))));
+            cont_.push_back(base_symbolizer_helper::geometry_cref(std::cref(pt)));
         }
     }
     void operator() (geometry::multi_line_string<double> const& multi_line) const
     {
         for ( auto const& line : multi_line )
         {
-            cont_.push_back(std::move(base_symbolizer_helper::geometry_cref(std::cref(line))));
+            cont_.push_back(base_symbolizer_helper::geometry_cref(std::cref(line)));
         }
     }
 
@@ -135,12 +135,12 @@ struct split_multi_geometries
             box2d<double> bbox = t_.forward(geometry::envelope(poly), prj_trans_);
             if (bbox.width() >= minimum_path_length_)
             {
-                cont_.push_back(std::move(base_symbolizer_helper::geometry_cref(std::cref(poly))));
+                cont_.push_back(base_symbolizer_helper::geometry_cref(std::cref(poly)));
             }
         }
         else
         {
-            cont_.push_back(std::move(base_symbolizer_helper::geometry_cref(std::cref(poly))));
+            cont_.push_back(base_symbolizer_helper::geometry_cref(std::cref(poly)));
         }
     }
 
@@ -163,7 +163,7 @@ struct split_multi_geometries
     template <typename Geometry>
     void operator() (Geometry const& geom) const
     {
-        cont_.push_back(std::move(base_symbolizer_helper::geometry_cref(std::cref(geom))));
+        cont_.push_back(base_symbolizer_helper::geometry_cref(std::cref(geom)));
     }
 
     container_type & cont_;
