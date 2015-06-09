@@ -40,6 +40,9 @@
 #include <mapnik/text/placement_finder_impl.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/placements/dummy.hpp>
+#include <mapnik/grid_vertex_adapter.hpp>
+#include <mapnik/proj_strategy.hpp>
+#include <mapnik/view_strategy.hpp>
 
 //agg
 #include "agg_conv_clip_polyline.h"
@@ -72,6 +75,30 @@ struct apply_vertex_placement
     Points & points_;
     view_transform const& tr_;
     proj_transform const& prj_trans_;
+};
+
+template <typename Points>
+struct apply_grid_placement
+{
+    apply_grid_placement(Points & points)
+        : points_(points)
+    {
+    }
+
+    template <typename Adapter>
+    void operator() (Adapter const& va) const
+    {
+        double label_x, label_y, z = 0;
+        va.rewind(0);
+        for (unsigned cmd; (cmd = va.vertex(&label_x, &label_y)) != SEG_END; )
+        {
+            if (cmd != SEG_CLOSE)
+            {
+                points_.emplace_back(label_x, label_y);
+            }
+        }
+    }
+    Points & points_;
 };
 
 template <typename T>
@@ -229,6 +256,15 @@ void base_symbolizer_helper::initialize_points() const
             using apply_vertex_placement = detail::apply_vertex_placement<std::list<pixel_position> >;
             apply_vertex_placement apply(points_, t_, prj_trans_);
             util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
+        }
+        else if (how_placed == GRID_PLACEMENT)
+        {
+            view_strategy vs(t_);
+            proj_strategy ps(proj_transform(prj_trans_.dest(), prj_trans_.source()));
+            using apply_grid_placement = detail::apply_grid_placement<std::list<pixel_position>>;
+            apply_grid_placement apply(points_);
+            util::apply_visitor(geometry::grid_vertex_processor<apply_grid_placement, double>(
+                apply, vs, ps, text_props_->grid_cell_width, text_props_->grid_cell_height), geom);
         }
         else
         {
