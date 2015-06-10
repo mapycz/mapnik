@@ -1976,6 +1976,8 @@ if not HELP_REQUESTED:
         else :
             color_print(1,"WARNING: Cannot find boost_program_options. 'shapeindex' and other command line programs will not be available")
 
+    SConscript('utils/list-fonts/build.py')
+
     # Configure fonts and if requested install the bundled DejaVu fonts
     SConscript('fonts/build.py')
 

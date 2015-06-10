@@ -33,6 +33,7 @@ utils/ogrindex/ogrindex
 utils/pgsql2sqlite/pgsql2sqlite
 utils/svg2png/svg2png
 utils/nik2img/nik2img
+utils/list-fonts/mapnik-list-fonts
 demo/python/demo*
 demo/python/map.xml
 tests/data/sqlite/*index
