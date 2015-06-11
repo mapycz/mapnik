@@ -40,7 +40,7 @@ namespace mapnik
 {
 
 template <typename Geometry>
-struct MAPNIK_DECL offset_converter
+struct offset_converter
 {
     using size_type = std::size_t;
 
@@ -266,6 +266,14 @@ private:
         double sa = offset_ * std::sin(a);
         double ca = offset_ * std::cos(a);
         double h = std::tan(0.5 * (b - a));
+        if (h > 1.5)
+        {
+            h = 1.5;
+        }
+        else if (h < -1.5)
+        {
+            h = -1.5;
+        }
         v.x = v.x + sa + h * ca;
         v.y = v.y - ca + h * sa;
     }
