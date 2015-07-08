@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -120,7 +120,7 @@ struct thunk_renderer<image_rgba8>
         render_offset_placements(
             thunk.placements_,
             offset_,
-            [&] (glyph_positions_ptr glyphs)
+            [&] (glyph_positions_ptr const& glyphs)
             {
                 marker_info_ptr mark = glyphs->get_marker();
                 if (mark)

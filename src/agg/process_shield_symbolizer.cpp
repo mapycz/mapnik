@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,7 @@ void  agg_renderer<T0,T1>::process(shield_symbolizer const& sym,
     double opacity = get<double>(sym,keys::opacity, feature, common_.vars_, 1.0);
 
     placements_list const& placements = helper.get();
-    for (glyph_positions_ptr glyphs : placements)
+    for (auto const& glyphs : placements)
     {
         marker_info_ptr mark = glyphs->get_marker();
         if (mark)

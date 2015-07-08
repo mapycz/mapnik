@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -212,7 +212,7 @@ void render_offset_placements(placements_list const& placements,
                               pixel_position const& offset,
                               F render_text) {
 
-    for (glyph_positions_ptr glyphs : placements)
+    for (auto const& glyphs : placements)
     {
         // move the glyphs to the correct offset
         pixel_position base_point = glyphs->get_base_point();
@@ -281,9 +281,9 @@ void render_group_symbolizer(group_symbolizer const& sym,
 
     // run feature or sub feature through the group rules & symbolizers
     // for each index value in the range
-    int start = get<value_integer>(sym, keys::start_column);
-    int end = start + get<value_integer>(sym, keys::num_columns);
-    for (int col_idx = start; col_idx < end; ++col_idx)
+    value_integer start = get<value_integer>(sym, keys::start_column);
+    value_integer end = start + get<value_integer>(sym, keys::num_columns);
+    for (value_integer col_idx = start; col_idx < end; ++col_idx)
     {
         // create sub feature with indexed column values
         feature_ptr sub_feature = feature_factory::create(sub_feature_ctx, col_idx);
@@ -296,7 +296,7 @@ void render_group_symbolizer(group_symbolizer const& sym,
                 if (col_name.size() == 1)
                 {
                     // column name is '%' by itself, so give the index as the value
-                    sub_feature->put(col_name, (value_integer)col_idx);
+                    sub_feature->put(col_name, col_idx);
                 }
                 else
                 {
@@ -342,10 +342,10 @@ void render_group_symbolizer(group_symbolizer const& sym,
                 render_thunk_extractor extractor(bounds, thunks, *sub_feature, common.vars_, prj_trans,
                                                  virtual_renderer, clipping_extent);
 
-                for (auto const& sym : *rule)
+                for (auto const& _sym : *rule)
                 {
                     // TODO: construct layout and obtain bounding box
-                    util::apply_visitor(extractor, sym);
+                    util::apply_visitor(extractor, _sym);
                 }
 
                 // add the bounding box to the layout manager

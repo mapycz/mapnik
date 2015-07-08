@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,11 +53,12 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-local-typedef"
 #include <boost/algorithm/string.hpp>
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 #pragma GCC diagnostic pop
 #include <boost/optional.hpp>
 #include <boost/version.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 
 // stl
 #include <iostream>
@@ -97,13 +98,13 @@ void serialize_combined_placement(ptree & node, text_placements_combined *combin
         //serialize the simple placement
         text_placements_simple *simple = dynamic_cast<text_placements_simple *>(combined->get_simple_placement().get());
         serialize_simple_placement(node, simple, explicit_defaults);
-        
+
         //serialize the list placement
         text_placements_list *list = dynamic_cast<text_placements_list *>(combined->get_list_placement().get());
         serialize_list_placement(node, list , explicit_defaults);
     }
 }
-    
+
 void serialize_text_placements(ptree & node, text_placements_ptr const& p, bool explicit_defaults)
 {
     text_symbolizer_properties dfl;
@@ -127,7 +128,7 @@ void serialize_text_placements(ptree & node, text_placements_ptr const& p, bool 
         set_attr(node, "placement-type", "list");
         serialize_list_placement(node, list, explicit_defaults);
     }
-    
+
     text_placements_combined* combined = dynamic_cast<text_placements_combined *>(p.get());
     if(combined)
     {
@@ -503,13 +504,12 @@ void serialize_fontset( ptree & map_node, std::string const& name, font_set cons
 
     set_attr(fontset_node, "name", name);
 
-    for (auto const& name : fontset.get_face_names())
+    for (auto const& face_name : fontset.get_face_names())
     {
         ptree & font_node = fontset_node.push_back(
             ptree::value_type("Font", ptree()))->second;
-        set_attr(font_node, "face-name", name);
+        set_attr(font_node, "face-name", face_name);
     }
-
 }
 
 void serialize_datasource( ptree & layer_node, datasource_ptr datasource)
@@ -545,63 +545,63 @@ void serialize_parameters( ptree & map_node, mapnik::parameters const& params)
     }
 }
 
-void serialize_layer( ptree & map_node, const layer & layer, bool explicit_defaults )
+void serialize_layer( ptree & map_node, layer const& lyr, bool explicit_defaults )
 {
     ptree & layer_node = map_node.push_back(
         ptree::value_type("Layer", ptree()))->second;
 
-    if ( layer.name() != "" )
+    if ( lyr.name() != "" )
     {
-        set_attr( layer_node, "name", layer.name() );
+        set_attr( layer_node, "name", lyr.name() );
     }
 
-    if ( layer.srs() != "" )
+    if ( lyr.srs() != "" )
     {
-        set_attr( layer_node, "srs", layer.srs() );
+        set_attr( layer_node, "srs", lyr.srs() );
     }
 
-    if ( !layer.active() || explicit_defaults )
+    if ( !lyr.active() || explicit_defaults )
     {
-        set_attr/*<bool>*/( layer_node, "status", layer.active() );
+        set_attr/*<bool>*/( layer_node, "status", lyr.active() );
     }
 
-    if ( layer.clear_label_cache() || explicit_defaults )
+    if ( lyr.clear_label_cache() || explicit_defaults )
     {
-        set_attr/*<bool>*/( layer_node, "clear-label-cache", layer.clear_label_cache() );
+        set_attr/*<bool>*/( layer_node, "clear-label-cache", lyr.clear_label_cache() );
     }
 
-    if ( layer.minimum_scale_denominator() )
+    if ( lyr.minimum_scale_denominator() != 0 || explicit_defaults )
     {
-        set_attr( layer_node, "minimum_scale_denominator", layer.minimum_scale_denominator() );
+        set_attr( layer_node, "minimum_scale_denominator", lyr.minimum_scale_denominator() );
     }
 
-    if ( layer.maximum_scale_denominator() != std::numeric_limits<double>::max() )
+    if ( lyr.maximum_scale_denominator() != std::numeric_limits<double>::max() || explicit_defaults )
     {
-        set_attr( layer_node, "maximum_scale_denominator", layer.maximum_scale_denominator() );
+        set_attr( layer_node, "maximum_scale_denominator", lyr.maximum_scale_denominator() );
     }
 
-    if ( layer.queryable() || explicit_defaults )
+    if ( lyr.queryable() || explicit_defaults )
     {
-        set_attr( layer_node, "queryable", layer.queryable() );
+        set_attr( layer_node, "queryable", lyr.queryable() );
     }
 
-    if ( layer.cache_features() || explicit_defaults )
+    if ( lyr.cache_features() || explicit_defaults )
     {
-        set_attr/*<bool>*/( layer_node, "cache-features", layer.cache_features() );
+        set_attr/*<bool>*/( layer_node, "cache-features", lyr.cache_features() );
     }
 
-    if ( layer.group_by() != "" || explicit_defaults )
+    if ( lyr.group_by() != "" || explicit_defaults )
     {
-        set_attr( layer_node, "group-by", layer.group_by() );
+        set_attr( layer_node, "group-by", lyr.group_by() );
     }
 
-    boost::optional<int> const& buffer_size = layer.buffer_size();
+    boost::optional<int> const& buffer_size = lyr.buffer_size();
     if ( buffer_size || explicit_defaults)
     {
         set_attr( layer_node, "buffer-size", *buffer_size );
     }
 
-    optional<box2d<double> > const& maximum_extent = layer.maximum_extent();
+    optional<box2d<double> > const& maximum_extent = lyr.maximum_extent();
     if ( maximum_extent)
     {
         std::ostringstream s;
@@ -611,7 +611,7 @@ void serialize_layer( ptree & map_node, const layer & layer, bool explicit_defau
         set_attr( layer_node, "maximum-extent", s.str() );
     }
 
-    for (auto const& name : layer.styles())
+    for (auto const& name : lyr.styles())
     {
         boost::property_tree::ptree & style_node = layer_node.push_back(
             boost::property_tree::ptree::value_type("StyleName",
@@ -619,7 +619,7 @@ void serialize_layer( ptree & map_node, const layer & layer, bool explicit_defau
         style_node.put_value(name);
     }
 
-    datasource_ptr datasource = layer.datasource();
+    datasource_ptr datasource = lyr.datasource();
     if ( datasource )
     {
         serialize_datasource( layer_node, datasource );

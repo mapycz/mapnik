@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,8 +28,8 @@
 #include <mapnik/text/face.hpp>
 
 #include <cairo-ft.h>
+#include <vector>
 
-#include <valarray>
 namespace mapnik {
 
 cairo_face::cairo_face(std::shared_ptr<font_library> const& library, face_ptr const& face)
@@ -227,17 +227,13 @@ void cairo_context::set_line_width(double width)
 
 void cairo_context::set_dash(dash_array const& dashes, double scale_factor)
 {
-    std::valarray<double> d(dashes.size() * 2);
-    dash_array::const_iterator itr = dashes.begin();
-    dash_array::const_iterator end = dashes.end();
-    int index = 0;
-
-    for (; itr != end; ++itr)
+    std::vector<double> d;
+    d.reserve(dashes.size() * 2);
+    for (auto const& dash : dashes)
     {
-        d[index++] = itr->first * scale_factor;
-        d[index++] = itr->second * scale_factor;
+        d.emplace_back(dash.first * scale_factor);
+        d.emplace_back(dash.second * scale_factor);
     }
-
     cairo_set_dash(cairo_.get() , &d[0], static_cast<int>(d.size()), 0/*offset*/);
     check_object_status_and_throw_exception(*this);
 }
@@ -465,8 +461,8 @@ void cairo_context::add_text(glyph_positions const& pos,
         matrix.y0 = 0;
         set_font_matrix(matrix);
         set_font_face(manager, glyph.face);
-        pixel_position pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
-        glyph_path(glyph.glyph_index, pixel_position(sx + pos.x, sy - pos.y));
+        pixel_position new_pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
+        glyph_path(glyph.glyph_index, pixel_position(sx + new_pos.x, sy - new_pos.y));
         set_line_width(2.0 * halo_radius);
         set_line_join(ROUND_JOIN);
         set_color(glyph.format->halo_fill, glyph.format->halo_opacity);
@@ -486,9 +482,9 @@ void cairo_context::add_text(glyph_positions const& pos,
         matrix.y0 = 0;
         set_font_matrix(matrix);
         set_font_face(manager, glyph.face);
-        pixel_position pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
+        pixel_position new_pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
         set_color(glyph.format->fill, glyph.format->text_opacity);
-        show_glyph(glyph.glyph_index, pixel_position(sx + pos.x, sy - pos.y));
+        show_glyph(glyph.glyph_index, pixel_position(sx + new_pos.x, sy - new_pos.y));
     }
 
 }

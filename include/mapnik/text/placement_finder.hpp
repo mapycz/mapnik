@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,7 +75,7 @@ private:
     // Checks for collision.
     bool collision(box2d<double> const& box, const value_unicode_string &repeat_key, bool line_placement) const;
     // Adds marker to glyph_positions and to collision detector. Returns false if there is a collision.
-    bool add_marker(glyph_positions_ptr glyphs, pixel_position const& pos) const;
+    bool add_marker(glyph_positions_ptr & glyphs, pixel_position const& pos) const;
     // Maps upright==auto, left-only and right-only to left,right to simplify processing.
     // angle = angle of at start of line (to estimate best option for upright==auto)
     text_upright_e simplify_upright(text_upright_e upright, double angle) const;

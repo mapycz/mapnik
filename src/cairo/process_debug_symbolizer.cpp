@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -106,11 +106,9 @@ void cairo_renderer<T>::process(debug_symbolizer const& sym,
 
     if (mode == DEBUG_SYM_MODE_COLLISION)
     {
-        typename detector_type::query_iterator itr = common_.detector_->begin();
-        typename detector_type::query_iterator end = common_.detector_->end();
-        for ( ;itr!=end; ++itr)
+        for (auto & n : *common_.detector_)
         {
-            render_debug_box(context_, itr->box);
+            render_debug_box(context_, n.get().box);
         }
     }
     else if (mode == DEBUG_SYM_MODE_VERTEX)

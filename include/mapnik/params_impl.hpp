@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,6 +33,9 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-local-typedef"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wconversion"
 #include <boost/optional.hpp>
 #include <boost/lexical_cast.hpp>
 #pragma GCC diagnostic pop
@@ -150,7 +153,7 @@ struct extract_value<std::string>
     {
         return boost::optional<std::string>(source);
     }
-    
+
     static inline boost::optional<std::string> do_extract_from_bool(value_bool const& source)
     {
         if (source) {
@@ -188,7 +191,7 @@ struct value_extractor_visitor
         var_ = detail::param_cast<T>(val);
 
     }
-    
+
     void operator() (value_bool const& val) const
     {
         var_ = detail::param_cast<T>(val);

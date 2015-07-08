@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -119,9 +119,9 @@ struct render_marker_symbolizer_visitor
             if (clip) // optional clip (default: true)
             {
                 geometry::geometry_types type = geometry::geometry_type(feature_.get_geometry());
-                if (type == geometry::geometry_types::Polygon)
+                if (type == geometry::geometry_types::Polygon || type == geometry::geometry_types::MultiPolygon)
                     converter.template set<clip_poly_tag>();
-                else if (type == geometry::geometry_types::LineString)
+                else if (type == geometry::geometry_types::LineString || type == geometry::geometry_types::MultiLineString)
                     converter.template set<clip_line_tag>();
             }
 
@@ -226,9 +226,9 @@ struct render_marker_symbolizer_visitor
         if (clip) // optional clip (default: true)
         {
             geometry::geometry_types type = geometry::geometry_type(feature_.get_geometry());
-            if (type == geometry::geometry_types::Polygon)
+            if (type == geometry::geometry_types::Polygon || type == geometry::geometry_types::MultiPolygon)
                 converter.template set<clip_poly_tag>();
-            else if (type == geometry::geometry_types::LineString)
+            else if (type == geometry::geometry_types::LineString || type == geometry::geometry_types::MultiLineString)
                 converter.template set<clip_line_tag>();
         }
         converter.template set<transform_tag>(); //always transform

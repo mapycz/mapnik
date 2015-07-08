@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2014 Artem Pavlenko
+ * Copyright (C) 2015 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -71,7 +71,7 @@ struct image_dispatcher
         nodata_(nodata),
         need_scaling_(need_scaling) {}
 
-    void operator() (image_null const& data_in) const {}  //no-op
+    void operator() (image_null const&) const {}  //no-op
     void operator() (image_rgba8 const& data_in) const
     {
         if (need_scaling_)
@@ -152,7 +152,7 @@ struct image_warp_dispatcher
         composite_(composite),
         nodata_(nodata) {}
 
-    void operator() (image_null const& data_in) const {} //no-op
+    void operator() (image_null const&) const {} //no-op
 
     void operator() (image_rgba8 const& data_in) const
     {
