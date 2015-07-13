@@ -365,8 +365,6 @@ public:
      */
     int buffer_size() const;
 
-    int max_buffer_size() const;
-
     /*! \brief Set the map maximum extent.
      *  @param box The bounding box for the maximum extent.
      */
