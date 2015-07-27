@@ -43,8 +43,6 @@
 #include <mapnik/view_strategy.hpp>
 #include <mapnik/grid_vertex_adapter.hpp>
 
-//agg
-#include "agg_conv_clip_polyline.h"
 
 namespace mapnik { namespace detail {
 
