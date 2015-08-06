@@ -23,6 +23,7 @@
 #ifndef MAPNIK_GRID_ADAPTERS_HPP
 #define MAPNIK_GRID_ADAPTERS_HPP
 
+// mapnik
 #include <mapnik/geometry.hpp>
 #include <mapnik/geometry_types.hpp>
 #include <mapnik/vertex.hpp>
@@ -30,16 +31,25 @@
 #include <mapnik/proj_strategy.hpp>
 #include <mapnik/view_strategy.hpp>
 #include <mapnik/geometry_transform.hpp>
+#include <mapnik/image.hpp>
+
+// agg
+#include "agg_rendering_buffer.h"
+#include "agg_pixfmt_gray.h"
+#include "agg_renderer_base.h"
+#include "agg_renderer_scanline.h"
+#include "agg_rasterizer_scanline_aa.h"
+#include "agg_scanline_bin.h"
 
 namespace mapnik { namespace geometry {
 
 template <typename T>
-struct grid_vertex_adapter
+struct grid_vertex_adapter2
 {
     using value_type = typename point<T>::value_type;
 
-    grid_vertex_adapter(polygon<T> const & geom, T dx, T dy)
-        : grid_vertex_adapter(geom, dx, dy, envelope(geom))
+    grid_vertex_adapter2(polygon<T> const & geom, T dx, T dy)
+        : grid_vertex_adapter2(geom, dx, dy, envelope(geom))
     {
     }
 
@@ -73,7 +83,7 @@ struct grid_vertex_adapter
     }
 
 private:
-    grid_vertex_adapter(polygon<T> const & geom, T dx, T dy, box2d<T> box)
+    grid_vertex_adapter2(polygon<T> const & geom, T dx, T dy, box2d<T> box)
         : geom_(geom),
           dx_(dx),
           dy_(dy),
@@ -91,6 +101,76 @@ private:
     const unsigned count_x_, count_y_;
     const T start_x_, start_y_;
     mutable unsigned x_, y_;
+};
+
+template <typename T>
+struct grid_vertex_adapter
+{
+    using value_type = typename point<T>::value_type;
+
+    grid_vertex_adapter(polygon<T> const & geom, T dx, T dy)
+        : grid_vertex_adapter(geom, dx, dy, envelope(geom))
+    {
+    }
+
+    void rewind(unsigned) const
+    {
+        x_ = 0;
+        y_ = 0;
+    }
+
+    unsigned vertex(value_type * x, value_type * y) const
+    {
+        for (; y_ < img_.height(); y_++, x_ = 0)
+        {
+            image_gray8::pixel_type const * row = img_.get_row(y_);
+            for (; x_ < img_.width(); x_++)
+            {
+                if (row[x_])
+                {
+                    *x = x_;
+                    *y = y_;
+                    vt_.backward(x, y);
+                    x_++;
+                    return mapnik::SEG_MOVETO;
+                }
+            }
+        }
+        return mapnik::SEG_END;
+    }
+
+    geometry_types type() const
+    {
+        return geometry_types::MultiPoint;
+    }
+
+private:
+    grid_vertex_adapter(polygon<T> const & geom, T dx, T dy, box2d<T> box)
+        : x_(0),
+          y_(0),
+          img_(box.width() / dx, box.height() / dy),
+          vt_(img_.width(), img_.height(), box)
+    {
+        view_strategy vs(vt_);
+        auto geom2 = transform<T>(geom, vs);
+        polygon_vertex_adapter<T> va(geom2);
+        agg::rasterizer_scanline_aa<> ras;
+        ras.add_path(va);
+
+        agg::rendering_buffer buf(img_.data(), img_.width(), img_.height(), img_.row_size());
+        agg::pixfmt_gray8 pixfmt(buf);
+        using renderer_base = agg::renderer_base<agg::pixfmt_gray8>;
+        using renderer_bin = agg::renderer_scanline_bin_solid<renderer_base>;
+        renderer_base rb(pixfmt);
+        renderer_bin ren_bin(rb);
+        ren_bin.color(agg::gray8(1));
+        agg::scanline_bin sl_bin;
+        agg::render_scanlines(ras, sl_bin, ren_bin);
+    }
+
+    mutable unsigned x_, y_;
+    image_gray8 img_;
+    view_transform vt_;
 };
 
 template <typename Processor, typename T>
