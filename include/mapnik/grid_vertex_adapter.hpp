@@ -23,6 +23,7 @@
 #ifndef MAPNIK_GRID_ADAPTERS_HPP
 #define MAPNIK_GRID_ADAPTERS_HPP
 
+// mapnik
 #include <mapnik/geometry.hpp>
 #include <mapnik/geometry_types.hpp>
 #include <mapnik/vertex.hpp>
@@ -30,8 +31,68 @@
 #include <mapnik/proj_strategy.hpp>
 #include <mapnik/view_strategy.hpp>
 #include <mapnik/geometry_transform.hpp>
+#include <mapnik/image.hpp>
+#include <mapnik/image_util.hpp>
+
+// agg
+#include "agg_rendering_buffer.h"
+#include "agg_pixfmt_gray.h"
+#include "agg_renderer_base.h"
+#include "agg_renderer_scanline.h"
+#include "agg_rasterizer_scanline_aa.h"
+#include "agg_scanline_bin.h"
 
 namespace mapnik { namespace geometry {
+
+class spiral_iterator
+{
+public:
+    spiral_iterator(int x, int y)
+        : size_x_(x), size_y_(y),
+          end_(std::max(x, y) * std::max(x, y)),
+          i_(0),
+          x_(0), y_(0)
+    {
+    }
+
+    bool vertex(int * x, int * y)
+    {
+        while (i_ < end_)
+        {
+            int xp = x_ + size_x_ / 2;
+            int yp = y_ + size_y_ / 2;
+            if (std::abs(x_) <= std::abs(y_) && (x_ != y_ || x_ >= 0))
+            {
+                x_ += ((y_ >= 0) ? 1 : -1);
+            }
+            else
+            {
+                y_ += ((x_ >= 0) ? -1 : 1);
+            }
+            ++i_;
+            if (xp >= 0 && xp < size_x_ && yp >= 0 && yp < size_y_)
+            {
+                *x = xp;
+                *y = yp;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void rewind()
+    {
+        i_ = 0;
+        x_ = 0;
+        y_ = 0;
+    }
+
+private:
+    const int size_x_, size_y_;
+    const int end_;
+    int i_;
+    int x_, y_;
+};
 
 template <typename T>
 struct grid_vertex_adapter
@@ -45,23 +106,22 @@ struct grid_vertex_adapter
 
     void rewind(unsigned) const
     {
-        x_ = 0;
-        y_ = 0;
+        si_.rewind();
     }
 
     unsigned vertex(value_type * x, value_type * y) const
     {
-        for (; y_ < count_y_; y_++, x_ = 0)
+        int x_int, y_int;
+        while (si_.vertex(&x_int, &y_int))
         {
-            for (; x_ < count_x_; x_++)
+            if (get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
             {
-                *x = start_x_ + dx_ * x_;
-                *y = start_y_ + dy_ * y_;
-                if (hit_test(geom_, *x, *y, 0))
-                {
-                    x_++;
-                    return mapnik::SEG_MOVETO;
-                }
+                *x = x_int;
+                *y = y_int;
+                vt_.backward(x, y);
+                *x += dx_ / 2.0;
+                *y -= dy_ / 2.0;
+                return mapnik::SEG_MOVETO;
             }
         }
         return mapnik::SEG_END;
@@ -74,23 +134,32 @@ struct grid_vertex_adapter
 
 private:
     grid_vertex_adapter(polygon<T> const & geom, T dx, T dy, box2d<T> box)
-        : geom_(geom),
-          dx_(dx),
-          dy_(dy),
-          count_x_(box.width() / dx_),
-          count_y_(box.height() / dy_),
-          start_x_(box.minx() + (box.width() - dx_ * count_x_) / 2.0),
-          start_y_(box.miny() + (box.height() - dy_ * count_y_) / 2.0),
-          x_(0),
-          y_(0)
+        : dx_(dx), dy_(dy),
+          img_(box.width() / dx, box.height() / dy),
+          vt_(img_.width(), img_.height(), box),
+          si_(img_.width(), img_.height())
     {
+        view_strategy vs(vt_);
+        auto geom2 = transform<T>(geom, vs);
+        polygon_vertex_adapter<T> va(geom2);
+        agg::rasterizer_scanline_aa<> ras;
+        ras.add_path(va);
+
+        agg::rendering_buffer buf(img_.data(), img_.width(), img_.height(), img_.row_size());
+        agg::pixfmt_gray8 pixfmt(buf);
+        using renderer_base = agg::renderer_base<agg::pixfmt_gray8>;
+        using renderer_bin = agg::renderer_scanline_bin_solid<renderer_base>;
+        renderer_base rb(pixfmt);
+        renderer_bin ren_bin(rb);
+        ren_bin.color(agg::gray8(1));
+        agg::scanline_bin sl_bin;
+        agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
-    polygon<T> const & geom_;
     const T dx_, dy_;
-    const unsigned count_x_, count_y_;
-    const T start_x_, start_y_;
-    mutable unsigned x_, y_;
+    image_gray8 img_;
+    const view_transform vt_;
+    mutable spiral_iterator si_;
 };
 
 template <typename Processor, typename T>
