@@ -32,6 +32,7 @@
 #include <mapnik/view_strategy.hpp>
 #include <mapnik/geometry_transform.hpp>
 #include <mapnik/image.hpp>
+#include <mapnik/image_util.hpp>
 
 // agg
 #include "agg_rendering_buffer.h"
@@ -43,64 +44,54 @@
 
 namespace mapnik { namespace geometry {
 
-template <typename T>
-struct grid_vertex_adapter2
+class spiral_iterator
 {
-    using value_type = typename point<T>::value_type;
-
-    grid_vertex_adapter2(polygon<T> const & geom, T dx, T dy)
-        : grid_vertex_adapter2(geom, dx, dy, envelope(geom))
+public:
+    spiral_iterator(int x, int y)
+        : size_x_(x), size_y_(y),
+          end_(std::max(x, y) * std::max(x, y)),
+          i_(0),
+          x_(0), y_(0)
     {
     }
 
-    void rewind(unsigned) const
+    bool vertex(int * x, int * y)
     {
+        while (i_ < end_)
+        {
+            int xp = x_ + size_x_ / 2;
+            int yp = y_ + size_y_ / 2;
+            if (std::abs(x_) <= std::abs(y_) && (x_ != y_ || x_ >= 0))
+            {
+                x_ += ((y_ >= 0) ? 1 : -1);
+            }
+            else
+            {
+                y_ += ((x_ >= 0) ? -1 : 1);
+            }
+            ++i_;
+            if (xp >= 0 && xp < size_x_ && yp >= 0 && yp < size_y_)
+            {
+                *x = xp;
+                *y = yp;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void rewind()
+    {
+        i_ = 0;
         x_ = 0;
         y_ = 0;
     }
 
-    unsigned vertex(value_type * x, value_type * y) const
-    {
-        for (; y_ < count_y_; y_++, x_ = 0)
-        {
-            for (; x_ < count_x_; x_++)
-            {
-                *x = start_x_ + dx_ * x_;
-                *y = start_y_ + dy_ * y_;
-                if (hit_test(geom_, *x, *y, 0))
-                {
-                    x_++;
-                    return mapnik::SEG_MOVETO;
-                }
-            }
-        }
-        return mapnik::SEG_END;
-    }
-
-    geometry_types type() const
-    {
-        return geometry_types::MultiPoint;
-    }
-
 private:
-    grid_vertex_adapter2(polygon<T> const & geom, T dx, T dy, box2d<T> box)
-        : geom_(geom),
-          dx_(dx),
-          dy_(dy),
-          count_x_(box.width() / dx_),
-          count_y_(box.height() / dy_),
-          start_x_(box.minx() + (box.width() - dx_ * count_x_) / 2.0),
-          start_y_(box.miny() + (box.height() - dy_ * count_y_) / 2.0),
-          x_(0),
-          y_(0)
-    {
-    }
-
-    polygon<T> const & geom_;
-    const T dx_, dy_;
-    const unsigned count_x_, count_y_;
-    const T start_x_, start_y_;
-    mutable unsigned x_, y_;
+    const int size_x_, size_y_;
+    const int end_;
+    int i_;
+    int x_, y_;
 };
 
 template <typename T>
@@ -115,25 +106,22 @@ struct grid_vertex_adapter
 
     void rewind(unsigned) const
     {
-        x_ = 0;
-        y_ = 0;
+        si_.rewind();
     }
 
     unsigned vertex(value_type * x, value_type * y) const
     {
-        for (; y_ < img_.height(); y_++, x_ = 0)
+        int x_int, y_int;
+        while (si_.vertex(&x_int, &y_int))
         {
-            image_gray8::pixel_type const * row = img_.get_row(y_);
-            for (; x_ < img_.width(); x_++)
+            if (get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
             {
-                if (row[x_])
-                {
-                    *x = x_;
-                    *y = y_;
-                    vt_.backward(x, y);
-                    x_++;
-                    return mapnik::SEG_MOVETO;
-                }
+                *x = x_int;
+                *y = y_int;
+                vt_.backward(x, y);
+                *x += dx_ / 2.0;
+                *y -= dy_ / 2.0;
+                return mapnik::SEG_MOVETO;
             }
         }
         return mapnik::SEG_END;
@@ -146,10 +134,10 @@ struct grid_vertex_adapter
 
 private:
     grid_vertex_adapter(polygon<T> const & geom, T dx, T dy, box2d<T> box)
-        : x_(0),
-          y_(0),
+        : dx_(dx), dy_(dy),
           img_(box.width() / dx, box.height() / dy),
-          vt_(img_.width(), img_.height(), box)
+          vt_(img_.width(), img_.height(), box),
+          si_(img_.width(), img_.height())
     {
         view_strategy vs(vt_);
         auto geom2 = transform<T>(geom, vs);
@@ -168,9 +156,10 @@ private:
         agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
-    mutable unsigned x_, y_;
+    const T dx_, dy_;
     image_gray8 img_;
-    view_transform vt_;
+    const view_transform vt_;
+    mutable spiral_iterator si_;
 };
 
 template <typename Processor, typename T>
