@@ -48,7 +48,7 @@ class spiral_iterator
 {
 public:
     spiral_iterator(int x, int y)
-        : size_x_(x), size_y_(y),
+        : size_x(x), size_y(y),
           end_(std::max(x, y) * std::max(x, y)),
           i_(0),
           x_(0), y_(0)
@@ -59,8 +59,8 @@ public:
     {
         while (i_ < end_)
         {
-            int xp = x_ + size_x_ / 2;
-            int yp = y_ + size_y_ / 2;
+            int xp = x_ + size_x / 2;
+            int yp = y_ + size_y / 2;
             if (std::abs(x_) <= std::abs(y_) && (x_ != y_ || x_ >= 0))
             {
                 x_ += ((y_ >= 0) ? 1 : -1);
@@ -70,7 +70,7 @@ public:
                 y_ += ((x_ >= 0) ? -1 : 1);
             }
             ++i_;
-            if (xp >= 0 && xp < size_x_ && yp >= 0 && yp < size_y_)
+            if (xp >= 0 && xp < size_x && yp >= 0 && yp < size_y)
             {
                 *x = xp;
                 *y = yp;
@@ -87,8 +87,9 @@ public:
         y_ = 0;
     }
 
+    const int size_x, size_y;
+
 private:
-    const int size_x_, size_y_;
     const int end_;
     int i_;
     int x_, y_;
@@ -114,13 +115,10 @@ struct grid_vertex_adapter
         int x_int, y_int;
         while (si_.vertex(&x_int, &y_int))
         {
-            if (get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
+            *x = start_x_ + dx_ * x_int;
+            *y = start_y_ + dy_ * y_int;
+            if (hit_test(geom_, *x, *y, 0))
             {
-                *x = x_int;
-                *y = y_int;
-                vt_.backward(x, y);
-                *x += dx_ / 2.0;
-                *y -= dy_ / 2.0;
                 return mapnik::SEG_MOVETO;
             }
         }
@@ -134,32 +132,19 @@ struct grid_vertex_adapter
 
 private:
     grid_vertex_adapter(polygon<T> const & geom, T dx, T dy, box2d<T> box)
-        : dx_(dx), dy_(dy),
-          img_(box.width() / dx, box.height() / dy),
-          vt_(img_.width(), img_.height(), box),
-          si_(img_.width(), img_.height())
+        : geom_(geom),
+          dx_(dx),
+          dy_(dy),
+          si_(box.width() / dx_, box.height() / dy_),
+          start_x_(box.minx() + (box.width() - dx_ * si_.size_x) / 2.0),
+          start_y_(box.miny() + (box.height() - dy_ * si_.size_y) / 2.0)
     {
-        view_strategy vs(vt_);
-        auto geom2 = transform<T>(geom, vs);
-        polygon_vertex_adapter<T> va(geom2);
-        agg::rasterizer_scanline_aa<> ras;
-        ras.add_path(va);
-
-        agg::rendering_buffer buf(img_.data(), img_.width(), img_.height(), img_.row_size());
-        agg::pixfmt_gray8 pixfmt(buf);
-        using renderer_base = agg::renderer_base<agg::pixfmt_gray8>;
-        using renderer_bin = agg::renderer_scanline_bin_solid<renderer_base>;
-        renderer_base rb(pixfmt);
-        renderer_bin ren_bin(rb);
-        ren_bin.color(agg::gray8(1));
-        agg::scanline_bin sl_bin;
-        agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
+    polygon<T> const & geom_;
     const T dx_, dy_;
-    image_gray8 img_;
-    const view_transform vt_;
     mutable spiral_iterator si_;
+    const T start_x_, start_y_;
 };
 
 template <typename Processor, typename T>
