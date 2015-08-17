@@ -179,8 +179,8 @@ text_placement_info_ptr text_placements_simple::get_placement_info(double scale_
         else
         {
             // Add 0.5 to ensure boxes won't intersect.
-            dx += sym->second.box.width() / 2.0 + .5;
-            dy += sym->second.box.height() / 2.0 + .5;
+            dx += sym->second.box.width() / (2.0 * scale_factor) + .5;
+            dy += sym->second.box.height() / (2.0 * scale_factor) + .5;
         }
     }
 

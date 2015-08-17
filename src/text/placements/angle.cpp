@@ -205,7 +205,7 @@ bool text_placement_info_angle::next() const
 double text_placement_info_angle::displacement(double const& box_size, symbolizer_base::value_type const& displacement) const
 {
     double d = util::apply_visitor(extract_value<double>(feature_, vars_), displacement);
-    return box_size / 2.0 + d + .5;
+    return box_size / (2.0 * scale_factor) + d + .5;
 }
 
 void text_placement_info_angle::get_point(double angle, double &x, double &y) const
