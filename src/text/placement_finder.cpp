@@ -239,7 +239,18 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
             text_layout::const_iterator longest_line = layout.longest_line();
             if (longest_line != layout.end())
             {
-                adjust_character_spacing = (pp.length() - longest_line->glyphs_width()) / longest_line->space_count();
+                double longest_line_offset = offset;
+                for (text_layout::const_iterator line = layout.begin(); line != longest_line; line++)
+                {
+                    longest_line_offset += sign * line->height();
+                }
+                longest_line_offset += sign * longest_line->height() / 2.0;
+                vertex_cache const & off_pp = pp.get_offseted(longest_line_offset, sign * layout_width);
+                adjust_character_spacing = (off_pp.length() - longest_line->glyphs_width()) / longest_line->space_count();
+                if (adjust_character_spacing < 0)
+                {
+                    return false;
+                }
                 layout_width = longest_line->glyphs_width() + longest_line->space_count() * adjust_character_spacing;
             }
         }
