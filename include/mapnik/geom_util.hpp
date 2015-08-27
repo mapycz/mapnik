@@ -285,6 +285,32 @@ bool hit_test_first(PathType & path, double x, double y)
     return inside;
 }
 
+template <typename PathType>
+box2d<double> envelope(PathType & path)
+{
+    box2d<double> result;
+    double x = 0, y = 0;
+    bool init = false;
+    path.rewind(0);
+    for (unsigned cmd; (cmd = path.vertex(&x, &y)) != SEG_END; )
+    {
+        if (cmd == SEG_CLOSE)
+        {
+            continue;
+        }
+        if (init)
+        {
+            result.expand_to_include(x, y);
+        }
+        else
+        {
+            result.init(x, y, x, y);
+            init = true;
+        }
+    }
+    return result;
+}
+
 namespace label {
 
 template <typename PathType>

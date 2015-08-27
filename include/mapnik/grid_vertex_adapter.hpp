@@ -24,15 +24,10 @@
 #define MAPNIK_GRID_ADAPTERS_HPP
 
 // mapnik
-#include <mapnik/geometry.hpp>
-#include <mapnik/geometry_types.hpp>
 #include <mapnik/vertex.hpp>
-#include <mapnik/hit_test_filter.hpp>
-#include <mapnik/proj_strategy.hpp>
-#include <mapnik/view_strategy.hpp>
-#include <mapnik/geometry_transform.hpp>
 #include <mapnik/image.hpp>
 #include <mapnik/image_util.hpp>
+#include <mapnik/geom_util.hpp>
 
 // agg
 #include "agg_rendering_buffer.h"
@@ -95,19 +90,20 @@ private:
     int x_, y_;
 };
 
-template <typename T>
+template <typename PathType, typename T>
 struct grid_vertex_adapter
 {
     using value_type = typename point<T>::value_type;
 
-    grid_vertex_adapter(polygon<T> const & geom, T dx, T dy)
-        : grid_vertex_adapter(geom, dx, dy, envelope(geom))
+    grid_vertex_adapter(PathType & path, T dx, T dy)
+        : grid_vertex_adapter(path, dx, dy, mapnik::envelope(path))
     {
     }
 
     void rewind(unsigned) const
     {
         si_.rewind();
+        path_.rewind(0);
     }
 
     unsigned vertex(value_type * x, value_type * y) const
@@ -117,7 +113,7 @@ struct grid_vertex_adapter
         {
             *x = start_x_ + dx_ * x_int;
             *y = start_y_ + dy_ * y_int;
-            if (hit_test(geom_, *x, *y, 0))
+            if (label::hit_test(path_, *x, *y, 0))
             {
                 return mapnik::SEG_MOVETO;
             }
@@ -131,8 +127,8 @@ struct grid_vertex_adapter
     }
 
 private:
-    grid_vertex_adapter(polygon<T> const & geom, T dx, T dy, box2d<T> box)
-        : geom_(geom),
+    grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
+        : path_(path),
           dx_(dx),
           dy_(dy),
           si_(box.width() / dx_, box.height() / dy_),
@@ -141,57 +137,10 @@ private:
     {
     }
 
-    polygon<T> const & geom_;
+    PathType & path_;
     const T dx_, dy_;
     mutable spiral_iterator si_;
     const T start_x_, start_y_;
-};
-
-template <typename Processor, typename T>
-struct grid_vertex_processor
-{
-    using processor_type = Processor;
-
-    grid_vertex_processor(processor_type & proc, view_strategy const & vs, proj_strategy const & ps, double dx, double dy)
-        : proc_(proc), vs_(vs), ps_(ps), dx_(dx), dy_(dy)
-    {
-    }
-
-    template <typename Geometry>
-    void operator() (Geometry const& geom)
-    {
-    }
-
-    void operator() (polygon<T> const& poly)
-    {
-        auto geom = transform<double>(transform<double>(poly, ps_), vs_);
-        grid_vertex_adapter<T> va(geom, dx_, dy_);
-        proc_(va);
-    }
-
-    void operator() (multi_polygon<T> const& multi_poly)
-    {
-        for ( auto const& poly : multi_poly)
-        {
-            auto geom = transform<double>(transform<double>(poly, ps_), vs_);
-            grid_vertex_adapter<T> va(geom, dx_, dy_);
-            proc_(va);
-        }
-    }
-
-    void operator() (geometry_collection<T> const& collection)
-    {
-        for (auto const& geom : collection)
-        {
-            operator()(geom);
-        }
-    }
-
-private:
-    processor_type & proc_;
-    view_strategy const & vs_;
-    proj_strategy const & ps_;
-    const T dx_, dy_;
 };
 
 }

@@ -28,11 +28,10 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
-#include <mapnik/geometry.hpp>
 #include <mapnik/geometry_type.hpp>
+#include <mapnik/geometry.hpp>
 #include <mapnik/geometry_centroid.hpp>
 #include <mapnik/vertex_processor.hpp>
-#include <mapnik/geom_util.hpp>
 #include <mapnik/parse_path.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/symbolizer.hpp>
@@ -40,9 +39,9 @@
 #include <mapnik/text/placement_finder_impl.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/placements/dummy.hpp>
-#include <mapnik/grid_vertex_adapter.hpp>
 #include <mapnik/proj_strategy.hpp>
 #include <mapnik/view_strategy.hpp>
+#include <mapnik/grid_vertex_adapter.hpp>
 
 //agg
 #include "agg_conv_clip_polyline.h"
@@ -77,20 +76,20 @@ struct apply_vertex_placement
     proj_transform const& prj_trans_;
 };
 
-template <typename Points>
-struct apply_grid_placement
+template <typename T, typename Points>
+struct grid_placement_finder_adapter
 {
-    apply_grid_placement(Points & points)
-        : points_(points)
-    {
-    }
+    grid_placement_finder_adapter(T dx, T dy, Points & points)
+        : dx_(dx), dy_(dy),
+          points_(points) {}
 
-    template <typename Adapter>
-    void operator() (Adapter const& va) const
+    template <typename PathT>
+    void add_path(PathT & path) const
     {
-        double label_x, label_y, z = 0;
-        va.rewind(0);
-        for (unsigned cmd; (cmd = va.vertex(&label_x, &label_y)) != SEG_END; )
+        geometry::grid_vertex_adapter<PathT, T> gpa(path, dx_, dy_);
+        gpa.rewind(0);
+        double label_x, label_y;
+        for (unsigned cmd; (cmd = gpa.vertex(&label_x, &label_y)) != SEG_END; )
         {
             if (cmd != SEG_CLOSE)
             {
@@ -98,6 +97,8 @@ struct apply_grid_placement
             }
         }
     }
+
+    T dx_, dy_;
     Points & points_;
 };
 
@@ -246,6 +247,11 @@ void base_symbolizer_helper::initialize_points() const
         point_placement_ = true;
     }
 
+    if (how_placed == GRID_PLACEMENT)
+    {
+        return;
+    }
+
     double label_x=0.0;
     double label_y=0.0;
     double z=0.0;
@@ -257,15 +263,6 @@ void base_symbolizer_helper::initialize_points() const
             using apply_vertex_placement = detail::apply_vertex_placement<std::list<pixel_position> >;
             apply_vertex_placement apply(points_, t_, prj_trans_);
             util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
-        }
-        else if (how_placed == GRID_PLACEMENT)
-        {
-            view_strategy vs(t_);
-            proj_strategy ps(proj_transform(prj_trans_.dest(), prj_trans_.source()));
-            using apply_grid_placement = detail::apply_grid_placement<std::list<pixel_position>>;
-            apply_grid_placement apply(points_);
-            util::apply_visitor(geometry::grid_vertex_processor<apply_grid_placement, double>(
-                apply, vs, ps, text_props_->grid_cell_width, text_props_->grid_cell_height), geom);
         }
         else
         {
@@ -329,19 +326,37 @@ text_symbolizer_helper::text_symbolizer_helper(
     adapter_(finder_,false),
     converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
+    init_converters();
 
+    if (geometries_to_process_.size())
+    {
+        text_symbolizer_helper::initialize_points();
+        finder_.next_position();
+    }
+}
+
+void text_symbolizer_helper::init_converters()
+{
     // setup vertex converter
     value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
     value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(sym_, feature_, vars_);
     value_double smooth = mapnik::get<value_double, keys::smooth>(sym_, feature_, vars_);
-
-    if (clip) converter_.template set<clip_line_tag>(); //optional clip (default: true)
+    if (clip)
+    {
+        label_placement_enum how_placed = text_props_->label_placement;
+        if (how_placed == GRID_PLACEMENT)
+        {
+            converter_.template set<clip_poly_tag>();
+        }
+        else
+        {
+            converter_.template set<clip_line_tag>();
+        }
+    }
     converter_.template set<transform_tag>(); //always transform
     converter_.template set<affine_transform_tag>();
     if (simplify_tolerance > 0.0) converter_.template set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter_.template set<smooth_tag>(); // optional smooth converter
-
-    if (geometries_to_process_.size()) finder_.next_position();
 }
 
 placements_list const& text_symbolizer_helper::get() const
@@ -456,18 +471,11 @@ text_symbolizer_helper::text_symbolizer_helper(
       adapter_(finder_,true),
       converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
-   // setup vertex converter
-    value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
-    value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(sym_, feature_, vars_);
-    value_double smooth = mapnik::get<value_double, keys::smooth>(sym_, feature_, vars_);
+    init_converters();
 
-    if (clip) converter_.template set<clip_line_tag>(); //optional clip (default: true)
-    converter_.template set<transform_tag>(); //always transform
-    converter_.template set<affine_transform_tag>();
-    if (simplify_tolerance > 0.0) converter_.template set<simplify_tag>(); // optional simplify converter
-    if (smooth > 0.0) converter_.template set<smooth_tag>(); // optional smooth converter
     if (geometries_to_process_.size())
     {
+        text_symbolizer_helper::initialize_points();
         init_marker();
         finder_.next_position();
     }
@@ -508,6 +516,27 @@ void text_symbolizer_helper::init_marker() const
     finder_.set_marker(std::make_shared<marker_info>(marker, trans), bbox, unlock_image, marker_displacement);
 }
 
+void text_symbolizer_helper::initialize_points() const
+{
+    label_placement_enum how_placed = text_props_->label_placement;
+
+    if (how_placed == GRID_PLACEMENT)
+    {
+        for (auto const& geom : geometries_to_process_)
+        {
+            auto type = geometry::geometry_type(geom);
+            if (type == geometry::geometry_types::Polygon)
+            {
+                detail::grid_placement_finder_adapter<double, std::list<pixel_position>> ga(
+                    text_props_->grid_cell_width, text_props_->grid_cell_height, points_);
+                auto const& poly = mapnik::util::get<geometry::polygon<double>>(geom);
+                geometry::polygon_vertex_adapter<double> va(poly);
+                converter_.apply(va, ga);
+            }
+        }
+    }
+    point_itr_ = points_.begin();
+}
 
 template text_symbolizer_helper::text_symbolizer_helper(
     text_symbolizer const& sym,
