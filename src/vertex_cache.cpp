@@ -24,6 +24,7 @@
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/offset_converter.hpp>
 #include <mapnik/make_unique.hpp>
+#include <mapnik/util/alternating_iterator.hpp>
 
 namespace mapnik
 {
@@ -152,6 +153,37 @@ vertex_cache & vertex_cache::get_offseted(double offset, double region_width)
 
     offseted_line->reset();
     offseted_line->next_subpath(); //TODO: Multiple subpath support
+
+
+    pixel_position current_segment_vector = current_segment_->pos - segment_starting_point_;
+    pixel_position current_segment_ortogonal_vector(-current_segment_vector.y, current_segment_vector.x);
+    pixel_position offset_vector = current_segment_ortogonal_vector * (offset / current_segment_vector.length());
+    pixel_position offsetted_position = current_position_ + offset_vector;
+    double offsetted_linear_position = position_ * offseted_line->length() / length();
+    std::vector<segment> const & segments = offseted_line->current_subpath_->vector;
+    std::size_t segment_position = offseted_line->current_subpath_->at(offsetted_linear_position) - segments.begin();
+    alternating_iterator<segment, std::vector> i(segments, segment_position);
+    alternating_iterator<segment, std::vector> end_i(segments);
+
+    for (; i != end_i; ++i)
+    {
+        std::vector<segment>::const_iterator base = i.base();
+        if (base != segments.begin())
+        {
+            pixel_position starting_point = (base - 1)->pos;
+            pixel_position end_point = base->pos;
+            if (std::abs((end_point - starting_point) * current_segment_ortogonal_vector) < 0.001 &&
+                offsetted_position.x >= std::min(starting_point.x, end_point.x) &&
+                offsetted_position.x <= std::max(starting_point.x, end_point.x) &&
+                offsetted_position.y >= std::min(starting_point.y, end_point.y) &&
+                offsetted_position.y <= std::max(starting_point.y, end_point.y))
+            {
+            }
+        }
+    }
+
+
+
 
     // find the point on the offset line closest to the current position,
     // which we'll use to make the offset line aligned to this one.

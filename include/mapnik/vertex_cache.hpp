@@ -56,14 +56,32 @@ class MAPNIK_DECL vertex_cache : util::noncopyable
     struct segment_vector
     {
         segment_vector() : vector(), length(0.) {}
-        void add_segment(double x, double y, double len) {
-            if (len == 0. && !vector.empty()) return; //Don't add zero length segments
+        void add_segment(double x, double y, double len)
+        {
+            if (len == 0. && !vector.empty())
+            {
+                return; //Don't add zero length segments
+            }
             vector.emplace_back(x, y, len);
             length += len;
         }
         using iterator = std::vector<segment>::iterator;
+        using const_iterator = std::vector<segment>::const_iterator;
         std::vector<segment> vector;
         double length;
+
+        const_iterator at(double linear_position)
+        {
+            for (const_iterator i = vector.begin(); i != vector.end(); ++i)
+            {
+                if (i->length < linear_position)
+                {
+                    return i;
+                }
+                linear_position -= i->length;
+            }
+            return vector.end();
+        }
     };
 
 public:

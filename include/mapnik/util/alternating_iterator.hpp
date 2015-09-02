@@ -91,6 +91,15 @@ public:
         return i_ != rhs.i_ || ri_ != rhs.ri_;
     }
 
+    typename container_type::const_iterator base()
+    {
+        if (is_forward_ && ri_ == cont_.crend())
+        {
+            return cont_.begin();
+        }
+        return is_forward_ ? (ri_ + 1).base() : i_;
+    }
+
 private:
     container_type const & cont_;
     typename container_type::const_iterator i_;

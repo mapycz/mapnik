@@ -54,6 +54,11 @@ struct pixel_position
         return pixel_position(x * other, y * other);
     }
 
+    double operator* (pixel_position const & rhs) const
+    {
+        return x * rhs.x + y * rhs.y;
+    }
+
     void set(double x_, double y_)
     {
         x = x_;
