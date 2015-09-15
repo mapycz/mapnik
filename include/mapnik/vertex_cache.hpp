@@ -70,11 +70,11 @@ class MAPNIK_DECL vertex_cache : util::noncopyable
         std::vector<segment> vector;
         double length;
 
-        const_iterator at(double linear_position)
+        const_iterator at(double & linear_position)
         {
             for (const_iterator i = vector.begin(); i != vector.end(); ++i)
             {
-                if (i->length < linear_position)
+                if (i->length <= linear_position)
                 {
                     return i;
                 }
@@ -83,6 +83,14 @@ class MAPNIK_DECL vertex_cache : util::noncopyable
             return vector.end();
         }
     };
+
+    struct segment_distance
+    {
+        segment_vector::const_iterator segment;
+        double distance;
+        double position;
+    };
+    segment_distance distance_sq(segment_vector::const_iterator i, pixel_position const & target_pos);
 
 public:
     // This class has no public members to avoid acciedential modification.
@@ -153,9 +161,6 @@ public:
     void restore_state(state const& s);
     // Go back to initial state.
     void reset();
-
-    // position on this line closest to the target position
-    double position_closest_to(pixel_position const &target_pos);
 
 private:
     void rewind_subpath();

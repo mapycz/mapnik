@@ -25,6 +25,7 @@
 #include <mapnik/offset_converter.hpp>
 #include <mapnik/make_unique.hpp>
 #include <mapnik/util/alternating_iterator.hpp>
+#include <cassert>
 
 namespace mapnik
 {
@@ -135,6 +136,32 @@ bool vertex_cache::previous_segment()
     return true;
 }
 
+using distance_and_position = std::tuple<double, double>;
+
+inline double dist_sq(pixel_position const &d)
+{
+    return d.x * d.x + d.y * d.y;
+}
+
+vertex_cache::segment_distance vertex_cache::distance_sq(segment_vector::const_iterator i, pixel_position const & target_pos)
+{
+    pixel_position begin = (i - 1)->pos;
+    pixel_position end = i->pos;
+    pixel_position d = end - begin;
+    if (d.x != 0.0 || d.y != 0)
+    {
+        pixel_position c = target_pos - begin;
+        double t = (c.x * d.x + c.y * d.y) / dist_sq(d);
+
+        if (t >= 0.0 && t <= 1.0)
+        {
+            pixel_position pt = (d * t) + begin;
+            return vertex_cache::segment_distance { i, dist_sq(target_pos - pt), t };
+        }
+    }
+    return vertex_cache::segment_distance { i, dist_sq(end - target_pos), 1 };
+}
+
 vertex_cache & vertex_cache::get_offseted(double offset, double region_width)
 {
     if (std::fabs(offset) < 0.01)
@@ -154,105 +181,69 @@ vertex_cache & vertex_cache::get_offseted(double offset, double region_width)
     offseted_line->reset();
     offseted_line->next_subpath(); //TODO: Multiple subpath support
 
+    double start_position = position_ * offseted_line->length() / length();
+    double remainder = start_position;
+    segment_vector::const_iterator start_segment = offseted_line->current_subpath_->at(remainder);
+    assert(start_segment != offseted_line->current_subpath_->vector.cbegin());
+    vertex_cache::segment_distance start_distance = distance_sq(start_segment, current_position_);
+    vertex_cache::segment_distance min_distance = start_distance;
 
-    pixel_position current_segment_vector = current_segment_->pos - segment_starting_point_;
-    pixel_position current_segment_ortogonal_vector(-current_segment_vector.y, current_segment_vector.x);
-    pixel_position offset_vector = current_segment_ortogonal_vector * (offset / current_segment_vector.length());
-    pixel_position offsetted_position = current_position_ + offset_vector;
-    double offsetted_linear_position = position_ * offseted_line->length() / length();
-    std::vector<segment> const & segments = offseted_line->current_subpath_->vector;
-    std::size_t segment_position = offseted_line->current_subpath_->at(offsetted_linear_position) - segments.begin();
-    alternating_iterator<segment, std::vector> i(segments, segment_position);
-    alternating_iterator<segment, std::vector> end_i(segments);
-
-    for (; i != end_i; ++i)
+    for (segment_vector::const_iterator i = start_segment + 1; i != offseted_line->current_subpath_->vector.cend(); i++)
     {
-        std::vector<segment>::const_iterator base = i.base();
-        if (base != segments.begin())
+        assert(i != offseted_line->current_subpath_->vector.cbegin());
+        vertex_cache::segment_distance distance = distance_sq(i, current_position_);
+        if (distance.distance > min_distance.distance)
         {
-            pixel_position starting_point = (base - 1)->pos;
-            pixel_position end_point = base->pos;
-            if (std::abs((end_point - starting_point) * current_segment_ortogonal_vector) < 0.001 &&
-                offsetted_position.x >= std::min(starting_point.x, end_point.x) &&
-                offsetted_position.x <= std::max(starting_point.x, end_point.x) &&
-                offsetted_position.y >= std::min(starting_point.y, end_point.y) &&
-                offsetted_position.y <= std::max(starting_point.y, end_point.y))
-            {
-            }
+            break;
+        }
+        if (distance.distance > 0)
+        {
+            min_distance = distance;
         }
     }
 
+    if (min_distance.distance < start_distance.distance)
+    {
+        double position = start_position - remainder;
+        segment_vector::const_iterator i = start_segment + 1;
+        for (; i != min_distance.segment; i++)
+        {
+            position += i->length;
+        }
+        position += i->length * min_distance.position;
+        offseted_line->move(position);
+        return *offseted_line;
+    }
 
+    for (segment_vector::const_iterator i = start_segment - 1; i != offseted_line->current_subpath_->vector.cbegin(); i--)
+    {
+        assert(i != offseted_line->current_subpath_->vector.cbegin());
+        vertex_cache::segment_distance distance = distance_sq(i, current_position_);
+        if (distance.distance > min_distance.distance)
+        {
+            break;
+        }
+        if (distance.distance > 0)
+        {
+            min_distance = distance;
+        }
+    }
 
+    if (min_distance.distance < start_distance.distance)
+    {
+        double position = start_position - remainder;
+        segment_vector::const_iterator i = start_segment - 1;
+        for (; i != min_distance.segment; i--)
+        {
+            position -= i->length;
+        }
+        position -= i->length * (1.0 - min_distance.position);
+        offseted_line->move(position);
+        return *offseted_line;
+    }
 
-    // find the point on the offset line closest to the current position,
-    // which we'll use to make the offset line aligned to this one.
-    double seek = offseted_line->position_closest_to(current_position_);
-    offseted_line->move(seek);
+    offseted_line->move(start_position);
     return *offseted_line;
-}
-
-inline double dist_sq(pixel_position const &d)
-{
-    return d.x*d.x + d.y*d.y;
-}
-
-double vertex_cache::position_closest_to(pixel_position const &target_pos)
-{
-    bool first = true;
-    pixel_position old_pos, new_pos;
-    double lin_pos = 0.0, min_pos = 0.0, min_dist_sq = std::numeric_limits<double>::max();
-
-    // find closest approach of each individual segment to the
-    // target position. would be good if there were some kind
-    // of prior, or fast test to avoid calculating on each
-    // segment, but i can't think of one.
-    for (segment const &seg : current_subpath_->vector)
-    {
-        if (first)
-        {
-            old_pos = seg.pos;
-            min_pos = lin_pos;
-            min_dist_sq = dist_sq(target_pos - old_pos);
-            first = false;
-
-        }
-        else
-        {
-            new_pos = seg.pos;
-
-            pixel_position d = new_pos - old_pos;
-            if ((d.x != 0.0) || (d.y != 0))
-            {
-                pixel_position c = target_pos - old_pos;
-                double t = (c.x * d.x + c.y * d.y) / dist_sq(d);
-
-                if ((t >= 0.0) && (t <= 1.0))
-                {
-                    pixel_position pt = (d * t) + old_pos;
-                    double pt_dist_sq = dist_sq(target_pos - pt);
-
-                    if (pt_dist_sq < min_dist_sq)
-                    {
-                        min_dist_sq = pt_dist_sq;
-                        min_pos = lin_pos + seg.length * t;
-                    }
-                }
-            }
-
-            old_pos = new_pos;
-            lin_pos += seg.length;
-
-            double end_dist_sq = dist_sq(target_pos - old_pos);
-            if (end_dist_sq < min_dist_sq)
-            {
-                min_dist_sq = end_dist_sq;
-                min_pos = lin_pos;
-            }
-        }
-    }
-
-    return min_pos;
 }
 
 bool vertex_cache::forward(double length)
