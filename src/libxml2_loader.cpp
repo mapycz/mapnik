@@ -41,6 +41,7 @@
 #include <libxslt/xsltInternals.h>
 #include <libxslt/transform.h>
 #include <libxslt/xsltutils.h>
+#include <libexslt/exslt.h>
 
 // stl
 #include <stdexcept>
@@ -67,6 +68,7 @@ public:
         {
             throw std::runtime_error("Failed to create parser context.");
         }
+        exsltRegisterAll();
     }
 
     ~libxml2_loader()

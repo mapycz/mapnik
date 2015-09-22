@@ -93,7 +93,7 @@ pretty_dep_names = {
     'pq':'libpq library (postgres client) | try setting PG_CONFIG SCons option or configure with PG_LIBS & PG_INCLUDES',
     'xml2-config':'xml2-config program | try setting XML2_CONFIG SCons option or avoid the need for xml2-config command by configuring with XML2_LIBS & XML2_INCLUDES',
     'libxml2':'libxml2 library | try setting XML2_CONFIG SCons option to point to location of xml2-config program or configure with XML2_LIBS & XML2_INCLUDES',
-    'xslt':'XSLT C library | configure with XSLT_LIBS & XSLT_INCLUDES',
+    'xslt':'XSLT C library | configure with XSLT_LIBS, XSLT_INCLUDES, EXSLT_LIBS, EXSLT_INCLUDES',
     'gdal-config':'gdal-config program | try setting GDAL_CONFIG SCons option',
     'freetype-config':'freetype-config program | try setting FREETYPE_CONFIG SCons option or configure with FREETYPE_LIBS & FREETYPE_INCLUDES',
     'freetype':'libfreetype library | try setting FREETYPE_CONFIG SCons option or configure with FREETYPE_LIBS & FREETYPE_INCLUDES',
@@ -364,6 +364,10 @@ opts.AddVariables(
     ('XML2_INCLUDES', 'Search path for libxml2 include files', ''),
     ('XML2_LIBS', 'Search path for libxml2 library files', ''),
     ('PKG_CONFIG_PATH', 'Use this path to point pkg-config to .pc files instead of the PKG_CONFIG_PATH environment setting',''),
+    PathVariable('XSLT_INCLUDES', 'Search path for libxslt include files', '/usr/include/libxslt', PathVariable.PathAccept),
+    PathVariable('XSLT_LIBS', 'Search path for libxslt library', '/usr/' + LIBDIR_SCHEMA_DEFAULT, PathVariable.PathAccept),
+    PathVariable('EXSLT_INCLUDES', 'Search path for libexslt include files', '/usr/include/libexslt', PathVariable.PathAccept),
+    PathVariable('EXSLT_LIBS', 'Search path for libexslt library', '/usr/' + LIBDIR_SCHEMA_DEFAULT, PathVariable.PathAccept),
 
     # Variables affecting rendering back-ends
 
@@ -410,9 +414,7 @@ opts.AddVariables(
     BoolVariable('SVG2PNG', 'Compile and install a utility to generate render an svg file to a png on the command line', 'False'),
     BoolVariable('NIK2IMG', 'Compile and install a utility to generate render a map to an image', 'True'),
     BoolVariable('COLOR_PRINT', 'Print build status information in color', 'True'),
-    BoolVariable('BIGINT', 'Compile support for 64-bit integers in mapnik::value', 'True'),
-    PathVariable('XSLT_INCLUDES', 'Search path for libxslt include files', '/usr/include/libxslt', PathVariable.PathAccept),
-    PathVariable('XSLT_LIBS', 'Search path for libxslt library', '/usr/' + LIBDIR_SCHEMA_DEFAULT, PathVariable.PathAccept)
+    BoolVariable('BIGINT', 'Compile support for 64-bit integers in mapnik::value', 'True')
     )
 
 # variables to pickle after successful configure step
@@ -478,7 +480,6 @@ pickle_store = [# Scons internal variables
         'SQLITE_LINKFLAGS',
         'BOOST_LIB_VERSION_FROM_HEADER',
         'BIGINT',
-        'XSLT',
         'HOST'
         ]
 
@@ -1242,7 +1243,7 @@ if not preconfigured:
 
     # Adding the required prerequisite library directories to the include path for
     # compiling and the library path for linking, respectively.
-    for required in ('ICU', 'SQLITE', 'HB', 'XSLT'):
+    for required in ('ICU', 'SQLITE', 'HB', 'XSLT', 'EXSLT'):
         inc_path = env['%s_INCLUDES' % required]
         lib_path = env['%s_LIBS' % required]
         env.AppendUnique(CPPPATH = fix_path(inc_path))
@@ -1252,7 +1253,8 @@ if not preconfigured:
         ['z', 'zlib.h', True,'C'],
         [env['ICU_LIB_NAME'],'unicode/unistr.h',True,'C++'],
         ['harfbuzz', 'harfbuzz/hb.h',True,'C++'],
-        ['xslt', 'xslt.h', True, 'C']
+        ['xslt', 'xslt.h', True, 'C'],
+        ['exslt', 'exslt.h', True, 'C']
     ]
 
     if env.get('FREETYPE_LIBS') or env.get('FREETYPE_INCLUDES'):

@@ -87,6 +87,7 @@ if '-DHAVE_WEBP' in env['CPPDEFINES']:
 lib_env['LIBS'].append('xml2')
 
 lib_env['LIBS'].append('xslt')
+lib_env['LIBS'].append('exslt')
 
 if '-DBOOST_REGEX_HAS_ICU' in env['CPPDEFINES']:
     lib_env['LIBS'].append('icui18n')
