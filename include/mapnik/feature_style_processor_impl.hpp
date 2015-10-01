@@ -45,6 +45,7 @@
 #include <mapnik/util/featureset_buffer.hpp>
 #include <mapnik/util/variant.hpp>
 #include <mapnik/symbolizer_dispatch.hpp>
+#include <mapnik/make_unique.hpp>
 
 // stl
 #include <vector>
@@ -71,7 +72,7 @@ struct layer_rendering_material
         proj1_(lay.srs(),true) {}
 };
 
-using layer_rendering_material_ptr = std::shared_ptr<layer_rendering_material>;
+using layer_rendering_material_ptr = std::unique_ptr<layer_rendering_material>;
 
 
 template <typename Processor>
@@ -113,7 +114,7 @@ void feature_style_processor<Processor>::apply(double scale_denom)
         if (lyr.visible(scale_denom))
         {
             std::set<std::string> names;
-            layer_rendering_material_ptr mat = std::make_shared<layer_rendering_material>(lyr, proj);
+            layer_rendering_material_ptr mat = std::make_unique<layer_rendering_material>(lyr, proj);
 
             prepare_layer(*mat,
                           ctx_map,
@@ -129,12 +130,12 @@ void feature_style_processor<Processor>::apply(double scale_denom)
             // Store active material
             if (!mat->active_styles_.empty())
             {
-                mat_list.push_back(mat);
+                mat_list.emplace_back(std::move(mat));
             }
         }
     }
 
-    for ( layer_rendering_material_ptr mat : mat_list )
+    for ( layer_rendering_material_ptr & mat : mat_list )
     {
         if (!mat->active_styles_.empty())
         {
