@@ -27,7 +27,6 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/text/harfbuzz_shaper.hpp>
-#include <mapnik/text/icu_shaper.hpp>
 #include <mapnik/make_unique.hpp>
 
 // ICU
@@ -105,8 +104,7 @@ text_layout::text_layout(face_manager_freetype & font_manager,
       lines_(),
       layout_properties_(layout_defaults),
       properties_(properties),
-      format_(std::make_unique<detail::evaluated_format_properties>()),
-      shape_text_(get_shaper(attrs))
+      format_(std::make_unique<detail::evaluated_format_properties>())
     {
         double dx = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dx);
         double dy = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dy);
@@ -434,7 +432,7 @@ void text_layout::clear()
 
 void text_layout::shape_text(text_line & line)
 {
-    shape_text_(line, itemizer_, width_map_, font_manager_, scale_factor_);
+    harfbuzz_shaper::shape_text(line, itemizer_, width_map_, font_manager_, scale_factor_);
 }
 
 void text_layout::init_auto_alignment()
@@ -498,16 +496,6 @@ text_layout::const_iterator text_layout::longest_line() const
         {
             return line1.glyphs_width() < line2.glyphs_width();
         });
-}
-
-text_layout::shape_text_type text_layout::get_shaper(attributes const & attrs)
-{
-    auto const & v = attrs.find("text-shaper");
-    if (v != attrs.end() && v->second == value_unicode_string("icu"))
-    {
-        return icu_shaper::shape_text;
-    }
-    return harfbuzz_shaper::shape_text;
 }
 
 void layout_container::add(text_layout_ptr layout)

@@ -182,10 +182,6 @@ private:
     // in order to keep them in scope
     // NOTE: this must not be a std::vector - see note above about child_format_ptrs
     child_format_ptrs format_ptrs_;
-
-    using shape_text_type = void (*)(text_line &, text_itemizer &, std::map<unsigned,double> &, face_manager_freetype &, double);
-    shape_text_type shape_text_;
-    shape_text_type get_shaper(attributes const & attrs);
 };
 
 class layout_container
