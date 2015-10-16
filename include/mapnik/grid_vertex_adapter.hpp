@@ -90,6 +90,35 @@ private:
     int x_, y_;
 };
 
+template <typename PathType, typename T, typename TransformType>
+class transform_path
+{
+public:
+    transform_path(PathType & path, TransformType const & transform)
+        : path_(path), transform_(transform)
+    {
+    }
+
+    void rewind(unsigned)
+    {
+        path_.rewind(0);
+    }
+
+    unsigned vertex(T * x, T * y)
+    {
+        unsigned command = path_.vertex(x, y);
+        if (command != mapnik::SEG_END)
+        {
+            transform_.forward(x, y);
+        }
+        return command;
+    }
+
+private:
+    PathType & path_;
+    TransformType const & transform_;
+};
+
 template <typename PathType, typename T>
 struct grid_vertex_adapter
 {
@@ -103,7 +132,6 @@ struct grid_vertex_adapter
     void rewind(unsigned) const
     {
         si_.rewind();
-        path_.rewind(0);
     }
 
     unsigned vertex(value_type * x, value_type * y) const
@@ -111,10 +139,13 @@ struct grid_vertex_adapter
         int x_int, y_int;
         while (si_.vertex(&x_int, &y_int))
         {
-            *x = start_x_ + dx_ * x_int;
-            *y = start_y_ + dy_ * y_int;
-            if (label::hit_test(path_, *x, *y, 0))
+            x_int *= dx_;
+            y_int *= dy_;
+            if (get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
             {
+                *x = x_int;
+                *y = y_int;
+                vt_.backward(x, y);
                 return mapnik::SEG_MOVETO;
             }
         }
@@ -128,19 +159,31 @@ struct grid_vertex_adapter
 
 private:
     grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
-        : path_(path),
-          dx_(dx),
-          dy_(dy),
-          si_(box.width() / dx_, box.height() / dy_),
-          start_x_(box.minx() + (box.width() - dx_ * si_.size_x) / 2.0),
-          start_y_(box.miny() + (box.height() - dy_ * si_.size_y) / 2.0)
+        : dx_(dx), dy_(dy),
+        img_(box.width(), box.height()),
+        vt_(img_.width(), img_.height(), box),
+        si_(box.width() / dx, box.height() / dy)
     {
+        transform_path<PathType, value_type, view_transform> tp(path, vt_);
+        tp.rewind(0);
+        agg::rasterizer_scanline_aa<> ras;
+        ras.add_path(tp);
+
+        agg::rendering_buffer buf(img_.data(), img_.width(), img_.height(), img_.row_size());
+        agg::pixfmt_gray8 pixfmt(buf);
+        using renderer_base = agg::renderer_base<agg::pixfmt_gray8>;
+        using renderer_bin = agg::renderer_scanline_bin_solid<renderer_base>;
+        renderer_base rb(pixfmt);
+        renderer_bin ren_bin(rb);
+        ren_bin.color(agg::gray8(1));
+        agg::scanline_bin sl_bin;
+        agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
-    PathType & path_;
     const T dx_, dy_;
+    image_gray8 img_;
+    const view_transform vt_;
     mutable spiral_iterator si_;
-    const T start_x_, start_y_;
 };
 
 }
