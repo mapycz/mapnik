@@ -160,7 +160,7 @@ struct grid_vertex_adapter
 private:
     grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
         : dx_(dx), dy_(dy),
-        img_(box.width(), box.height()),
+        img_(create_bitmap(box)),
         vt_(img_.width(), img_.height(), box),
         si_(box.width() / dx, box.height() / dy)
     {
@@ -178,6 +178,26 @@ private:
         ren_bin.color(agg::gray8(1));
         agg::scanline_bin sl_bin;
         agg::render_scanlines(ras, sl_bin, ren_bin);
+    }
+
+    image_gray8 create_bitmap(box2d<T> box)
+    {
+        if (!box.valid())
+        {
+            return image_gray8(0, 0);
+        }
+
+        try
+        {
+            return image_gray8(box.width(), box.height());
+        }
+        catch (std::runtime_error const & e)
+        {
+            // TODO: Scale down in this case.
+            MAPNIK_LOG_ERROR(grid_vertex_adapter) << "grid vertex adapter: Cannot allocate underlaying bitmap. Bbox: "
+                << box.to_string() << "; " << e.what();
+            return image_gray8(0, 0);
+        }
     }
 
     const T dx_, dy_;
