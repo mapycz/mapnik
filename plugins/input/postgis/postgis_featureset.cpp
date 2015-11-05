@@ -35,6 +35,7 @@
 #include <mapnik/util/conversions.hpp>
 #include <mapnik/util/trim.hpp>
 #include <mapnik/global.hpp> // for int2net
+#include <mapnik/geometry_is_empty.hpp>
 
 // stl
 #include <sstream>
@@ -122,6 +123,10 @@ feature_ptr postgis_featureset::next()
         const char *data = rs_->getValue(0);
 
         mapnik::geometry::geometry<double> geometry = geometry_utils::from_wkb(data, size);
+        if (mapnik::geometry::is_empty(geometry))
+        {
+            continue;
+        }
         feature->set_geometry(std::move(geometry));
 
         totalGeomSize_ += size;
