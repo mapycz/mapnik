@@ -25,11 +25,14 @@
 #include <mapnik/util/spirit_transform_attribute.hpp>
 
 // boost
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
 #include <boost/spirit/include/phoenix_fusion.hpp>
 #include <boost/fusion/include/at.hpp>
+#pragma GCC diagnostic pop
 
 namespace mapnik { namespace json {
 

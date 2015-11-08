@@ -33,10 +33,10 @@
 #include <mapnik/global.hpp>
 #include <mapnik/util/utf_conv_win.hpp>
 #include <mapnik/box2d.hpp>
-#ifdef SHAPE_MEMORY_MAPPED_FILE
+
+#if defined(SHAPE_MEMORY_MAPPED_FILE)
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
+#include <mapnik/warning_ignore.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/streams/bufferstream.hpp>
 #pragma GCC diagnostic pop

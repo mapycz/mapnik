@@ -20,42 +20,45 @@
  *
  *****************************************************************************/
 
-#ifndef OGR_FEATURESET_HPP
-#define OGR_FEATURESET_HPP
+#ifndef GEOJSON_INDEX_FEATURESET_HPP
+#define GEOJSON_INDEX_FEATURESET_HPP
 
-// mapnik
+#include "geojson_datasource.hpp"
 #include <mapnik/feature.hpp>
-#include <mapnik/datasource.hpp>
-#include <mapnik/unicode.hpp>
 #include <mapnik/geom_util.hpp>
 
+#if defined(MAPNIK_MEMORY_MAPPED_FILE)
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
-#include <ogrsf_frmts.h>
+#include <boost/interprocess/mapped_region.hpp>
+#include <boost/interprocess/streams/bufferstream.hpp>
 #pragma GCC diagnostic pop
+#include <mapnik/mapped_memory_cache.hpp>
+#endif
 
-class ogr_featureset : public mapnik::Featureset
+#include <deque>
+#include <cstdio>
+
+class geojson_index_featureset : public mapnik::Featureset
 {
+    using value_type = std::pair<std::size_t, std::size_t>;
 public:
-    ogr_featureset(mapnik::context_ptr const& ctx,
-                   OGRLayer & layer,
-                   OGRGeometry & extent,
-                   std::string const& encoding);
-
-    ogr_featureset(mapnik::context_ptr const& ctx,
-                   OGRLayer & layer,
-                   mapnik::box2d<double> const& extent,
-                   std::string const& encoding);
-
-    virtual ~ogr_featureset();
+    geojson_index_featureset(std::string const& filename, mapnik::filter_in_box const& filter);
+    virtual ~geojson_index_featureset();
     mapnik::feature_ptr next();
+
 private:
+#if defined (MAPNIK_MEMORY_MAPPED_FILE)
+    using file_source_type = boost::interprocess::ibufferstream;
+    mapnik::mapped_region_ptr mapped_region_;
+#else
+    using file_ptr = std::unique_ptr<std::FILE, int (*)(std::FILE *)>;
+    file_ptr file_;
+#endif
+    mapnik::value_integer feature_id_ = 1;
     mapnik::context_ptr ctx_;
-    OGRLayer& layer_;
-    OGRFeatureDefn* layerdef_;
-    const std::unique_ptr<mapnik::transcoder> tr_;
-    const char* fidcolumn_;
-    mutable int count_;
+    std::vector<value_type> positions_;
+    std::vector<value_type>::iterator itr_;
 };
 
-#endif // OGR_FEATURESET_HPP
+#endif // GEOJSON_INDEX_FEATURESE_HPP

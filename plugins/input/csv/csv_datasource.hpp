@@ -33,8 +33,12 @@
 #include <mapnik/feature_layer_desc.hpp>
 #include <mapnik/value_types.hpp>
 
-// boost
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
 #include <boost/optional.hpp>
+#include <boost/version.hpp>
+#include <boost/geometry/index/rtree.hpp>
+#pragma GCC diagnostic pop
 
 // stl
 #include <vector>

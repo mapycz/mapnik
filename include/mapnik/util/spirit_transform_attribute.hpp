@@ -24,6 +24,14 @@
 #define MAPNIK_UTIL_SPIRIT_TRANSFORM_ATTRIBUTE_HPP
 
 #include <mapnik/geometry.hpp>
+#include <mapnik/util/variant.hpp>
+
+#include <cstdint>
+
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
+#include <boost/spirit/include/karma.hpp>
+#pragma GCC diagnostic pop
 
 namespace boost { namespace spirit { namespace traits {
 

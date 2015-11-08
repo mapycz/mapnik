@@ -111,7 +111,7 @@ namespace mapnik {
         }
 
         // format
-        static std::string get_format()
+        static std::string const& get_format()
         {
             return format_;
         }

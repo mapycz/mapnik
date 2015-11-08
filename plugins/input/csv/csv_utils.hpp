@@ -23,10 +23,19 @@
 #ifndef MAPNIK_CSV_UTILS_DATASOURCE_HPP
 #define MAPNIK_CSV_UTILS_DATASOURCE_HPP
 
+// mapnik
+#include <mapnik/debug.hpp>
+#include <mapnik/geometry.hpp>
+#include <mapnik/geometry_correct.hpp>
+#include <mapnik/wkt/wkt_factory.hpp>
+#include <mapnik/json/geometry_parser.hpp>
+#include <mapnik/util/conversions.hpp>
+//#include <mapnik/csv/csv_grammar.hpp>
+#include <mapnik/util/trim.hpp>
+#include <mapnik/datasource.hpp>
+
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-local-typedef"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
+#include <mapnik/warning_ignore.hpp>
 #include <boost/algorithm/string.hpp>
 #pragma GCC diagnostic pop
 
