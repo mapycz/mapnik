@@ -94,7 +94,7 @@ struct render_marker_symbolizer_visitor
             svg_attribute_type attributes;
             bool result = push_explicit_style( (*stock_vector_marker)->attributes(), attributes, sym_, feature_, common_.vars_);
             auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
-            if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform);
+            if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform, common_.scale_factor_);
             vector_dispatch_type rasterizer_dispatch(marker_ellipse,
                                                      svg_path,
                                                      result ? attributes : (*stock_vector_marker)->attributes(),
@@ -137,7 +137,7 @@ struct render_marker_symbolizer_visitor
             box2d<double> const& bbox = mark.bounding_box();
             setup_transform_scaling(image_tr, bbox.width(), bbox.height(), feature_, common_.vars_, sym_);
             auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
-            if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform);
+            if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform, common_.scale_factor_);
             vertex_stl_adapter<svg_path_storage> stl_storage((*stock_vector_marker)->source());
             svg_path_adapter svg_path(stl_storage);
             svg_attribute_type attributes;
@@ -196,7 +196,7 @@ struct render_marker_symbolizer_visitor
 
         setup_transform_scaling(image_tr, mark.width(), mark.height(), feature_, common_.vars_, sym_);
         auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
-        if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform);
+        if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform, common_.scale_factor_);
         box2d<double> const& bbox = mark.bounding_box();
         mapnik::image_rgba8 const& marker = mark.get_data();
         // - clamp sizes to > 4 pixels of interactivity
