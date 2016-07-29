@@ -63,7 +63,7 @@ struct thunk_renderer<image_rgba8>
 
     thunk_renderer(renderer_type &ren,
                    std::unique_ptr<rasterizer> const& ras_ptr,
-                   buffer_type *buf,
+                   buffer_type &buf,
                    renderer_common &common,
                    pixel_position const &offset)
         : ren_(ren), ras_ptr_(ras_ptr), buf_(buf), common_(common), offset_(offset)
@@ -82,7 +82,7 @@ struct thunk_renderer<image_rgba8>
                                                         renderer_type,
                                                         pixfmt_comp_type>;
         ras_ptr_->reset();
-        buf_type render_buffer(buf_->bytes(), buf_->width(), buf_->height(), buf_->row_size());
+        buf_type render_buffer(buf_.bytes(), buf_.width(), buf_.height(), buf_.row_size());
         pixfmt_comp_type pixf(render_buffer);
         pixf.comp_op(static_cast<agg::comp_op_e>(thunk.comp_op_));
         renderer_base renb(pixf);
@@ -103,7 +103,7 @@ struct thunk_renderer<image_rgba8>
         using renderer_base = agg::renderer_base<pixfmt_comp_type>;
 
         ras_ptr_->reset();
-        buf_type render_buffer(buf_->bytes(), buf_->width(), buf_->height(), buf_->row_size());
+        buf_type render_buffer(buf_.bytes(), buf_.width(), buf_.height(), buf_.row_size());
         pixfmt_comp_type pixf(render_buffer);
         pixf.comp_op(static_cast<agg::comp_op_e>(thunk.comp_op_));
         renderer_base renb(pixf);
@@ -115,7 +115,7 @@ struct thunk_renderer<image_rgba8>
 
     void operator()(text_render_thunk const &thunk) const
     {
-        text_renderer_type ren(*buf_, thunk.halo_rasterizer_, thunk.comp_op_, thunk.comp_op_,
+        text_renderer_type ren(buf_, thunk.halo_rasterizer_, thunk.comp_op_, thunk.comp_op_,
                                common_.scale_factor_, common_.font_manager_.get_stroker());
 
         render_offset_placements(
@@ -144,7 +144,7 @@ struct thunk_renderer<image_rgba8>
 private:
     renderer_type &ren_;
     std::unique_ptr<rasterizer> const& ras_ptr_;
-    buffer_type *buf_;
+    buffer_type & buf_;
     renderer_common &common_;
     pixel_position offset_;
 };
@@ -158,7 +158,8 @@ void agg_renderer<T0,T1>::process(group_symbolizer const& sym,
         sym, feature, common_.vars_, prj_trans, clipping_extent(common_), common_,
         [&](render_thunk_list const& thunks, pixel_position const& render_offset)
         {
-            thunk_renderer<buffer_type> ren(*this, ras_ptr, current_buffer_, common_, render_offset);
+            buffer_type & current_buffer = buffers_.top().get();
+            thunk_renderer<buffer_type> ren(*this, ras_ptr, current_buffer, common_, render_offset);
             for (render_thunk_ptr const& thunk : thunks)
             {
                 util::apply_visitor(ren, *thunk);

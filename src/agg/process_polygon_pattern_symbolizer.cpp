@@ -59,7 +59,7 @@ template <typename buffer_type>
 struct agg_renderer_process_visitor_p
 {
     agg_renderer_process_visitor_p(renderer_common & common,
-                                   buffer_type * current_buffer,
+                                   buffer_type & current_buffer,
                                    std::unique_ptr<rasterizer> const& ras_ptr,
                                    gamma_method_enum & gamma_method,
                                    double & gamma,
@@ -86,8 +86,8 @@ struct agg_renderer_process_visitor_p
         mapnik::image_rgba8 image(bbox_image.width(), bbox_image.height());
         render_pattern<buffer_type>(*ras_ptr_, marker, image_tr, 1.0, image);
 
-        agg::rendering_buffer buf(current_buffer_->bytes(), current_buffer_->width(),
-                                  current_buffer_->height(), current_buffer_->row_size());
+        agg::rendering_buffer buf(current_buffer_.bytes(), current_buffer_.width(),
+                                  current_buffer_.height(), current_buffer_.row_size());
         ras_ptr_->reset();
         value_double gamma = get<value_double, keys::gamma>(sym_, feature_, common_.vars_);
         gamma_method_enum gamma_method = get<gamma_method_enum, keys::gamma_method>(sym_, feature_, common_.vars_);
@@ -144,8 +144,8 @@ struct agg_renderer_process_visitor_p
             using apply_local_alignment = detail::apply_local_alignment;
             apply_local_alignment apply(common_.t_,prj_trans_, clip_box, x0, y0);
             util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature_.get_geometry());
-            offset_x = unsigned(current_buffer_->width() - x0);
-            offset_y = unsigned(current_buffer_->height() - y0);
+            offset_x = unsigned(current_buffer_.width() - x0);
+            offset_y = unsigned(current_buffer_.height() - y0);
         }
 
         span_gen_type sg(img_src, offset_x, offset_y);
@@ -202,8 +202,8 @@ struct agg_renderer_process_visitor_p
         mapnik::image_rgba8 const& image = marker.get_data();
 
 
-        agg::rendering_buffer buf(current_buffer_->bytes(), current_buffer_->width(),
-                                  current_buffer_->height(), current_buffer_->row_size());
+        agg::rendering_buffer buf(current_buffer_.bytes(), current_buffer_.width(),
+                                  current_buffer_.height(), current_buffer_.row_size());
         ras_ptr_->reset();
         value_double gamma = get<value_double, keys::gamma>(sym_, feature_, common_.vars_);
         gamma_method_enum gamma_method = get<gamma_method_enum, keys::gamma_method>(sym_, feature_, common_.vars_);
@@ -244,8 +244,8 @@ struct agg_renderer_process_visitor_p
             apply_local_alignment apply(common_.t_,prj_trans_, clip_box, x0, y0);
             util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature_.get_geometry());
 
-            offset_x = unsigned(current_buffer_->width() - x0);
-            offset_y = unsigned(current_buffer_->height() - y0);
+            offset_x = unsigned(current_buffer_.width() - x0);
+            offset_y = unsigned(current_buffer_.height() - y0);
         }
 
         span_gen_type sg(img_src, offset_x, offset_y);
@@ -281,7 +281,7 @@ struct agg_renderer_process_visitor_p
 
 private:
     renderer_common & common_;
-    buffer_type * current_buffer_;
+    buffer_type & current_buffer_;
     std::unique_ptr<rasterizer> const& ras_ptr_;
     gamma_method_enum & gamma_method_;
     double & gamma_;
@@ -299,7 +299,7 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     if (filename.empty()) return;
     std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
     agg_renderer_process_visitor_p<buffer_type> visitor(common_,
-                                                        current_buffer_,
+                                                        buffers_.top().get(),
                                                         ras_ptr,
                                                         gamma_method_,
                                                         gamma_,
