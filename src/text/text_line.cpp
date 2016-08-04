@@ -52,6 +52,7 @@ text_line::text_line(text_line && rhs)
 void text_line::add_glyph(glyph_info && glyph, double scale_factor_)
 {
     line_height_ = std::max(line_height_, glyph.line_height() + glyph.format->line_spacing * scale_factor_);
+    max_char_height_ = std::max(max_char_height_, glyph.ascender());
     double advance = glyph.advance();
     if (glyphs_.empty())
     {
@@ -88,11 +89,6 @@ double text_line::height() const
 {
     if (first_line_) return max_char_height_;
     return line_height_;
-}
-
-void text_line::update_max_char_height(double max_char_height)
-{
-    max_char_height_ = std::max(max_char_height_, max_char_height);
 }
 
 void text_line::set_first_line(bool first_line)

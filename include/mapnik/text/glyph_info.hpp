@@ -49,6 +49,7 @@ struct glyph_info : util::noncopyable
           unscaled_ymax(0.0),
           unscaled_advance(0.0),
           unscaled_line_height(0.0),
+          unscaled_ascender(0.0),
           scale_multiplier(1.0),
           offset() {}
     glyph_info(glyph_info && rhs)
@@ -60,6 +61,7 @@ struct glyph_info : util::noncopyable
           unscaled_ymax(std::move(rhs.unscaled_ymax)),
           unscaled_advance(std::move(rhs.unscaled_advance)),
           unscaled_line_height(std::move(rhs.unscaled_line_height)),
+          unscaled_ascender(std::move(rhs.unscaled_ascender)),
           scale_multiplier(std::move(rhs.scale_multiplier)),
           offset(std::move(rhs.offset)) {}
 
@@ -74,14 +76,16 @@ struct glyph_info : util::noncopyable
     // Line height returned by freetype, includes normal font
     // line spacing, but not additional user defined spacing
     double unscaled_line_height;
+    double unscaled_ascender;
     double scale_multiplier;
     pixel_position offset;
 
     double ymin() const { return unscaled_ymin * 64.0 * scale_multiplier; }
     double ymax() const { return unscaled_ymax * 64.0 * scale_multiplier; }
-    double height() const { return ymax() - ymin(); };
-    double advance() const { return unscaled_advance * scale_multiplier; };
-    double line_height() const { return unscaled_line_height * scale_multiplier; };
+    double height() const { return ymax() - ymin(); }
+    double advance() const { return unscaled_advance * scale_multiplier; }
+    double line_height() const { return unscaled_line_height * scale_multiplier; }
+    double ascender() const { return unscaled_ascender * scale_multiplier; }
 };
 
 } //ns mapnik

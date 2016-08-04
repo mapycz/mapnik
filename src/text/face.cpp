@@ -32,28 +32,7 @@ namespace mapnik
 {
 
 font_face::font_face(FT_Face face)
-    : face_(face), height_cache_(), height_cache_mutext_() {}
-
-double font_face::get_char_height(double size, evaluated_format_properties_ptr const& f) const
-{
-    std::lock_guard<std::mutex> lock(height_cache_mutext_);
-    height_cache_map::iterator pos = height_cache_.find(size);
-    if (pos == height_cache_.end())
-    {
-        glyph_info tmp(0, 0, f);
-        tmp.glyph_index = FT_Get_Char_Index(face_, 'X');
-        if (glyph_dimensions(tmp))
-        {
-            tmp.scale_multiplier = size / face_->units_per_EM;
-            pos = height_cache_.emplace(size, tmp.height()).first;
-        }
-        else
-        {
-            return .0;
-        }
-    }
-    return pos->second;
-}
+    : face_(face), unscaled_ascender_(get_ascender()) {}
 
 bool font_face::set_character_sizes(double size)
 {
@@ -90,6 +69,7 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     glyph.unscaled_ymax = glyph_bbox.yMax;
     glyph.unscaled_advance = face_->glyph->advance.x;
     glyph.unscaled_line_height = face_->size->metrics.height;
+    glyph.unscaled_ascender = unscaled_ascender_;
     return true;
 }
 
@@ -100,6 +80,31 @@ font_face::~font_face()
         " " << style_name() << "\"";
 
     FT_Done_Face(face_);
+}
+
+// https://github.com/mapnik/mapnik/issues/2578
+double font_face::get_ascender()
+{
+    set_unscaled_character_sizes();
+    unsigned glyph_index = FT_Get_Char_Index(face_, 'X');
+
+    FT_Vector pen;
+    pen.x = 0;
+    pen.y = 0;
+    FT_Set_Transform(face_, 0, &pen);
+    int e = 0;
+    if (!(e = FT_Load_Glyph(face_, glyph_index, FT_LOAD_NO_HINTING)))
+    {
+        FT_Glyph image;
+        if (!FT_Get_Glyph(face_->glyph, &image))
+        {
+            FT_BBox glyph_bbox;
+            FT_Glyph_Get_CBox(image, FT_GLYPH_BBOX_TRUNCATE, &glyph_bbox);
+            FT_Done_Glyph(image);
+            return 64.0 * (glyph_bbox.yMax - glyph_bbox.yMin);
+        }
+    }
+    return face_->ascender;
 }
 
 /******************************************************************************/

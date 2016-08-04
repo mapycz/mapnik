@@ -64,8 +64,6 @@ public:
 
     // Height of the tallest glyph in this line.
     double max_char_height() const { return max_char_height_; }
-    // Called for each font/style to update the maximum height of this line.
-    void update_max_char_height(double max_char_height);
     // Line height including line spacing.
     double line_height() const { return line_height_; }
 

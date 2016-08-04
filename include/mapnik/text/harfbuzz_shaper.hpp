@@ -138,13 +138,10 @@ static void shape_text(text_line & line,
                     //Overwrite default advance with better value provided by HarfBuzz
                     g.unscaled_advance = gpos.x_advance;
                     g.offset.set(gpos.x_offset * g.scale_multiplier, gpos.y_offset * g.scale_multiplier);
-                    //double tmp_height = g.height();
-                    //if (tmp_height > max_glyph_height) max_glyph_height = tmp_height;
                     width_map[char_index] += g.advance();
                     line.add_glyph(std::move(g), scale_factor);
                 }
             }
-            line.update_max_char_height(face->get_char_height(size, text_item.format_));
             break; //When we reach this point the current font had all glyphs.
         }
     }
