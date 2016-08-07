@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 {
     namespace po = boost::program_options;
 
-    po::options_description desc("visual test runner");
+    po::options_description desc("Lists fonts visible to Mapnik");
     desc.add_options()
         ("help,h", "produce usage message")
         ("font-dir", po::value<std::vector<std::string>>(), "font search dirs")
