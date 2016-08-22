@@ -1984,9 +1984,6 @@ if not HELP_REQUESTED:
     if env['BENCHMARK']:
         SConscript('benchmark/build.py')
 
-    if os.path.exists('./bindings/python/build.py'):
-        SConscript('./bindings/python/build.py')
-
     # install mapnik-config script
     SConscript('utils/mapnik-config/build.py')
 
