@@ -37,7 +37,6 @@
 #include <mapnik/warning_ignore.hpp>
 #include <boost/optional.hpp>
 #include <boost/version.hpp>
-#include <boost/geometry/index/rtree.hpp>
 #pragma GCC diagnostic pop
 
 // stl
