@@ -27,6 +27,7 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/vertex_adapters.hpp>
 #include <mapnik/path.hpp>
+#include <mapnik/util/math.hpp>
 
 #include <algorithm>
 #include <deque>
@@ -35,8 +36,15 @@ namespace mapnik {
 
 namespace detail {
 
-template <typename F1, typename F2, typename F3>
-void make_building(geometry::polygon<double> const& poly, double height, F1 const& face_func, F2 const& frame_func, F3 const& roof_func)
+template <typename F1, typename F2, typename F3, typename F4>
+void make_building(geometry::polygon<double> const& poly,
+        double height,
+        double shadow_angle,
+        double shadow_length,
+        F1 const& face_func,
+        F2 const& frame_func,
+        F3 const& roof_func,
+        F4 const& shadow_func)
 {
     path_type frame(path_type::types::LineString);
     path_type roof(path_type::types::Polygon);
@@ -74,6 +82,33 @@ void make_building(geometry::polygon<double> const& poly, double height, F1 cons
     }
 
     std::sort(face_segments.begin(),face_segments.end(), y_order);
+
+    if (shadow_length > 0)
+    {
+        shadow_angle = util::normalize_angle(shadow_angle * (M_PI / 180.0));
+        for (auto const& seg : face_segments)
+        {
+            double dx = std::get<2>(seg) - std::get<0>(seg);
+            double dy = std::get<3>(seg) - std::get<1>(seg);
+            double seg_normal_angle = std::atan2(-dx, dy);
+
+            double angle_diff = std::abs(seg_normal_angle - shadow_angle);
+            double min_angle_diff = std::min((2 * M_PI) - angle_diff, angle_diff);
+
+            if (min_angle_diff <= (M_PI / 2.0))
+            {
+                path_type shadow(path_type::types::Polygon);
+                shadow.move_to(std::get<0>(seg), std::get<1>(seg));
+                shadow.line_to(std::get<2>(seg), std::get<3>(seg));
+                shadow.line_to(std::get<2>(seg) + shadow_length * std::cos(shadow_angle),
+                               std::get<3>(seg) + shadow_length * std::sin(shadow_angle));
+                shadow.line_to(std::get<0>(seg) + shadow_length * std::cos(shadow_angle),
+                               std::get<1>(seg) + shadow_length * std::sin(shadow_angle));
+                shadow_func(shadow);
+            }
+        }
+    }
+
     for (auto const& seg : face_segments)
     {
         path_type faces(path_type::types::Polygon);
@@ -115,24 +150,28 @@ void make_building(geometry::polygon<double> const& poly, double height, F1 cons
 
 } // ns detail
 
-template <typename F1, typename F2, typename F3>
+template <typename F1, typename F2, typename F3, typename F4>
 void render_building_symbolizer(mapnik::feature_impl const& feature,
                                 double height,
-                                F1 face_func, F2 frame_func, F3 roof_func)
+                                double shadow_angle,
+                                double shadow_length,
+                                F1 const& face_func,
+                                F2 const& frame_func,
+                                F3 const& roof_func,
+                                F4 const& shadow_func)
 {
-
     auto const& geom = feature.get_geometry();
     if (geom.is<geometry::polygon<double> >())
     {
         auto const& poly = geom.get<geometry::polygon<double> >();
-        detail::make_building(poly, height, face_func, frame_func, roof_func);
+        detail::make_building(poly, height, shadow_angle, shadow_length, face_func, frame_func, roof_func, shadow_func);
     }
     else if (geom.is<geometry::multi_polygon<double> >())
     {
         auto const& multi_poly = geom.get<geometry::multi_polygon<double> >();
         for (auto const& poly : multi_poly)
         {
-            detail::make_building(poly, height, face_func, frame_func, roof_func);
+            detail::make_building(poly, height, shadow_angle, shadow_length, face_func, frame_func, roof_func, shadow_func);
         }
     }
 }

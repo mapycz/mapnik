@@ -1303,9 +1303,10 @@ void map_parser::parse_building_symbolizer(rule & rule, xml_node const & node)
         parse_symbolizer_base(building_sym, node);
         set_symbolizer_property<building_symbolizer,color>(building_sym, keys::fill, node);
         set_symbolizer_property<building_symbolizer,double>(building_sym, keys::fill_opacity, node);
-        // TODO
-        optional<expression_ptr> height = node.get_opt_attr<expression_ptr>("height");
-        if (height) put(building_sym, keys::height, *height);
+        set_symbolizer_property<building_symbolizer,double>(building_sym, keys::height, node);
+        set_symbolizer_property<building_symbolizer,double>(building_sym, keys::shadow_angle, node);
+        set_symbolizer_property<building_symbolizer,double>(building_sym, keys::shadow_length, node);
+        set_symbolizer_property<building_symbolizer,double>(building_sym, keys::shadow_opacity, node);
         rule.append(std::move(building_sym));
     }
     catch (config_error const& ex)

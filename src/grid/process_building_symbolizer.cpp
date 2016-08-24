@@ -67,10 +67,12 @@ void grid_renderer<T>::process(building_symbolizer const& sym,
 
     ras_ptr->reset();
 
-    double height = get<value_double>(sym, keys::height, feature, common_.vars_, 0.0);
+    value_double height = get<value_double>(sym, keys::height, feature, common_.vars_, 0.0);
+    value_double shadow_angle = get<value_double, keys::shadow_angle>(sym, feature, common_.vars_);
+    value_double shadow_length = get<value_double, keys::shadow_length>(sym, feature, common_.vars_) * common_.scale_factor_;
 
     render_building_symbolizer(
-        feature, height,
+        feature, height, shadow_angle, shadow_length,
         [&](path_type const& faces)
         {
             vertex_adapter va(faces);
@@ -97,6 +99,15 @@ void grid_renderer<T>::process(building_symbolizer const& sym,
             ras_ptr->add_path(roof_path);
             ren.color(color_type(feature.id()));
             agg::render_scanlines(*ras_ptr, sl, ren);
+        },
+        [&](path_type const& shadow)
+        {
+            vertex_adapter va(shadow);
+            transform_path_type path (common_.t_,va,prj_trans);
+            ras_ptr->add_path(path);
+            ren.color(color_type(feature.id()));
+            agg::render_scanlines(*ras_ptr, sl, ren);
+            ras_ptr->reset();
         });
 
     pixmap_.add_feature(feature);

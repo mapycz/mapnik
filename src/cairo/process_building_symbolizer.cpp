@@ -49,11 +49,14 @@ void cairo_renderer<T>::process(building_symbolizer const& sym,
     mapnik::color fill = get<color, keys::fill>(sym, feature, common_.vars_);
     value_double opacity = get<value_double, keys::fill_opacity>(sym, feature, common_.vars_);
     value_double height = get<value_double, keys::height>(sym, feature, common_.vars_);
+    value_double shadow_angle = get<value_double, keys::shadow_angle>(sym, feature, common_.vars_);
+    value_double shadow_length = get<value_double, keys::shadow_length>(sym, feature, common_.vars_) * common_.scale_factor_;
+    value_double shadow_opacity = get<value_double, keys::shadow_opacity>(sym, feature, common_.vars_);
 
     context_.set_operator(comp_op);
 
     render_building_symbolizer(
-        feature, height,
+        feature, height, shadow_angle, shadow_length,
         [&](path_type const& faces)
         {
             vertex_adapter va(faces);
@@ -79,6 +82,14 @@ void cairo_renderer<T>::process(building_symbolizer const& sym,
             transform_path_type roof_path(common_.t_, va, prj_trans);
             context_.set_color(fill, opacity);
             context_.add_path(roof_path);
+            context_.fill();
+        },
+        [&](path_type const& shadow)
+        {
+            vertex_adapter va(shadow);
+            transform_path_type path(common_.t_, va, prj_trans);
+            context_.set_color(0, 0, 0, shadow_opacity);
+            context_.add_path(path);
             context_.fill();
         });
 }

@@ -93,6 +93,9 @@ enum class keys : std::uint8_t
     avoid_edges,
     ff_settings,
     symbol_key,
+    shadow_angle,
+    shadow_length,
+    shadow_opacity,
     MAX_SYMBOLIZER_KEY
 };
 

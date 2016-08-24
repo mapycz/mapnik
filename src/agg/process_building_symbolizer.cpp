@@ -82,14 +82,17 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
         gamma_ = gamma;
     }
 
-    double height = get<double, keys::height>(sym, feature, common_.vars_) * common_.scale_factor_;
+    value_double height = get<value_double, keys::height>(sym, feature, common_.vars_) * common_.scale_factor_;
+    value_double shadow_angle = get<value_double, keys::shadow_angle>(sym, feature, common_.vars_);
+    value_double shadow_length = get<value_double, keys::shadow_length>(sym, feature, common_.vars_) * common_.scale_factor_;
+    value_double shadow_opacity = get<value_double, keys::shadow_opacity>(sym, feature, common_.vars_);
 
     render_building_symbolizer(
-        feature, height,
+        feature, height, shadow_angle, shadow_length,
         [&,r,g,b,a,opacity](path_type const& faces)
         {
             vertex_adapter va(faces);
-            transform_path_type faces_path (this->common_.t_,va,prj_trans);
+            transform_path_type faces_path (common_.t_,va,prj_trans);
             ras_ptr->add_path(faces_path);
             ren.color(agg::rgba8_pre(int(r*0.8), int(g*0.8), int(b*0.8), int(a * opacity)));
             agg::render_scanlines(*ras_ptr, sl, ren);
@@ -113,6 +116,16 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
             ras_ptr->add_path(roof_path);
             ren.color(agg::rgba8_pre(r, g, b, int(a * opacity)));
             agg::render_scanlines(*ras_ptr, sl, ren);
+        },
+        [&,r,g,b,a,opacity,shadow_opacity](path_type const& shadow)
+        {
+            vertex_adapter va(shadow);
+            transform_path_type path (common_.t_,va,prj_trans);
+            ras_ptr->add_path(path);
+            ren.color(agg::rgba8_pre(0, 0, 0,
+                static_cast<int>(255.0 * shadow_opacity)));
+            agg::render_scanlines(*ras_ptr, sl, ren);
+            this->ras_ptr->reset();
         });
 }
 

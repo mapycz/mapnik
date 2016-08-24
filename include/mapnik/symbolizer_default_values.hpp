@@ -364,6 +364,27 @@ struct symbolizer_default<value_bool, keys::avoid_edges>
 
 // font-feature-settings
 
+// shadow-angle
+template <>
+struct symbolizer_default<value_double, keys::shadow_angle>
+{
+    static value_double value() { return 0.0; }
+};
+
+// shadow-length
+template <>
+struct symbolizer_default<value_double, keys::shadow_length>
+{
+    static value_double value() { return 0.0; }
+};
+
+// shadow-opacity
+template <>
+struct symbolizer_default<value_double, keys::shadow_opacity>
+{
+    static value_double value() { return 0.1; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP
