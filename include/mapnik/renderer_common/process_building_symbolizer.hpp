@@ -32,6 +32,11 @@
 #include <algorithm>
 #include <deque>
 
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
+#include "agg_conv_contour.h"
+#pragma GCC diagnostic pop
+
 namespace mapnik {
 
 namespace detail {

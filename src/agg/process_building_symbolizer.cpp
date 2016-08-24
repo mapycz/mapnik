@@ -121,7 +121,9 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
         {
             vertex_adapter va(shadow);
             transform_path_type path (common_.t_,va,prj_trans);
-            ras_ptr->add_path(path);
+            agg::conv_contour<transform_path_type> contour(path);
+            contour.width(0.5 * shadow_opacity * shadow_opacity);
+            ras_ptr->add_path(contour);
             ren.color(agg::rgba8_pre(0, 0, 0,
                 static_cast<int>(255.0 * shadow_opacity)));
             agg::render_scanlines(*ras_ptr, sl, ren);
