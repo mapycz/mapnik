@@ -43,7 +43,7 @@ void cairo_renderer<T>::process(shield_symbolizer const& sym,
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
-    text_symbolizer_helper helper(
+    shield_symbolizer_helper helper(
             sym, feature, common_.vars_, prj_trans,
             common_.width_, common_.height_,
             common_.scale_factor_,

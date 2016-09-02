@@ -86,7 +86,8 @@ struct thunk_renderer : render_thunk_list_dispatch
         context_.add_image(offset_tr, thunk.src_, thunk.opacity_);
     }
 
-    virtual void operator()(text_render_thunk const& thunk)
+    template <typename Thunk>
+    void render_text(Thunk const & thunk)
     {
         cairo_save_restore guard(context_);
         context_.set_operator(thunk.comp_op_);
@@ -104,6 +105,16 @@ struct thunk_renderer : render_thunk_list_dispatch
             }
             context_.add_text(*glyphs, face_manager_, src_over, src_over, common_.scale_factor_);
         }
+    }
+
+    virtual void operator()(text_render_thunk const& thunk)
+    {
+        render_text(thunk);
+    }
+
+    virtual void operator()(shield_render_thunk const& thunk)
+    {
+        render_text(thunk);
     }
 
 private:

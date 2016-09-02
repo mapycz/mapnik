@@ -37,6 +37,7 @@ struct render_thunk_list_dispatch
     virtual void operator()(vector_marker_render_thunk const& thunk) = 0;
     virtual void operator()(raster_marker_render_thunk const& thunk) = 0;
     virtual void operator()(text_render_thunk const& thunk) = 0;
+    virtual void operator()(shield_render_thunk const& thunk) = 0;
 
     void render_list(render_thunk_list const& thunks, pixel_position const& offset)
     {
