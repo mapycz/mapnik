@@ -77,6 +77,33 @@ mapnik::geometry::geometry_types geometry_type(mapnik::base_symbolizer_helper::g
 } // geometry
 namespace detail {
 
+struct placement_finder_adapter
+{
+    placement_finder_adapter(placement_finder & finder)
+        : finder_(finder) {}
+
+    template <typename PathT>
+    void add_path(PathT & path) const
+    {
+        status_ = finder_.find_line_placements(path, false);
+    }
+
+    bool status() const { return status_; }
+    placement_finder & finder_;
+    mutable bool status_ = false;
+};
+
+struct point_placement_finder_adapter : placement_finder_adapter
+{
+    using placement_finder_adapter::placement_finder_adapter;
+
+    template <typename PathT>
+    void add_path(PathT & path) const
+    {
+        status_ = finder_.find_line_placements(path, true);
+    }
+};
+
 template <typename Points>
 struct apply_vertex_placement
 {
@@ -334,7 +361,7 @@ void base_symbolizer_helper::initialize_points() const
 
 template <typename FaceManagerT, typename DetectorT>
 text_symbolizer_helper::text_symbolizer_helper(
-        text_symbolizer const& sym,
+        symbolizer_base const& sym,
         feature_impl const& feature,
         attributes const& vars,
         proj_transform const& prj_trans,
@@ -345,19 +372,7 @@ text_symbolizer_helper::text_symbolizer_helper(
         symbol_cache const& sc)
     : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
       finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
-    adapter_(finder_,false),
     converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
-{
-    init_converters();
-
-    if (geometries_to_process_.size())
-    {
-        text_symbolizer_helper::initialize_points();
-        finder_.next_position();
-    }
-}
-
-void text_symbolizer_helper::init_converters()
 {
     // setup vertex converter
     value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
@@ -387,22 +402,49 @@ void text_symbolizer_helper::init_converters()
 
 placements_list const& text_symbolizer_helper::get() const
 {
-    if (point_placement_)
+    if (!geometries_to_process_.empty())
     {
-        while (next_point_placement());
-    }
-    else
-    {
-        while (next_line_placement());
+        finder_.next_position();
+
+        if (point_placement_)
+        {
+            while (next_point_placement());
+        }
+        else
+        {
+            detail::placement_finder_adapter adapter(finder_);
+            while (next_line_placement(adapter));
+        }
     }
     return finder_.placements();
 }
 
+placements_list const& shield_symbolizer_helper::get() const
+{
+    if (!geometries_to_process_.empty())
+    {
+        init_marker();
+        finder_.next_position();
+
+        if (point_placement_)
+        {
+            while (next_point_placement());
+        }
+        else
+        {
+            detail::point_placement_finder_adapter adapter(finder_);
+            while (next_line_placement(adapter));
+        }
+    }
+    return finder_.placements();
+}
+
+template <typename Adapter>
 class apply_line_placement_visitor
 {
 public:
     apply_line_placement_visitor(vertex_converter_type & converter,
-                                 placement_finder_adapter<placement_finder> const & adapter)
+                                 Adapter const & adapter)
         : converter_(converter), adapter_(adapter)
     {
     }
@@ -429,10 +471,11 @@ public:
 
 private:
     vertex_converter_type & converter_;
-    placement_finder_adapter<placement_finder> const & adapter_;
+    Adapter const & adapter_;
 };
 
-bool text_symbolizer_helper::next_line_placement() const
+template <typename T>
+bool text_symbolizer_helper::next_line_placement(T const & adapter) const
 {
     while (!geometries_to_process_.empty())
     {
@@ -445,7 +488,7 @@ bool text_symbolizer_helper::next_line_placement() const
             continue; //Reexecute size check
         }
 
-        if (mapnik::util::apply_visitor(apply_line_placement_visitor(converter_, adapter_), *geo_itr_))
+        if (mapnik::util::apply_visitor(apply_line_placement_visitor<T>(converter_, adapter), *geo_itr_))
         {
             //Found a placement
             geo_itr_ = geometries_to_process_.erase(geo_itr_);
@@ -482,33 +525,7 @@ bool text_symbolizer_helper::next_point_placement() const
     return false;
 }
 
-template <typename FaceManagerT, typename DetectorT>
-text_symbolizer_helper::text_symbolizer_helper(
-        shield_symbolizer const& sym,
-        feature_impl const& feature,
-        attributes const& vars,
-        proj_transform const& prj_trans,
-        unsigned width, unsigned height, double scale_factor,
-        view_transform const& t, FaceManagerT & font_manager,
-        DetectorT & detector, box2d<double> const& query_extent, agg::trans_affine const& affine_trans,
-        symbol_cache const& sc)
-    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
-      finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
-      adapter_(finder_,true),
-      converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
-{
-    init_converters();
-
-    if (geometries_to_process_.size())
-    {
-        text_symbolizer_helper::initialize_points();
-        init_marker();
-        finder_.next_position();
-    }
-}
-
-
-void text_symbolizer_helper::init_marker() const
+void shield_symbolizer_helper::init_marker() const
 {
     std::string filename = mapnik::get<std::string,keys::file>(sym_, feature_, vars_);
     if (filename.empty()) return;
@@ -565,7 +582,7 @@ void text_symbolizer_helper::initialize_points() const
 }
 
 template text_symbolizer_helper::text_symbolizer_helper(
-    text_symbolizer const& sym,
+    symbolizer_base const& sym,
     feature_impl const& feature,
     attributes const& vars,
     proj_transform const& prj_trans,
@@ -579,18 +596,4 @@ template text_symbolizer_helper::text_symbolizer_helper(
     agg::trans_affine const&,
     symbol_cache const& sc);
 
-template text_symbolizer_helper::text_symbolizer_helper(
-    shield_symbolizer const& sym,
-    feature_impl const& feature,
-    attributes const& vars,
-    proj_transform const& prj_trans,
-    unsigned width,
-    unsigned height,
-    double scale_factor,
-    view_transform const& t,
-    face_manager_freetype & font_manager,
-    label_collision_detector4 &detector,
-    box2d<double> const& query_extent,
-    agg::trans_affine const&,
-    symbol_cache const& sc);
 } //namespace
