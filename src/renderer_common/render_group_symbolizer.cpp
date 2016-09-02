@@ -32,6 +32,11 @@
 
 namespace mapnik {
 
+template <>
+struct position_accessor<group_point_layout> : position_accessor<point_layout>
+{
+};
+
 void render_group_symbolizer(group_symbolizer const& sym,
                              feature_impl & feature,
                              attributes const& vars,
@@ -150,11 +155,7 @@ void render_group_symbolizer(group_symbolizer const& sym,
     }
 
     // create a symbolizer helper
-    group_symbolizer_helper helper(sym, feature, vars, prj_trans,
-                                   common.width_, common.height_,
-                                   common.scale_factor_, common.t_,
-                                   *common.detector_, clipping_extent,
-                                   common.symbol_cache_);
+    std::list<box_element> box_elements;
 
     for (size_t i = 0; i < matches.size(); ++i)
     {
@@ -174,20 +175,48 @@ void render_group_symbolizer(group_symbolizer const& sym,
         // evaluate the repeat key with the matched sub feature if we have one
         if (rpt_key_expr)
         {
-            rpt_key_value = util::apply_visitor(evaluate<feature_impl,value_type,attributes>(*match_feature,common.vars_),
-                                                *rpt_key_expr).to_unicode();
+            rpt_key_value = util::apply_visitor(
+                evaluate<feature_impl,value_type,attributes>(*match_feature,common.vars_),
+                    *rpt_key_expr).to_unicode();
         }
-        helper.add_box_element(layout_manager.offset_box_at(i), rpt_key_value);
+        box_elements.emplace_back(layout_manager.offset_box_at(i), rpt_key_value);
     }
 
-    pixel_position_list const& positions = helper.get();
-    for (pixel_position const& pos : positions)
+    agg::trans_affine tr;
+    auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
+    if (transform)
     {
-        for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
+        evaluate_transform(tr, feature, common.vars_, *transform, common.scale_factor_);
+    }
+
+    label_placement::placement_params params {
+        prj_trans, common.t_, tr, sym, feature, vars,
+        box2d<double>(0, 0, common.width_, common.height_), common.query_extent_,
+        common.scale_factor_, common.symbol_cache_ };
+
+    using traits = group_symbolizer_traits;
+    text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+        sym, keys::text_placements_)->get_placement_info(common.scale_factor_,
+            feature, vars, common.symbol_cache_);
+    group_layout_generator layout_generator(params, common.font_manager_,
+        *placement_info, box_elements);
+    const label_placement_enum placement_type =
+        layout_generator.get_text_props().label_placement;
+
+    std::vector<pixel_position_list> positions(
+        label_placement::finder<traits>::get(placement_type, layout_generator,
+            *common.detector_, params));
+
+    for (pixel_position_list const& pos_list : positions)
+    {
+        for (pixel_position const& pos : pos_list)
         {
-            pixel_position const& offset = layout_manager.offset_at(layout_i);
-            pixel_position render_offset = pos + offset;
-            render_thunks.render_list(layout_thunks[layout_i], render_offset);
+            for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
+            {
+                pixel_position const& offset = layout_manager.offset_at(layout_i);
+                pixel_position render_offset = pos + offset;
+                render_thunks.render_list(layout_thunks[layout_i], render_offset);
+            }
         }
     }
 }

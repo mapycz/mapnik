@@ -112,21 +112,12 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "placement",
                         [](enumeration_wrapper e)
                         { return enumeration<label_placement_enum,label_placement_enum_MAX>(label_placement_enum(e.value)).as_string();}, property_types::target_placement },
-    property_meta_type{ "placement", // FIXME - change property name
-                        [](enumeration_wrapper e)
-                        {
-                            return enumeration<marker_placement_enum,marker_placement_enum_MAX>(marker_placement_enum(e.value)).as_string();
-                        },
-                        property_types::target_markers_placement },
     property_meta_type{ "multi-policy",
                         [](enumeration_wrapper e)
                         {
-                            return enumeration<marker_multi_policy_enum,marker_multi_policy_enum_MAX>(marker_multi_policy_enum(e.value)).as_string();
+                            return enumeration<multi_policy_enum,multi_policy_enum_MAX>(multi_policy_enum(e.value)).as_string();
                         },
-                        property_types::target_markers_multipolicy },
-    property_meta_type{ "placement", // FIXME - change property name
-                        [](enumeration_wrapper e) { return enumeration<point_placement_enum,point_placement_enum_MAX>(point_placement_enum(e.value)).as_string();},
-                        property_types::target_double },
+                        property_types::target_multi_policy },
     property_meta_type{ "colorizer", nullptr, property_types::target_colorizer},
     property_meta_type{ "halo-transform",  nullptr, property_types::target_transform },
     property_meta_type{ "num-columns",  nullptr, property_types::target_integer},
@@ -163,6 +154,8 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "shadow-length", nullptr, property_types::target_double },
     property_meta_type{ "shadow-opacity", nullptr, property_types::target_double},
     property_meta_type{ "extend", nullptr, property_types::target_double},
+    property_meta_type{ "grid-cell-width", nullptr, property_types::target_double},
+    property_meta_type{ "grid-cell-height", nullptr, property_types::target_double},
 
 };
 

@@ -43,31 +43,33 @@ void cairo_renderer<T>::process(shield_symbolizer const& sym,
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
-    shield_symbolizer_helper helper(
+    placements_list placements(text_symbolizer_helper<shield_symbolizer_traits>::get(
             sym, feature, common_.vars_, prj_trans,
             common_.width_, common_.height_,
             common_.scale_factor_,
             common_.t_, common_.font_manager_, *common_.detector_,
             common_.query_extent_, tr,
-            common_.symbol_cache_);
+            common_.symbol_cache_));
 
     cairo_save_restore guard(context_);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_, src_over);
     double opacity = get<double>(sym,keys::opacity,feature, common_.vars_, 1.0);
 
-    placements_list const &placements = helper.get();
-    for (auto const& glyphs : placements)
+    for (auto const& layouts : placements)
     {
-        marker_info_ptr mark = glyphs->get_marker();
-        if (mark) {
-            pixel_position pos = glyphs->marker_pos();
-            render_marker(pos,
-                          *mark->marker_,
-                          mark->transform_,
-                          opacity);
+        for (auto const& glyphs : layouts->placements_)
+        {
+            marker_info_ptr mark = glyphs->get_marker();
+            if (mark) {
+                pixel_position pos = glyphs->marker_pos();
+                render_marker(pos,
+                              *mark->marker_,
+                              mark->transform_,
+                              opacity);
+            }
+            context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
         }
-        context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
     }
 }
 
@@ -83,22 +85,24 @@ void cairo_renderer<T>::process(text_symbolizer const& sym,
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
-    text_symbolizer_helper helper(
+    placements_list placements(text_symbolizer_helper<text_symbolizer_traits>::get(
             sym, feature, common_.vars_, prj_trans,
             common_.width_, common_.height_,
             common_.scale_factor_,
             common_.t_, common_.font_manager_, *common_.detector_,
             common_.query_extent_, tr,
-            common_.symbol_cache_);
+            common_.symbol_cache_));
 
     cairo_save_restore guard(context_);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_,  src_over);
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_,  src_over);
 
-    placements_list const& placements = helper.get();
-    for (auto const& glyphs : placements)
+    for (auto const& layouts : placements)
     {
-        context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
+        for (auto const& glyphs : layouts->placements_)
+        {
+            context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
+        }
     }
 }
 

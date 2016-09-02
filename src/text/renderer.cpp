@@ -226,7 +226,6 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         }
         FT_Done_Glyph(glyph.image);
     }
-
 }
 
 

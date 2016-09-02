@@ -236,10 +236,8 @@ source = Split(
     text/scrptrun.cpp
     text/face.cpp
     text/glyph_positions.cpp
-    text/placement_finder.cpp
     text/properties_util.cpp
     text/renderer.cpp
-    text/symbolizer_helpers.cpp
     text/text_properties.cpp
     text/font_feature_settings.cpp
     text/formatting/base.cpp
@@ -255,9 +253,13 @@ source = Split(
     text/placements/simple.cpp
     text/placements/combined.cpp
     text/placements/angle.cpp
+    text/point_layout.cpp
+    text/line_layout.cpp
+    text/text_layout_generator.cpp
     group/group_layout_manager.cpp
     group/group_rule.cpp
     group/group_symbolizer_helper.cpp
+    geometry_cref.cpp
     xml_tree.cpp
     config_error.cpp
     color_factory.cpp
@@ -269,6 +271,8 @@ source = Split(
     math.cpp
     symbol_cache.cpp
     value.cpp
+    marker_layout_generator.cpp
+    marker_layout.cpp
     """
     )
 

@@ -20,28 +20,18 @@
  *
  *****************************************************************************/
 
-// mapnik
-#include <mapnik/text/placement_finder.hpp>
-#include <mapnik/extend_converter.hpp>
-#include <mapnik/vertex_cache.hpp>
+#include <mapnik/geometry_cref.hpp>
 
-namespace mapnik
+namespace mapnik { namespace geometry {
+
+mapnik::box2d<double> envelope(cref_geometry<double>::geometry_type const& geom)
 {
-
-template <typename T>
-bool placement_finder::find_line_placements(T & path, bool points)
-{
-    if (!layouts_.line_count()) return true; //TODO
-
-    if (horizontal_alignment_ == H_ADJUST)
-    {
-        extend_converter<T> ec(path, halign_adjust_extend);
-        vertex_cache pp(ec);
-        return find_line_placements(pp, points);
-    }
-
-    vertex_cache pp(path);
-    return find_line_placements(pp, points);
+    return util::apply_visitor(envelope_impl(), geom);
 }
 
-}// ns mapnik
+mapnik::geometry::geometry_types geometry_type(cref_geometry<double>::geometry_type const& geom)
+{
+    return mapnik::util::apply_visitor(geometry_type_impl(), geom);
+}
+
+}}

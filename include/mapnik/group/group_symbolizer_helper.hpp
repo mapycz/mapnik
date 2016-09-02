@@ -22,85 +22,142 @@
 #ifndef GROUP_SYMBOLIZER_HELPER_HPP
 #define GROUP_SYMBOLIZER_HELPER_HPP
 
-//mapnik
-#include <mapnik/text/symbolizer_helpers.hpp>
-#include <mapnik/text/placements/base.hpp>
 #include <mapnik/value_types.hpp>
+#include <mapnik/vertex_cache.hpp>
 #include <mapnik/pixel_position.hpp>
+#include <mapnik/font_engine_freetype.hpp>
+#include <mapnik/text/placements/base.hpp>
+#include <mapnik/text/text_layout.hpp>
+#include <mapnik/label_placements/base.hpp>
+#include <mapnik/text/text_line_policy.hpp>
+#include <mapnik/text/line_layout.hpp>
+
+#include <list>
 
 namespace mapnik {
 
-class label_collision_detector4;
-class feature_impl;
-class proj_transform;
-class view_transform;
-using DetectorType = label_collision_detector4;
-
 using pixel_position_list = std::list<pixel_position>;
 
-// Helper object that does some of the GroupSymbolizer placement finding work.
-class group_symbolizer_helper : public base_symbolizer_helper
+struct box_element
+{
+    box_element(box2d<double> const& box, value_unicode_string const& repeat_key = "")
+       : box_(box),
+         repeat_key_(repeat_key)
+    {}
+    box2d<double> box_;
+    value_unicode_string repeat_key_;
+};
+
+struct group_layout_generator : util::noncopyable
+{
+    using params_type = label_placement::placement_params;
+
+    group_layout_generator(
+        params_type const & params,
+        face_manager_freetype & font_manager,
+        text_placement_info & info,
+        std::list<box_element> const & box_elements);
+
+    bool next();
+    void reset();
+
+    inline evaluated_text_properties const & get_text_props() const
+    {
+        return *text_props_;
+    }
+
+    inline bool has_placements() const
+    {
+        return !results_.empty();
+    }
+
+    inline pixel_position_list & get_placements()
+    {
+        return results_;
+    }
+
+    inline multi_policy_enum multi_policy() const
+    {
+        return text_props_->largest_bbox_only ? LARGEST_MULTI : EACH_MULTI;
+    }
+
+    face_manager_freetype &font_manager_;
+    text_placement_info & info_;
+    evaluated_text_properties_ptr text_props_;
+    std::unique_ptr<layout_container> layouts_;
+    bool state_;
+    pixel_position_list results_;
+    std::list<box_element> box_elements_;
+};
+
+struct group_line_policy : text_line_policy<group_layout_generator>
+{
+    using text_line_policy<group_layout_generator>::text_line_policy;
+
+    inline bool align()
+    {
+        return path_.forward(this->get_spacing() / 2.0);
+    }
+};
+
+template <typename SubLayout>
+class group_line_layout : line_layout<SubLayout>
 {
 public:
-    struct box_element
-    {
-        box_element(box2d<double> const& box, value_unicode_string const& repeat_key = "")
-           : box_(box),
-             repeat_key_(repeat_key)
-        {}
-        box2d<double> box_;
-        value_unicode_string repeat_key_;
-    };
+    using params_type = label_placement::placement_params;
 
-    group_symbolizer_helper(group_symbolizer const& sym,
-                            feature_impl const& feature,
-                            attributes const& vars,
-                            proj_transform const& prj_trans,
-                            unsigned width,
-                            unsigned height,
-                            double scale_factor,
-                            view_transform const& t,
-                            DetectorType &detector,
-                            box2d<double> const& query_extent,
-                            symbol_cache const& sc);
-
-    inline void add_box_element(box2d<double> const& box, value_unicode_string const& repeat_key = "")
+    group_line_layout(params_type const & params)
+        : line_layout<SubLayout>(params)
     {
-        box_elements_.push_back(box_element(box, repeat_key));
     }
 
-    inline void clear_box_elements()
+    template <typename LayoutGenerator, typename Detector, typename Geom>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Detector & detector,
+        Geom & geom)
     {
-        box_elements_.clear();
+        vertex_cache path(geom);
+        group_line_policy policy(path, layout_generator, 0, this->params_);
+        return line_layout<SubLayout>::try_placement(
+            layout_generator, detector, path, policy);
+    }
+};
+
+class group_point_layout : util::noncopyable
+{
+public:
+    using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
+
+    group_point_layout(params_type const & params);
+
+    template <typename Detector>
+    bool try_placement(
+        group_layout_generator & layout_generator,
+        Detector & detector,
+        pixel_position const& pos);
+
+    template <typename Detector>
+    bool try_placement(
+        group_layout_generator & layout_generator,
+        Detector & detector,
+        point_position const& pos);
+
+    inline double get_length(group_layout_generator const &) const
+    {
+        return 0;
     }
 
-    inline text_symbolizer_properties const& get_properties() const
-    {
-        return info_ptr_->properties;
-    }
+protected:
+    template <typename Detector>
+    bool collision(
+        Detector & detector,
+        evaluated_text_properties const & text_props,
+        box_type const& box,
+        const value_unicode_string &repeat_key) const;
 
-    pixel_position_list const& get();
-
-    // Iterate over the given path, placing line-following labels or point labels with respect to label_spacing.
-    template <typename T>
-    bool find_line_placements(T & path);
-private:
-
-
-    // Check if a point placement fits at given position
-    bool check_point_placement(pixel_position const& pos);
-    // Checks for collision.
-    bool collision(box2d<double> const& box, value_unicode_string const& repeat_key = "") const;
-    double get_spacing(double path_length) const;
-
-    DetectorType & detector_;
-
-    // Boxes and repeat keys to take into account when finding placement.
-    //  Boxes are relative to starting point of current placement.
-    //
-    std::list<box_element> box_elements_;
-
-    pixel_position_list results_;
+    params_type const & params_;
 };
 
 } //namespace

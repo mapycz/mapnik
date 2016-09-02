@@ -67,15 +67,6 @@ enum halo_rasterizer_enum : std::uint8_t
 
 DEFINE_ENUM(halo_rasterizer_e, halo_rasterizer_enum);
 
-enum point_placement_enum : std::uint8_t
-{
-    CENTROID_POINT_PLACEMENT,
-    INTERIOR_POINT_PLACEMENT,
-    point_placement_enum_MAX
-};
-
-DEFINE_ENUM( point_placement_e, point_placement_enum );
-
 enum pattern_alignment_enum : std::uint8_t
 {
     LOCAL_ALIGNMENT,
@@ -95,30 +86,15 @@ enum debug_symbolizer_mode_enum : std::uint8_t
 
 DEFINE_ENUM( debug_symbolizer_mode_e, debug_symbolizer_mode_enum );
 
-
-// markers
-// TODO - consider merging with text_symbolizer label_placement_e
-enum marker_placement_enum : std::uint8_t
+enum multi_policy_enum : std::uint8_t
 {
-    MARKER_POINT_PLACEMENT,
-    MARKER_INTERIOR_PLACEMENT,
-    MARKER_LINE_PLACEMENT,
-    MARKER_VERTEX_FIRST_PLACEMENT,
-    MARKER_VERTEX_LAST_PLACEMENT,
-    marker_placement_enum_MAX
+    EACH_MULTI, // each component in a multi gets its placement
+    WHOLE_MULTI, // consider all components of a multi as a whole
+    LARGEST_MULTI, // only the largest component of a multi gets a placement
+    multi_policy_enum_MAX
 };
 
-DEFINE_ENUM( marker_placement_e, marker_placement_enum );
-
-enum marker_multi_policy_enum : std::uint8_t
-{
-    MARKER_EACH_MULTI, // each component in a multi gets its marker
-    MARKER_WHOLE_MULTI, // consider all components of a multi as a whole
-    MARKER_LARGEST_MULTI, // only the largest component of a multi gets a marker
-    marker_multi_policy_enum_MAX
-};
-
-DEFINE_ENUM( marker_multi_policy_e, marker_multi_policy_enum );
+DEFINE_ENUM( multi_policy_e, multi_policy_enum );
 
 enum text_transform_enum : std::uint8_t
 {
@@ -139,6 +115,9 @@ enum label_placement_enum : std::uint8_t
     VERTEX_PLACEMENT,
     INTERIOR_PLACEMENT,
     GRID_PLACEMENT,
+    VERTEX_FIRST_PLACEMENT,
+    VERTEX_LAST_PLACEMENT,
+    CENTROID_PLACEMENT,
     label_placement_enum_MAX
 };
 

@@ -222,6 +222,11 @@ struct extend_converter
         extender_.start();
     }
 
+    unsigned type() const
+    {
+        return static_cast<unsigned>(geom_.type());
+    }
+
 private:
     Geometry & geom_;
     detail::extender extender_;

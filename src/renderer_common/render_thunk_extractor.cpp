@@ -91,29 +91,27 @@ void render_thunk_extractor::operator()(markers_symbolizer const& sym) const
     context_type renderer_context(sym, feature_, vars_, thunks_);
 
     render_markers_symbolizer(
-            sym, feature_, prj_trans_, common_, clipping_extent_, renderer_context);
+        sym, feature_, prj_trans_, common_, clipping_extent_, renderer_context);
 
     update_box();
 }
 
 void render_thunk_extractor::operator()(text_symbolizer const& sym) const
 {
-    using helper_type = text_symbolizer_helper;
-    auto helper = std::make_unique<helper_type>(
-        sym, feature_, vars_, prj_trans_,
-        common_.width_, common_.height_,
-        common_.scale_factor_,
-        common_.t_, common_.font_manager_, *common_.detector_,
-        clipping_extent_, agg::trans_affine::identity,
-        common_.symbol_cache_);
-
-    extract_text_thunk<helper_type>(std::move(helper), sym);
+    using helper_type = text_symbolizer_helper<text_symbolizer_traits>;
+    extract_text_thunk<helper_type>(sym);
 }
 
 void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
 {
-    using helper_type = shield_symbolizer_helper;
-    auto helper = std::make_unique<helper_type>(
+    using helper_type = text_symbolizer_helper<shield_symbolizer_traits>;
+    extract_text_thunk<helper_type>(sym);
+}
+
+template <typename Helper>
+void render_thunk_extractor::extract_text_thunk(text_symbolizer const& sym) const
+{
+    auto placements = Helper::get(
         sym, feature_, vars_, prj_trans_,
         common_.width_, common_.height_,
         common_.scale_factor_,
@@ -121,18 +119,11 @@ void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
         clipping_extent_, agg::trans_affine::identity,
         common_.symbol_cache_);
 
-    extract_text_thunk<helper_type>(std::move(helper), sym);
-}
-
-template <typename Helper>
-void render_thunk_extractor::extract_text_thunk(typename base_text_render_thunk<Helper>::helper_ptr && helper,
-                                                text_symbolizer const& sym) const
-{
     double opacity = get<double>(sym, keys::opacity, feature_, common_.vars_, 1.0);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature_, common_.vars_, src_over);
     halo_rasterizer_enum halo_rasterizer = get<halo_rasterizer_enum>(sym, keys::halo_rasterizer, feature_, common_.vars_, HALO_RASTERIZER_FULL);
 
-    base_text_render_thunk<Helper> thunk(std::move(helper), opacity, comp_op, halo_rasterizer);
+    base_text_render_thunk thunk(std::move(placements), opacity, comp_op, halo_rasterizer);
     thunks_.push_back(std::make_unique<render_thunk>(std::move(thunk)));
 
     update_box();

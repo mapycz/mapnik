@@ -72,9 +72,7 @@ enum class keys : std::uint8_t
     halo_rasterizer,
     text_placements_,
     label_placement,
-    markers_placement_type,
-    markers_multipolicy,
-    point_placement_type,
+    multipolicy,
     colorizer,
     halo_transform,
     num_columns,
@@ -97,6 +95,8 @@ enum class keys : std::uint8_t
     shadow_length,
     shadow_opacity,
     extend,
+    grid_cell_width,
+    grid_cell_height,
     MAX_SYMBOLIZER_KEY
 };
 

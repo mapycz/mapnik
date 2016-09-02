@@ -24,10 +24,12 @@
 #define MAPNIK_TEXT_RENDERER_HPP
 
 // mapnik
-#include <mapnik/text/placement_finder.hpp>
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/util/noncopyable.hpp>
+#include <mapnik/font_engine_freetype.hpp>
+#include <mapnik/text/glyph_positions.hpp>
+#include <mapnik/value_types.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -47,11 +49,13 @@ extern "C"
 namespace mapnik
 {
 
+struct evaluated_format_properties;
+
 struct glyph_t
 {
     FT_Glyph image;
-    detail::evaluated_format_properties const& properties;
-    glyph_t(FT_Glyph image_, detail::evaluated_format_properties const& properties_)
+    evaluated_format_properties const& properties;
+    glyph_t(FT_Glyph image_, evaluated_format_properties const& properties_)
         : image(image_), properties(properties_) {}
 };
 

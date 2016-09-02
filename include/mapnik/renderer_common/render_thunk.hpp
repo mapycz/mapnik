@@ -79,39 +79,29 @@ struct raster_marker_render_thunk : util::movable
     {}
 };
 
-template <typename Helper>
 struct base_text_render_thunk : util::movable
 {
-    using helper_ptr = std::unique_ptr<Helper>;
-    // helper is stored here in order
-    // to keep in scope the text rendering structures
-    helper_ptr helper_;
-    placements_list const& placements_;
+    placements_list placements_;
     double opacity_;
     composite_mode_e comp_op_;
     halo_rasterizer_enum halo_rasterizer_;
 
-    base_text_render_thunk(helper_ptr && helper,
+    base_text_render_thunk(placements_list && placements,
                       double opacity, composite_mode_e comp_op,
                       halo_rasterizer_enum halo_rasterizer)
-        : helper_(std::move(helper)),
-          placements_(helper_->get()),
+        : placements_(std::move(placements)),
           opacity_(opacity),
           comp_op_(comp_op),
           halo_rasterizer_(halo_rasterizer)
     {}
 };
 
-using text_render_thunk = base_text_render_thunk<text_symbolizer_helper>;
-using shield_render_thunk = base_text_render_thunk<shield_symbolizer_helper>;
-
 // Variant type for render thunks to allow us to re-render them
 // via a static visitor later.
 
 using render_thunk = util::variant<vector_marker_render_thunk,
                                    raster_marker_render_thunk,
-                                   text_render_thunk,
-                                   shield_render_thunk>;
+                                   base_text_render_thunk>;
 using render_thunk_ptr = std::unique_ptr<render_thunk>;
 using render_thunk_list = std::list<render_thunk_ptr>;
 

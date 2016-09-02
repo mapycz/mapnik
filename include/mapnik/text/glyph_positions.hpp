@@ -79,12 +79,14 @@ public:
 
     void emplace_back(glyph_info const& glyph, pixel_position offset, rotation const& rot);
     void reserve(unsigned count);
+    void clear();
 
     pixel_position const& get_base_point() const;
     void set_base_point(pixel_position const& base_point);
     void set_marker(marker_info_ptr marker, pixel_position const& marker_pos);
     marker_info_ptr const& get_marker() const;
     pixel_position const& marker_pos() const;
+
 private:
     std::vector<glyph_position> data_;
     pixel_position base_point_;
@@ -94,8 +96,6 @@ private:
 };
 
 using glyph_positions_ptr = std::unique_ptr<glyph_positions>;
-
-using placements_list = std::list<glyph_positions_ptr>;
 
 struct scoped_glyph_positions_offset
 {

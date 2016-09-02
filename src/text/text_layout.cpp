@@ -107,7 +107,7 @@ text_layout::text_layout(face_manager_freetype & font_manager,
       lines_(),
       layout_properties_(layout_defaults),
       properties_(properties),
-      format_(std::make_unique<detail::evaluated_format_properties>())
+      format_(std::make_unique<evaluated_format_properties>())
     {
         double dx = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dx);
         double dy = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dy);
@@ -158,14 +158,14 @@ void text_layout::add_text(mapnik::value_unicode_string const& str, evaluated_fo
     itemizer_.add_text(str, format);
 }
 
-void text_layout::add_child(text_layout_ptr const& child_layout)
+void text_layout::add_child(text_layout_ptr && child_layout)
 {
-    child_layout_list_.push_back(child_layout);
+    child_layout_list_.emplace_back(std::move(child_layout));
 }
 
 evaluated_format_properties_ptr & text_layout::new_child_format_ptr(evaluated_format_properties_ptr const& p)
 {
-    format_ptrs_.emplace_back(std::make_unique<detail::evaluated_format_properties>(*p));
+    format_ptrs_.emplace_back(std::make_unique<evaluated_format_properties>(*p));
     return format_ptrs_.back();
 }
 
@@ -501,14 +501,14 @@ text_layout::const_iterator text_layout::longest_line() const
         });
 }
 
-void layout_container::add(text_layout_ptr layout)
+void layout_container::add(text_layout & layout)
 {
-    text_ += layout->text();
-    layouts_.push_back(layout);
+    text_ += layout.text();
+    layouts_.emplace_back(layout);
 
-    for (text_layout_ptr const& child_layout : layout->get_child_layouts())
+    for (text_layout_ptr & child_layout : layout.get_child_layouts())
     {
-        add(child_layout);
+        add(*child_layout);
     }
 }
 
@@ -519,33 +519,23 @@ void layout_container::layout()
     line_count_ = 0;
 
     bool first = true;
-    for (text_layout_ptr const& layout : layouts_)
+    for (text_layout & layout : layouts_)
     {
-        layout->layout();
+        layout.layout();
 
-        glyphs_count_ += layout->glyphs_count();
-        line_count_ += layout->num_lines();
+        glyphs_count_ += layout.glyphs_count();
+        line_count_ += layout.num_lines();
 
         if (first)
         {
-            bounds_ = layout->bounds();
+            bounds_ = layout.bounds();
             first = false;
         }
         else
         {
-            bounds_.expand_to_include(layout->bounds());
+            bounds_.expand_to_include(layout.bounds());
         }
     }
 }
-
-void layout_container::clear()
-{
-    layouts_.clear();
-    text_.remove();
-    bounds_.init(0,0,0,0);
-    glyphs_count_ = 0;
-    line_count_ = 0;
-}
-
 
 } //ns mapnik

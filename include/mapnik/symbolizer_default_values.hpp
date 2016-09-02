@@ -312,26 +312,17 @@ struct symbolizer_default<halo_rasterizer_enum, keys::halo_rasterizer>
 };
 
 // text-placements
-
-// placement (point-placement-type FIXME)
 template <>
-struct symbolizer_default<point_placement_enum, keys::point_placement_type>
+struct symbolizer_default<label_placement_enum, keys::label_placement>
 {
-    static point_placement_enum value() { return CENTROID_POINT_PLACEMENT; }
-};
-
-// marker placement
-template <>
-struct symbolizer_default<marker_placement_enum, keys::markers_placement_type>
-{
-    static marker_placement_enum value() { return MARKER_POINT_PLACEMENT; }
+    static label_placement_enum value() { return POINT_PLACEMENT; }
 };
 
 // multi-policy
 template <>
-struct symbolizer_default<marker_multi_policy_enum, keys::markers_multipolicy>
+struct symbolizer_default<multi_policy_enum, keys::multipolicy>
 {
-    static marker_multi_policy_enum value() { return  MARKER_EACH_MULTI; }
+    static multi_policy_enum value() { return EACH_MULTI; }
 };
 
 // direction
@@ -395,6 +386,20 @@ template <>
 struct symbolizer_default<value_double, keys::extend>
 {
     static value_double value() { return 0.0; }
+};
+
+// grid_cell_width
+template <>
+struct symbolizer_default<value_double, keys::grid_cell_width>
+{
+    static value_double value() { return 10.0; }
+};
+
+// grid_cell_height
+template <>
+struct symbolizer_default<value_double, keys::grid_cell_height>
+{
+    static value_double value() { return 10.0; }
 };
 
 } // namespace mapnik

@@ -24,7 +24,6 @@
 #define MAPNIK_RENDERER_COMMON_RENDER_MARKERS_SYMBOLIZER_HPP
 
 #include <mapnik/marker.hpp>
-#include <mapnik/markers_placement.hpp>
 #include <mapnik/renderer_common.hpp>
 #include <mapnik/symbolizer_base.hpp>
 
@@ -33,8 +32,6 @@ namespace mapnik {
 struct markers_dispatch_params
 {
     // placement
-    markers_placement_params placement_params;
-    marker_placement_enum placement_method;
     value_bool ignore_placement;
     boost::optional<std::string> key;
     // rendering
@@ -47,8 +44,8 @@ struct markers_dispatch_params
                             symbolizer_base const& sym,
                             feature_impl const& feature,
                             attributes const& vars,
-                            double scale_factor = 1.0,
-                            bool snap_to_pixels = false);
+                            double scale_factor,
+                            bool snap_to_pixels);
 };
 
 struct markers_renderer_context : util::noncopyable
@@ -65,13 +62,20 @@ struct markers_renderer_context : util::noncopyable
 };
 
 MAPNIK_DECL
-void render_markers_symbolizer(markers_symbolizer const& sym,
+void render_markers_symbolizer(point_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans,
                                renderer_common & common,
                                box2d<double> const& clip_box,
                                markers_renderer_context & renderer_context);
 
+MAPNIK_DECL
+void render_markers_symbolizer(markers_symbolizer const& sym,
+                               mapnik::feature_impl & feature,
+                               proj_transform const& prj_trans,
+                               renderer_common & common,
+                               box2d<double> const& clip_box,
+                               markers_renderer_context & renderer_context);
 } // namespace mapnik
 
 #endif // MAPNIK_RENDERER_COMMON_RENDER_MARKERS_SYMBOLIZER_HPP

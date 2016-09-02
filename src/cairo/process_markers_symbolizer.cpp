@@ -71,6 +71,15 @@ void cairo_renderer<T>::process(markers_symbolizer const& sym,
                                   mapnik::feature_impl & feature,
                                   proj_transform const& prj_trans)
 {
+    process_marker(sym, feature, prj_trans);
+}
+
+template <typename T>
+template <typename Sym>
+void cairo_renderer<T>::process_marker(Sym const& sym,
+                                  mapnik::feature_impl & feature,
+                                  proj_transform const& prj_trans)
+{
     cairo_save_restore guard(context_);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
     context_.set_operator(comp_op);
@@ -85,6 +94,14 @@ void cairo_renderer<T>::process(markers_symbolizer const& sym,
 }
 
 template void cairo_renderer<cairo_ptr>::process(markers_symbolizer const&,
+                                                 mapnik::feature_impl &,
+                                                 proj_transform const&);
+
+template void cairo_renderer<cairo_ptr>::process_marker(markers_symbolizer const&,
+                                                 mapnik::feature_impl &,
+                                                 proj_transform const&);
+
+template void cairo_renderer<cairo_ptr>::process_marker(point_symbolizer const&,
                                                  mapnik::feature_impl &,
                                                  proj_transform const&);
 

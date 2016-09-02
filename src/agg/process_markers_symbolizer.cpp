@@ -109,6 +109,15 @@ void agg_renderer<T0,T1>::process(markers_symbolizer const& sym,
                               feature_impl & feature,
                               proj_transform const& prj_trans)
 {
+    process_marker(sym, feature, prj_trans);
+}
+
+template <typename T0, typename T1>
+template <typename Sym>
+void agg_renderer<T0,T1>::process_marker(Sym const& sym,
+                              feature_impl & feature,
+                              proj_transform const& prj_trans)
+{
     using namespace mapnik::svg;
     using color_type = agg::rgba8;
     using order_type = agg::order_rgba;
@@ -148,6 +157,14 @@ void agg_renderer<T0,T1>::process(markers_symbolizer const& sym,
 }
 
 template void agg_renderer<image_rgba8>::process(markers_symbolizer const&,
+                                              mapnik::feature_impl &,
+                                              proj_transform const&);
+
+template void agg_renderer<image_rgba8>::process_marker(point_symbolizer const&,
+                                              mapnik::feature_impl &,
+                                              proj_transform const&);
+
+template void agg_renderer<image_rgba8>::process_marker(markers_symbolizer const&,
                                               mapnik::feature_impl &,
                                               proj_transform const&);
 } // namespace mapnik

@@ -43,15 +43,6 @@ static const char * line_join_strings[] = {
 
 IMPLEMENT_ENUM( line_join_e, line_join_strings )
 
-// point symbolizer
-static const char * point_placement_strings[] = {
-    "centroid",
-    "interior",
-    ""
-};
-
-IMPLEMENT_ENUM( point_placement_e, point_placement_strings )
-
 // line symbolizer
 static const char * line_rasterizer_strings[] = {
     "full",
@@ -61,25 +52,14 @@ static const char * line_rasterizer_strings[] = {
 IMPLEMENT_ENUM( line_rasterizer_e, line_rasterizer_strings )
 
 // markers symbolizer
-static const char * marker_placement_strings[] = {
-    "point",
-    "interior",
-    "line",
-    "vertex-first",
-    "vertex-last",
-    ""
-};
-
-IMPLEMENT_ENUM( marker_placement_e, marker_placement_strings )
-
-static const char * marker_multi_policy_strings[] = {
+static const char * multi_policy_strings[] = {
     "each",
     "whole",
     "largest",
     ""
 };
 
-IMPLEMENT_ENUM( marker_multi_policy_e, marker_multi_policy_strings )
+IMPLEMENT_ENUM( multi_policy_e, multi_policy_strings )
 
 // debug symbolizer
 static const char * debug_symbolizer_mode_strings[] = {
@@ -117,6 +97,9 @@ static const char * label_placement_strings[] = {
     "vertex",
     "interior",
     "grid",
+    "vertex-first",
+    "vertex-last",
+    "centroid",
     ""
 };
 

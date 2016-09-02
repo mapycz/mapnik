@@ -34,6 +34,8 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/text/properties_util.hpp>
 #include <mapnik/boolean.hpp>
+#include <mapnik/boolean.hpp>
+#include <mapnik/make_unique.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -103,7 +105,7 @@ void layout_node::apply(evaluated_format_properties_ptr const& p, feature_impl c
 
     // starting a new offset child with the new displacement value
     // we pass a null format tree since this is not the parent but a child
-    text_layout_ptr child_layout = std::make_shared<text_layout>(parent.get_font_manager(),
+    text_layout_ptr child_layout = std::make_unique<text_layout>(parent.get_font_manager(),
                                                                  feature,
                                                                  vars,
                                                                  parent.get_scale_factor(),
@@ -119,7 +121,7 @@ void layout_node::apply(evaluated_format_properties_ptr const& p, feature_impl c
     {
         MAPNIK_LOG_WARN(format) << "Useless layout node: Contains no text";
     }
-    parent.add_child(child_layout);
+    parent.add_child(std::move(child_layout));
 }
 
 void layout_node::set_child(node_ptr child)

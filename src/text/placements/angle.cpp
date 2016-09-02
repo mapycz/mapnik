@@ -158,7 +158,7 @@ text_placement_info_angle::text_placement_info_angle(text_placements_angle const
       box_(box),
       dx_(displacement(box.width(), properties.layout_defaults.dx)),
       dy_(displacement(box.height(), properties.layout_defaults.dy)),
-      tolerance_iterator_(tolerance, 0, tolerance_function(step))
+      tolerance_iterator_(tolerance, tolerance_function(step))
 {
     list_placement_info_->next();
 }

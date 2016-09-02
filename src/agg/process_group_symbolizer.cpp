@@ -112,36 +112,28 @@ struct thunk_renderer<image_rgba8> : render_thunk_list_dispatch
         render_raster_marker(renb, *ras_ptr_, thunk.src_, offset_tr, thunk.opacity_, common_.scale_factor_, thunk.snap_to_pixels_);
     }
 
-    template <typename Thunk>
-    void render_text(Thunk const & thunk)
+    virtual void operator()(base_text_render_thunk const& thunk)
     {
         tex_.set_comp_op(thunk.comp_op_);
         tex_.set_halo_comp_op(thunk.comp_op_);
         tex_.set_halo_rasterizer(thunk.halo_rasterizer_);
 
-        for (auto const& glyphs : thunk.placements_)
+        for (auto const& layouts : thunk.placements_)
         {
-            scoped_glyph_positions_offset tmp_off(*glyphs, offset_);
-
-            if (auto const& mark = glyphs->get_marker())
+            for (auto const& glyphs : layouts->placements_)
             {
-                ren_.render_marker(glyphs->marker_pos(),
-                                   *mark->marker_,
-                                   mark->transform_,
-                                   thunk.opacity_, thunk.comp_op_);
+                scoped_glyph_positions_offset tmp_off(*glyphs, offset_);
+
+                if (auto const& mark = glyphs->get_marker())
+                {
+                    ren_.render_marker(glyphs->marker_pos(),
+                                       *mark->marker_,
+                                       mark->transform_,
+                                       thunk.opacity_, thunk.comp_op_);
+                }
+                tex_.render(*glyphs);
             }
-            tex_.render(*glyphs);
         }
-    }
-
-    virtual void operator()(text_render_thunk const& thunk)
-    {
-        render_text(thunk);
-    }
-
-    virtual void operator()(shield_render_thunk const& thunk)
-    {
-        render_text(thunk);
     }
 
 private:

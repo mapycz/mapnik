@@ -183,6 +183,12 @@ public:
         return false;
     }
 
+    template <typename Sym>
+    void process_marker(
+        Sym const& sym,
+        mapnik::feature_impl & feature,
+        proj_transform const& prj_trans);
+
     void painted(bool painted);
     bool painted();
 

@@ -23,13 +23,16 @@
 #define SYMBOLIZER_HELPERS_HPP
 
 // mapnik
-#include <mapnik/text/placement_finder.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/symbol_cache.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/text/text_properties.hpp>
+#include <mapnik/label_placement.hpp>
+#include <mapnik/marker.hpp>
+#include <mapnik/group/group_symbolizer_helper.hpp>
+#include <mapnik/text/grid_layout.hpp>
 
 namespace mapnik {
 
@@ -38,107 +41,92 @@ class proj_transform;
 class view_transform;
 struct symbolizer_base;
 
-using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
-
-class base_symbolizer_helper
+struct text_symbolizer_traits
 {
-public:
+    using point = point_layout;
+    using interior = point_layout;
+    using vertex = point_layout;
+    using grid = grid_layout<point_layout>;
+    using line = text_vertex_converter<
+        text_extend_line_layout<
+            line_layout<
+                single_line_layout>>>;
+    using vertex_first = point_layout;
+    using vertex_last = point_layout;
 
-    using point_cref = std::reference_wrapper<geometry::point<double> const>;
-    using line_string_cref = std::reference_wrapper<geometry::line_string<double> const>;
-    using polygon_cref = std::reference_wrapper<geometry::polygon<double> const>;
-    using geometry_cref = util::variant<point_cref, line_string_cref, polygon_cref>;
-    // Using list instead of vector, because we delete random elements and need iterators to stay valid.
-    using geometry_container_type = std::list<geometry_cref>;
-    base_symbolizer_helper(symbolizer_base const& sym,
-                           feature_impl const& feature,
-                           attributes const& vars,
-                           proj_transform const& prj_trans,
-                           unsigned width,
-                           unsigned height,
-                           double scale_factor,
-                           view_transform const& t,
-                           box2d<double> const& query_extent,
-                           symbol_cache const& sc);
-
-protected:
-    void initialize_geometries() const;
-    void initialize_points() const;
-
-    //Input
-    symbolizer_base const& sym_;
-    feature_impl const& feature_;
-    attributes const& vars_;
-    proj_transform const& prj_trans_;
-    view_transform const& t_;
-    box2d<double> dims_;
-    box2d<double> const& query_extent_;
-    double scale_factor_;
-
-    //Processing
-    // Remaining geometries to be processed.
-    mutable geometry_container_type geometries_to_process_;
-    // Geometry currently being processed.
-    mutable geometry_container_type::iterator geo_itr_;
-    // Remaining points to be processed.
-    mutable std::list<pixel_position> points_;
-    // Point currently being processed.
-    mutable std::list<pixel_position>::iterator point_itr_;
-    // Use point placement. Otherwise line placement is used.
-    mutable bool point_placement_;
-    text_placement_info_ptr info_ptr_;
-    evaluated_text_properties_ptr text_props_;
+    using placements_type = placements_list;
+    using layout_generator_type = text_layout_generator;
 };
 
-// Helper object that does all the TextSymbolizer placement finding
-// work except actually rendering the object.
+struct shield_symbolizer_traits
+{
+    using point = shield_layout;
+    using interior = shield_layout;
+    using vertex = shield_layout;
+    using grid = grid_layout<shield_layout>;
+    using line = text_vertex_converter<
+        line_layout<shield_layout>>;
+    using vertex_first = shield_layout;
+    using vertex_last = shield_layout;
 
-class text_symbolizer_helper : public base_symbolizer_helper
+    using placements_type = placements_list;
+    using layout_generator_type = text_layout_generator;
+};
+
+struct group_symbolizer_traits
+{
+    using point = group_point_layout;
+    using interior = group_point_layout;
+    using vertex = group_point_layout;
+    using grid = grid_layout<group_point_layout>;
+    using line = text_vertex_converter<
+        group_line_layout<group_point_layout>>;
+    using vertex_first = group_point_layout;
+    using vertex_last = group_point_layout;
+
+    using placements_type = std::vector<pixel_position_list>;
+    using layout_generator_type = group_layout_generator;
+};
+
+template <typename Traits>
+class text_symbolizer_helper
 {
 public:
+    using layout_generator_type = typename Traits::layout_generator_type;
+
     template <typename FaceManagerT, typename DetectorT>
-    text_symbolizer_helper(symbolizer_base const& sym,
-                           feature_impl const& feature,
-                           attributes const& vars,
-                           proj_transform const& prj_trans,
-                           unsigned width,
-                           unsigned height,
-                           double scale_factor,
-                           view_transform const& t,
-                           FaceManagerT & font_manager,
-                           DetectorT & detector,
-                           box2d<double> const& query_extent,
-                           agg::trans_affine const&,
-                           symbol_cache const& sc);
+    static typename Traits::placements_type get(
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars,
+        proj_transform const& prj_trans,
+        unsigned width,
+        unsigned height,
+        double scale_factor,
+        view_transform const& t,
+        FaceManagerT & font_manager,
+        DetectorT & detector,
+        box2d<double> const& query_extent,
+        agg::trans_affine const affine_trans,
+        symbol_cache const& sc)
+    {
+        label_placement::placement_params params {
+            prj_trans, t, affine_trans, sym, feature, vars,
+            box2d<double>(0, 0, width, height), query_extent,
+            scale_factor, sc };
 
-    // Return all placements.
-    placements_list const& get() const;
-protected:
-    void init_converters();
-    void initialize_points() const;
-    bool next_point_placement() const;
-    template <typename T>
-    bool next_line_placement(T const & adapter) const;
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            sym, keys::text_placements_)->get_placement_info(scale_factor,
+                feature, vars, sc);
+        layout_generator_type layout_generator(params, font_manager, *placement_info);
 
-    mutable placement_finder finder_;
+        const label_placement_enum placement_type =
+            layout_generator.get_text_props().label_placement;
 
-    mutable vertex_converter_type converter_;
+        return label_placement::finder<Traits>::get(placement_type, layout_generator,
+            detector, params);
+    }
 };
-
-class shield_symbolizer_helper : public text_symbolizer_helper
-{
-public:
-    using text_symbolizer_helper::text_symbolizer_helper;
-
-    placements_list const& get() const;
-
-protected:
-    void init_marker() const;
-};
-
-namespace geometry {
-MAPNIK_DECL mapnik::box2d<double> envelope(mapnik::base_symbolizer_helper::geometry_cref const& geom);
-}
 
 } //namespace mapnik
 
