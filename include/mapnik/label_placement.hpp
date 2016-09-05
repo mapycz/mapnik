@@ -32,11 +32,14 @@ namespace mapnik
 namespace detail
 {
 
-template <typename DetectorT, FaceManagerT>
+template <typename Geom, typename DetectorT, typename FaceManagerT>
 struct label_placement_params
 {
+    Geom const & geometry;
     DetectorT & detector;
     FaceManagerT & font_manager;
+    proj_transform const & proj_transform;
+    view_transform const & view_transform;
     feature_impl const & feature;
     attributes const & vars;
     text_placement_info const & placement_info;
