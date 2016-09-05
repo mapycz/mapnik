@@ -20,8 +20,8 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_LABEL_PLACEMENTS_POINT_HPP
-#define MAPNIK_LABEL_PLACEMENTS_POINT_HPP
+#ifndef MAPNIK_LABEL_PLACEMENTS_INTERIOR_HPP
+#define MAPNIK_LABEL_PLACEMENTS_INTERIOR_HPP
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_types.hpp>
@@ -30,7 +30,7 @@
 namespace mapnik {
 
 template <typename Geom>
-class label_point_placement
+class label_interior_placement
 {
 public:
     static placements_list get(label_placement_params & params)
@@ -49,13 +49,23 @@ public:
             geometry::line_string_vertex_adapter<double> va(line);
             if (!label::middle_point(va, pt.x, pt.y))
             {
-                MAPNIK_LOG_ERROR(label_point_placement) << "Middle point calculation failed." << type_oid;
+                MAPNIK_LOG_ERROR(label_interior_placement) << "Middle point calculation failed." << type_oid;
                 return placements;
             }
         }
-        else if (!geometry::centroid(params.geometry, pt))
+        else if (type == geometry::geometry_types::Polygon)
         {
-            MAPNIK_LOG_ERROR(label_point_placement) << "Centroid calculation failed." << type_oid;
+            auto const & poly = mapnik::util::get<geometry::polygon<double>>(geom);
+            geometry::polygon_vertex_adapter<double> va(poly);
+            if (!label::interior_position(va, pt.x, pt.y))
+            {
+                MAPNIK_LOG_ERROR(label_interior_placement) << "Interior point calculation failed." << type_oid;
+                return placements;
+            }
+        }
+        else
+        {
+            MAPNIK_LOG_ERROR(symbolizer_helpers) << "ERROR: Unknown placement type in initialize_points()";
             return placements;
         }
 
@@ -82,4 +92,4 @@ public:
 
 }
 
-#endif // MAPNIK_LABEL_PLACEMENTS_POINT_HPP
+#endif // MAPNIK_LABEL_PLACEMENTS_INTERIOR_HPP
