@@ -32,6 +32,7 @@
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/util/math.hpp>
+#include <mapnik/tolerance_iterator.hpp>
 
 // stl
 #include <vector>
@@ -113,6 +114,66 @@ text_upright_e placement_finder::simplify_upright(text_upright_e upright, double
         return  UPRIGHT_RIGHT;
     }
     return upright;
+}
+
+bool placement_finder::find_line_placements(vertex_cache & pp, bool points)
+{
+    bool success = false;
+    while (pp.next_subpath())
+    {
+        if (points)
+        {
+            if (pp.length() <= 0.001)
+            {
+                success = find_point_placement(pp.current_position()) || success;
+                continue;
+            }
+        }
+        else
+        {
+            if ((pp.length() < text_props_->minimum_path_length * scale_factor_)
+                ||
+                (pp.length() <= 0.001) // Clipping removed whole geometry
+                ||
+                (pp.length() < layouts_.width()))
+                {
+                    continue;
+                }
+        }
+
+        double spacing = get_spacing(pp.length(), points ? 0. : layouts_.width());
+
+        //horizontal_alignment_e halign = layouts_.back()->horizontal_alignment();
+
+        // halign == H_LEFT -> don't move
+        if (horizontal_alignment_ == H_MIDDLE || horizontal_alignment_ == H_AUTO || horizontal_alignment_ == H_ADJUST)
+        {
+            if (!pp.forward(spacing / 2.0)) continue;
+        }
+        else if (horizontal_alignment_ == H_RIGHT)
+        {
+            if (!pp.forward(pp.length())) continue;
+        }
+
+        if (move_dx_ != 0.0) path_move_dx(pp, move_dx_);
+
+        do
+        {
+            tolerance_iterator<exponential_function> tolerance_offset(text_props_->label_position_tolerance * scale_factor_, spacing); //TODO: Handle halign
+            while (tolerance_offset.next())
+            {
+                vertex_cache::scoped_state state(pp);
+                if (pp.move(tolerance_offset.get())
+                    && ((points && find_point_placement(pp.current_position()))
+                        || (!points && single_line_placement(pp, text_props_->upright))))
+                {
+                    success = true;
+                    break;
+                }
+            }
+        } while (pp.forward(spacing));
+    }
+    return success;
 }
 
 bool placement_finder::find_point_placement(pixel_position const& pos)
@@ -245,7 +306,7 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
                 }
                 longest_line_offset += sign * longest_line->height() / 2.0;
                 vertex_cache const & off_pp = pp.get_offseted(longest_line_offset, sign * layout_width);
-                adjust_character_spacing = (off_pp.length() - longest_line->glyphs_width()) / longest_line->space_count();
+                adjust_character_spacing = (off_pp.length() - longest_line->glyphs_width() - 2.0 * halign_adjust_extend) / longest_line->space_count();
                 if (adjust_character_spacing < 0)
                 {
                     return false;
