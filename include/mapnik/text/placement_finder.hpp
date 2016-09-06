@@ -64,6 +64,7 @@ public:
 
     void set_marker(marker_info_ptr m, box2d<double> box, bool marker_unlocked, pixel_position const& marker_displacement);
 private:
+    bool find_line_placements(vertex_cache & path, bool points);
     bool single_line_placement(vertex_cache &pp, text_upright_e orientation);
     // Moves dx pixels but makes sure not to fall of the end.
     void path_move_dx(vertex_cache & pp, double dx);
@@ -99,6 +100,8 @@ private:
     pixel_position marker_displacement_;
     double move_dx_;
     horizontal_alignment_e horizontal_alignment_;
+
+    const double halign_adjust_extend = 1000;
 };
 
 }//ns mapnik
