@@ -31,7 +31,8 @@
 #include <mapnik/raster.hpp>
 #include <mapnik/proj_transform.hpp>
 
-// agg
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
 #include "agg_image_filters.h"
 #include "agg_trans_bilinear.h"
 #include "agg_span_interpolator_linear.h"
@@ -45,6 +46,7 @@
 #include "agg_span_allocator.h"
 #include "agg_image_accessors.h"
 #include "agg_renderer_scanline.h"
+#pragma GCC diagnostic pop
 
 namespace mapnik {
 
@@ -181,10 +183,10 @@ struct warp_image_visitor
           nodata_value_(nodata_value)
     {}
 
-    void operator() (image_null const&) {}
+    void operator() (image_null const&) const {}
 
     template <typename T>
-    void operator() (T const& source)
+    void operator() (T const& source) const
     {
         using image_type = T;
         //source and target image data types must match
@@ -220,6 +222,20 @@ void reproject_and_scale_raster(raster & target, raster const& source,
                                       scaling_method, source.get_filter_factor(), nodata_value);
     util::apply_visitor(warper, source.data_);
 }
+
+void reproject_and_scale_raster(raster & target, raster const& source,
+                                            proj_transform const& prj_trans,
+                                            double offset_x, double offset_y,
+                                            unsigned mesh_size,
+                                            scaling_method_e scaling_method)
+{
+    reproject_and_scale_raster(target, source, prj_trans,
+                               offset_x, offset_y,
+                               mesh_size,
+                               scaling_method,
+                               boost::optional<double>());
+}
+
 
 template MAPNIK_DECL void warp_image (image_rgba8&, image_rgba8 const&, proj_transform const&,
                                       box2d<double> const&, box2d<double> const&, double, double, unsigned, scaling_method_e, double, boost::optional<double> const &);

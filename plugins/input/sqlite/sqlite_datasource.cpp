@@ -551,7 +551,7 @@ featureset_ptr sqlite_datasource::features(query const& q) const
                                                      using_subquery_);
     }
 
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }
 
 featureset_ptr sqlite_datasource::features_at_point(coord2d const& pt, double tol) const
@@ -574,16 +574,15 @@ featureset_ptr sqlite_datasource::features_at_point(coord2d const& pt, double to
             ctx->push(key_field_);
         }
 
-        std::vector<attribute_descriptor>::const_iterator itr = desc_.get_descriptors().begin();
-        std::vector<attribute_descriptor>::const_iterator end = desc_.get_descriptors().end();
+        auto const& desc = desc_.get_descriptors();
 
-        for ( ; itr != end; ++itr)
+        for (auto const& attr_info : desc)
         {
-            std::string fld_name = itr->get_name();
-            if (fld_name != key_field_)
+            std::string const& name = attr_info.get_name();
+            if (name != key_field_)
             {
-                s << ",[" << itr->get_name() << "]";
-                ctx->push(itr->get_name());
+                s << ",[" << name << "]";
+                ctx->push(name);
             }
         }
 
@@ -632,5 +631,5 @@ featureset_ptr sqlite_datasource::features_at_point(coord2d const& pt, double to
                                                      using_subquery_);
     }
 
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }

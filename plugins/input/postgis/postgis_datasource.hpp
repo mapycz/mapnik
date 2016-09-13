@@ -119,9 +119,17 @@ private:
     bool estimate_extent_;
     int max_async_connections_;
     bool asynchronous_request_;
+    bool twkb_encoding_;
+    mapnik::value_double twkb_rounding_adjustment_;
+    mapnik::value_double simplify_snap_ratio_;
+    mapnik::value_double simplify_dp_ratio_;
+    mapnik::value_double simplify_prefilter_;
+    bool simplify_dp_preserve_;
+    mapnik::value_double simplify_clip_resolution_;
     boost::regex pattern_;
     int intersect_min_scale_;
     int intersect_max_scale_;
+    bool key_field_as_attribute_;
 };
 
 #endif // POSTGIS_DATASOURCE_HPP

@@ -48,13 +48,17 @@ using mapnik::context_ptr;
 postgis_featureset::postgis_featureset(std::shared_ptr<IResultSet> const& rs,
                                        context_ptr const& ctx,
                                        std::string const& encoding,
-                                       bool key_field)
+                                       bool key_field,
+                                       bool key_field_as_attribute,
+                                       bool twkb_encoding)
     : rs_(rs),
       ctx_(ctx),
       tr_(new transcoder(encoding)),
       totalGeomSize_(0),
       feature_id_(1),
-      key_field_(key_field)
+      key_field_(key_field),
+      key_field_as_attribute_(key_field_as_attribute),
+      twkb_encoding_(twkb_encoding)
 {
 }
 
@@ -97,10 +101,10 @@ feature_ptr postgis_featureset::next()
             }
 
             feature = feature_factory::create(ctx_, val);
-            // TODO - extend feature class to know
-            // that its id is also an attribute to avoid
-            // this duplication
-            feature->put<mapnik::value_integer>(name,val);
+            if (key_field_as_attribute_)
+            {
+                feature->put<mapnik::value_integer>(name,val);
+            }
             ++pos;
         }
         else
@@ -121,11 +125,21 @@ feature_ptr postgis_featureset::next()
         int size = rs_->getFieldLength(0);
         const char *data = rs_->getValue(0);
 
-        mapnik::geometry::geometry<double> geometry = geometry_utils::from_wkb(data, size);
-        feature->set_geometry(std::move(geometry));
+        if (twkb_encoding_ )
+        {
+            feature->set_geometry(geometry_utils::from_twkb(data, size));
+        }
+        else
+        {
+            feature->set_geometry(geometry_utils::from_wkb(data, size));
+        }
 
         totalGeomSize_ += size;
         unsigned num_attrs = ctx_->size() + 1;
+        if (!key_field_as_attribute_)
+        {
+            num_attrs++;
+        }
         for (; pos < num_attrs; ++pos)
         {
             std::string name = rs_->getFieldName(pos);

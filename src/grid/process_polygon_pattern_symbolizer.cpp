@@ -36,10 +36,12 @@
 #include <mapnik/parse_path.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 
-// agg
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
 #include "agg_rasterizer_scanline_aa.h"
 #include "agg_renderer_scanline.h"
 #include "agg_scanline_bin.h"
+#pragma GCC diagnostic pop
 
 // stl
 #include <string>
@@ -76,10 +78,15 @@ void grid_renderer<T>::process(polygon_pattern_symbolizer const& sym,
         evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
     }
 
-    using vertex_converter_type = vertex_converter<clip_poly_tag,transform_tag,affine_transform_tag,smooth_tag>;
+    using vertex_converter_type = vertex_converter<clip_poly_tag,
+                                                   transform_tag,
+                                                   affine_transform_tag,
+                                                   simplify_tag,
+                                                   smooth_tag>;
+
     vertex_converter_type converter(common_.query_extent_,sym,common_.t_,prj_trans,tr,feature,common_.vars_,common_.scale_factor_);
 
-    if (prj_trans.equal() && clip) converter.set<clip_poly_tag>(); //optional clip (default: true)
+    if (prj_trans.equal() && clip) converter.set<clip_poly_tag>();
     converter.set<transform_tag>(); //always transform
     converter.set<affine_transform_tag>();
     if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter

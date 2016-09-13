@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
 
@@ -196,10 +196,10 @@ void MainWindow::load_map_file(QString const& filename)
         mapnik::auto_cpu_timer t(std::clog, "loading map took: ");
         mapnik::load_map(*map,filename.toStdString());
     }
-    //catch (mapnik::config_error & ex)
-    //{
-    //    std::cout << ex.what() << "\n";
-    //}
+    catch (std::exception const& ex)
+    {
+        std::cout << ex.what() << "\n";
+    }
     catch (...)
     {
         std::cerr << "Exception caught in load_map\n";

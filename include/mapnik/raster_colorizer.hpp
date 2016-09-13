@@ -41,12 +41,13 @@
 #include <mapnik/color.hpp>
 #include <mapnik/enumeration.hpp>
 #include <mapnik/image.hpp>
- // boost
-#include <boost/optional.hpp>
-// boost
-#include <memory>
 
-// stl
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
+#include <boost/optional.hpp>
+#pragma GCC diagnostic pop
+
+#include <memory>
 #include <vector>
 
 namespace mapnik
@@ -92,7 +93,7 @@ public:
 
     //! \brief Set the stop value
     //! \param[in] value The stop value
-    inline void set_value(float value) { value_ = value; }
+    inline void set_value(float v) { value_ = v; }
 
     //! \brief Get the stop value
     //! \return The stop value
@@ -164,7 +165,7 @@ public:
 
     void set_default_mode(colorizer_mode mode)
     {
-        default_mode_ = (mode == COLORIZER_INHERIT) ? COLORIZER_LINEAR:(colorizer_mode_enum)mode;
+        default_mode_ = (mode == COLORIZER_INHERIT) ? COLORIZER_LINEAR : static_cast<colorizer_mode_enum>(mode);
     }
 
     void set_default_mode_enum(colorizer_mode_enum mode) { set_default_mode(mode); }
@@ -204,7 +205,7 @@ public:
     //!
     //! \param[in] value Input value
     //! \return color associated with the value
-    unsigned get_color(float value) const;
+    unsigned get_color(float v) const;
 
 
     //! \brief Set the epsilon value for exact mode

@@ -210,7 +210,7 @@ int main(int argc, char** argv)
     }
     catch (std::exception & e)
     {
-        std::cerr << "Error runnig tests: " << e.what() << std::endl;
+        std::cerr << "Error running tests: " << e.what() << std::endl;
         return 1;
     }
 
@@ -221,7 +221,7 @@ int main(int argc, char** argv)
         html_summary(results, output_dir);
     }
 
-    testing::run_cleanup();
+    //testing::run_cleanup();
 
     return failed_count;
 }

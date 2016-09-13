@@ -79,7 +79,6 @@ private:
     // Maps upright==auto, left-only and right-only to left,right to simplify processing.
     // angle = angle of at start of line (to estimate best option for upright==auto)
     text_upright_e simplify_upright(text_upright_e upright, double angle) const;
-    box2d<double> get_bbox(text_layout const& layout, glyph_info const& glyph, pixel_position const& pos, rotation const& rot);
     feature_impl const& feature_;
     attributes const& attr_;
     DetectorType & detector_;
@@ -93,7 +92,6 @@ private:
 
     placements_list placements_;
     std::vector<text_layout_ptr> processed_layouts_;
-
     //ShieldSymbolizer
     bool has_marker_;
     marker_info_ptr marker_;

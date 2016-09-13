@@ -24,83 +24,129 @@
 #define MAPNIK_CSV_UTILS_DATASOURCE_HPP
 
 // mapnik
-#include <mapnik/debug.hpp>
+#include <mapnik/box2d.hpp>
 #include <mapnik/geometry.hpp>
-#include <mapnik/geometry_correct.hpp>
-#include <mapnik/wkt/wkt_factory.hpp>
-#include <mapnik/json/geometry_parser.hpp>
+#include <mapnik/value_types.hpp>
 #include <mapnik/util/conversions.hpp>
-//#include <mapnik/csv/csv_grammar.hpp>
 #include <mapnik/util/trim.hpp>
-#include <mapnik/datasource.hpp>
+#include <mapnik/csv/csv_types.hpp>
 
-#pragma GCC diagnostic push
-#include <mapnik/warning_ignore.hpp>
-#include <boost/algorithm/string.hpp>
-#pragma GCC diagnostic pop
-
+// std
+#include <iosfwd>
 #include <string>
-#include <cstdio>
+#include <vector>
 
-namespace csv_utils
+namespace csv_utils {
+
+mapnik::csv_line parse_line(char const* start, char const* end, char separator, char quote, std::size_t num_columns);
+mapnik::csv_line parse_line(std::string const& line_str, char separator, char quote);
+
+bool is_likely_number(std::string const& value);
+
+bool ignore_case_equal(std::string const& s0, std::string const& s1);
+
+struct geometry_column_locator
 {
-    static inline bool is_likely_number(std::string const& value)
-    {
-        return( strspn( value.c_str(), "e-.+0123456789" ) == value.size() );
-    }
+    geometry_column_locator()
+        : type(UNKNOWN), index(-1), index2(-1) {}
 
-    static inline void fix_json_quoting(std::string & csv_line)
-    {
-        std::string wrapping_char;
-        std::string::size_type j_idx = std::string::npos;
-        std::string::size_type post_idx = std::string::npos;
-        std::string::size_type j_idx_double = csv_line.find("\"{");
-        std::string::size_type j_idx_single = csv_line.find("'{");
-        if (j_idx_double != std::string::npos)
-        {
-            wrapping_char = "\"";
-            j_idx = j_idx_double;
-            post_idx = csv_line.find("}\"");
+    enum { UNKNOWN = 0, WKT, GEOJSON, LON_LAT } type;
+    std::size_t index;
+    std::size_t index2;
+};
 
-        }
-        else if (j_idx_single != std::string::npos)
+
+mapnik::geometry::geometry<double> extract_geometry(std::vector<std::string> const& row, geometry_column_locator const& locator);
+
+template <typename Feature, typename Headers, typename Values, typename Locator, typename Transcoder>
+void process_properties(Feature & feature, Headers const& headers, Values const& values, Locator const& locator, Transcoder const& tr)
+{
+    auto val_beg = values.begin();
+    auto val_end = values.end();
+    auto num_headers = headers.size();
+    for (std::size_t i = 0; i < num_headers; ++i)
+    {
+        std::string const& fld_name = headers.at(i);
+        if (val_beg == val_end)
         {
-            wrapping_char = "'";
-            j_idx = j_idx_single;
-            post_idx = csv_line.find("}'");
+            feature.put(fld_name,tr.transcode(""));
+            continue;
         }
-        // we are positive it is valid json
-        if (!wrapping_char.empty())
+        std::string value = mapnik::util::trim_copy(*val_beg++);
+        int value_length = value.length();
+
+        if (locator.index == i && (locator.type == geometry_column_locator::WKT
+                                   || locator.type == geometry_column_locator::GEOJSON)  ) continue;
+
+
+        bool matched = false;
+        bool has_dot = value.find(".") != std::string::npos;
+        if (value.empty() ||
+            (value_length > 20) ||
+            (value_length > 1 && !has_dot && value[0] == '0'))
         {
-            // grab the json chunk
-            std::string json_chunk = csv_line.substr(j_idx,post_idx+wrapping_char.size());
-            bool does_not_have_escaped_double_quotes = (json_chunk.find("\\\"") == std::string::npos);
-            // ignore properly escaped quotes like \" which need no special handling
-            if (does_not_have_escaped_double_quotes)
+            matched = true;
+            feature.put(fld_name,std::move(tr.transcode(value.c_str())));
+        }
+        else if (csv_utils::is_likely_number(value))
+        {
+            bool has_e = value.find("e") != std::string::npos;
+            if (has_dot || has_e)
             {
-                std::string pre_json = csv_line.substr(0,j_idx);
-                std::string post_json = csv_line.substr(post_idx+wrapping_char.size());
-                // handle "" in a string wrapped in "
-                // http://tools.ietf.org/html/rfc4180#section-2 item 7.
-                // e.g. "{""type"":""Point"",""coordinates"":[30.0,10.0]}"
-                if (json_chunk.find("\"\"") != std::string::npos)
+                double float_val = 0.0;
+                if (mapnik::util::string2double(value,float_val))
                 {
-                    boost::algorithm::replace_all(json_chunk,"\"\"","\\\"");
-                    csv_line = pre_json + json_chunk + post_json;
+                    matched = true;
+                    feature.put(fld_name,float_val);
                 }
-                // handle " in a string wrapped in '
-                // e.g. '{"type":"Point","coordinates":[30.0,10.0]}'
-                else
+            }
+            else
+            {
+                mapnik::value_integer int_val = 0;
+                if (mapnik::util::string2int(value,int_val))
                 {
-                    // escape " because we cannot exchange for single quotes
-                    // https://github.com/mapnik/mapnik/issues/1408
-                    boost::algorithm::replace_all(json_chunk,"\"","\\\"");
-                    boost::algorithm::replace_all(json_chunk,"'","\"");
-                    csv_line = pre_json + json_chunk + post_json;
+                    matched = true;
+                    feature.put(fld_name,int_val);
                 }
+            }
+        }
+        if (!matched)
+        {
+            if (csv_utils::ignore_case_equal(value, "true"))
+            {
+                feature.put(fld_name, true);
+            }
+            else if (csv_utils::ignore_case_equal(value, "false"))
+            {
+                feature.put(fld_name, false);
+            }
+            else // fallback to string
+            {
+                feature.put(fld_name,std::move(tr.transcode(value.c_str())));
             }
         }
     }
 }
+
+struct csv_file_parser
+{
+    template <typename T>
+    void parse_csv_and_boxes(std::istream & csv_file, T & boxes);
+
+    virtual void add_feature(mapnik::value_integer index, mapnik::csv_line const & values);
+
+    std::vector<std::string> headers_;
+    std::string manual_headers_;
+    geometry_column_locator locator_;
+    mapnik::box2d<double> extent_;
+    mapnik::value_integer row_limit_ = 0;
+    char separator_ = '\0';
+    char quote_ = '\0';
+    bool strict_ = false;
+    bool extent_initialized_ = false;
+    bool has_disk_index_ = false;
+};
+
+} // namespace csv_utils
 
 #endif // MAPNIK_CSV_UTILS_DATASOURCE_HPP

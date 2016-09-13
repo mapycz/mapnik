@@ -66,18 +66,9 @@ struct attr_value_converter
     {
         return mapnik::Boolean;
     }
-
-    mapnik::eAttributeType operator() (std::string const& /*val*/) const
-    {
-        return mapnik::String;
-    }
-
-    mapnik::eAttributeType operator() (mapnik::value_unicode_string const& /*val*/) const
-    {
-        return mapnik::String;
-    }
-
-    mapnik::eAttributeType operator() (mapnik::value_null const& /*val*/) const
+    // string, object, array
+    template <typename T>
+    mapnik::eAttributeType operator() (T const& /*val*/) const
     {
         return mapnik::String;
     }
@@ -109,9 +100,10 @@ struct geometry_type_visitor
     {
         return static_cast<int>(mapnik::datasource_geometry_t::Polygon);
     }
-    int operator() (mapnik::topojson::invalid const&) const
+    template <typename T>
+    int operator() (T const& ) const
     {
-        return -1;
+        return 0;
     }
 };
 
@@ -121,8 +113,9 @@ struct collect_attributes_visitor
     collect_attributes_visitor(mapnik::layer_descriptor & desc):
       desc_(desc) {}
 
-    void operator() (mapnik::topojson::invalid const&) {}
-
+    // no-op
+    void operator() (mapnik::topojson::empty) {}
+    //
     template <typename GeomType>
     void operator() (GeomType const& g)
     {
@@ -167,32 +160,34 @@ topojson_datasource::topojson_datasource(parameters const& params)
     }
     if (!inline_string_.empty())
     {
-        parse_topojson(inline_string_);
+        parse_topojson(inline_string_.c_str());
     }
     else
     {
         mapnik::util::file file(filename_);
-        if (!file.open())
+        if (!file)
         {
             throw mapnik::datasource_exception("TopoJSON Plugin: could not open: '" + filename_ + "'");
         }
         std::string file_buffer;
         file_buffer.resize(file.size());
         std::fread(&file_buffer[0], file.size(), 1, file.get());
-        parse_topojson(file_buffer);
+        parse_topojson(file_buffer.c_str());
     }
 }
 
 namespace {
-using base_iterator_type = std::string::const_iterator;
-const mapnik::topojson::topojson_grammar<base_iterator_type> g;
+using iterator_type = const char*;
+const mapnik::topojson::topojson_grammar<iterator_type> g;
 }
 
 template <typename T>
 void topojson_datasource::parse_topojson(T const& buffer)
 {
     boost::spirit::standard::space_type space;
-    bool result = boost::spirit::qi::phrase_parse(buffer.begin(), buffer.end(), g, space, topo_);
+    auto itr = buffer;
+    auto end = buffer + std::strlen(buffer);
+    bool result = boost::spirit::qi::phrase_parse(itr, end, g, space, topo_);
     if (!result)
     {
         throw mapnik::datasource_exception("topojson_datasource: Failed parse TopoJSON file '" + filename_ + "'");
@@ -203,14 +198,15 @@ void topojson_datasource::parse_topojson(T const& buffer)
     values.reserve(topo_.geometries.size());
 
     std::size_t geometry_index = 0;
-
+    bool first = true;
     for (auto const& geom : topo_.geometries)
     {
         mapnik::box2d<double> box = mapnik::util::apply_visitor(mapnik::topojson::bounding_box_visitor(topo_), geom);
         if (box.valid())
         {
-            if (geometry_index == 0)
+            if (first)
             {
+                first = false;
                 extent_ = box;
                 collect_attributes_visitor assessor(desc_);
                 mapnik::util::apply_visitor( std::ref(assessor), geom);
@@ -220,8 +216,8 @@ void topojson_datasource::parse_topojson(T const& buffer)
                 extent_.expand_to_include(box);
             }
             values.emplace_back(box, geometry_index);
-            ++geometry_index;
         }
+        ++geometry_index;
     }
 
     // packing algorithm
@@ -290,7 +286,7 @@ mapnik::featureset_ptr topojson_datasource::features(mapnik::query const& q) con
         }
     }
     // otherwise return an empty featureset pointer
-    return mapnik::featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }
 
 mapnik::featureset_ptr topojson_datasource::features_at_point(mapnik::coord2d const& pt, double tol) const

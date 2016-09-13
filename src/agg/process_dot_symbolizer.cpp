@@ -33,7 +33,8 @@
 #include <mapnik/proj_transform.hpp>
 #include <mapnik/image_compositing.hpp>
 
-// agg
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
 #include "agg_ellipse.h"
 #include "agg_rendering_buffer.h"
 #include "agg_pixfmt_rgba.h"
@@ -41,6 +42,7 @@
 #include "agg_renderer_scanline.h"
 #include "agg_color_rgba.h"
 #include "agg_renderer_base.h"
+#pragma GCC diagnostic pop
 
 namespace mapnik { namespace detail {
 
@@ -106,8 +108,8 @@ void agg_renderer<T0,T1>::process(dot_symbolizer const& sym,
     {
         width = height = get<double>(sym, keys::height, feature, common_.vars_, 0.0);
     }
-    double rx = width/2.0;
-    double ry = height/2.0;
+    double rx = width/2.0 * common_.scale_factor_;
+    double ry = height/2.0 * common_.scale_factor_;
     double opacity = get<double>(sym, keys::opacity, feature, common_.vars_, 1.0);
     color const& fill = get<mapnik::color>(sym, keys::fill, feature, common_.vars_, mapnik::color(128,128,128));
     ras_ptr->reset();

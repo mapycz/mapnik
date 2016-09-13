@@ -122,7 +122,7 @@ private:
 template <typename PathType, typename T>
 struct grid_vertex_adapter
 {
-    using value_type = typename point<T>::value_type;
+    using coord_type = T;
 
     grid_vertex_adapter(PathType & path, T dx, T dy)
         : grid_vertex_adapter(path, dx, dy, mapnik::envelope(path))
@@ -134,7 +134,7 @@ struct grid_vertex_adapter
         si_.rewind();
     }
 
-    unsigned vertex(value_type * x, value_type * y) const
+    unsigned vertex(coord_type * x, coord_type * y) const
     {
         int x_int, y_int;
         while (si_.vertex(&x_int, &y_int))
@@ -164,7 +164,7 @@ private:
         vt_(img_.width(), img_.height(), box),
         si_(box.width() / dx, box.height() / dy)
     {
-        transform_path<PathType, value_type, view_transform> tp(path, vt_);
+        transform_path<PathType, coord_type, view_transform> tp(path, vt_);
         tp.rewind(0);
         agg::rasterizer_scanline_aa<> ras;
         ras.add_path(tp);

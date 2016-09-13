@@ -73,15 +73,8 @@ public:
 
 int main(int argc, char** argv)
 {
-    mapnik::parameters params;
-    benchmark::handle_args(argc,argv,params);
-    {
-        test_static test_runner(params);
-        run(test_runner,"static_cast");
-    }
-    {
-        test_numeric test_runner(params);
-        run(test_runner,"numeric_cast");
-    }
-    return 0;
+    return benchmark::sequencer(argc, argv)
+        .run<test_static>("static_cast")
+        .run<test_numeric>("numeric_cast")
+        .done();
 }

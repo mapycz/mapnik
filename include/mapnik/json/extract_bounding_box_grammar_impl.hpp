@@ -22,24 +22,60 @@
 
 // mapnik
 #include <mapnik/json/extract_bounding_box_grammar.hpp>
-
+#include <mapnik/geometry_fusion_adapted.hpp>
 // boost
 #include <boost/spirit/include/qi_omit.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/repository/include/qi_iter_pos.hpp>
+#include <boost/spirit/include/phoenix_function.hpp>
 // stl
 #include <iostream>
 #include <string>
 
 namespace mapnik { namespace json {
 
+struct calculate_bounding_box_impl
+{
+    using result_type = void;
+    template <typename T0, typename T1>
+    result_type operator() (T0 & bbox, T1 const& pos) const
+    {
+        if (pos)
+        {
+            typename T0::value_type x = pos->x;
+            typename T0::value_type y = pos->y;
+            if (!bbox.valid())
+            {
+                bbox.init(x, y);
+            }
+            else
+            {
+                bbox.expand_to_include(x, y);
+            }
+        }
+    }
+};
+
+struct push_box_impl
+{
+    using result_type = void;
+    template <typename T0, typename T1, typename T2, typename T3>
+    void operator() (T0 & boxes, T1 const& begin, T2 const& box, T3 const& range) const
+    {
+        if (box.valid()) boxes.emplace_back(box,
+                                            std::make_pair(std::distance(begin,
+                                                                         range.begin()),
+                                                           std::distance(range.begin(), range.end())));
+    }
+};
+
 namespace repo = boost::spirit::repository;
 
-template <typename Iterator, typename ErrorHandler>
-extract_bounding_box_grammar<Iterator, ErrorHandler>::extract_bounding_box_grammar()
-    : extract_bounding_box_grammar::base_type(start,"bounding boxes")
+template <typename Iterator, typename Boxes, typename ErrorHandler>
+extract_bounding_box_grammar<Iterator, Boxes, ErrorHandler>::extract_bounding_box_grammar()
+    : extract_bounding_box_grammar::base_type(start, "GeoJSON bounding boxes")
 {
     qi::lit_type lit;
     qi::double_type double_;
@@ -56,29 +92,40 @@ extract_bounding_box_grammar<Iterator, ErrorHandler>::extract_bounding_box_gramm
     qi::eps_type eps;
     qi::raw_type raw;
     qi::char_type char_;
+    qi::no_skip_type no_skip;
     boost::spirit::repository::qi::iter_pos_type iter_pos;
     using qi::fail;
     using qi::on_error;
 
+    // phoenix functions
+    boost::phoenix::function<push_box_impl> push_box;
+    boost::phoenix::function<calculate_bounding_box_impl> calculate_bounding_box;
+    // error handler
+    boost::phoenix::function<ErrorHandler> const error_handler;
+
     start = features(_r1)
         ;
 
-    features = iter_pos[_a = _1] >> -(lit('{') >> -lit("\"type\"")
-                                      >> lit(':') >> lit("\"FeatureCollection\"")
-                                      >> *(lit(',') >> (json.key_value - lit("\"features\"")))
-                                      >> lit(',') >> lit("\"features\"")
-                                      >> lit(':'))
-                                 >> lit('[') >> (feature(_r1,_a) % lit(',')) >> lit(']')
+    features = no_skip[iter_pos[_a = _1]] >> -(lit('{')
+                                               >> *((json.key_value - lit("\"features\"")) >> lit(','))
+                                               >> lit("\"features\"")
+                                               >> lit(':'))
+                                          >> lit('[') >> -(feature(_r1,_a) % lit(',')) >> lit(']')
         ;
 
     feature = raw[lit('{')[_a = 1]
-                  >> *(eps(_a > 0) >> (lit('{')[_a += 1]
-                                       |
-                                       lit('}')[_a -=1]
-                                       |
-                                       coords[_b = _1]
-                                       |
-                                       char_))][push_box(_r1, _r2, _b, _1)]
+                  >> *(eps(_a > 0) >> (
+                           lit("\"FeatureCollection\"") > eps(false) // fail if nested FeatureCollection
+                           |
+                           lit('{')[_a += 1]
+                           |
+                           lit('}')[_a -= 1]
+                           |
+                           coords[_b = _1]
+                           |
+                           json.string_
+                           |
+                           char_))][push_box(_r1, _r2, _b, _1)]
         ;
 
     coords = lit("\"coordinates\"")
@@ -95,31 +142,6 @@ extract_bounding_box_grammar<Iterator, ErrorHandler>::extract_bounding_box_gramm
         ;
 
     rings_array = lit('[') >> rings(_r1) % lit(',') > lit(']')
-        ;
-
-    // generic json types
-    json.value = json.object | json.array | json.string_ | json.number
-        ;
-
-    json.pairs = json.key_value % lit(',')
-        ;
-
-    json.key_value = (json.string_ >> lit(':') >> json.value)
-        ;
-
-    json.object = lit('{') >> *json.pairs >> lit('}')
-        ;
-
-    json.array = lit('[')
-        >> json.value >> *(lit(',') >> json.value)
-        >> lit(']')
-        ;
-
-    json.number = json.strict_double
-        | json.int__
-        | lit("true")
-        | lit("false")
-        | lit("null")
         ;
 
     coords.name("Coordinates");

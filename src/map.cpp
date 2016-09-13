@@ -307,7 +307,7 @@ bool Map::load_fonts()
             continue;
         }
         mapnik::util::file file(file_path);
-        if (file.open())
+        if (file)
         {
             auto item = font_memory_cache_.emplace(file_path, std::make_pair(file.data(),file.size()));
             if (item.second) result = true;
@@ -521,21 +521,19 @@ void Map::zoom_all()
         box2d<double> ext;
         bool success = false;
         bool first = true;
-        std::vector<layer>::const_iterator itr = layers_.begin();
-        std::vector<layer>::const_iterator end = layers_.end();
-        while (itr != end)
+        for (auto const& layer : layers_)
         {
-            if (itr->active())
+            if (layer.active())
             {
-                std::string const& layer_srs = itr->srs();
+                std::string const& layer_srs = layer.srs();
                 projection proj1(layer_srs);
                 proj_transform prj_trans(proj0,proj1);
-                box2d<double> layer_ext = itr->envelope();
+                box2d<double> layer_ext = layer.envelope();
                 if (prj_trans.backward(layer_ext, PROJ_ENVELOPE_POINTS))
                 {
                     success = true;
-                    MAPNIK_LOG_DEBUG(map) << "map: Layer " << itr->name() << " original ext=" << itr->envelope();
-                    MAPNIK_LOG_DEBUG(map) << "map: Layer " << itr->name() << " transformed to map srs=" << layer_ext;
+                    MAPNIK_LOG_DEBUG(map) << "map: Layer " << layer.name() << " original ext=" << layer.envelope();
+                    MAPNIK_LOG_DEBUG(map) << "map: Layer " << layer.name() << " transformed to map srs=" << layer_ext;
                     if (first)
                     {
                         ext = layer_ext;
@@ -547,7 +545,6 @@ void Map::zoom_all()
                     }
                 }
             }
-            ++itr;
         }
         if (success)
         {
@@ -583,7 +580,7 @@ void Map::zoom_all()
 
 void Map::zoom_to_box(box2d<double> const& box)
 {
-    current_extent_=box;
+    current_extent_= box;
     fixAspectRatio();
 }
 
@@ -698,7 +695,7 @@ featureset_ptr Map::query_point(unsigned index, double x, double y) const
 {
     if (!current_extent_.valid())
     {
-        throw std::runtime_error("query_point: map extent is not intialized, you need to set a valid extent before querying");
+        throw std::runtime_error("query_point: map extent is not initialized, you need to set a valid extent before querying");
     }
     if (!current_extent_.intersects(x,y))
     {
@@ -749,7 +746,7 @@ featureset_ptr Map::query_point(unsigned index, double x, double y) const
         else s << " (map has no layers)";
         throw std::out_of_range(s.str());
     }
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }
 
 featureset_ptr Map::query_map_point(unsigned index, double x, double y) const

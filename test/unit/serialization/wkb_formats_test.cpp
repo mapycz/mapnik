@@ -1,15 +1,10 @@
 #include "catch.hpp"
 
 #include <iostream>
-#include <mapnik/params.hpp>
 #include <mapnik/wkb.hpp>
-#include <mapnik/feature.hpp>
 #include <mapnik/geometry_is_valid.hpp>
 #include <mapnik/geometry_is_simple.hpp>
 #include <mapnik/geometry_correct.hpp>
-#include <mapnik/feature_factory.hpp>
-#include <vector>
-#include <algorithm>
 #include <boost/version.hpp>
 
 TEST_CASE("geometry formats") {
@@ -58,9 +53,6 @@ SECTION("wkb") {
     unsigned char sq_invalid_blob[] = {
         0x23, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x24, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x34, 0x40, 0x23 };
 
-    mapnik::context_ptr ctx(new mapnik::context_type);
-    mapnik::feature_ptr feature = mapnik::feature_factory::create(ctx, 1);
-
     // test of parsing wkb geometries
     try {
 
@@ -70,7 +62,7 @@ SECTION("wkb") {
                                                                                mapnik::wkbSpatiaLite);
         // winding order is not correct per OGC so we'll fix it
         mapnik::geometry::correct(geom);
-#if BOOST_VERSION >= 105600
+#if BOOST_VERSION >= 105800
         REQUIRE(mapnik::geometry::is_valid(geom));
         REQUIRE(mapnik::geometry::is_simple(geom));
 #endif
@@ -79,7 +71,7 @@ SECTION("wkb") {
                                                 sizeof(sp_valid_blob) / sizeof(sp_valid_blob[0]),
                                                 mapnik::wkbAuto);
         mapnik::geometry::correct(geom);
-#if BOOST_VERSION >= 105600
+#if BOOST_VERSION >= 105800
         REQUIRE(mapnik::geometry::is_valid(geom));
         REQUIRE(mapnik::geometry::is_simple(geom));
 #endif
@@ -94,7 +86,7 @@ SECTION("wkb") {
         geom = mapnik::geometry_utils::from_wkb((const char*)sq_valid_blob,
                                                 sizeof(sq_valid_blob) / sizeof(sq_valid_blob[0]),
                                                 mapnik::wkbGeneric);
-#if BOOST_VERSION >= 105600
+#if BOOST_VERSION >= 105800
         REQUIRE(mapnik::geometry::is_valid(geom));
         REQUIRE(mapnik::geometry::is_simple(geom));
 #endif
@@ -103,7 +95,7 @@ SECTION("wkb") {
                                                  sizeof(sq_valid_blob) / sizeof(sq_valid_blob[0]),
                                                  mapnik::wkbAuto);
 
-#if BOOST_VERSION >= 105600
+#if BOOST_VERSION >= 105800
         REQUIRE(mapnik::geometry::is_valid(geom));
         REQUIRE(mapnik::geometry::is_simple(geom));
 #endif
@@ -113,7 +105,9 @@ SECTION("wkb") {
                                                 mapnik::wkbGeneric);
         REQUIRE(geom.is<mapnik::geometry::geometry_empty>()); // returns geometry_empty
 
-    } catch (std::exception const& ex) {
+    }
+    catch (std::exception const& ex)
+    {
         REQUIRE(false);
         std::clog << "threw: " << ex.what() << "\n";
     }

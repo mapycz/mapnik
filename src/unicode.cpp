@@ -27,8 +27,10 @@
 // std
 #include <stdexcept>
 
-// icu
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
 #include <unicode/ucnv.h>
+#pragma GCC diagnostic pop
 
 namespace mapnik {
 
@@ -39,7 +41,7 @@ transcoder::transcoder (std::string const& encoding)
     conv_ = ucnv_open(encoding.c_str(),&err);
     if (!U_SUCCESS(err))
     {
-        // NOT: conv_ should be null on error so no need to call ucnv_close
+        // NOTE: conv_ should be null on error so no need to call ucnv_close
         throw std::runtime_error(std::string("could not create converter for ") + encoding);
     }
 }
@@ -60,4 +62,12 @@ transcoder::~transcoder()
 {
     if (conv_) ucnv_close(conv_);
 }
+
+
+void to_utf8(mapnik::value_unicode_string const& input, std::string & target)
+{
+    target.clear(); // mimic previous target.assign(...) semantics
+    input.toUTF8String(target); // this appends to target
+}
+
 }

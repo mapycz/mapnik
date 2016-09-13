@@ -352,23 +352,23 @@ void pgsql2sqlite(Connection conn,
                     break;
                 }
                 case 23:
-                    output_rec.push_back(sqlite::value_type(int4net(buf)));
+                    output_rec.emplace_back(int4net(buf));
                     break;
                 case 21:
-                    output_rec.push_back(sqlite::value_type(int2net(buf)));
+                    output_rec.emplace_back(int(int2net(buf)));
                     break;
                 case 700:
                 {
                     float val;
                     float4net(val,buf);
-                    output_rec.push_back(sqlite::value_type(val));
+                    output_rec.emplace_back(double(val));
                     break;
                 }
                 case 701:
                 {
                     double val;
                     float8net(val,buf);
-                    output_rec.push_back(sqlite::value_type(val));
+                    output_rec.emplace_back(val);
                     break;
                 }
                 case 1700:
@@ -377,7 +377,7 @@ void pgsql2sqlite(Connection conn,
                     double val;
                     if (mapnik::util::string2double(str,val))
                     {
-                        output_rec.push_back(sqlite::value_type(val));
+                        output_rec.emplace_back(val);
                     }
                     break;
                 }
@@ -386,7 +386,7 @@ void pgsql2sqlite(Connection conn,
                 {
                     if (oid == geometry_oid)
                     {
-                        mapnik::Feature feat(ctx,pkid);
+                        mapnik::feature_impl feat(ctx,pkid);
                         mapnik::geometry::geometry<double> geom = geometry_utils::from_wkb(buf, size, wkbGeneric);
                         if (!mapnik::geometry::is_empty(geom))
                         {

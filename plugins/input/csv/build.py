@@ -28,20 +28,24 @@ PLUGIN_NAME = 'csv'
 plugin_env = plugin_base.Clone()
 
 plugin_sources = Split(
-  """
-  %(PLUGIN_NAME)s_datasource.cpp
-  """ % locals()
+    """
+    %(PLUGIN_NAME)s_utils.cpp
+    %(PLUGIN_NAME)s_datasource.cpp
+    %(PLUGIN_NAME)s_featureset.cpp
+    %(PLUGIN_NAME)s_inline_featureset.cpp
+    %(PLUGIN_NAME)s_index_featureset.cpp
+    """ % locals()
 )
 
 # Link Library to Dependencies
 libraries = []
-libraries.append('boost_system%s' % env['BOOST_APPEND'])
-libraries.append(env['ICU_LIB_NAME'])
 libraries.append('mapnik-json')
 libraries.append('mapnik-wkt')
 
 if env['PLUGIN_LINKING'] == 'shared':
-    libraries.append(env['MAPNIK_NAME'])
+    libraries.append('boost_system%s' % env['BOOST_APPEND'])
+    libraries.insert(0,env['MAPNIK_NAME'])
+    libraries.append(env['ICU_LIB_NAME'])
 
     TARGET = plugin_env.SharedLibrary('../%s' % PLUGIN_NAME,
                                       SHLIBPREFIX='',
@@ -59,8 +63,7 @@ if env['PLUGIN_LINKING'] == 'shared':
         env.Alias('install', env['MAPNIK_INPUT_PLUGINS_DEST'])
 
 plugin_obj = {
-  'LIBS': libraries,
-  'SOURCES': plugin_sources,
+    'LIBS': libraries,
+    'SOURCES': plugin_sources,
 }
-
 Return('plugin_obj')

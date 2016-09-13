@@ -39,7 +39,9 @@
 #include <mapnik/renderer_common/render_pattern.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 #include <mapnik/renderer_common/pattern_alignment.hpp>
-// agg
+
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
 #include "agg_basics.h"
 #include "agg_rendering_buffer.h"
 #include "agg_pixfmt_rgba.h"
@@ -52,6 +54,7 @@
 #include "agg_span_pattern_rgba.h"
 #include "agg_image_accessors.h"
 #include "agg_conv_clip_polygon.h"
+#pragma GCC diagnostic pop
 
 namespace mapnik {
 
@@ -75,9 +78,9 @@ struct agg_renderer_process_visitor_p
         feature_(feature),
         prj_trans_(prj_trans) {}
 
-    void operator() (marker_null const&) {}
+    void operator() (marker_null const&) const {}
 
-    void operator() (marker_svg const& marker)
+    void operator() (marker_svg const& marker) const
     {
         agg::trans_affine image_tr = agg::trans_affine_scaling(common_.scale_factor_);
         auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
@@ -165,7 +168,7 @@ struct agg_renderer_process_visitor_p
         vertex_converter_type converter(clip_box,sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
 
 
-        if (prj_trans_.equal() && clip) converter.set<clip_poly_tag>(); //optional clip (default: true)
+        if (prj_trans_.equal() && clip) converter.set<clip_poly_tag>();
         converter.set<transform_tag>(); //always transform
         converter.set<affine_transform_tag>(); // optional affine transform
         if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
@@ -180,7 +183,7 @@ struct agg_renderer_process_visitor_p
         agg::render_scanlines(*ras_ptr_, sl, rp);
     }
 
-    void operator() (marker_rgba8 const& marker)
+    void operator() (marker_rgba8 const& marker) const
     {
         using color = agg::rgba8;
         using order = agg::order_rgba;
@@ -264,7 +267,7 @@ struct agg_renderer_process_visitor_p
 
         vertex_converter_type converter(clip_box, sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
 
-        if (prj_trans_.equal() && clip) converter.set<clip_poly_tag>(); //optional clip (default: true)
+        if (prj_trans_.equal() && clip) converter.set<clip_poly_tag>();
         converter.set<transform_tag>(); //always transform
         converter.set<affine_transform_tag>(); // optional affine transform
         if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter

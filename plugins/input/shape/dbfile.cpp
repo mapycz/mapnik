@@ -31,7 +31,7 @@
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
 #include <boost/spirit/include/qi.hpp>
-#ifdef SHAPE_MEMORY_MAPPED_FILE
+#if defined(MAPNIK_MEMORY_MAPPED_FILE)
 #include <boost/interprocess/mapped_region.hpp>
 #include <mapnik/mapped_memory_cache.hpp>
 #endif
@@ -53,7 +53,7 @@ dbf_file::dbf_file(std::string const& file_name)
     :num_records_(0),
      num_fields_(0),
      record_length_(0),
-#ifdef SHAPE_MEMORY_MAPPED_FILE
+#if defined(MAPNIK_MEMORY_MAPPED_FILE)
      file_(),
 #elif defined(_WINDOWS)
      file_(mapnik::utf8_to_utf16(file_name), std::ios::in | std::ios::binary),
@@ -63,7 +63,7 @@ dbf_file::dbf_file(std::string const& file_name)
      record_(0)
 {
 
-#ifdef SHAPE_MEMORY_MAPPED_FILE
+#if defined(MAPNIK_MEMORY_MAPPED_FILE)
     boost::optional<mapnik::mapped_region_ptr> memory = mapnik::mapped_memory_cache::instance().find(file_name,true);
     if (memory)
     {
@@ -90,7 +90,7 @@ dbf_file::~dbf_file()
 
 bool dbf_file::is_open()
 {
-#ifdef SHAPE_MEMORY_MAPPED_FILE
+#if defined(MAPNIK_MEMORY_MAPPED_FILE)
     return (file_.buffer().second > 0);
 #else
     return file_.is_open();

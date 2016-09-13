@@ -43,8 +43,39 @@
 #include <mapnik/view_strategy.hpp>
 #include <mapnik/grid_vertex_adapter.hpp>
 
+namespace mapnik {
+namespace geometry {
 
-namespace mapnik { namespace detail {
+struct envelope_impl
+{
+    template <typename T>
+    box2d<double> operator() (T const& ref) const
+    {
+        return envelope<T>(ref);
+    }
+};
+
+mapnik::box2d<double> envelope(mapnik::base_symbolizer_helper::geometry_cref const& geom)
+{
+    return mapnik::util::apply_visitor(envelope_impl(), geom);
+}
+
+struct geometry_type_impl
+{
+    template <typename T>
+    auto operator() (T const& ref) const -> decltype(geometry_type<T>(ref))
+    {
+        return geometry_type<T>(ref);
+    }
+};
+
+mapnik::geometry::geometry_types geometry_type(mapnik::base_symbolizer_helper::geometry_cref const& geom)
+{
+    return mapnik::util::apply_visitor(geometry_type_impl(), geom);
+}
+
+} // geometry
+namespace detail {
 
 template <typename Points>
 struct apply_vertex_placement
@@ -104,11 +135,8 @@ template <typename T>
 struct split_multi_geometries
 {
     using container_type = T;
-    split_multi_geometries(container_type & cont, view_transform const& t,
-                           proj_transform const& prj_trans)
-        : cont_(cont),
-          t_(t),
-          prj_trans_(prj_trans) { }
+    split_multi_geometries(container_type & cont)
+        : cont_(cont) { }
 
     void operator() (geometry::geometry_empty const&) const {}
     void operator() (geometry::multi_point<double> const& multi_pt) const
@@ -159,8 +187,6 @@ struct split_multi_geometries
     }
 
     container_type & cont_;
-    view_transform const& t_;
-    proj_transform const& prj_trans_;
 };
 
 } // ns detail
@@ -210,10 +236,8 @@ struct largest_bbox_first
 
 void base_symbolizer_helper::initialize_geometries() const
 {
-    double minimum_path_length = text_props_->minimum_path_length;
     auto const& geom = feature_.get_geometry();
-    util::apply_visitor(detail::split_multi_geometries<geometry_container_type>
-                        (geometries_to_process_, t_, prj_trans_), geom);
+    util::apply_visitor(detail::split_multi_geometries<geometry_container_type>(geometries_to_process_), geom);
     if (!geometries_to_process_.empty())
     {
         auto type = geometry::geometry_type(geom);
@@ -449,7 +473,7 @@ bool text_symbolizer_helper::next_point_placement() const
             return true;
         }
         //No placement for this point. Keep it in points_ for next try.
-        point_itr_++;
+        ++point_itr_;
     }
     return false;
 }

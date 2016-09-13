@@ -1,6 +1,6 @@
 # This file is part of Mapnik (c++ mapping toolkit)
 #
-# Copyright (C) 2013 Artem Pavlenko
+# Copyright (C) 2015 Artem Pavlenko
 #
 # Mapnik is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -111,14 +111,7 @@ PLUGINS = { # plugins with external dependencies
             'pgraster': {'default':True,'path':None,'inc':'libpq-fe.h','lib':'pq','lang':'C'},
             'gdal':    {'default':True,'path':None,'inc':'gdal_priv.h','lib':'gdal','lang':'C++'},
             'ogr':     {'default':True,'path':None,'inc':'ogrsf_frmts.h','lib':'gdal','lang':'C++'},
-            # configured with custom paths, hence 'path': PREFIX/INCLUDES/LIBS
-            'occi':    {'default':False,'path':'OCCI','inc':'occi.h','lib':'clntsh','lang':'C++'},
             'sqlite':  {'default':True,'path':'SQLITE','inc':'sqlite3.h','lib':'sqlite3','lang':'C'},
-            'rasterlite':  {'default':False,'path':'RASTERLITE','inc':['sqlite3.h','rasterlite.h'],'lib':'rasterlite','lang':'C'},
-
-            # todo: osm plugin does also depend on libxml2 (but there is a separate check for that)
-            'osm':     {'default':False,'path':None,'inc':None,'lib':None,'lang':'C'},
-
             # plugins without external dependencies requiring CheckLibWithHeader...
             'shape':   {'default':True,'path':None,'inc':None,'lib':None,'lang':'C++'},
             'csv':     {'default':True,'path':None,'inc':None,'lib':None,'lang':'C++'},
@@ -301,7 +294,9 @@ opts.AddVariables(
     EnumVariable('OPTIMIZATION','Set compiler optimization level','3', ['0','1','2','3','4','s']),
     # Note: setting DEBUG=True will override any custom OPTIMIZATION level
     BoolVariable('DEBUG', 'Compile a debug version of Mapnik', 'False'),
+    BoolVariable('COVERAGE', 'Compile a libmapnik and plugins with --coverage', 'False'),
     BoolVariable('DEBUG_UNDEFINED', 'Compile a version of Mapnik using clang/llvm undefined behavior asserts', 'False'),
+    BoolVariable('DEBUG_SANITIZE', 'Compile a version of Mapnik using clang/llvm address sanitation', 'False'),
     ListVariable('INPUT_PLUGINS','Input drivers to include',DEFAULT_PLUGINS,PLUGINS.keys()),
     ('WARNING_CXXFLAGS', 'Compiler flags you can set to reduce warning levels which are placed after -Wall.', ''),
 
@@ -309,6 +304,8 @@ opts.AddVariables(
     ('HOST', 'Set the target host for cross compiling', ''),
     ('CONFIG', "The path to the python file in which to save user configuration options. Currently : '%s'" % SCONS_LOCAL_CONFIG,SCONS_LOCAL_CONFIG),
     BoolVariable('USE_CONFIG', "Use SCons user '%s' file (will also write variables after successful configuration)", 'True'),
+    BoolVariable('NO_ATEXIT', 'Will prevent Singletons from being deleted atexit of main thread', 'False'),
+    BoolVariable('NO_DLCLOSE', 'Will prevent plugins from being unloaded', 'False'),
     # http://www.scons.org/wiki/GoFastButton
     # http://stackoverflow.com/questions/1318863/how-to-optimize-an-scons-script
     BoolVariable('FAST', "Make SCons faster at the cost of less precise dependency tracking", 'False'),
@@ -323,7 +320,6 @@ opts.AddVariables(
     ('PATH_REMOVE', 'A path prefix to exclude from all known command and compile paths (create multiple excludes separated by :)', ''),
     ('PATH_REPLACE', 'Two path prefixes (divided with a :) to search/replace from all known command and compile paths', ''),
     ('MAPNIK_NAME', 'Name of library', 'mapnik'),
-    BoolVariable('MAPNIK_BUNDLED_SHARE_DIRECTORY', 'For portable packaging: instruct mapnik-config to report relative paths to bundled GDAL_DATA, PROJ_LIB, and ICU_DATA','False'),
 
     # Boost variables
     # default is '/usr/include', see FindBoost method below
@@ -400,7 +396,7 @@ opts.AddVariables(
     EnumVariable('PLUGIN_LINKING', "Set plugin linking with libmapnik", 'shared', ['shared','static']),
 
     # Other variables
-    BoolVariable('SHAPE_MEMORY_MAPPED_FILE', 'Utilize memory-mapped files in Shapefile Plugin (higher memory usage, better performance)', 'True'),
+    BoolVariable('MEMORY_MAPPED_FILE', 'Utilize memory-mapped files in Shapefile Plugin (higher memory usage, better performance)', 'True'),
     ('SYSTEM_FONTS','Provide location for python bindings to register fonts (if provided then the bundled DejaVu fonts are not installed)',''),
     ('LIB_DIR_NAME','Name to use for the subfolder beside libmapnik where fonts and plugins are installed','mapnik'),
     PathVariable('PYTHON','Full path to Python executable used to build bindings', sys.executable),
@@ -411,8 +407,9 @@ opts.AddVariables(
     BoolVariable('DEMO', 'Compile demo c++ application', 'True'),
     BoolVariable('PGSQL2SQLITE', 'Compile and install a utility to convert postgres tables to sqlite', 'False'),
     BoolVariable('SHAPEINDEX', 'Compile and install a utility to generate shapefile indexes in the custom format (.index) Mapnik supports', 'False'),
+    BoolVariable('MAPNIK_INDEX', 'Compile and install a utility to generate spatial indexes for CSV and GeoJSON in the custom format (.index) Mapnik supports', 'True'),
     BoolVariable('SVG2PNG', 'Compile and install a utility to generate render an svg file to a png on the command line', 'False'),
-    BoolVariable('NIK2IMG', 'Compile and install a utility to generate render a map to an image', 'True'),
+    BoolVariable('MAPNIK_RENDER', 'Compile and install a utility to render a map to an image', 'True'),
     BoolVariable('COLOR_PRINT', 'Print build status information in color', 'True'),
     BoolVariable('BIGINT', 'Compile support for 64-bit integers in mapnik::value', 'True')
     )
@@ -712,11 +709,7 @@ def FindBoost(context, prefixes, thread_flag):
     BOOST_INCLUDE_DIR = None
     BOOST_APPEND = None
     env['BOOST_APPEND'] = str()
-
-    if env['THREADING'] == 'multi':
-        search_lib = 'libboost_thread'
-    else:
-        search_lib = 'libboost_filesystem'
+    search_lib = 'libboost_filesystem'
 
     # note: must call normpath to strip trailing slash otherwise dirname
     # does not remove 'lib' and 'include'
@@ -950,6 +943,24 @@ int main()
     color_print(1,'\nHarfbuzz >= %s required but found ... %s' % (HARFBUZZ_MIN_VERSION_STRING,items[1]))
     return False
 
+def harfbuzz_with_freetype_support(context):
+    ret = context.TryRun("""
+
+#include "harfbuzz/hb-ft.h"
+#include <iostream>
+
+int main()
+{
+    return 0;
+}
+
+""", '.cpp')
+    context.Message('Checking for HarfBuzz with freetype support\n')
+    context.Result(ret[0])
+    if ret[0]:
+        return True
+    return False
+
 def boost_regex_has_icu(context):
     if env['RUNTIME_LINK'] == 'static':
         # re-order icu libs to ensure linux linker is happy
@@ -1071,6 +1082,7 @@ conf_tests = { 'prioritize_paths'      : prioritize_paths,
                'rollback_option'       : rollback_option,
                'icu_at_least_four_two' : icu_at_least_four_two,
                'harfbuzz_version'      : harfbuzz_version,
+               'harfbuzz_with_freetype_support': harfbuzz_with_freetype_support,
                'boost_regex_has_icu'   : boost_regex_has_icu,
                'sqlite_has_rtree'      : sqlite_has_rtree,
                'supports_cxx11'        : supports_cxx11,
@@ -1079,7 +1091,6 @@ conf_tests = { 'prioritize_paths'      : prioritize_paths,
 
 def GetMapnikLibVersion():
     ver = []
-    is_pre = False
     for line in open('include/mapnik/version.hpp').readlines():
         if line.startswith('#define MAPNIK_MAJOR_VERSION'):
             ver.append(line.split(' ')[2].strip())
@@ -1087,12 +1098,7 @@ def GetMapnikLibVersion():
             ver.append(line.split(' ')[2].strip())
         if line.startswith('#define MAPNIK_PATCH_VERSION'):
             ver.append(line.split(' ')[2].strip())
-        if line.startswith('#define MAPNIK_VERSION_IS_RELEASE'):
-            if line.split(' ')[2].strip() == "0":
-                is_pre = True
     version_string = ".".join(ver)
-    if is_pre:
-        version_string += '-pre'
     return version_string
 
 if not preconfigured:
@@ -1134,6 +1140,9 @@ if not preconfigured:
         mode = 'debug mode'
     else:
         mode = 'release mode'
+
+    if env['COVERAGE']:
+        mode += ' (with coverage)'
 
     env['PLATFORM'] = platform.uname()[0]
     color_print(4,"Configuring on %s in *%s*..." % (env['PLATFORM'],mode))
@@ -1225,8 +1234,8 @@ if not preconfigured:
         thread_suffix = ''
         env.Append(LIBS = 'pthread')
 
-    if env['SHAPE_MEMORY_MAPPED_FILE']:
-        env.Append(CPPDEFINES = '-DSHAPE_MEMORY_MAPPED_FILE')
+    if env['MEMORY_MAPPED_FILE']:
+        env.Append(CPPDEFINES = '-DMAPNIK_MEMORY_MAPPED_FILE')
 
     # allow for mac osx /usr/lib/libicucore.dylib compatibility
     # requires custom supplied headers since Apple does not include them
@@ -1353,7 +1362,7 @@ if not preconfigured:
 
     # test for C++11 support, which is required
     if not env['HOST'] and not conf.supports_cxx11():
-        color_print(1,"C++ compiler does not support C++11 standard (-std=c++11), which is required. Please upgrade your compiler to at least g++ 4.7 (ideally 4.8)")
+        color_print(1,"C++ compiler does not support C++11 standard (-std=c++11), which is required. Please upgrade your compiler")
         Exit(1)
 
     if not env['HOST']:
@@ -1374,6 +1383,8 @@ if not preconfigured:
                 elif libname == 'harfbuzz':
                     if not conf.harfbuzz_version():
                         env['SKIPPED_DEPS'].append('harfbuzz-min-version')
+                    if not conf.harfbuzz_with_freetype_support():
+                        env['MISSING_DEPS'].append('harfbuzz-with-freetype-support')
 
     if env['BIGINT']:
         env.Append(CPPDEFINES = '-DBIGINT')
@@ -1402,15 +1413,6 @@ if not preconfigured:
             ['regex', 'boost/regex.hpp', True],
             ['program_options', 'boost/program_options.hpp', False]
         ]
-
-        if env['THREADING'] == 'multi':
-            BOOST_LIBSHEADERS.append(['thread', 'boost/thread/mutex.hpp', True])
-            # on solaris the configure checks for boost_thread
-            # require the -pthreads flag to be able to check for
-            # threading support, so we add as a global library instead
-            # of attaching to cxxflags after configure
-            if env['PLATFORM'] == 'SunOS':
-                env.Append(CXXFLAGS = '-pthreads')
 
         # if requested, sort LIBPATH and CPPPATH before running CheckLibWithHeader tests
         if env['PRIORITIZE_LINKING']:
@@ -1443,12 +1445,13 @@ if not preconfigured:
         # just turn it off like this, but seems the only available work-
         # around. See https://svn.boost.org/trac/boost/ticket/6779 for more
         # details.
-        boost_version = [int(x) for x in env.get('BOOST_LIB_VERSION_FROM_HEADER').split('_')]
-        if not conf.CheckBoostScopedEnum():
-            if boost_version < [1, 51]:
-                env.Append(CXXFLAGS = '-DBOOST_NO_SCOPED_ENUMS')
-            elif boost_version < [1, 57]:
-                env.Append(CXXFLAGS = '-DBOOST_NO_CXX11_SCOPED_ENUMS')
+        if not env['HOST']:
+            boost_version = [int(x) for x in env.get('BOOST_LIB_VERSION_FROM_HEADER').split('_')]
+            if not conf.CheckBoostScopedEnum():
+                if boost_version < [1, 51]:
+                    env.Append(CXXFLAGS = '-DBOOST_NO_SCOPED_ENUMS')
+                elif boost_version < [1, 57]:
+                    env.Append(CXXFLAGS = '-DBOOST_NO_CXX11_SCOPED_ENUMS')
 
     if not env['HOST'] and env['ICU_LIB_NAME'] not in env['MISSING_DEPS']:
         # http://lists.boost.org/Archives/boost/2009/03/150076.php
@@ -1601,6 +1604,7 @@ if not preconfigured:
     # prepend to make sure we link locally
     env.Prepend(CPPPATH = '#deps/agg/include')
     env.Prepend(LIBPATH = '#deps/agg')
+    env.Prepend(CPPPATH = '#deps/mapbox/variant/include')
     # prepend deps dir for auxillary headers
     env.Prepend(CPPPATH = '#deps')
 
@@ -1626,7 +1630,7 @@ if not preconfigured:
                 env["CAIRO_ALL_LIBS"] = ['cairo']
                 if env['RUNTIME_LINK'] == 'static':
                     env["CAIRO_ALL_LIBS"].extend(
-                        ['pixman-1','expat']
+                        ['pixman-1']
                     )
                 # todo - run actual checkLib?
                 env['HAS_CAIRO'] = True
@@ -1710,15 +1714,21 @@ if not preconfigured:
         # fetch the mapnik version header in order to set the
         # ABI version used to build libmapnik.so on linux in src/build.py
         abi = GetMapnikLibVersion()
-        abi_no_pre = abi.replace('-pre','').split('.')
-        env['ABI_VERSION'] = abi_no_pre
+        abi_split = abi.split('.')
+        env['ABI_VERSION'] = abi_split
         env['MAPNIK_VERSION_STRING'] = abi
-        env['MAPNIK_VERSION'] = str(int(abi_no_pre[0])*100000+int(abi_no_pre[1])*100+int(abi_no_pre[2]))
+        env['MAPNIK_VERSION'] = str(int(abi_split[0])*100000+int(abi_split[1])*100+int(abi_split[2]))
 
         # Common DEFINES.
         env.Append(CPPDEFINES = '-D%s' % env['PLATFORM'].upper())
         if env['THREADING'] == 'multi':
             env.Append(CPPDEFINES = '-DMAPNIK_THREADSAFE')
+
+        if env['NO_ATEXIT']:
+            env.Append(CPPDEFINES = '-DMAPNIK_NO_ATEXIT')
+
+        if env['NO_DLCLOSE'] or env['COVERAGE']:
+            env.Append(CPPDEFINES = '-DMAPNIK_NO_DLCLOSE')
 
         # Mac OSX (Darwin) special settings
         if env['PLATFORM'] == 'Darwin':
@@ -1779,16 +1789,23 @@ if not preconfigured:
 
         # Common flags for g++/clang++ CXX compiler.
         # TODO: clean up code more to make -Wextra -Wsign-compare -Wsign-conversion -Wconversion viable
-        common_cxx_flags = '-Wall %s %s -ftemplate-depth-300 -Wsign-compare -Wshadow ' % (env['WARNING_CXXFLAGS'], pthread)
+        # -Wfloat-equal -Wold-style-cast -Wexit-time-destructors -Wglobal-constructors -Wreserved-id-macro -Wheader-hygiene -Wmissing-noreturn
+        common_cxx_flags = '-fvisibility=hidden -fvisibility-inlines-hidden -Wall %s %s -ftemplate-depth-300 -Wsign-compare -Wshadow ' % (env['WARNING_CXXFLAGS'], pthread)
+
+        if 'clang++' in env['CXX']:
+            common_cxx_flags += ' -Wno-unsequenced -Wtautological-compare -Wheader-hygiene '
 
         if env['DEBUG']:
             env.Append(CXXFLAGS = common_cxx_flags + '-O0')
         else:
-            # TODO - add back -fvisibility-inlines-hidden
-            # https://github.com/mapnik/mapnik/issues/1863
             env.Append(CXXFLAGS = common_cxx_flags + '-O%s' % (env['OPTIMIZATION']))
         if env['DEBUG_UNDEFINED']:
             env.Append(CXXFLAGS = '-fsanitize=undefined-trap -fsanitize-undefined-trap-on-error -ftrapv -fwrapv')
+
+        if env['DEBUG_SANITIZE']:
+            env.Append(CXXFLAGS = ['-fsanitize=address'])
+            env.Append(LINKFLAGS = ['-fsanitize=address'])
+
 
         # if requested, sort LIBPATH and CPPPATH one last time before saving...
         if env['PRIORITIZE_LINKING']:
@@ -1878,6 +1895,10 @@ if not HELP_REQUESTED:
 
     plugin_base = env.Clone()
 
+    if env['COVERAGE']:
+        plugin_base.Append(LINKFLAGS='--coverage')
+        plugin_base.Append(CXXFLAGS='--coverage')
+
     Export('plugin_base')
 
     if env['FAST']:
@@ -1907,6 +1928,8 @@ if not HELP_REQUESTED:
     # Build the requested and able-to-be-compiled input plug-ins
     GDAL_BUILT = False
     OGR_BUILT = False
+    POSTGIS_BUILT = False
+    PGRASTER_BUILT = False
     for plugin in env['PLUGINS']:
         if env['PLUGIN_LINKING'] == 'static' or plugin not in env['REQUESTED_PLUGINS']:
             if os.path.exists('plugins/input/%s.input' % plugin):
@@ -1916,10 +1939,16 @@ if not HELP_REQUESTED:
             if details['lib'] in env['LIBS']:
                 if env['PLUGIN_LINKING'] == 'shared':
                     SConscript('plugins/input/%s/build.py' % plugin)
+                # hack to avoid breaking on plugins with the same dep
                 if plugin == 'ogr': OGR_BUILT = True
                 if plugin == 'gdal': GDAL_BUILT = True
+                if plugin == 'postgis': POSTGIS_BUILT = True
+                if plugin == 'pgraster': PGRASTER_BUILT = True
                 if plugin == 'ogr' or plugin == 'gdal':
                     if GDAL_BUILT and OGR_BUILT:
+                        env['LIBS'].remove(details['lib'])
+                elif plugin == 'postgis' or plugin == 'pgraster':
+                    if POSTGIS_BUILT and PGRASTER_BUILT:
                         env['LIBS'].remove(details['lib'])
                 else:
                     env['LIBS'].remove(details['lib'])
@@ -1960,13 +1989,15 @@ if not HELP_REQUESTED:
         if 'boost_program_options%s' % env['BOOST_APPEND'] in env['LIBS']:
             if env['SHAPEINDEX']:
                 SConscript('utils/shapeindex/build.py')
+            if env['MAPNIK_INDEX']:
+                SConscript('utils/mapnik-index/build.py')
             # Build the pgsql2psqlite app if requested
             if env['PGSQL2SQLITE']:
                 SConscript('utils/pgsql2sqlite/build.py')
             if env['SVG2PNG']:
                 SConscript('utils/svg2png/build.py')
-            if env['NIK2IMG']:
-                SConscript('utils/nik2img/build.py')
+            if env['MAPNIK_RENDER']:
+                SConscript('utils/mapnik-render/build.py')
             # devtools not ready for public
             #SConscript('utils/ogrindex/build.py')
             env['LIBS'].remove('boost_program_options%s' % env['BOOST_APPEND'])

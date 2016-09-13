@@ -37,7 +37,10 @@
 #include <mapnik/renderer_common/clipping_extent.hpp>
 #include <mapnik/renderer_common/render_pattern.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
-// agg
+
+
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
 #include "agg_basics.h"
 #include "agg_pixfmt_rgba.h"
 #include "agg_color_rgba.h"
@@ -50,6 +53,7 @@
 #include "agg_span_allocator.h"
 #include "agg_span_pattern_rgba.h"
 #include "agg_renderer_outline_image.h"
+#pragma GCC diagnostic pop
 
 namespace mapnik {
 
@@ -69,9 +73,9 @@ struct agg_renderer_process_visitor_l
           feature_(feature),
           prj_trans_(prj_trans) {}
 
-    void operator() (marker_null const&) {}
+    void operator() (marker_null const&) const {}
 
-    void operator() (marker_svg const& marker)
+    void operator() (marker_svg const& marker) const
     {
         using color = agg::rgba8;
         using order = agg::order_rgba;
@@ -132,7 +136,7 @@ struct agg_renderer_process_visitor_l
 
         vertex_converter_type converter(clip_box,sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
 
-        if (clip) converter.set<clip_line_tag>(); //optional clip (default: true)
+        if (clip) converter.set<clip_line_tag>();
         converter.set<transform_tag>(); //always transform
         if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
         if (std::fabs(offset) > 0.0) converter.set<offset_transform_tag>(); // parallel offset
@@ -145,7 +149,7 @@ struct agg_renderer_process_visitor_l
         mapnik::util::apply_visitor(vertex_processor_type(apply),feature_.get_geometry());
     }
 
-    void operator() (marker_rgba8 const& marker)
+    void operator() (marker_rgba8 const& marker) const
     {
         using color = agg::rgba8;
         using order = agg::order_rgba;
@@ -202,7 +206,7 @@ struct agg_renderer_process_visitor_l
 
         vertex_converter_type converter(clip_box,sym_,common_.t_,prj_trans_,tr,feature_,common_.vars_,common_.scale_factor_);
 
-        if (clip) converter.set<clip_line_tag>(); //optional clip (default: true)
+        if (clip) converter.set<clip_line_tag>();
         converter.set<transform_tag>(); //always transform
         if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
         if (std::fabs(offset) > 0.0) converter.set<offset_transform_tag>(); // parallel offset
@@ -212,7 +216,7 @@ struct agg_renderer_process_visitor_l
         using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type, rasterizer_type>;
         using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
         apply_vertex_converter_type apply(converter, ras);
-        mapnik::util::apply_visitor(vertex_processor_type(apply),feature_.get_geometry());
+        mapnik::util::apply_visitor(vertex_processor_type(apply), feature_.get_geometry());
     }
 
   private:

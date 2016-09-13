@@ -44,14 +44,6 @@ image_dimensions<max_size>::image_dimensions(int width, int height)
 }
 
 template <std::size_t max_size>
-image_dimensions<max_size>& image_dimensions<max_size>::operator= (image_dimensions rhs)
-{
-    std::swap(width_, rhs.width_);
-    std::swap(height_, rhs.height_);
-    return *this;
-}
-
-template <std::size_t max_size>
 std::size_t image_dimensions<max_size>::width() const
 {
     return width_;
@@ -70,7 +62,6 @@ template <typename T>
 image<T>::image()
     : dimensions_(0,0),
       buffer_(0),
-      pData_(nullptr),
       offset_(0.0),
       scaling_(1.0),
       premultiplied_alpha_(false),
@@ -78,18 +69,26 @@ image<T>::image()
 {}
 
 template <typename T>
+image<T>::image(int width, int height, unsigned char* data, bool premultiplied, bool painted)
+    : dimensions_(width, height),
+      buffer_(data, width * height * sizeof(pixel_size)),
+      offset_(0.0),
+      scaling_(1.0),
+      premultiplied_alpha_(premultiplied),
+      painted_(painted) {}
+
+template <typename T>
 image<T>::image(int width, int height, bool initialize, bool premultiplied, bool painted)
     : dimensions_(width, height),
       buffer_(dimensions_.width() * dimensions_.height() * pixel_size),
-      pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
       offset_(0.0),
       scaling_(1.0),
       premultiplied_alpha_(premultiplied),
       painted_(painted)
 {
-    if (pData_ && initialize)
+    if (initialize)
     {
-        std::fill(pData_, pData_ + dimensions_.width() * dimensions_.height(), 0);
+        std::fill(begin(), end(), 0);
     }
 }
 
@@ -97,25 +96,21 @@ template <typename T>
 image<T>::image(image<T> const& rhs)
     : dimensions_(rhs.dimensions_),
       buffer_(rhs.buffer_),
-      pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
       offset_(rhs.offset_),
       scaling_(rhs.scaling_),
       premultiplied_alpha_(rhs.premultiplied_alpha_),
-      painted_(rhs.painted_)
-{}
+      painted_(rhs.painted_) {}
 
 template <typename T>
 image<T>::image(image<T> && rhs) noexcept
     : dimensions_(std::move(rhs.dimensions_)),
-    buffer_(std::move(rhs.buffer_)),
-    pData_(reinterpret_cast<pixel_type*>(buffer_.data())),
-    offset_(rhs.offset_),
-    scaling_(rhs.scaling_),
-    premultiplied_alpha_(rhs.premultiplied_alpha_),
-    painted_(rhs.painted_)
+      buffer_(std::move(rhs.buffer_)),
+      offset_(rhs.offset_),
+      scaling_(rhs.scaling_),
+      premultiplied_alpha_(rhs.premultiplied_alpha_),
+      painted_(rhs.painted_)
 {
     rhs.dimensions_ = { 0, 0 };
-    rhs.pData_ = nullptr;
 }
 
 template <typename T>
@@ -152,14 +147,14 @@ template <typename T>
 inline typename image<T>::pixel_type& image<T>::operator() (std::size_t i, std::size_t j)
 {
     assert(i < dimensions_.width() && j < dimensions_.height());
-    return pData_[j * dimensions_.width() + i];
+    return *get_row(j, i);
 }
 
 template <typename T>
 inline const typename image<T>::pixel_type& image<T>::operator() (std::size_t i, std::size_t j) const
 {
     assert(i < dimensions_.width() && j < dimensions_.height());
-    return pData_[j * dimensions_.width() + i];
+    return *get_row(j, i);
 }
 
 template <typename T>
@@ -189,19 +184,19 @@ inline std::size_t image<T>::row_size() const
 template <typename T>
 inline void image<T>::set(pixel_type const& t)
 {
-    std::fill(pData_, pData_ + dimensions_.width() * dimensions_.height(), t);
+    std::fill(begin(), end(), t);
 }
 
 template <typename T>
 inline const typename image<T>::pixel_type* image<T>::data() const
 {
-    return pData_;
+    return reinterpret_cast<const pixel_type*>(buffer_.data());
 }
 
 template <typename T>
 inline typename image<T>::pixel_type* image<T>::data()
 {
-    return pData_;
+    return reinterpret_cast<pixel_type*>(buffer_.data());
 }
 
 template <typename T>
@@ -216,28 +211,42 @@ inline unsigned char* image<T>::bytes()
     return buffer_.data();
 }
 
+// iterator interface
+template <typename T>
+inline typename image<T>::iterator image<T>::begin() { return data(); }
+
+template <typename T>
+inline typename image<T>::iterator image<T>::end() { return data() + dimensions_.width() * dimensions_.height(); }
+
+template <typename T>
+inline typename image<T>::const_iterator image<T>::begin() const { return data(); }
+
+template <typename T>
+inline typename image<T>::const_iterator image<T>::end() const{ return data() + dimensions_.width() * dimensions_.height(); }
+
+
 template <typename T>
 inline typename image<T>::pixel_type const* image<T>::get_row(std::size_t row) const
 {
-    return pData_ + row * dimensions_.width();
+    return data() + row * dimensions_.width();
 }
 
 template <typename T>
 inline const typename image<T>::pixel_type* image<T>::get_row(std::size_t row, std::size_t x0) const
 {
-    return pData_ + row * dimensions_.width() + x0;
+    return data() + row * dimensions_.width() + x0;
 }
 
 template <typename T>
 inline typename image<T>::pixel_type* image<T>::get_row(std::size_t row)
 {
-    return pData_ + row * dimensions_.width();
+    return data() + row * dimensions_.width();
 }
 
 template <typename T>
 inline typename image<T>::pixel_type* image<T>::get_row(std::size_t row, std::size_t x0)
 {
-    return pData_ + row * dimensions_.width() + x0;
+    return data() + row * dimensions_.width() + x0;
 }
 
 template <typename T>
@@ -245,7 +254,7 @@ inline void image<T>::set_row(std::size_t row, pixel_type const* buf, std::size_
 {
     assert(row < dimensions_.height());
     assert(size <= dimensions_.width());
-    std::copy(buf, buf + size, pData_ + row * dimensions_.width());
+    std::copy(buf, buf + size, get_row(row));
 }
 
 template <typename T>
@@ -253,7 +262,7 @@ inline void image<T>::set_row(std::size_t row, std::size_t x0, std::size_t x1, p
 {
     assert(row < dimensions_.height());
     assert ((x1 - x0) <= dimensions_.width() );
-    std::copy(buf, buf + (x1 - x0), pData_ + row * dimensions_.width() + x0);
+    std::copy(buf, buf + (x1 - x0), get_row(row, x0));
 }
 
 template <typename T>

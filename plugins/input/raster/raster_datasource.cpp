@@ -87,6 +87,7 @@ raster_datasource::raster_datasource(parameters const& params)
     else //bounding box from image_reader
     {
         std::unique_ptr<image_reader> reader(mapnik::get_image_reader(*file));
+        if (!reader) throw datasource_exception("Raster Plugin: failed to create reader for " + *file);
         auto bbox = reader->bounding_box();
         if (bbox)
         {
@@ -223,5 +224,5 @@ featureset_ptr raster_datasource::features_at_point(coord2d const&, double tol) 
 {
     MAPNIK_LOG_WARN(raster) << "raster_datasource: feature_at_point not supported";
 
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }

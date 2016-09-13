@@ -2,7 +2,7 @@
 #
 # SCons - a Software Constructor
 #
-# Copyright (c) 2001 - 2014 The SCons Foundation
+# Copyright (c) 2001 - 2016 The SCons Foundation
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -23,17 +23,17 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__revision__ = "src/script/scons.py  2014/09/27 12:51:43 garyo"
+__revision__ = "src/script/scons.py rel_2.5.0:3544:95d356f188a3 2016/04/09 14:38:50 bdbaddog"
 
-__version__ = "2.3.4"
+__version__ = "2.5.0"
 
-__build__ = ""
+__build__ = "rel_2.5.0:3544:95d356f188a3[MODIFIED]"
 
-__buildsys__ = "lubuntu"
+__buildsys__ = "ubuntu1404-32bit"
 
-__date__ = "2014/09/27 12:51:43"
+__date__ = "2016/04/09 14:38:50"
 
-__developer__ = "garyo"
+__developer__ = "bdbaddog"
 
 import os
 import sys
@@ -188,10 +188,10 @@ sys.path = libs + sys.path
 if __name__ == "__main__":
     try:
         import SCons.Script
-    except:
-        print("Import failed. Unable to find SCons files in:")
+    except ImportError:
+        print("SCons import failed. Unable to find engine files in:")
         for path in libs:
-          print "  %s" % path
+            print("  %s" % path)
         raise
 
     # this does all the work, and calls sys.exit

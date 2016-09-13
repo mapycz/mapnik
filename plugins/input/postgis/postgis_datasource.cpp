@@ -88,11 +88,23 @@ postgis_datasource::postgis_datasource(parameters const& params)
       extent_from_subquery_(*params.get<mapnik::boolean_type>("extent_from_subquery", false)),
       max_async_connections_(*params_.get<mapnik::value_integer>("max_async_connection", 1)),
       asynchronous_request_(false),
+      twkb_encoding_(false),
+      twkb_rounding_adjustment_(*params_.get<mapnik::value_double>("twkb_rounding_adjustment", 0.0)),
+      simplify_snap_ratio_(*params_.get<mapnik::value_double>("simplify_snap_ratio", 1.0/40.0)),
+      // 1/20 of pixel seems to be a good compromise to avoid
+      // drop of collapsed polygons.
+      // See https://github.com/mapnik/mapnik/issues/1639
+      // See http://trac.osgeo.org/postgis/ticket/2093
+      simplify_dp_ratio_(*params_.get<mapnik::value_double>("simplify_dp_ratio", 1.0/20.0)),
+      simplify_prefilter_(*params_.get<mapnik::value_double>("simplify_prefilter", 0.0)),
+      simplify_dp_preserve_(false),
+      simplify_clip_resolution_(*params_.get<mapnik::value_double>("simplify_clip_resolution", 0.0)),
       // TODO - use for known tokens too: "(@\\w+|!\\w+!)"
       pattern_(boost::regex("(@\\w+)",boost::regex::normal | boost::regbase::icase)),
       // params below are for testing purposes only and may be removed at any time
       intersect_min_scale_(*params.get<mapnik::value_integer>("intersect_min_scale", 0)),
-      intersect_max_scale_(*params.get<mapnik::value_integer>("intersect_max_scale", 0))
+      intersect_max_scale_(*params.get<mapnik::value_integer>("intersect_max_scale", 0)),
+      key_field_as_attribute_(*params.get<mapnik::boolean_type>("key_field_as_attribute", true))
 {
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "postgis_datasource::init");
@@ -128,6 +140,12 @@ postgis_datasource::postgis_datasource(parameters const& params)
     estimate_extent_ = estimate_extent && *estimate_extent;
     boost::optional<mapnik::boolean_type> simplify_opt = params.get<mapnik::boolean_type>("simplify_geometries", false);
     simplify_geometries_ = simplify_opt && *simplify_opt;
+
+    boost::optional<mapnik::boolean_type> twkb_opt = params.get<mapnik::boolean_type>("twkb_encoding", false);
+    twkb_encoding_ = twkb_opt && *twkb_opt;
+
+    boost::optional<mapnik::boolean_type> simplify_preserve_opt = params.get<mapnik::boolean_type>("simplify_dp_preserve", false);
+    simplify_dp_preserve_ = simplify_preserve_opt && *simplify_preserve_opt;
 
     ConnectionManager::instance().registerPool(creator_, *initial_size, pool_max_size_);
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
@@ -370,7 +388,10 @@ postgis_datasource::postgis_datasource(parameters const& params)
                     if (type_oid == 20 || type_oid == 21 || type_oid == 23)
                     {
                         found_key_field = true;
-                        desc_.add_descriptor(attribute_descriptor(fld_name, mapnik::Integer));
+                        if (key_field_as_attribute_)
+                        {
+                            desc_.add_descriptor(attribute_descriptor(fld_name, mapnik::Integer));
+                        }
                     }
                     else
                     {
@@ -458,7 +479,7 @@ postgis_datasource::postgis_datasource(parameters const& params)
         // Finally, add unique metadata to layer descriptor
         mapnik::parameters & extra_params = desc_.get_extra_parameters();
         // explicitly make copies of values due to https://github.com/mapnik/mapnik/issues/2651
-        extra_params["srid"] = srid_;
+        extra_params["srid"] = mapnik::value_integer(srid_);
         if (!key_field_.empty())
         {
             extra_params["key_field"] = key_field_;
@@ -790,25 +811,91 @@ featureset_ptr postgis_datasource::features_with_context(query const& q,processo
 
         const double px_gw = 1.0 / std::get<0>(q.resolution());
         const double px_gh = 1.0 / std::get<1>(q.resolution());
+        const double px_sz = std::min(px_gw, px_gh);
 
-        s << "SELECT ST_AsBinary(";
+        if (twkb_encoding_)
+        {
+            // This will only work against PostGIS 2.2, or a back-patched version
+            // that has (a) a ST_Simplify with a "preserve collapsed" flag and
+            // (b) a ST_RemoveRepeatedPoints with a tolerance parameter and
+            // (c) a ST_AsTWKB implementation
 
-        if (simplify_geometries_) {
-          s << "ST_Simplify(";
+            // What number of decimals of rounding does the pixel size imply?
+            const int twkb_rounding = -1 * std::lround(log10(px_sz) + twkb_rounding_adjustment_) + 1;
+            // And what's that in map units?
+            const double twkb_tolerance = pow(10.0, -1.0 * twkb_rounding);
+
+            s << "SELECT ST_AsTWKB(";
+            s << "ST_Simplify(";
+            s << "ST_RemoveRepeatedPoints(";
+
+            if (simplify_clip_resolution_ > 0.0 && simplify_clip_resolution_ > px_sz)
+            {
+                s << "ST_ClipByBox2D(";
+            }
+            s << "\"" << geometryColumn_ << "\"";
+
+            // ! ST_ClipByBox2D()
+            if (simplify_clip_resolution_ > 0.0 && simplify_clip_resolution_ > px_sz)
+            {
+                s << "," << sql_bbox(box) << ")";
+            }
+
+            // ! ST_RemoveRepeatedPoints()
+            s << "," << twkb_tolerance << ")";
+            // ! ST_Simplify(), with parameter to keep collapsed geometries
+            s << "," << twkb_tolerance << ",true)";
+            // ! ST_TWKB()
+            s << "," << twkb_rounding << ") AS geom";
         }
+        else
+        {
+            s << "SELECT ST_AsBinary(";
+            if (simplify_geometries_)
+            {
+                s << "ST_Simplify(";
+            }
+            if (simplify_clip_resolution_ > 0.0 && simplify_clip_resolution_ > px_sz)
+            {
+                s << "ST_ClipByBox2D(";
+            }
+            if (simplify_geometries_ && simplify_snap_ratio_ > 0.0)
+            {
+                s<< "ST_SnapToGrid(";
+            }
 
-        s << "\"" << geometryColumn_ << "\"";
+            // Geometry column!
+            s << "\"" << geometryColumn_ << "\"";
 
-        if (simplify_geometries_) {
-          // 1/20 of pixel seems to be a good compromise to avoid
-          // drop of collapsed polygons.
-          // See https://github.com/mapnik/mapnik/issues/1639
-          const double tolerance = std::min(px_gw, px_gh) / 20.0;
-          s << ", " << tolerance << ")";
+            // ! ST_SnapToGrid()
+            if (simplify_geometries_ && simplify_snap_ratio_ > 0.0)
+            {
+                const double tolerance = px_sz * simplify_snap_ratio_;
+                s << "," << tolerance << ")";
+            }
+
+            // ! ST_ClipByBox2D()
+            if (simplify_clip_resolution_ > 0.0 && simplify_clip_resolution_ > px_sz)
+            {
+                s << "," << sql_bbox(box) << ")";
+            }
+
+            // ! ST_Simplify()
+            if (simplify_geometries_)
+            {
+                const double tolerance = px_sz * simplify_dp_ratio_;
+                s << ", " << tolerance;
+                // Add parameter to ST_Simplify to keep collapsed geometries
+                if (simplify_dp_preserve_)
+                {
+                    s << ", true";
+                }
+                s << ")";
+            }
+
+            // ! ST_AsBinary()
+            s << ") AS geom";
         }
-
-        s << ") AS geom";
-
         mapnik::context_ptr ctx = std::make_shared<mapnik::context_type>();
         std::set<std::string> const& props = q.property_names();
         std::set<std::string>::const_iterator pos = props.begin();
@@ -817,7 +904,10 @@ featureset_ptr postgis_datasource::features_with_context(query const& q,processo
         if (! key_field_.empty())
         {
             mapnik::sql_utils::quote_attr(s, key_field_);
-            ctx->push(key_field_);
+            if (key_field_as_attribute_)
+            {
+                ctx->push(key_field_);
+            }
 
             for (; pos != end; ++pos)
             {
@@ -847,11 +937,12 @@ featureset_ptr postgis_datasource::features_with_context(query const& q,processo
         }
 
         std::shared_ptr<IResultSet> rs = get_resultset(conn, s.str(), pool, proc_ctx);
-        return std::make_shared<postgis_featureset>(rs, ctx, desc_.get_encoding(), !key_field_.empty());
+        return std::make_shared<postgis_featureset>(rs, ctx, desc_.get_encoding(), !key_field_.empty(),
+                                                    key_field_as_attribute_, twkb_encoding_);
 
     }
 
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }
 
 
@@ -864,7 +955,7 @@ featureset_ptr postgis_datasource::features_at_point(coord2d const& pt, double t
     if (pool)
     {
         shared_ptr<Connection> conn = pool->borrowObject();
-        if (!conn) return featureset_ptr();
+        if (!conn) return mapnik::make_invalid_featureset();
 
         if (conn->isOK())
         {
@@ -894,28 +985,32 @@ featureset_ptr postgis_datasource::features_at_point(coord2d const& pt, double t
             s << "SELECT ST_AsBinary(\"" << geometryColumn_ << "\") AS geom";
 
             mapnik::context_ptr ctx = std::make_shared<mapnik::context_type>();
-            std::vector<attribute_descriptor>::const_iterator itr = desc_.get_descriptors().begin();
-            std::vector<attribute_descriptor>::const_iterator end = desc_.get_descriptors().end();
+            auto const& desc = desc_.get_descriptors();
 
-            if (! key_field_.empty())
+            if (!key_field_.empty())
             {
                 mapnik::sql_utils::quote_attr(s, key_field_);
-                ctx->push(key_field_);
-                for (; itr != end; ++itr)
+                if (key_field_as_attribute_)
                 {
-                    if (itr->get_name() != key_field_)
+                    ctx->push(key_field_);
+                }
+                for (auto const& attr_info : desc)
+                {
+                    std::string const& name = attr_info.get_name();
+                    if (name != key_field_)
                     {
-                        mapnik::sql_utils::quote_attr(s, itr->get_name());
-                        ctx->push(itr->get_name());
+                        mapnik::sql_utils::quote_attr(s, name);
+                        ctx->push(name);
                     }
                 }
             }
             else
             {
-                for (; itr != end; ++itr)
+                for (auto const& attr_info : desc)
                 {
-                    mapnik::sql_utils::quote_attr(s, itr->get_name());
-                    ctx->push(itr->get_name());
+                    std::string const& name = attr_info.get_name();
+                    mapnik::sql_utils::quote_attr(s, name);
+                    ctx->push(name);
                 }
             }
 
@@ -930,11 +1025,12 @@ featureset_ptr postgis_datasource::features_at_point(coord2d const& pt, double t
             }
 
             std::shared_ptr<IResultSet> rs = get_resultset(conn, s.str(), pool);
-            return std::make_shared<postgis_featureset>(rs, ctx, desc_.get_encoding(), !key_field_.empty());
+            return std::make_shared<postgis_featureset>(rs, ctx, desc_.get_encoding(), !key_field_.empty(),
+                                                        key_field_as_attribute_, twkb_encoding_);
         }
     }
 
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }
 
 box2d<double> postgis_datasource::envelope() const

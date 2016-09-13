@@ -62,6 +62,10 @@ system = 'boost_system%s' % env['BOOST_APPEND']
 lib_env['LIBS'] = [filesystem,
                    regex]
 
+if env['COVERAGE']:
+    lib_env.Append(LINKFLAGS='--coverage')
+    lib_env.Append(CXXFLAGS='--coverage')
+
 if env['HAS_CAIRO']:
     lib_env.Append(LIBS=env['CAIRO_ALL_LIBS'])
 
@@ -156,7 +160,7 @@ source = Split(
     well_known_srs.cpp
     params.cpp
     image_filter_types.cpp
-    miniz_png.cpp
+    image_filter_grammar.cpp
     color.cpp
     conversions.cpp
     image_copy.cpp
@@ -203,6 +207,7 @@ source = Split(
     rule.cpp
     save_map.cpp
     wkb.cpp
+    twkb.cpp
     projection.cpp
     proj_transform.cpp
     scale_denominator.cpp
@@ -223,6 +228,7 @@ source = Split(
     warp.cpp
     css_color_grammar.cpp
     vertex_cache.cpp
+    vertex_adapters.cpp
     text/font_library.cpp
     text/text_layout.cpp
     text/text_line.cpp
@@ -256,10 +262,13 @@ source = Split(
     config_error.cpp
     color_factory.cpp
     renderer_common.cpp
+    renderer_common/render_group_symbolizer.cpp
+    renderer_common/render_markers_symbolizer.cpp
     renderer_common/render_pattern.cpp
-    renderer_common/process_group_symbolizer.cpp
+    renderer_common/render_thunk_extractor.cpp
     math.cpp
     symbol_cache.cpp
+    value.cpp
     """
     )
 

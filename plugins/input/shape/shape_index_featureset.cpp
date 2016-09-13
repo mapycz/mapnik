@@ -30,14 +30,14 @@
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
 #include <boost/algorithm/string.hpp>
-#ifdef SHAPE_MEMORY_MAPPED_FILE
+#if defined(MAPNIK_MEMORY_MAPPED_FILE)
 #include <boost/interprocess/streams/bufferstream.hpp>
 #endif
 #pragma GCC diagnostic pop
 
 #include "shape_index_featureset.hpp"
 #include "shape_utils.hpp"
-#include "shp_index.hpp"
+#include <mapnik/util/spatial_index.hpp>
 
 using mapnik::feature_factory;
 
@@ -50,11 +50,14 @@ shape_index_featureset<filterT>::shape_index_featureset(filterT const& filter,
                                                         int row_limit)
     : filter_(filter),
       ctx_(std::make_shared<mapnik::context_type>()),
-    shape_ptr_(std::move(shape_ptr)),
-    tr_(new mapnik::transcoder(encoding)),
-    row_limit_(row_limit),
-    count_(0),
-    feature_bbox_()
+      shape_ptr_(std::move(shape_ptr)),
+      tr_(new mapnik::transcoder(encoding)),
+      offsets_(),
+      itr_(),
+      attr_ids_(),
+      row_limit_(row_limit),
+      count_(0),
+      feature_bbox_()
 {
     shape_ptr_->shp().skip(100);
     setup_attributes(ctx_, attribute_names, shape_name, *shape_ptr_,attr_ids_);
@@ -62,18 +65,15 @@ shape_index_featureset<filterT>::shape_index_featureset(filterT const& filter,
     auto index = shape_ptr_->index();
     if (index)
     {
-#ifdef SHAPE_MEMORY_MAPPED_FILE
-        //shp_index<filterT,stream<mapped_file_source> >::query(filter, index->file(), offsets_);
-        shp_index<filterT,boost::interprocess::ibufferstream>::query(filter, index->file(), offsets_);
+#if defined(MAPNIK_MEMORY_MAPPED_FILE)
+        mapnik::util::spatial_index<mapnik::detail::node, filterT,boost::interprocess::ibufferstream>::query(filter, index->file(), offsets_);
 #else
-        shp_index<filterT,std::ifstream>::query(filter, index->file(), offsets_);
+        mapnik::util::spatial_index<mapnik::detail::node, filterT, std::ifstream>::query(filter, index->file(), offsets_);
 #endif
     }
-
-    std::sort(offsets_.begin(), offsets_.end());
-
+    std::sort(offsets_.begin(), offsets_.end(), [](mapnik::detail::node const& n0, mapnik::detail::node const& n1)
+              {return n0.offset != n1.offset ? n0.offset < n1.offset : n0.start < n1.start;});
     MAPNIK_LOG_DEBUG(shape) << "shape_index_featureset: Query size=" << offsets_.size();
-
     itr_ = offsets_.begin();
 }
 
@@ -87,11 +87,19 @@ feature_ptr shape_index_featureset<filterT>::next()
 
     while ( itr_ != offsets_.end())
     {
-        shape_ptr_->move_to(*itr_++);
+        int offset = itr_->offset;
+        shape_ptr_->move_to(offset);
+        std::vector<std::pair<int,int>> parts;
+        while (itr_ != offsets_.end() && itr_->offset == offset)
+        {
+            if (itr_->start!= -1) parts.emplace_back(itr_->start, itr_->end);
+            ++itr_;
+        }
+        mapnik::value_integer feature_id = shape_ptr_->id();
         shape_file::record_type record(shape_ptr_->reclength_ * 2);
         shape_ptr_->shp().read_record(record);
         int type = record.read_ndr_integer();
-        feature_ptr feature(feature_factory::create(ctx_,shape_ptr_->id_));
+        feature_ptr feature(feature_factory::create(ctx_, feature_id));
 
         switch (type)
         {
@@ -127,7 +135,8 @@ feature_ptr shape_index_featureset<filterT>::next()
         {
             shape_io::read_bbox(record, feature_bbox_);
             if (!filter_.pass(feature_bbox_)) continue;
-            feature->set_geometry(shape_io::read_polyline(record));
+            if (parts.size() < 2) feature->set_geometry(shape_io::read_polyline(record));
+            else feature->set_geometry(shape_io::read_polyline_parts(record, parts));
             break;
         }
         case shape_io::shape_polygon:
@@ -136,7 +145,8 @@ feature_ptr shape_index_featureset<filterT>::next()
         {
             shape_io::read_bbox(record, feature_bbox_);
             if (!filter_.pass(feature_bbox_)) continue;
-            feature->set_geometry(shape_io::read_polygon(record));
+            if (parts.size() < 2) feature->set_geometry(shape_io::read_polygon(record));
+            else feature->set_geometry(shape_io::read_polygon_parts(record, parts));
             break;
         }
         default :
@@ -144,18 +154,14 @@ feature_ptr shape_index_featureset<filterT>::next()
             return feature_ptr();
         }
 
-        // FIXME: https://github.com/mapnik/mapnik/issues/1020
-        feature->set_id(shape_ptr_->id_);
         if (attr_ids_.size())
         {
             shape_ptr_->dbf().move_to(shape_ptr_->id_);
-            std::vector<int>::const_iterator itr = attr_ids_.begin();
-            std::vector<int>::const_iterator end = attr_ids_.end();
             try
             {
-                for (; itr!=end; ++itr)
+                for (auto id : attr_ids_)
                 {
-                    shape_ptr_->dbf().add_attribute(*itr, *tr_, *feature);
+                    shape_ptr_->dbf().add_attribute(id, *tr_, *feature);
                 }
             }
             catch (...)

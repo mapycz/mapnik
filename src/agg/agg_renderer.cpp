@@ -44,7 +44,8 @@
 #include <mapnik/image_any.hpp>
 #include <mapnik/make_unique.hpp>
 
-// agg
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
 #include "agg_rendering_buffer.h"
 #include "agg_pixfmt_rgba.h"
 #include "agg_color_rgba.h"
@@ -54,9 +55,12 @@
 #include "agg_span_allocator.h"
 #include "agg_image_accessors.h"
 #include "agg_span_image_filter_rgba.h"
+#pragma GCC diagnostic pop
 
-// boost
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
 #include <boost/optional.hpp>
+#pragma GCC diagnostic pop
 
 // stl
 #include <cmath>
@@ -119,11 +123,11 @@ struct setup_agg_bg_visitor
            mode_(mode),
            opacity_(opacity) {}
 
-    void operator() (marker_null const&) {}
+    void operator() (marker_null const&) const {}
 
-    void operator() (marker_svg const&) {}
+    void operator() (marker_svg const&) const {}
 
-    void operator() (marker_rgba8 const& marker)
+    void operator() (marker_rgba8 const& marker) const
     {
         mapnik::image_rgba8 const& bg_image = marker.get_data();
         std::size_t w = bg_image.width();
@@ -197,7 +201,7 @@ void agg_renderer<T0,T1>::start_map_processing(Map const& map)
 }
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::end_map_processing(Map const& )
+void agg_renderer<T0,T1>::end_map_processing(Map const& map)
 {
     mapnik::demultiply_alpha(buffers_.top().get());
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End map processing";
@@ -321,6 +325,7 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
             {
                 util::apply_visitor(visitor, filter_tag);
             }
+            mapnik::premultiply_alpha(current_buffer);
         }
         if (st.comp_op())
         {
@@ -341,11 +346,16 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
             internal_buffers_.pop();
         }
     }
-    // apply any 'direct' image filters
-    mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer);
-    for (mapnik::filter::filter_type const& filter_tag : st.direct_image_filters())
+
+    if (st.direct_image_filters().size() > 0)
     {
-        util::apply_visitor(visitor, filter_tag);
+        // apply any 'direct' image filters
+        mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer);
+        for (mapnik::filter::filter_type const& filter_tag : st.direct_image_filters())
+        {
+            util::apply_visitor(visitor, filter_tag);
+        }
+        mapnik::premultiply_alpha(previous_buffer);
     }
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End processing style";
 }
@@ -372,9 +382,9 @@ struct agg_render_marker_visitor
           opacity_(opacity),
           comp_op_(comp_op) {}
 
-    void operator() (marker_null const&) {}
+    void operator() (marker_null const&) const {}
 
-    void operator() (marker_svg const& marker)
+    void operator() (marker_svg const& marker) const
     {
         using color_type = agg::rgba8;
         using order_type = agg::order_rgba;
@@ -425,7 +435,7 @@ struct agg_render_marker_visitor
         svg_renderer.render(*ras_ptr_, sl, renb, mtx, opacity_, bbox);
     }
 
-    void operator() (marker_rgba8 const& marker)
+    void operator() (marker_rgba8 const& marker) const
     {
         using color_type = agg::rgba8;
         using order_type = agg::order_rgba;

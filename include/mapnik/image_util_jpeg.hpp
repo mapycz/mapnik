@@ -23,12 +23,16 @@
 #ifndef MAPNIK_IMAGE_UTIL_JPEG_HPP
 #define MAPNIK_IMAGE_UTIL_JPEG_HPP
 
+#include <mapnik/config.hpp>
+
 // stl
 #include <string>
 #include <iostream>
 
 namespace mapnik {
-
+namespace detail {
+MAPNIK_DECL int parse_jpeg_quality(std::string const& params);
+}
 struct jpeg_saver
 {
     jpeg_saver(std::ostream &, std::string const&);

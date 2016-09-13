@@ -7,6 +7,10 @@ ifeq ($(JOBS),)
 	JOBS:=1
 endif
 
+ifeq ($(HEAVY_JOBS),)
+	HEAVY_JOBS:=1
+endif
+
 all: mapnik
 
 install:
@@ -28,6 +32,8 @@ clean:
 	@find ./src/ -name "*.so" -exec rm {} \;
 	@find ./ -name "*.o" -exec rm {} \;
 	@find ./src/ -name "*.a" -exec rm {} \;
+	@find ./ -name "*.gcda" -exec rm {} \;
+	@find ./ -name "*.gcno" -exec rm {} \;
 
 distclean:
 	if test -e "config.py"; then mv "config.py" "config.py.backup"; fi
@@ -40,10 +46,13 @@ rebuild:
 uninstall:
 	@$(PYTHON) scons/scons.py -j$(JOBS) --config=cache --implicit-cache --max-drift=1 uninstall
 
-test/data:
-	git submodule update --init
+test/data-visual:
+	./scripts/ensure_test_data.sh
 
-test: ./test/data
+test/data:
+	./scripts/ensure_test_data.sh
+
+test: ./test/data test/data-visual
 	@./test/run
 
 check: test

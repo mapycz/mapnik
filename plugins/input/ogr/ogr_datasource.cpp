@@ -59,6 +59,16 @@ using mapnik::datasource_exception;
 using mapnik::filter_in_box;
 using mapnik::filter_at_point;
 
+static std::once_flag once_flag;
+
+extern "C" MAPNIK_EXP void on_plugin_load()
+{
+    // initialize ogr formats
+    // NOTE: in GDAL >= 2.0 this is the same as GDALAllRegister()
+    std::call_once(once_flag,[](){
+        OGRRegisterAll();
+    });
+}
 
 ogr_datasource::ogr_datasource(parameters const& params)
     : datasource(params),
@@ -86,10 +96,6 @@ void ogr_datasource::init(mapnik::parameters const& params)
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "ogr_datasource::init");
 #endif
-
-    // initialize ogr formats
-    // NOTE: in GDAL >= 2.0 this is the same as GDALAllRegister()
-    OGRRegisterAll();
 
     boost::optional<std::string> file = params.get<std::string>("file");
     boost::optional<std::string> string = params.get<std::string>("string");
@@ -371,7 +377,7 @@ void ogr_datasource::init(mapnik::parameters const& params)
     }
     mapnik::parameters & extra_params = desc_.get_extra_parameters();
     OGRSpatialReference * srs_ref = layer->GetSpatialRef();
-    char * srs_output = NULL;
+    char * srs_output = nullptr;
     if (srs_ref && srs_ref->exportToProj4( &srs_output ) == OGRERR_NONE ) {
         extra_params["proj4"] = mapnik::util::trim_copy(srs_output);
     }
@@ -490,12 +496,9 @@ void validate_attribute_names(query const& q, std::vector<attribute_descriptor> 
     {
         bool found_name = false;
 
-        std::vector<attribute_descriptor>::const_iterator itr = names.begin();
-        std::vector<attribute_descriptor>::const_iterator end = names.end();
-
-        for (; itr!=end; ++itr)
+        for (auto const& attr_info : names)
         {
-            if (itr->get_name() == *pos)
+            if (attr_info.get_name() == *pos)
             {
                 found_name = true;
                 break;
@@ -506,11 +509,9 @@ void validate_attribute_names(query const& q, std::vector<attribute_descriptor> 
         {
             std::ostringstream s;
             s << "OGR Plugin: no attribute named '" << *pos << "'. Valid attributes are: ";
-            std::vector<attribute_descriptor>::const_iterator e_itr = names.begin();
-            std::vector<attribute_descriptor>::const_iterator e_end = names.end();
-            for ( ;e_itr!=e_end;++e_itr)
+            for (auto const& attr_info2 : names)
             {
-                s << e_itr->get_name() << std::endl;
+                s << attr_info2.get_name() << std::endl;
             }
             throw mapnik::datasource_exception(s.str());
         }
@@ -531,10 +532,10 @@ featureset_ptr ogr_datasource::features(query const& q) const
         // feature context (schema)
         mapnik::context_ptr ctx = std::make_shared<mapnik::context_type>();
 
-        std::vector<attribute_descriptor>::const_iterator itr = desc_ar.begin();
-        std::vector<attribute_descriptor>::const_iterator end = desc_ar.end();
-
-        for (; itr!=end; ++itr) ctx->push(itr->get_name()); // TODO only push query attributes
+        for (auto const& attr_info : desc_ar)
+        {
+            ctx->push(attr_info.get_name()); // TODO only push query attributes
+        }
 
         validate_attribute_names(q, desc_ar);
 
@@ -559,7 +560,7 @@ featureset_ptr ogr_datasource::features(query const& q) const
         }
     }
 
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }
 
 featureset_ptr ogr_datasource::features_at_point(coord2d const& pt, double tol) const
@@ -574,9 +575,10 @@ featureset_ptr ogr_datasource::features_at_point(coord2d const& pt, double tol) 
         // feature context (schema)
         mapnik::context_ptr ctx = std::make_shared<mapnik::context_type>();
 
-        std::vector<attribute_descriptor>::const_iterator itr = desc_ar.begin();
-        std::vector<attribute_descriptor>::const_iterator end = desc_ar.end();
-        for (; itr!=end; ++itr) ctx->push(itr->get_name());
+        for (auto const& attr_info : desc_ar)
+        {
+            ctx->push(attr_info.get_name()); // TODO only push query attributes
+        }
 
         OGRLayer* layer = layer_.layer();
 
@@ -601,5 +603,5 @@ featureset_ptr ogr_datasource::features_at_point(coord2d const& pt, double tol) 
         }
     }
 
-    return featureset_ptr();
+    return mapnik::make_invalid_featureset();
 }

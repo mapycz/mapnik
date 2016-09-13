@@ -41,7 +41,7 @@ struct weighted_vertex : private util::noncopyable
         vertex2d const& A = prev->coord;
         vertex2d const& B = next->coord;
         vertex2d const& C = coord;
-        return std::abs((double)((A.x - C.x) * (B.y - A.y) - (A.x - B.x) * (C.y - A.y))) / 2.0;
+        return std::abs(static_cast<double>((A.x - C.x) * (B.y - A.y) - (A.x - B.x) * (C.y - A.y))) / 2.0;
     }
 
     struct ascending_sort
@@ -76,16 +76,16 @@ struct sleeve
 
     bool inside(vertex2d const& q)
     {
-        bool inside=false;
+        bool _inside=false;
 
         for (unsigned i=0;i<4;++i)
         {
             if ((((v[i+1].y <= q.y) && (q.y < v[i].y)) ||
                  ((v[i].y <= q.y) && (q.y < v[i+1].y))) &&
                 (q.x < (v[i].x - v[i+1].x) * (q.y - v[i+1].y)/ (v[i].y - v[i+1].y) + v[i+1].x))
-                inside=!inside;
+                _inside=!_inside;
         }
-        return inside;
+        return _inside;
     }
 };
 
@@ -106,7 +106,7 @@ public:
         initial,
         process,
         closing,
-        end,
+        done,
         cache
     };
 
@@ -210,7 +210,7 @@ private:
         if (status_ == closing)
         {
             *x = *y = 0.0;
-            status_ = end;
+            status_ = done;
             return SEG_CLOSE;
         }
 
@@ -237,7 +237,7 @@ private:
                 {
                     // The previous vertex was already output in the previous call.
                     // We can now safely output SEG_CLOSE.
-                    status_ = end;
+                    status_ = done;
                 }
                 else
                 {
@@ -268,11 +268,11 @@ private:
     }
 
     template <typename Iterator>
-    bool fit_sleeve(Iterator itr,Iterator end, vertex2d const& v)
+    bool fit_sleeve(Iterator itr, Iterator end, vertex2d const& v)
     {
         sleeve s(*itr,v,tolerance_);
         ++itr; // skip first vertex
-        for (; itr!=end; ++itr)
+        for (; itr != end; ++itr)
         {
             if (!s.inside(*itr))
             {
@@ -486,14 +486,14 @@ private:
         return status_ = process;
     }
 
-    void RDP(std::vector<vertex2d>& vertices, const size_t start, const size_t end)
+    void RDP(std::vector<vertex2d>& vertices, const size_t first, const size_t last)
     {
         // Squared length of a vector
         auto sqlen = [] (vertex2d const& vec) { return vec.x*vec.x + vec.y*vec.y; };
         // Compute square distance of p to a line segment
         auto segment_distance = [&sqlen] (vertex2d const& p, vertex2d const& a, vertex2d const& b, vertex2d const& dir, double dir_sq_len)
         {
-            // Special case where segment has same start and end point at which point we are just doing a radius check
+            // Special case where segment has same first and last point at which point we are just doing a radius check
             if (dir_sq_len == 0)
             {
                 return sqlen(vertex2d(p.x - b.x, p.y - b.y, SEG_END));
@@ -525,15 +525,15 @@ private:
         };
 
         // Compute the directional vector along the segment
-        vertex2d dir = vertex2d(vertices[end].x - vertices[start].x, vertices[end].y - vertices[start].y, SEG_END);
+        vertex2d dir = vertex2d(vertices[last].x - vertices[first].x, vertices[last].y - vertices[first].y, SEG_END);
         double dir_sq_len = sqlen(dir);
 
         // Find the point with the maximum distance from this line segment
         double max = std::numeric_limits<double>::min();
         size_t keeper = 0;
-        for (size_t i = start + 1; i < end; ++i)
+        for (size_t i = first + 1; i < last; ++i)
         {
-            double d = segment_distance(vertices[i], vertices[start], vertices[end], dir, dir_sq_len);
+            double d = segment_distance(vertices[i], vertices[first], vertices[last], dir, dir_sq_len);
             if (d > max)
             {
                 keeper = i;
@@ -546,19 +546,19 @@ private:
         if (max > tolerance_ * tolerance_)
         {
             // Make sure not to smooth out the biggest outlier (keeper)
-            if (keeper - start != 1)
+            if (keeper - first != 1)
             {
-                RDP(vertices, start, keeper);
+                RDP(vertices, first, keeper);
             }
-            if (end - keeper != 1)
+            if (last - keeper != 1)
             {
-                RDP(vertices, keeper, end);
+                RDP(vertices, keeper, last);
             }
-        }// Everyone between the start and the end was close enough to the line
+        }// Everyone between the first and the last was close enough to the line
         else
         {
             // Mark each of them as discarded
-            for (size_t i = start + 1; i < end; ++i)
+            for (size_t i = first + 1; i < last; ++i)
             {
                 vertices[i].cmd = SEG_END;
             }
@@ -592,11 +592,11 @@ private:
         }
 
         // Slurp the points back out that haven't been marked as discarded
-        for (vertex2d const& vertex : vertices)
+        for (vertex2d const& v : vertices)
         {
-            if (vertex.cmd != SEG_END)
+            if (v.cmd != SEG_END)
             {
-                vertices_.emplace_back(vertex);
+                vertices_.emplace_back(v);
             }
         }
 

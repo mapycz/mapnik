@@ -1,11 +1,10 @@
+
 #include "catch.hpp"
 
 #include <iostream>
 #include <mapnik/value_types.hpp>
 #include <mapnik/params.hpp>
 #include <mapnik/boolean.hpp>
-#include <vector>
-#include <algorithm>
 
 #include <ostream>
 

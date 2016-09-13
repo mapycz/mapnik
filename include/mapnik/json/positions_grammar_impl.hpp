@@ -22,20 +22,41 @@
 
 // mapnik
 #include <mapnik/json/positions_grammar.hpp>
-
+#include <mapnik/geometry_fusion_adapted.hpp>
 // boost
 #include <boost/spirit/include/qi_omit.hpp>
 #include <boost/spirit/include/phoenix_object.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_function.hpp>
 // stl
 #include <iostream>
 #include <string>
 
 namespace mapnik { namespace json {
 
+struct set_position_impl
+{
+    using result_type = void;
+    template <typename T0,typename T1>
+    result_type operator() (T0 & coords, T1 const& pos) const
+    {
+        if (pos) coords = *pos;
+    }
+};
+
+struct push_position_impl
+{
+    using result_type = void;
+    template <typename T0, typename T1>
+    result_type operator() (T0 & coords, T1 const& pos) const
+    {
+        if (pos) coords.emplace_back(*pos);
+    }
+};
+
 template <typename Iterator, typename ErrorHandler>
-positions_grammar<Iterator, ErrorHandler>::positions_grammar()
+positions_grammar<Iterator, ErrorHandler>::positions_grammar(ErrorHandler & error_handler)
     : positions_grammar::base_type(coords,"coordinates")
 {
     qi::lit_type lit;
@@ -48,6 +69,9 @@ positions_grammar<Iterator, ErrorHandler>::positions_grammar()
     qi::omit_type omit;
     using qi::fail;
     using qi::on_error;
+
+    boost::phoenix::function<set_position_impl> set_position;
+    boost::phoenix::function<push_position_impl> push_position;
 
     coords = rings_array[_val = _1] | rings [_val = _1] | ring[_val = _1] |  pos[set_position(_val,_1)]
         ;
@@ -66,7 +90,8 @@ positions_grammar<Iterator, ErrorHandler>::positions_grammar()
     rings_array.name("Rings array");
 
     // error handler
-    on_error<fail>(coords, error_handler(_1, _2, _3, _4));
+    auto error_handler_function = boost::phoenix::function<ErrorHandler>(error_handler);
+    on_error<fail>(coords, error_handler_function(_1, _2, _3, _4));
 }
 
 }}
