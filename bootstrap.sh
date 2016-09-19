@@ -22,8 +22,8 @@ function setup_mason() {
         (cd ./.mason && git fetch && git checkout ${MASON_VERSION} && git pull)
     fi
     export PATH=$(pwd)/.mason:$PATH
-    export CXX=${CXX:-clang++}
-    export CC=${CC:-clang}
+    export CXX=${CXX:-g++}
+    export CC=${CC:-gcc}
 }
 
 function install() {
