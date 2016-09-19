@@ -44,8 +44,6 @@ function install() {
     mason link $1 $2
 }
 
-ICU_VERSION="55.1"
-
 function install_mason_deps() {
     FAIL=0
     install ccache 3.3.0 &
@@ -56,7 +54,6 @@ function install_mason_deps() {
     install libpq 9.5.2 &
     install sqlite 3.14.1 libsqlite3 &
     install expat 2.2.0 libexpat &
-    install icu ${ICU_VERSION} &
     install proj 4.9.2 libproj &
     install pixman 0.34.0 libpixman-1 &
     install cairo 1.14.6 libcairo &
@@ -89,8 +86,6 @@ PATH = '${MASON_LINKED_REL}/bin'
 PKG_CONFIG_PATH = '${MASON_LINKED_REL}/lib/pkgconfig'
 PATH_REMOVE = '/usr:/usr/local'
 PATH_REPLACE = '$HOME/build/mapbox/mason/mason_packages:./mason_packages'
-ICU_INCLUDES = '${MASON_LINKED_REL}/include'
-ICU_LIBS = '${MASON_LINKED_REL}/lib'
 HB_INCLUDES = '${MASON_LINKED_REL}/include'
 HB_LIBS = '${MASON_LINKED_REL}/lib'
 PNG_INCLUDES = '${MASON_LINKED_REL}/include/libpng16'
@@ -124,7 +119,6 @@ SVG2PNG = True
 # NOTE: the `mapnik-settings.env` is used by test/run (which is run by `make test`)
 function setup_runtime_settings() {
     echo "export PROJ_LIB=${MASON_LINKED_ABS}/share/proj" > mapnik-settings.env
-    echo "export ICU_DATA=${MASON_LINKED_ABS}/share/icu/${ICU_VERSION}" >> mapnik-settings.env
     echo "export GDAL_DATA=${MASON_LINKED_ABS}/share/gdal" >> mapnik-settings.env
     source mapnik-settings.env
 }
