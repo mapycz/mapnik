@@ -25,11 +25,11 @@ can_build = False
 
 if env.get('BOOST_LIB_VERSION_FROM_HEADER'):
     boost_version_from_header = int(env['BOOST_LIB_VERSION_FROM_HEADER'].split('_')[1])
-    if boost_version_from_header >= 56:
+    if boost_version_from_header >= 55:
         can_build = True
 
 if not can_build:
-    print 'WARNING: skipping building the optional topojson datasource plugin which requires boost >= 1.56'
+    print 'WARNING: skipping building the optional topojson datasource plugin which requires boost >= 1.55'
 else:
     Import ('plugin_base')
 
