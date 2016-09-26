@@ -713,13 +713,13 @@ def FindBoost(context, prefixes, thread_flag):
 
     # note: must call normpath to strip trailing slash otherwise dirname
     # does not remove 'lib' and 'include'
-    prefixes.insert(0,os.path.dirname(os.path.normpath(env['BOOST_INCLUDES'])))
-    prefixes.insert(0,os.path.dirname(os.path.normpath(env['BOOST_LIBS'])))
+    prefixes.insert(0, env['BOOST_INCLUDES'])
+    prefixes.insert(0, env['BOOST_LIBS'])
     for searchDir in prefixes:
         libItems = glob(os.path.join(searchDir, env['LIBDIR_SCHEMA'], '%s*.*' % search_lib))
         if not libItems:
-            libItems = glob(os.path.join(searchDir, 'lib/%s*.*' % search_lib))
-        incItems = glob(os.path.join(searchDir, 'include/boost*/'))
+            libItems = glob(os.path.join(searchDir, '%s*.*' % search_lib))
+        incItems = glob(os.path.join(searchDir, 'boost*/'))
         if len(libItems) >= 1 and len(incItems) >= 1:
             BOOST_LIB_DIR = os.path.dirname(libItems[0])
             BOOST_INCLUDE_DIR = incItems[0].rstrip('boost/')
