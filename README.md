@@ -23,10 +23,6 @@ For further information see [http://mapnik.org](http://mapnik.org) and also our 
 
 See [INSTALL.md](INSTALL.md) for installation instructions and the [Install](https://github.com/mapnik/mapnik/wiki/Mapnik-Installation) page on the wiki for guides.
 
-# Code of Conduct
-
-Please note that this project is released with a [Contributor Code of Conduct](https://github.com/mapnik/mapnik/blob/master/CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
-
 # License
 
 Mapnik software is free and is released under the LGPL ([GNU Lesser General Public License](http://www.gnu.org/licenses/lgpl.html)). Please see [COPYING](https://github.com/mapnik/mapnik/blob/master/COPYING) for more information.
