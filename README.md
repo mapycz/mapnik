@@ -1,17 +1,21 @@
-```
-    _/      _/                                _/  _/
-   _/_/  _/_/    _/_/_/  _/_/_/    _/_/_/        _/  _/
-  _/  _/  _/  _/    _/  _/    _/  _/    _/  _/  _/_/
- _/      _/  _/    _/  _/    _/  _/    _/  _/  _/  _/
-_/      _/    _/_/_/  _/_/_/    _/    _/  _/  _/    _/
-                     _/
-                    _/
-```
 
-[![Build Status Linux](https://api.travis-ci.org/mapnik/mapnik.svg?branch=master)](http://travis-ci.org/mapnik/mapnik)
-[![CircleCI](https://circleci.com/gh/mapnik/mapnik.svg?style=svg)](https://circleci.com/gh/mapnik/mapnik)
-[![Build Status Windows](https://ci.appveyor.com/api/projects/status/hc9l7okdjtucfqqn?branch=master&svg=true)](https://ci.appveyor.com/project/Mapbox/mapnik)
-[![Coverage Status](https://coveralls.io/repos/mapnik/mapnik/badge.svg?branch=master&service=github)](https://coveralls.io/github/mapnik/mapnik?branch=master)
+# mapy.cz-mapnik
+
+This repository contains a fork of [github.com/mapnik/mapnik](https://github.com/mapnik/mapnik), used mostly for rendering maps on [mapy.cz](https://mapy.cz). Main differences against upstream are:
+
+* [Tree-like layer structure](docs/features/layer-structure.md)
+* [Layer level compositing](docs/features/layer-level-compositing.md)
+* [Text placement method `combined`](docs/features/text-placement-combined.md)
+* [Text placement method `angle`](docs/features/text-placement-angle.md)
+* [Anchors](docs/features/anchors.md)
+* [Text placement `grid`](docs/features/text-placement-grid.md)
+* [Text on extended geometry](docs/features/text-extend.md)
+* [Shadows with building symbolizer](docs/features/building-symbolizer-shadow.md)
+* [XSLT preprocessing](docs/features/xslt-preprocessing.md)
+* Offsetting algorithm
+* Constant height of a first text line
+
+# Mapnik
 
 Mapnik is an open source toolkit for developing mapping applications. At the core is a C++ shared library providing algorithms and patterns for spatial data access and visualization.
 
