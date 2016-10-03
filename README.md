@@ -6,7 +6,7 @@ This repository contains a fork of [github.com/mapnik/mapnik](https://github.com
 * [Tree-like layer structure](docs/features/layer-structure.md)
 * [Layer level compositing](docs/features/layer-level-compositing.md)
 * [Text placement method `combined`](docs/features/text-placement-combined.md)
-* Text placement method `angle`
+* [Text placement method `angle`](docs/features/text-placement-angle.md)
 * Anchors
 * Text placement `grid`
 * Text on extended geometry
