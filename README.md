@@ -10,7 +10,7 @@ This repository contains a fork of [github.com/mapnik/mapnik](https://github.com
 * [Anchors](docs/features/anchors.md)
 * [Text placement `grid`](docs/features/text-placement-grid.md)
 * [Text on extended geometry](docs/features/text-extend.md)
-* Shadows with building symbolizer
+* [Shadows with building symbolizer](docs/features/building-symbolizer-shadow.md)
 * Offsetting algorithm
 * Constant height of a first text line
 * XSLT preprocessing
