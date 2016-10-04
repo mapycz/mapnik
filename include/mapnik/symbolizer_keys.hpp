@@ -96,6 +96,7 @@ enum class keys : std::uint8_t
     shadow_angle,
     shadow_length,
     shadow_opacity,
+    extend,
     MAX_SYMBOLIZER_KEY
 };
 

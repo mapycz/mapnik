@@ -390,6 +390,13 @@ struct symbolizer_default<value_double, keys::shadow_opacity>
     static value_double value() { return 0.1; }
 };
 
+// extend
+template <>
+struct symbolizer_default<value_double, keys::extend>
+{
+    static value_double value() { return 0.0; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP

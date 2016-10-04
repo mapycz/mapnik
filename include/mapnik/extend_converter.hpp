@@ -36,12 +36,15 @@
 // stl
 #include <cmath>
 
+namespace mapnik
+{
+
+namespace detail
+{
+
 namespace msm = boost::msm;
 namespace mpl = boost::mpl;
 using namespace msm::front;
-
-namespace mapnik
-{
 
 template <typename T>
 T extend(T const & v1, T const & v2, double length)
@@ -81,13 +84,23 @@ namespace actions
         }
     };
 
-    struct output_single
+    struct output
     {
         template <class FSM, class EVT, class SourceState, class TargetState>
         void operator()(EVT const & e, FSM & m, SourceState&, TargetState&)
         {
-            m.output = m.v1;
+            m.output = e.vertex;
+        }
+    };
+
+    struct store_and_output
+    {
+        template <class FSM, class EVT, class SourceState, class TargetState>
+        void operator()(EVT const & e, FSM & m, SourceState&, TargetState&)
+        {
+            m.v2 = m.v1;
             m.v1 = e.vertex;
+            m.output = m.v2;
         }
     };
 
@@ -111,26 +124,6 @@ namespace actions
             m.v1 = e.vertex;
         }
     };
-
-    struct output
-    {
-        template <class FSM, class EVT, class SourceState, class TargetState>
-        void operator()(EVT const & e, FSM & m, SourceState&, TargetState&)
-        {
-            m.output = e.vertex;
-        }
-    };
-
-    struct store_and_output
-    {
-        template <class FSM, class EVT, class SourceState, class TargetState>
-        void operator()(EVT const & e, FSM & m, SourceState&, TargetState&)
-        {
-            m.v2 = m.v1;
-            m.v1 = e.vertex;
-            m.output = m.v2;
-        }
-    };
 }
 
 struct extender_def : public msm::front::state_machine_def<extender_def>
@@ -146,21 +139,21 @@ struct extender_def : public msm::front::state_machine_def<extender_def>
     using initial_state = initial;
 
     struct transition_table : mpl::vector<
-        //    Start         Event                Next      Action                Guard
-        //    +------------+-----------------+------------+--------------------+------+
-          Row < initial    , events::move_to , vertex_one , actions::store            >,
-          Row < initial    , events::line_to , vertex_one , actions::store            >,
-          Row < initial    , events::close   , initial                                >,
-          Row < initial    , events::end     , end        , actions::output           >,
-          Row < vertex_one , events::move_to , vertex_one , actions::output_single    >,
-          Row < vertex_one , events::line_to , vertex_two , actions::output_begin     >,
-          Row < vertex_one , events::close   , initial    , actions::output_single    >,
-          Row < vertex_one , events::end     , end        , actions::output_single    >,
-          Row < vertex_two , events::move_to , vertex_one , actions::output_end       >,
-          Row < vertex_two , events::line_to , vertex_two , actions::store_and_output >,
-          Row < vertex_two , events::close   , initial    , actions::output_end       >,
-          Row < vertex_two , events::end     , end        , actions::output_end       >,
-          Row < end        , events::end     , end        , actions::output_single    >
+        //  Start         Event                Next      Action                Guard
+        //  +------------+-----------------+------------+--------------------+------+
+        Row < initial    , events::move_to , vertex_one , actions::store            >,
+        Row < initial    , events::line_to , vertex_one , actions::store            >,
+        Row < initial    , events::close   , initial                                >,
+        Row < initial    , events::end     , end        , actions::output           >,
+        Row < vertex_one , events::move_to , vertex_one , actions::store_and_output >,
+        Row < vertex_one , events::line_to , vertex_two , actions::output_begin     >,
+        Row < vertex_one , events::close   , initial    , actions::store_and_output >,
+        Row < vertex_one , events::end     , end        , actions::store_and_output >,
+        Row < vertex_two , events::move_to , vertex_one , actions::output_end       >,
+        Row < vertex_two , events::line_to , vertex_two , actions::store_and_output >,
+        Row < vertex_two , events::close   , initial    , actions::output_end       >,
+        Row < vertex_two , events::end     , end        , actions::output_end       >,
+        Row < end        , events::end     , end        , actions::output           >
     > {};
 
     extender_def(double extend_length)
@@ -174,6 +167,8 @@ struct extender_def : public msm::front::state_machine_def<extender_def>
 };
 
 using extender = msm::back::state_machine<extender_def>;
+
+}
 
 template <typename Geometry>
 struct extend_converter
@@ -193,6 +188,7 @@ struct extend_converter
 
     unsigned vertex(double * x, double * y)
     {
+        using namespace detail;
         vertex2d v;
         do
         {
@@ -228,7 +224,7 @@ struct extend_converter
 
 private:
     Geometry & geom_;
-    extender extender_;
+    detail::extender extender_;
 };
 
 }

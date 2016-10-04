@@ -363,6 +363,8 @@ void text_symbolizer_helper::init_converters()
     value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
     value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(sym_, feature_, vars_);
     value_double smooth = mapnik::get<value_double, keys::smooth>(sym_, feature_, vars_);
+    value_double extend = mapnik::get<value_double, keys::extend>(sym_, feature_, vars_);
+
     if (clip)
     {
         label_placement_enum how_placed = text_props_->label_placement;
@@ -375,8 +377,10 @@ void text_symbolizer_helper::init_converters()
             converter_.template set<clip_line_tag>();
         }
     }
+
     converter_.template set<transform_tag>(); //always transform
     converter_.template set<affine_transform_tag>();
+    if (extend > 0.0) converter_.template set<extend_tag>();
     if (simplify_tolerance > 0.0) converter_.template set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter_.template set<smooth_tag>(); // optional smooth converter
 }
