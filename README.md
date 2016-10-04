@@ -13,7 +13,7 @@ This repository contains a fork of [github.com/mapnik/mapnik](https://github.com
 * [Shadows with building symbolizer](docs/features/building-symbolizer-shadow.md)
 * Offsetting algorithm
 * Constant height of a first text line
-* XSLT preprocessing
+* [XSLT preprocessing](docs/features/xslt-preprocessing.md)
 
 # Mapnik
 
