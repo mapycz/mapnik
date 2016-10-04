@@ -9,7 +9,7 @@ This repository contains a fork of [github.com/mapnik/mapnik](https://github.com
 * [Text placement method `angle`](docs/features/text-placement-angle.md)
 * [Anchors](docs/features/anchors.md)
 * [Text placement `grid`](docs/features/text-placement-grid.md)
-* Text on extended geometry
+* [Text on extended geometry](docs/features/text-extend.md)
 * Shadows with building symbolizer
 * Offsetting algorithm
 * Constant height of a first text line
