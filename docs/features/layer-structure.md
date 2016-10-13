@@ -15,6 +15,10 @@ Layers are rendered in top-down order as they are defined. Rendering and even qu
 
 If one of these conditions holds, all sub-layers are ignored.
 
+## The spatial reference system definition (`srs`)
+
+If the `srs` of a layer is not defined explicitly, it is inherited from parent layer or from map in case of top-level layer.
+
 ## An example
 
 ```xml
