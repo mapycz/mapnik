@@ -320,7 +320,7 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
         if (st.image_filters().size() > 0)
         {
             blend_from = true;
-            mapnik::filter::filter_visitor<buffer_type> visitor(current_buffer);
+            mapnik::filter::filter_visitor<buffer_type> visitor(current_buffer, common_.scale_factor_);
             for (mapnik::filter::filter_type const& filter_tag : st.image_filters())
             {
                 util::apply_visitor(visitor, filter_tag);
@@ -350,7 +350,7 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
     if (st.direct_image_filters().size() > 0)
     {
         // apply any 'direct' image filters
-        mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer);
+        mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer, common_.scale_factor_);
         for (mapnik::filter::filter_type const& filter_tag : st.direct_image_filters())
         {
             util::apply_visitor(visitor, filter_tag);
