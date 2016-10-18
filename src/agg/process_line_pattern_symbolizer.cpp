@@ -86,16 +86,16 @@ struct agg_renderer_process_visitor_l
         mapnik::box2d<double> const& bbox_image = marker.get_data()->bounding_box() * image_tr;
         image_rgba8 image(bbox_image.width(), bbox_image.height());
         render_pattern<buffer_type>(*ras_ptr_, marker, image_tr, 1.0, image);
-        render(image, marker.width(), marker.height());
+        render(image);
     }
 
     void operator() (marker_rgba8 const& marker) const
     {
-        render(marker.get_data(), marker.width(), marker.height());
+        render(marker.get_data());
     }
 
 private:
-    void render(mapnik::image_rgba8 const& marker, double width, double height) const
+    void render(mapnik::image_rgba8 const& marker) const
     {
         using color = agg::rgba8;
         using order = agg::order_rgba;
@@ -123,7 +123,7 @@ private:
         pattern_source source(marker, opacity);
         pattern_type pattern (filter,source);
         renderer_type ren(ren_base, pattern);
-        double half_stroke = std::max(width / 2.0, height / 2.0);
+        double half_stroke = std::max(marker.width() / 2.0, marker.height() / 2.0);
         int rast_clip_padding = static_cast<int>(std::round(half_stroke));
         ren.clip_box(-rast_clip_padding,-rast_clip_padding,common_.width_+rast_clip_padding,common_.height_+rast_clip_padding);
         rasterizer_type ras(ren);
