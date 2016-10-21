@@ -39,7 +39,7 @@ struct apply_local_alignment
           clip_box_(clip_box),
           x_(x),
           y_(y) {}
-    
+
     void operator() (geometry::polygon_vertex_adapter<double> & va)
     {
         using clipped_geometry_type = agg::conv_clip_polygon<geometry::polygon_vertex_adapter<double> >;
@@ -62,6 +62,26 @@ struct apply_local_alignment
     double & x_;
     double & y_;
 };
+
+template <typename Sym>
+coord<unsigned, 2> offset(Sym const & sym,
+                          mapnik::feature_impl const & feature,
+                          proj_transform const & prj_trans,
+                          renderer_common const & common,
+                          box2d<double> const & clip_box)
+{
+    coord<unsigned, 2> off(0, 0);
+    pattern_alignment_enum alignment = get<pattern_alignment_enum, keys::alignment>(sym, feature, common.vars_);
+    if (alignment == LOCAL_ALIGNMENT)
+    {
+        coord<double, 2> alignment(0, 0);
+        apply_local_alignment apply(common.t_, prj_trans, clip_box, alignment.x, alignment.y);
+        util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature.get_geometry());
+        off.x = std::abs(clip_box.width() - alignment.x);
+        off.y = std::abs(clip_box.height() - alignment.y);
+    }
+    return off;
+}
 
 }}
 

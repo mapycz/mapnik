@@ -40,49 +40,6 @@
 namespace mapnik
 {
 
-struct cairo_renderer_process_visitor_p
-{
-    cairo_renderer_process_visitor_p(cairo_context & context,
-                                   agg::trans_affine & image_tr,
-                                   unsigned offset_x,
-                                   unsigned offset_y,
-                                   float opacity)
-        : context_(context),
-          image_tr_(image_tr),
-          offset_x_(offset_x),
-          offset_y_(offset_y),
-          opacity_(opacity) {}
-
-    void operator() (marker_null const&) {}
-
-    void operator() (marker_svg const& marker)
-    {
-        mapnik::rasterizer ras;
-        mapnik::box2d<double> const& bbox_image = marker.get_data()->bounding_box() * image_tr_;
-        mapnik::image_rgba8 image(bbox_image.width(), bbox_image.height());
-        render_pattern<image_rgba8>(ras, marker, image_tr_, 1.0, image);
-        cairo_pattern pattern(image, opacity_);
-        pattern.set_extend(CAIRO_EXTEND_REPEAT);
-        pattern.set_origin(offset_x_, offset_y_);
-        context_.set_pattern(pattern);
-    }
-
-    void operator() (marker_rgba8 const& marker)
-    {
-        cairo_pattern pattern(marker.get_data(), opacity_);
-        pattern.set_extend(CAIRO_EXTEND_REPEAT);
-        pattern.set_origin(offset_x_, offset_y_);
-        context_.set_pattern(pattern);
-    }
-
-  private:
-    cairo_context & context_;
-    agg::trans_affine & image_tr_;
-    unsigned offset_x_;
-    unsigned offset_y_;
-    float opacity_;
-};
-
 template <typename T>
 void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
                                   mapnik::feature_impl & feature,
@@ -94,9 +51,6 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym, feature, common_.vars_);
     value_double smooth = get<value_double, keys::smooth>(sym, feature, common_.vars_);
     value_double opacity = get<value_double, keys::opacity>(sym, feature, common_.vars_);
-    agg::trans_affine image_tr = agg::trans_affine_scaling(common_.scale_factor_);
-    auto image_transform = get_optional<transform_type>(sym, keys::image_transform);
-    if (image_transform) evaluate_transform(image_tr, feature, common_.vars_, *image_transform, common_.scale_factor_);
 
     cairo_save_restore guard(context_);
     context_.set_operator(comp_op);
@@ -104,22 +58,15 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     std::shared_ptr<mapnik::marker const> marker = mapnik::marker_cache::instance().find(filename,true);
     if (marker->is<mapnik::marker_null>()) return;
 
-    unsigned offset_x=0;
-    unsigned offset_y=0;
-    box2d<double> const& clip_box = clipping_extent(common_);
-    pattern_alignment_enum alignment = get<pattern_alignment_enum, keys::alignment>(sym, feature, common_.vars_);
-    if (alignment == LOCAL_ALIGNMENT)
-    {
-        double x0 = 0.0;
-        double y0 = 0.0;
-        using apply_local_alignment = detail::apply_local_alignment;
-        apply_local_alignment apply(common_.t_, prj_trans, clip_box, x0, y0);
-        util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature.get_geometry());
-        offset_x = std::abs(clip_box.width() - x0);
-        offset_y = std::abs(clip_box.height() - y0);
-    }
-
-    util::apply_visitor(cairo_renderer_process_visitor_p(context_, image_tr, offset_x, offset_y, opacity), *marker);
+    mapnik::rasterizer ra;
+    common_pattern_process_visitor<polygon_pattern_symbolizer, mapnik::rasterizer> visitor(ra, common_, sym, feature);
+    image_rgba8 image(util::apply_visitor(visitor, *marker));
+    cairo_pattern pattern(image, opacity);
+    pattern.set_extend(CAIRO_EXTEND_REPEAT);
+    box2d<double> clip_box = clipping_extent(common_);
+    coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));
+    pattern.set_origin(offset.x, offset.y);
+    context_.set_pattern(pattern);
 
     agg::trans_affine tr;
     auto geom_transform = get_optional<transform_type>(sym, keys::geometry_transform);
