@@ -84,8 +84,6 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym, feature, common_.vars_);
     value_double smooth = get<value_double, keys::smooth>(sym, feature, common_.vars_);
 
-    box2d<double> clip_box = clipping_extent(common_);
-
     using color = agg::rgba8;
     using order = agg::order_rgba;
     using blender_type = agg::comp_op_adaptor_rgba_pre<color, order>;
@@ -117,10 +115,10 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     agg::pixfmt_rgba32_pre pixf_pattern(pattern_rbuf);
     img_source_type img_src(pixf_pattern);
 
-    pattern_alignment_enum alignment = get<pattern_alignment_enum, keys::alignment>(sym, feature, common_.vars_);
     unsigned offset_x=0;
     unsigned offset_y=0;
-
+    box2d<double> clip_box = clipping_extent(common_);
+    pattern_alignment_enum alignment = get<pattern_alignment_enum, keys::alignment>(sym, feature, common_.vars_);
     if (alignment == LOCAL_ALIGNMENT)
     {
         double x0 = 0;
@@ -128,9 +126,8 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
         using apply_local_alignment = detail::apply_local_alignment;
         apply_local_alignment apply(common_.t_,prj_trans, clip_box, x0, y0);
         util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature.get_geometry());
-
-        offset_x = unsigned(current_buffer_->width() - x0);
-        offset_y = unsigned(current_buffer_->height() - y0);
+        offset_x = std::abs(clip_box.width() - x0);
+        offset_y = std::abs(clip_box.height() - y0);
     }
 
     span_gen_type sg(img_src, offset_x, offset_y);
