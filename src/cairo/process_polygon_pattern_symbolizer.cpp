@@ -58,27 +58,14 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     std::shared_ptr<mapnik::marker const> marker = mapnik::marker_cache::instance().find(filename,true);
     if (marker->is<mapnik::marker_null>()) return;
 
-    unsigned offset_x=0;
-    unsigned offset_y=0;
-    box2d<double> const& clip_box = clipping_extent(common_);
-    pattern_alignment_enum alignment = get<pattern_alignment_enum, keys::alignment>(sym, feature, common_.vars_);
-    if (alignment == LOCAL_ALIGNMENT)
-    {
-        double x0 = 0.0;
-        double y0 = 0.0;
-        using apply_local_alignment = detail::apply_local_alignment;
-        apply_local_alignment apply(common_.t_, prj_trans, clip_box, x0, y0);
-        util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature.get_geometry());
-        offset_x = std::abs(clip_box.width() - x0);
-        offset_y = std::abs(clip_box.height() - y0);
-    }
-
     mapnik::rasterizer ra;
     common_pattern_process_visitor<polygon_pattern_symbolizer, mapnik::rasterizer> visitor(ra, common_, sym, feature);
     image_rgba8 image(util::apply_visitor(visitor, *marker));
     cairo_pattern pattern(image, opacity);
     pattern.set_extend(CAIRO_EXTEND_REPEAT);
-    pattern.set_origin(offset_x, offset_y);
+    box2d<double> clip_box = clipping_extent(common_);
+    coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));
+    pattern.set_origin(offset.x, offset.y);
     context_.set_pattern(pattern);
 
     agg::trans_affine tr;

@@ -115,22 +115,9 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     agg::pixfmt_rgba32_pre pixf_pattern(pattern_rbuf);
     img_source_type img_src(pixf_pattern);
 
-    unsigned offset_x=0;
-    unsigned offset_y=0;
     box2d<double> clip_box = clipping_extent(common_);
-    pattern_alignment_enum alignment = get<pattern_alignment_enum, keys::alignment>(sym, feature, common_.vars_);
-    if (alignment == LOCAL_ALIGNMENT)
-    {
-        double x0 = 0;
-        double y0 = 0;
-        using apply_local_alignment = detail::apply_local_alignment;
-        apply_local_alignment apply(common_.t_,prj_trans, clip_box, x0, y0);
-        util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature.get_geometry());
-        offset_x = std::abs(clip_box.width() - x0);
-        offset_y = std::abs(clip_box.height() - y0);
-    }
-
-    span_gen_type sg(img_src, offset_x, offset_y);
+    coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));
+    span_gen_type sg(img_src, offset.x, offset.y);
 
     agg::span_allocator<agg::rgba8> sa;
     renderer_type rp(renb,sa, sg, unsigned(opacity * 255));
