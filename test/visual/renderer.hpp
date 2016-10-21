@@ -378,7 +378,7 @@ private:
                                 bool reference) const
     {
         std::stringstream s;
-        s << test_name << '-' << size.width << '-' << size.height << '-';
+        s << test_name << '-' << (size.width / scale_factor) << '-' << (size.height / scale_factor) << '-';
         if (tiles.width > 1 || tiles.height > 1)
         {
             s << tiles.width << 'x' << tiles.height << '-';

@@ -322,7 +322,7 @@ result_list runner::test_one(runner::path_type const& style_path,
 
                 for (auto const & ren : renderers_)
                 {
-                    map.resize(size.width, size.height);
+                    map.resize(size.width * scale_factor, size.height * scale_factor);
                     if (box.valid())
                     {
                         map.zoom_to_box(box);
