@@ -44,7 +44,6 @@ struct render_building_symbolizer
 {
     using vertex_adapter_type = geometry::polygon_vertex_adapter<double>;
     using transform_path_type = transform_path_adapter<view_transform, vertex_adapter_type>;
-    //using roof_type = agg::conv_transform<transform_path_type>;
 
     template <typename F1, typename F2, typename F3, typename F4>
     static void apply(feature_impl const& feature,
