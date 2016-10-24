@@ -57,7 +57,6 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
                                   mapnik::feature_impl & feature,
                                   proj_transform const& prj_trans)
 {
-    using transform_path_type = transform_path_adapter<view_transform, vertex_adapter>;
     using ren_base = agg::renderer_base<agg::pixfmt_rgba32_pre>;
     using renderer = agg::renderer_scanline_aa_solid<ren_base>;
 
@@ -90,13 +89,12 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
     value_double shadow_length = get<value_double, keys::shadow_length>(sym, feature, common_.vars_) * common_.scale_factor_;
     value_double shadow_opacity = get<value_double, keys::shadow_opacity>(sym, feature, common_.vars_);
 
-    render_building_symbolizer(
-        feature, height, shadow_angle, shadow_length,
+    render_building_symbolizer::apply(
+        feature, prj_trans, common_.t_, height, shadow_angle, shadow_length,
         [&,r,g,b,a,opacity](path_type const& faces)
         {
             vertex_adapter va(faces);
-            transform_path_type faces_path (common_.t_,va,prj_trans);
-            ras_ptr->add_path(faces_path);
+            ras_ptr->add_path(va);
             ren.color(agg::rgba8_pre(int(r*0.8), int(g*0.8), int(b*0.8), int(a * opacity)));
             agg::render_scanlines(*ras_ptr, sl, ren);
             this->ras_ptr->reset();
@@ -104,8 +102,7 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
         [&,r,g,b,a,opacity](path_type const& frame)
         {
             vertex_adapter va(frame);
-            transform_path_type path(common_.t_,va, prj_trans);
-            agg::conv_stroke<transform_path_type> stroke(path);
+            agg::conv_stroke<vertex_adapter> stroke(va);
             stroke.width(common_.scale_factor_);
             ras_ptr->add_path(stroke);
             ren.color(agg::rgba8_pre(int(r*0.8), int(g*0.8), int(b*0.8), int(a * opacity)));
@@ -115,16 +112,14 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
         [&,r,g,b,a,opacity](path_type const& roof)
         {
             vertex_adapter va(roof);
-            transform_path_type roof_path (common_.t_,va,prj_trans);
-            ras_ptr->add_path(roof_path);
+            ras_ptr->add_path(va);
             ren.color(agg::rgba8_pre(r, g, b, int(a * opacity)));
             agg::render_scanlines(*ras_ptr, sl, ren);
         },
         [&,r,g,b,a,opacity,shadow_opacity](path_type const& shadow)
         {
             vertex_adapter va(shadow);
-            transform_path_type path (common_.t_,va,prj_trans);
-            agg::conv_contour<transform_path_type> contour(path);
+            agg::conv_contour<vertex_adapter> contour(va);
             contour.width(0.5 * shadow_opacity * shadow_opacity);
             ras_ptr->add_path(contour);
             ren.color(agg::rgba8_pre(0, 0, 0,
