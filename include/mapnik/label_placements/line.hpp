@@ -20,8 +20,8 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_LABEL_PLACEMENT_VERTEX_HPP
-#define MAPNIK_LABEL_PLACEMENT_VERTEX_HPP
+#ifndef MAPNIK_LABEL_PLACEMENT_LINE_HPP
+#define MAPNIK_LABEL_PLACEMENT_LINE_HPP
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_types.hpp>
@@ -29,35 +29,7 @@
 
 namespace mapnik { namespace label_placement {
 
-template <typename Points>
-struct apply_vertex_placement
-{
-    apply_vertex_placement(Points & points, view_transform const& tr, proj_transform const& prj_trans)
-        : points_(points),
-          tr_(tr),
-          prj_trans_(prj_trans) {}
-
-    template <typename Adapter>
-    void operator() (Adapter const& va) const
-    {
-        double label_x, label_y, z = 0;
-        va.rewind(0);
-        for (unsigned cmd; (cmd = va.vertex(&label_x, &label_y)) != SEG_END; )
-        {
-            if (cmd != SEG_CLOSE)
-            {
-                prj_trans_.backward(label_x, label_y, z);
-                tr_.forward(&label_x, &label_y);
-                points_.emplace_back(label_x, label_y);
-            }
-        }
-    }
-    Points & points_;
-    view_transform const& tr_;
-    proj_transform const& prj_trans_;
-};
-
-struct vertex
+struct line
 {
     template <typename Geom>
     static placements_list get(Geom const & geom, label_placement_params & params)
@@ -92,4 +64,4 @@ struct vertex
 
 } }
 
-#endif // MAPNIK_LABEL_PLACEMENT_VERTEX_HPP
+#endif // MAPNIK_LABEL_PLACEMENT_LINE_HPP

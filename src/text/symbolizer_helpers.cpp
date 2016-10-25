@@ -247,9 +247,9 @@ void base_symbolizer_helper::initialize_points() const
     {
         if (how_placed == VERTEX_PLACEMENT)
         {
-            using apply_vertex_placement = detail::apply_vertex_placement<std::list<pixel_position> >;
-            apply_vertex_placement apply(points_, t_, prj_trans_);
-            util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
+            //using apply_vertex_placement = detail::apply_vertex_placement<std::list<pixel_position> >;
+            //apply_vertex_placement apply(points_, t_, prj_trans_);
+            //util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
         }
         else
         {
