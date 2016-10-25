@@ -32,10 +32,9 @@ namespace mapnik
 namespace detail
 {
 
-template <typename Geom, typename DetectorT, typename FaceManagerT>
+template <typename DetectorT, typename FaceManagerT>
 struct label_placement_params
 {
-    Geom const & geometry;
     DetectorT & detector;
     FaceManagerT & font_manager;
     proj_transform const & proj_transform;
@@ -51,92 +50,23 @@ struct label_placement_params
 
 using label_placement_params = detail::label_placement_params<label_collision_detector4, face_manager_freetype>;
 
-template <typename Geom, typename Detector>
-class text_placement_finder : util::noncopyable
+struct text_placement_finder
 {
-public:
-    text_placement_finder(label_placement_enum placement_type,
-                             Geom &geom,
-                             Detector &detector,
-                             markers_placement_params const& params)
-        : placement_type_(placement_type)
+    template <typename Geom>
+    static placements_list get(Geom const & geom, label_placement_enum placement_type, label_placement_params & params)
     {
         switch (placement_type)
         {
-        default:
-        case POINT_PLACEMENT:
-            construct(&point_, geom, detector, params);
-            break;
-        case INTERIOR_PLACEMENT:
-            construct(&interior_, geom, detector, params);
-            break;
-        case LINE_PLACEMENT:
-            construct(&line_, geom, detector, params);
-            break;
-        case VERTEX_PLACEMENT:
-            construct(&vertex_, geom, detector, params);
-            break;
+            default:
+            case POINT_PLACEMENT:
+                return label_placement::point.get(geom, params);
+            case INTERIOR_PLACEMENT:
+                return label_placement::interior.get(geom, params);
+            case LINE_PLACEMENT:
+                return label_placement::line.get(geom, params);
+            case VERTEX_PLACEMENT:
+                return label_placement::vertex.get(geom, params);
         }
-    }
-
-    ~text_placement_finder()
-    {
-        switch (placement_type_)
-        {
-        default:
-        case POINT_PLACEMENT:
-            destroy(&point_);
-            break;
-        case INTERIOR_PLACEMENT:
-            destroy(&interior_);
-            break;
-        case LINE_PLACEMENT:
-            destroy(&line_);
-            break;
-        case VERTEX_PLACEMENT:
-            destroy(&vertex_);
-            break;
-        }
-    }
-
-    placements_list get(label_placement_params & params)
-    {
-        switch (placement_type_)
-        {
-        default:
-        case POINT_PLACEMENT:
-            return point_.get_point(x, y, angle, ignore_placement);
-        case INTERIOR_PLACEMENT:
-            return interior_.get_point(x, y, angle, ignore_placement);
-        case LINE_PLACEMENT:
-            return line_.get_point(x, y, angle, ignore_placement);
-        case VERTEX_PLACEMENT:
-            return vertex_.get_point(x, y, angle, ignore_placement);
-        }
-    }
-
-private:
-    label_placement_enum const placement_type_;
-
-    union
-    {
-        markers_point_placement<Geom, Detector> point_;
-        markers_line_placement<Geom, Detector> line_;
-        markers_interior_placement<Geom, Detector> interior_;
-        markers_vertex_first_placement<Geom, Detector> vertex_first_;
-    };
-
-    template <typename T>
-    static T* construct(T* what, Geom & geom, Detector & detector,
-                        markers_placement_params const& params)
-    {
-        return new(what) T(geom, detector, params);
-    }
-
-    template <typename T>
-    static void destroy(T* what)
-    {
-        what->~T();
     }
 };
 

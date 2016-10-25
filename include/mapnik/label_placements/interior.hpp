@@ -27,16 +27,15 @@
 #include <mapnik/geometry_types.hpp>
 #include <mapnik/geometry_split_multi.hpp>
 
-namespace mapnik {
+namespace mapnik { namespace label_placement {
 
-template <typename Geom>
-class label_interior_placement
+struct interior
 {
-public:
-    static placements_list get(label_placement_params & params)
+    template <typename Geom>
+    static placements_list get(Geom const & geom, label_placement_params & params)
     {
         placements_list placements;
-        auto type = geometry::geometry_type(params.geometry);
+        auto type = geometry::geometry_type(geom);
 
         geometry::point<double> pt;
         if (type == geometry::geometry_types::Point)
@@ -90,6 +89,6 @@ public:
     }
 };
 
-}
+} }
 
 #endif // MAPNIK_LABEL_PLACEMENTS_INTERIOR_HPP
