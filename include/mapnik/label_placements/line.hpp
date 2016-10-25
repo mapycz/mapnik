@@ -34,6 +34,7 @@ struct line
     template <typename Geom>
     static placements_list get(Geom const & geom, label_placement_params & params)
     {
+        /*
         using positions_type = std::list<pixel_position>;
         using apply_vertex_placement = detail::apply_vertex_placement<positions_type>;
         positions_type points;
@@ -56,7 +57,7 @@ struct line
                     it++;
                 }
             }
-        }
+        }*/
 
         return finder.placements();
     }

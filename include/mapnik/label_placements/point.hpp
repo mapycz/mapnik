@@ -24,16 +24,16 @@
 #define MAPNIK_LABEL_PLACEMENTS_POINT_HPP
 
 #include <mapnik/geom_util.hpp>
-#include <mapnik/geometry_types.hpp>
-#include <mapnik/geometry_split_multi.hpp>
+#include <mapnik/geometry_type.hpp>
+#include <mapnik/vertex_adapters.hpp>
+#include <mapnik/label_placement.hpp>
 
 namespace mapnik { namespace label_placement {
 
-class point
+struct point
 {
-public:
     template <typename Geom>
-    static placements_list get(Geom const & geom, label_placement_params & params)
+    static placements_list get(Geom const & geom, placement_params & params)
     {
         placements_list placements;
         auto type = geometry::geometry_type(geom);

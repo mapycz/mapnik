@@ -26,6 +26,7 @@
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_types.hpp>
 #include <mapnik/geometry_split_multi.hpp>
+#include <mapnik/label_placement.hpp>
 
 namespace mapnik { namespace label_placement {
 

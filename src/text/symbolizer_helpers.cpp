@@ -41,9 +41,9 @@
 #include <mapnik/text/placements/dummy.hpp>
 #include <mapnik/proj_strategy.hpp>
 #include <mapnik/view_strategy.hpp>
-#include <mapnik/grid_vertex_adapter.hpp>
 
 namespace mapnik {
+    /*
 namespace geometry {
 
 struct envelope_impl
@@ -102,32 +102,6 @@ struct point_placement_finder_adapter : placement_finder_adapter
     {
         status_ = finder_.find_line_placements(path, true);
     }
-};
-
-template <typename T, typename Points>
-struct grid_placement_finder_adapter
-{
-    grid_placement_finder_adapter(T dx, T dy, Points & points)
-        : dx_(dx), dy_(dy),
-          points_(points) {}
-
-    template <typename PathT>
-    void add_path(PathT & path) const
-    {
-        geometry::grid_vertex_adapter<PathT, T> gpa(path, dx_, dy_);
-        gpa.rewind(0);
-        double label_x, label_y;
-        for (unsigned cmd; (cmd = gpa.vertex(&label_x, &label_y)) != SEG_END; )
-        {
-            if (cmd != SEG_CLOSE)
-            {
-                points_.emplace_back(label_x, label_y);
-            }
-        }
-    }
-
-    T dx_, dy_;
-    Points & points_;
 };
 
 template <typename T>
@@ -254,82 +228,7 @@ void base_symbolizer_helper::initialize_geometries() const
         geo_itr_ = geometries_to_process_.begin();
     }
 }
-
-void base_symbolizer_helper::initialize_points() const
-{
-    label_placement_enum how_placed = text_props_->label_placement;
-    if (how_placed == LINE_PLACEMENT)
-    {
-        point_placement_ = false;
-        return;
-    }
-    else
-    {
-        point_placement_ = true;
-    }
-
-    if (how_placed == GRID_PLACEMENT)
-    {
-        return;
-    }
-
-    double label_x=0.0;
-    double label_y=0.0;
-    double z=0.0;
-
-    for (auto const& geom : geometries_to_process_)
-    {
-        if (how_placed == VERTEX_PLACEMENT)
-        {
-            //using apply_vertex_placement = detail::apply_vertex_placement<std::list<pixel_position> >;
-            //apply_vertex_placement apply(points_, t_, prj_trans_);
-            //util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
-        }
-        else
-        {
-            // https://github.com/mapnik/mapnik/issues/1423
-            bool success = false;
-            // https://github.com/mapnik/mapnik/issues/1350
-            auto type = geometry::geometry_type(geom);
-
-            // note: split_multi_geometries is called above so the only likely types are:
-            // Point, LineString, and Polygon.
-            if (type == geometry::geometry_types::LineString)
-            {
-                auto const& line = mapnik::util::get<geometry::line_string<double> >(geom);
-                geometry::line_string_vertex_adapter<double> va(line);
-                success = label::middle_point(va, label_x,label_y);
-            }
-            else if (how_placed == POINT_PLACEMENT || type == geometry::geometry_types::Point)
-            {
-                geometry::point<double> pt;
-                if (geometry::centroid(geom, pt))
-                {
-                    label_x = pt.x;
-                    label_y = pt.y;
-                    success = true;
-                }
-            }
-            else if (how_placed == INTERIOR_PLACEMENT && type == geometry::geometry_types::Polygon)
-            {
-                auto const& poly = mapnik::util::get<geometry::polygon<double> >(geom);
-                geometry::polygon_vertex_adapter<double> va(poly);
-                success = label::interior_position(va, label_x, label_y);
-            }
-            else
-            {
-                MAPNIK_LOG_ERROR(symbolizer_helpers) << "ERROR: Unknown placement type in initialize_points()";
-            }
-            if (success)
-            {
-                prj_trans_.backward(label_x, label_y, z);
-                t_.forward(&label_x, &label_y);
-                points_.emplace_back(label_x, label_y);
-            }
-        }
-    }
-    point_itr_ = points_.begin();
-}
+*/
 
 template <typename FaceManagerT, typename DetectorT>
 text_symbolizer_helper::text_symbolizer_helper(
@@ -342,12 +241,15 @@ text_symbolizer_helper::text_symbolizer_helper(
         DetectorT &detector, box2d<double> const& query_extent,
         agg::trans_affine const& affine_trans,
         symbol_cache const& sc)
-    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
-      finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
-    converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
+    : params_({ detector, font_manager, prj_trans, t, affine_trans, sym, feature, vars,
+        box2d<double>(0, 0, width, height), query_extent, scale_factor, sc })
+
+    //: base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
+      //finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor),
+    //converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
     // setup vertex converter
-    value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
+    /*value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
     value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(sym_, feature_, vars_);
     value_double smooth = mapnik::get<value_double, keys::smooth>(sym_, feature_, vars_);
     value_double extend = mapnik::get<value_double, keys::extend>(sym_, feature_, vars_);
@@ -369,12 +271,22 @@ text_symbolizer_helper::text_symbolizer_helper(
     converter_.template set<affine_transform_tag>();
     if (extend > 0.0) converter_.template set<extend_tag>();
     if (simplify_tolerance > 0.0) converter_.template set<simplify_tag>(); // optional simplify converter
-    if (smooth > 0.0) converter_.template set<smooth_tag>(); // optional smooth converter
+    if (smooth > 0.0) converter_.template set<smooth_tag>(); // optional smooth converter*/
 }
 
-placements_list const& text_symbolizer_helper::get() const
+placements_list text_symbolizer_helper::get() const
 {
-    if (!geometries_to_process_.empty())
+    auto const& geom = params_.feature.get_geometry();
+
+    text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
+        params_.symbolizer, keys::text_placements_)->get_placement_info(params_.scale_factor, params_.feature, params_.vars, params_.symbol_cache);
+    evaluated_text_properties_ptr text_props(evaluate_text_properties(
+        info_ptr->properties,params_.feature,params_.vars));
+
+    label_placement_enum placement_type = text_props->label_placement;
+
+    return label_placement::finder::get(geom, placement_type, params_);
+    /*if (!geometries_to_process_.empty())
     {
         finder_.next_position();
 
@@ -388,9 +300,9 @@ placements_list const& text_symbolizer_helper::get() const
             while (next_line_placement(adapter));
         }
     }
-    return finder_.placements();
+    return finder_.placements();*/
 }
-
+/*
 placements_list const& shield_symbolizer_helper::get() const
 {
     if (!geometries_to_process_.empty())
@@ -551,7 +463,7 @@ void text_symbolizer_helper::initialize_points() const
         }
     }
     point_itr_ = points_.begin();
-}
+}*/
 
 template text_symbolizer_helper::text_symbolizer_helper(
     symbolizer_base const& sym,

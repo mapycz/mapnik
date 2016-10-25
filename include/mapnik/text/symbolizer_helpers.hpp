@@ -30,6 +30,7 @@
 #include <mapnik/geometry.hpp>
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/text/text_properties.hpp>
+#include <mapnik/label_placement.hpp>
 
 namespace mapnik {
 
@@ -38,6 +39,7 @@ class proj_transform;
 class view_transform;
 struct symbolizer_base;
 
+/*
 using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
 
 class base_symbolizer_helper
@@ -89,11 +91,11 @@ protected:
     text_placement_info_ptr info_ptr_;
     evaluated_text_properties_ptr text_props_;
 };
-
+*/
 // Helper object that does all the TextSymbolizer placement finding
 // work except actually rendering the object.
 
-class text_symbolizer_helper : public base_symbolizer_helper
+class text_symbolizer_helper //: public base_symbolizer_helper
 {
 public:
     template <typename FaceManagerT, typename DetectorT>
@@ -112,17 +114,20 @@ public:
                            symbol_cache const& sc);
 
     // Return all placements.
-    placements_list const& get() const;
+    placements_list get() const;
 protected:
-    void init_converters();
-    void initialize_points() const;
-    bool next_point_placement() const;
-    template <typename T>
-    bool next_line_placement(T const & adapter) const;
+    //void init_converters();
+    //void initialize_points() const;
+    //bool next_point_placement() const;
+    //template <typename T>
+    //bool next_line_placement(T const & adapter) const;
 
-    mutable placement_finder finder_;
+    //mutable placement_finder finder_;
 
-    mutable vertex_converter_type converter_;
+    //mutable vertex_converter_type converter_;
+
+    ////
+    mutable label_placement::placement_params params_;
 };
 
 class shield_symbolizer_helper : public text_symbolizer_helper
@@ -130,14 +135,14 @@ class shield_symbolizer_helper : public text_symbolizer_helper
 public:
     using text_symbolizer_helper::text_symbolizer_helper;
 
-    placements_list const& get() const;
+    //placements_list get() const;
 
 protected:
-    void init_marker() const;
+    //void init_marker() const;
 };
 
 namespace geometry {
-MAPNIK_DECL mapnik::box2d<double> envelope(mapnik::base_symbolizer_helper::geometry_cref const& geom);
+//MAPNIK_DECL mapnik::box2d<double> envelope(mapnik::base_symbolizer_helper::geometry_cref const& geom);
 }
 
 } //namespace mapnik

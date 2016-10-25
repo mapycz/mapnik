@@ -67,12 +67,13 @@ group_symbolizer_helper::group_symbolizer_helper(
         view_transform const& t, DetectorType & detector,
         box2d<double> const& query_extent,
         symbol_cache const& sc)
-    : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
-      detector_(detector)
+    //: base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent, sc),
+      //detector_(detector)
 {}
 
 pixel_position_list const& group_symbolizer_helper::get()
 {
+    /*
     results_.clear();
 
     if (point_placement_)
@@ -93,10 +94,11 @@ pixel_position_list const& group_symbolizer_helper::get()
             mapnik::util::apply_visitor(geometry::vertex_processor<apply_find_line_placements>(apply), geom);
         }
     }
+    */
 
     return results_;
 }
-
+/*
 template <typename T>
 bool group_symbolizer_helper::find_line_placements(T & path)
 {
@@ -200,5 +202,5 @@ double group_symbolizer_helper::get_spacing(double path_length) const
     }
     return path_length / num_labels;
 }
-
+*/
 } //namespace

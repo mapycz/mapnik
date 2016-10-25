@@ -27,6 +27,7 @@
 
 namespace mapnik { namespace geometry {
 
+    /*
 template <typename T, template <typename> typename Container>
 struct split_multi_geometries
 {
@@ -96,6 +97,7 @@ inline bool split(Geom const & geom, Container<detail::split_multi_geometries<T,
     detail::split_multi_geometries<T, Container> visitor(container);
     return util::apply_visitor(visitor, geom);
 }
+*/
 
 }}
 
