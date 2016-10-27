@@ -25,8 +25,8 @@
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_type.hpp>
+#include <mapnik/geometry_centroid.hpp>
 #include <mapnik/vertex_adapters.hpp>
-#include <mapnik/label_placement.hpp>
 
 namespace mapnik { namespace label_placement {
 
@@ -41,7 +41,7 @@ struct point
         geometry::point<double> pt;
         if (type == geometry::geometry_types::Point)
         {
-            pt = geom;
+            pt = mapnik::util::get<geometry::point<double>>(geom);
         }
         else if (type == geometry::geometry_types::LineString)
         {
@@ -49,13 +49,13 @@ struct point
             geometry::line_string_vertex_adapter<double> va(line);
             if (!label::middle_point(va, pt.x, pt.y))
             {
-                MAPNIK_LOG_ERROR(label_point_placement) << "Middle point calculation failed." << type_oid;
+                MAPNIK_LOG_ERROR(label_point_placement) << "Middle point calculation failed.";
                 return placements;
             }
         }
-        else if (!geometry::centroid(params.geometry, pt))
+        else if (!geometry::centroid(geom, pt))
         {
-            MAPNIK_LOG_ERROR(label_point_placement) << "Centroid calculation failed." << type_oid;
+            MAPNIK_LOG_ERROR(label_point_placement) << "Centroid calculation failed.";
             return placements;
         }
 
@@ -63,8 +63,14 @@ struct point
         params.proj_transform.backward(pt.x, pt.y, z);
         params.view_transform.forward(&pt.x, &pt.y);
 
+        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
+
+XXX: placement_finder drzi glyphy, takze jej neni mozne uvolnit.
         placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, params.placement_info, params.font_manager, params.scale_factor);
+            params.dims, *info_ptr, params.font_manager, params.scale_factor,
+            placements);
 
         pixel_position pos(pt.x, pt.y);
 
@@ -72,10 +78,9 @@ struct point
         {
             if (finder.find_point_placement(pos))
             {
-                return finder.placements();
+                return placements;
             }
         }
-
         return placements;
     }
 };

@@ -67,9 +67,10 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
         ren.set_halo_transform(halo_affine_transform);
     }
 
-    placements_list const& placements = helper.get();
+    const placements_list placements(helper.get());
     for (auto const& glyphs : placements)
     {
+        //std::cerr << glyphs->size() << std::endl;
         ren.render(*glyphs);
     }
 }

@@ -95,7 +95,7 @@ void cairo_renderer<T>::process(text_symbolizer const& sym,
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_,  src_over);
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_,  src_over);
 
-    placements_list const& placements = helper.get();
+    placements_list placements = helper.get();
     for (auto const& glyphs : placements)
     {
         context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
