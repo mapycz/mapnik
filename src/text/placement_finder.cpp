@@ -106,7 +106,7 @@ bool placement_finder::next_position()
     {
         // parent layout, has top-level ownership of a new evaluated_format_properties_ptr (TODO is this good enough to stay in scope???)
         // but does not take ownership of the text_symbolizer_properties (info_.properties)
-        text_layout_ptr layout = std::make_shared<text_layout>(font_manager_,
+        text_layout_ptr layout = std::make_unique<text_layout>(font_manager_,
                                                                feature_,
                                                                attr_,
                                                                scale_factor_,
@@ -120,14 +120,14 @@ bool placement_finder::next_position()
         text_props_ = evaluate_text_properties(info_.properties,feature_,attr_);
         // Note: this clear call is needed when multiple placements are tried
         // like with placement-type="simple|list"
-        layouts_ = std::make_unique<layout_container>();
+        layouts_ = std::make_unique<layout_container>(std::move(layout));
         //if (!layouts_.empty()) layouts_.clear();
         // Note: multiple layouts_ may result from this add() call
-        layouts_->add(layout);
+        //layouts_->add(layout);
         layouts_->layout();
         // cache a few values for use elsewhere in placement finder
-        move_dx_ = layout->displacement().x;
-        horizontal_alignment_ = layout->horizontal_alignment();
+        move_dx_ = layouts_->root_layout().displacement().x;
+        horizontal_alignment_ = layouts_->root_layout().horizontal_alignment();
         return true;
     }
     return false;
@@ -223,9 +223,9 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
     bboxes.reserve(layouts_->size());
 
     bool base_point_set = false;
-    for (auto const& layout_ptr : *layouts_)
+    for (auto const& layout_wrapper : *layouts_)
     {
-        text_layout const& layout = *layout_ptr;
+        text_layout const& layout = layout_wrapper.get();
         rotation const& orientation = layout.orientation();
 
         // Find text origin.
@@ -322,9 +322,9 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
 
     unsigned upside_down_glyph_count = 0;
 
-    for (auto const& layout_ptr : *layouts_)
+    for (auto const& layout_wrapper : *layouts_)
     {
-        text_layout const& layout = *layout_ptr;
+        text_layout const& layout = layout_wrapper.get();
         pixel_position align_offset = layout.alignment_offset();
         pixel_position const& layout_displacement = layout.displacement();
         double sign = (real_orientation == UPRIGHT_LEFT) ? -1 : 1;

@@ -48,7 +48,7 @@ namespace mapnik
 class feature_impl;
 class text_layout;
 
-using text_layout_ptr = std::shared_ptr<text_layout>;
+using text_layout_ptr = std::unique_ptr<text_layout>;
 using text_layout_vector = std::vector<text_layout_ptr>;
 // this is a std::deque to ensure pointers stay valid as a deque
 // "never invalidates pointers or references to the rest of the elements"
@@ -107,9 +107,9 @@ public:
     // Returns the number of glyphs so memory can be preallocated.
     inline unsigned glyphs_count() const { return glyphs_count_;}
 
-    void add_child(text_layout_ptr const& child_layout);
+    void add_child(text_layout_ptr && child_layout);
 
-    inline text_layout_vector const& get_child_layouts() const { return child_layout_list_; }
+    inline text_layout_vector & get_child_layouts() { return child_layout_list_; }
     inline face_manager_freetype & get_font_manager() const { return font_manager_; }
     inline double get_scale_factor() const { return scale_factor_; }
     inline text_symbolizer_properties const& get_default_text_properties() const { return properties_; }
@@ -187,20 +187,24 @@ private:
 class layout_container
 {
 public:
-    layout_container()
-        : glyphs_count_(0), line_count_(0) {}
-
-    void add(text_layout_ptr layout);
-    void clear();
+    layout_container(text_layout_ptr && layout)
+        : root_layout_(std::move(layout)),
+          glyphs_count_(0),
+          line_count_(0)
+    {
+        add(*root_layout_);
+    }
 
     void layout();
 
     inline size_t size() const { return layouts_.size(); }
     inline bool empty() const { return layouts_.empty(); }
 
-    inline text_layout_vector::const_iterator begin() const { return layouts_.begin(); }
-    inline text_layout_vector::const_iterator end() const { return layouts_.end(); }
-    inline text_layout_ptr const& back() const { return layouts_.back(); }
+    using flat_layout_list_type = std::vector<std::reference_wrapper<text_layout>>;
+
+    inline flat_layout_list_type::const_iterator begin() const { return layouts_.begin(); }
+    inline flat_layout_list_type::const_iterator end() const { return layouts_.end(); }
+    inline flat_layout_list_type::value_type const& back() const { return layouts_.back(); }
     inline mapnik::value_unicode_string const& text() const { return text_; }
 
     inline unsigned glyphs_count() const { return glyphs_count_; }
@@ -211,8 +215,13 @@ public:
     inline double width() const { return bounds_.width(); }
     inline double height() const { return bounds_.height(); }
 
+    text_layout const & root_layout() const { return *root_layout_; }
+
 private:
-    text_layout_vector layouts_;
+    void add(text_layout & layout);
+
+    text_layout_ptr root_layout_;
+    flat_layout_list_type layouts_;
 
     mapnik::value_unicode_string text_;
 
