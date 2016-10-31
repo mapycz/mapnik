@@ -25,8 +25,8 @@
 
 #include <mapnik/label_placements/base.hpp>
 #include <mapnik/label_placements/point.hpp>
-/*
 #include <mapnik/label_placements/interior.hpp>
+/*
 #include <mapnik/label_placements/vertex.hpp>
 #include <mapnik/label_placements/line.hpp>
 #include <mapnik/label_placements/grid.hpp>
@@ -45,9 +45,9 @@ struct finder
             default:
             case POINT_PLACEMENT:
                 return point::get(geom, params);
-            /*
             case INTERIOR_PLACEMENT:
-                return interior.get(geom, params);
+                return interior::get(geom, params);
+            /*
             case LINE_PLACEMENT:
                 return line.get(geom, params);
             case VERTEX_PLACEMENT:

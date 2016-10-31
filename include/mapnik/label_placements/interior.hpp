@@ -25,15 +25,13 @@
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_types.hpp>
-#include <mapnik/geometry_split_multi.hpp>
-#include <mapnik/label_placement.hpp>
 
 namespace mapnik { namespace label_placement {
 
 struct interior
 {
     template <typename Geom>
-    static placements_list get(Geom const & geom, label_placement_params & params)
+    static placements_list get(Geom const & geom, placement_params & params)
     {
         placements_list placements;
         auto type = geometry::geometry_type(geom);
@@ -41,7 +39,7 @@ struct interior
         geometry::point<double> pt;
         if (type == geometry::geometry_types::Point)
         {
-            pt = geom;
+            pt = mapnik::util::get<geometry::point<double>>(geom);
         }
         else if (type == geometry::geometry_types::LineString)
         {
@@ -49,7 +47,7 @@ struct interior
             geometry::line_string_vertex_adapter<double> va(line);
             if (!label::middle_point(va, pt.x, pt.y))
             {
-                MAPNIK_LOG_ERROR(label_interior_placement) << "Middle point calculation failed." << type_oid;
+                MAPNIK_LOG_ERROR(label_interior_placement) << "Middle point calculation failed.";
                 return placements;
             }
         }
@@ -59,7 +57,7 @@ struct interior
             geometry::polygon_vertex_adapter<double> va(poly);
             if (!label::interior_position(va, pt.x, pt.y))
             {
-                MAPNIK_LOG_ERROR(label_interior_placement) << "Interior point calculation failed." << type_oid;
+                MAPNIK_LOG_ERROR(label_interior_placement) << "Interior point calculation failed.";
                 return placements;
             }
         }
@@ -73,8 +71,13 @@ struct interior
         params.proj_transform.backward(pt.x, pt.y, z);
         params.view_transform.forward(&pt.x, &pt.y);
 
+        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
+
         placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, params.placement_info, params.font_manager, params.scale_factor);
+            params.dims, *info_ptr, params.font_manager, params.scale_factor,
+            placements);
 
         pixel_position pos(pt.x, pt.y);
 
@@ -82,7 +85,7 @@ struct interior
         {
             if (finder.find_point_placement(pos))
             {
-                return finder.placements();
+                return placements;
             }
         }
 
