@@ -84,13 +84,13 @@ private:
     box2d<double> const& extent_;
     text_placement_info const& info_;
     evaluated_text_properties_ptr text_props_;
-    layout_container layouts_;
+    std::unique_ptr<layout_container> layouts_;
 
     double scale_factor_;
     face_manager_freetype &font_manager_;
 
     placements_list & placements_;
-    std::vector<text_layout_ptr> processed_layouts_;
+    //std::vector<text_layout_ptr> processed_layouts_;
     //ShieldSymbolizer
     bool has_marker_;
     marker_info_ptr marker_;

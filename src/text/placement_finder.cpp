@@ -114,16 +114,17 @@ bool placement_finder::next_position()
                                                                info_.properties.layout_defaults,
                                                                info_.properties.format_tree());
         // ensure layouts stay in scope after layouts_.clear()
-        processed_layouts_.emplace_back(layout);
+        //processed_layouts_.emplace_back(layout);
         // TODO: why is this call needed?
         // https://github.com/mapnik/mapnik/issues/2525
         text_props_ = evaluate_text_properties(info_.properties,feature_,attr_);
         // Note: this clear call is needed when multiple placements are tried
         // like with placement-type="simple|list"
-        if (!layouts_.empty()) layouts_.clear();
+        layouts_ = std::make_unique<layout_container>();
+        //if (!layouts_.empty()) layouts_.clear();
         // Note: multiple layouts_ may result from this add() call
-        layouts_.add(layout);
-        layouts_.layout();
+        layouts_->add(layout);
+        layouts_->layout();
         // cache a few values for use elsewhere in placement finder
         move_dx_ = layout->displacement().x;
         horizontal_alignment_ = layout->horizontal_alignment();
@@ -172,13 +173,13 @@ bool placement_finder::find_line_placements(vertex_cache & pp, bool points)
                 ||
                 (pp.length() <= 0.001) // Clipping removed whole geometry
                 ||
-                (pp.length() < layouts_.width()))
+                (pp.length() < layouts_->width()))
                 {
                     continue;
                 }
         }
 
-        double spacing = get_spacing(pp.length(), points ? 0. : layouts_.width());
+        double spacing = get_spacing(pp.length(), points ? 0. : layouts_->width());
 
         //horizontal_alignment_e halign = layouts_.back()->horizontal_alignment();
 
@@ -218,11 +219,11 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box2d<double> > bboxes;
 
-    glyphs->reserve(layouts_.glyphs_count());
-    bboxes.reserve(layouts_.size());
+    glyphs->reserve(layouts_->glyphs_count());
+    bboxes.reserve(layouts_->size());
 
     bool base_point_set = false;
-    for (auto const& layout_ptr : layouts_)
+    for (auto const& layout_ptr : *layouts_)
     {
         text_layout const& layout = *layout_ptr;
         rotation const& orientation = layout.orientation();
@@ -240,7 +241,7 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
         bbox.re_center(layout_center.x, layout_center.y);
 
         /* For point placements it is faster to just check the bounding box. */
-        if (collision(bbox, layouts_.text(), false)) return false;
+        if (collision(bbox, layouts_->text(), false)) return false;
 
         if (layout.glyphs_count()) bboxes.push_back(std::move(bbox));
 
@@ -292,11 +293,13 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
         {
             label_box.expand_to_include(box);
         }
-        detector_.insert(box, layouts_.text());
+        detector_.insert(box, layouts_->text());
     }
+
     // do not render text off the canvas
     if (extent_.intersects(label_box))
     {
+        glyphs->layouts_ = std::move(layouts_);
         placements_.push_back(std::move(glyphs));
     }
 
@@ -314,12 +317,12 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
 
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box2d<double> > bboxes;
-    glyphs->reserve(layouts_.glyphs_count());
-    bboxes.reserve(layouts_.glyphs_count());
+    glyphs->reserve(layouts_->glyphs_count());
+    bboxes.reserve(layouts_->glyphs_count());
 
     unsigned upside_down_glyph_count = 0;
 
-    for (auto const& layout_ptr : layouts_)
+    for (auto const& layout_ptr : *layouts_)
     {
         text_layout const& layout = *layout_ptr;
         pixel_position align_offset = layout.alignment_offset();
@@ -419,7 +422,7 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
                 cluster_offset.y -= rot.sin * glyph.advance();
 
                 box2d<double> bbox = get_bbox(layout, glyph, pos, rot);
-                if (collision(bbox, layouts_.text(), true)) return false;
+                if (collision(bbox, layouts_->text(), true)) return false;
                 bboxes.push_back(std::move(bbox));
                 glyphs->emplace_back(glyph, pos, rot);
             }
@@ -428,7 +431,7 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
         }
     }
 
-    if (upside_down_glyph_count > static_cast<unsigned>(layouts_.text().length() / 2))
+    if (upside_down_glyph_count > static_cast<unsigned>(layouts_->text().length() / 2))
     {
         if (orientation == UPRIGHT_AUTO)
         {
@@ -462,11 +465,12 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
         {
             label_box.expand_to_include(box);
         }
-        detector_.insert(box, layouts_.text());
+        detector_.insert(box, layouts_->text());
     }
     // do not render text off the canvas
     if (extent_.intersects(label_box))
     {
+        glyphs->layouts_ = std::move(layouts_);
         placements_.push_back(std::move(glyphs));
     }
 
@@ -533,7 +537,7 @@ bool placement_finder::add_marker(glyph_positions_ptr & glyphs, pixel_position c
     pixel_position real_pos = (marker_unlocked_ ? pos : glyphs->get_base_point()) + marker_displacement_;
     box2d<double> bbox = marker_box_;
     bbox.move(real_pos.x, real_pos.y);
-    if (collision(bbox, layouts_.text(), false)) return false;
+    if (collision(bbox, layouts_->text(), false)) return false;
     detector_.insert(bbox);
     bboxes.push_back(std::move(bbox));
     glyphs->set_marker(marker_, real_pos);

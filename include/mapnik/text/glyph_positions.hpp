@@ -29,6 +29,7 @@
 #include <mapnik/text/rotation.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/text/glyph_info.hpp>
+#include <mapnik/text/text_layout.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -85,6 +86,9 @@ public:
     void set_marker(marker_info_ptr marker, pixel_position const& marker_pos);
     marker_info_ptr const& get_marker() const;
     pixel_position const& marker_pos() const;
+
+    std::unique_ptr<layout_container> layouts_;
+
 private:
     std::vector<glyph_position> data_;
     pixel_position base_point_;

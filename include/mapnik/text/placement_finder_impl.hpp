@@ -31,7 +31,7 @@ namespace mapnik
 template <typename T>
 bool placement_finder::find_line_placements(T & path, bool points)
 {
-    if (!layouts_.line_count()) return true; //TODO
+    if (!layouts_->line_count()) return true; //TODO
 
     if (horizontal_alignment_ == H_ADJUST)
     {
