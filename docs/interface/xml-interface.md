@@ -13,8 +13,8 @@ The Map object defines the master object of a mapnik configuration XML. It defin
   * [`Style`](#style)
   * [`Layer`](#layer)
   * `FileSource`: See [37f49e2](https://github.com/mapnik/mapnik/commit/37f49e29cce2d334fe9839)
-  * `Datasource`: See [Datasource](#datasource) and [37f49e2](https://github.com/mapnik/mapnik/commit/37f49e29cce2d334fe9839)
-  * `FontSet`: Defines a fontset for fallback fonts (if a character isn't found in the first font, proceed through the list until it is found)
+  * [`Datasource`](#datasource): See [37f49e2](https://github.com/mapnik/mapnik/commit/37f49e29cce2d334fe9839)
+  * [`FontSet`](font-set.md): Defines a fontset for fallback fonts (if a character isn't found in the first font, proceed through the list until it is found)
   * `Include`: The container tag used to wrap all context in files included via XInclude
   * `xmlcomment`: (Ignored by Mapnik)
   * `xmlattr`: (Ignored by Mapnik)
