@@ -110,22 +110,22 @@ A Style object  defines the way objects can be rendered. A Mapnik configuration 
   * *title*
 
  * Children:
-  * *[[Filter]]*
-  * *[[ElseFilter]]*
-  * *[[MinScaleDenominator]]*
-  * *[[MaxScaleDenominator]]*
-  * *[[PointSymbolizer]]* (Similar to MarkersSymbolizer, see [#2115](https://github.com/mapnik/mapnik/issues/2115))
-  * *[[LineSymbolizer]]*
-  * *[[LinePatternSymbolizer]]*
-  * *[[MarkersSymbolizer]]*
-  * *[[ShieldSymbolizer]]*
-  * *[[PolygonSymbolizer]]*
-  * *[[PolygonPatternSymbolizer]]*
-  * *[[TextSymbolizer]]*
-  * *[[RasterSymbolizer]]*
-  * *[[BuildingSymbolizer]]*
-  * *[[GroupSymbolizer]]*
-  * *[[DebugSymbolizer]]*
+  * *[Filter](elements/filter.md)*
+  * *[ElseFilter](elements/else-filter.md)*
+  * *[MinScaleDenominator](elements/min-scale-denominator.md)*
+  * *[MaxScaleDenominator](elements/max-scale-denominator.md)*
+  * *[PointSymbolizer](elements/symbolizers/point.md)* (Similar to MarkersSymbolizer, see [#2115](https://github.com/mapnik/mapnik/issues/2115))
+  * *[LineSymbolizer](elements/symbolizers/line.md)*
+  * *[LinePatternSymbolizer](elements/symbolizers/line-pattern.md)*
+  * *[MarkersSymbolizer](elements/symbolizers/markers.md)*
+  * *[ShieldSymbolizer](elements/symbolizers/shield.md)*
+  * *[PolygonSymbolizer](elements/symbolizers/polygon.md)*
+  * *[PolygonPatternSymbolizer](elements/symbolizers/polygon-pattern.md)*
+  * *[TextSymbolizer](elements/symbolizers/text.md)*
+  * *[RasterSymbolizer](elements/symbolizers/raster.md)*
+  * *[BuildingSymbolizer](elements/symbolizers/building.md)*
+  * *[GroupSymbolizer](elements/symbolizers/group.md)*
+  * *[DebugSymbolizer](elements/symbolizers/debug.md)*
 
 ## Include
  * Element: *Include*
