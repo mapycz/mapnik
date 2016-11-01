@@ -25,8 +25,7 @@
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_types.hpp>
-#include <mapnik/geometry_split_multi.hpp>
-#include <mapnik/label_placement.hpp>
+#include <mapnik/vertex_processor.hpp>
 
 namespace mapnik { namespace label_placement {
 
@@ -61,20 +60,25 @@ struct apply_vertex_placement
 struct vertex
 {
     template <typename Geom>
-    static placements_list get(Geom const & geom, label_placement_params & params)
+    static placements_list get(Geom const & geom, placement_params & params)
     {
         using positions_type = std::list<pixel_position>;
-        using apply_vertex_placement = detail::apply_vertex_placement<positions_type>;
+        using apply_vertex_placement = apply_vertex_placement<positions_type>;
         positions_type points;
         apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
         util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
 
+        placements_list placements;
+        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
         placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, params.placement_info, params.font_manager, params.scale_factor);
+            params.dims, *info_ptr, params.font_manager, params.scale_factor,
+            placements);
 
         while (finder.next_position())
         {
-            for (auto it = points.begin(); it != point.end(); )
+            for (auto it = points.begin(); it != points.end(); )
             {
                 if (finder.find_point_placement(*it))
                 {
@@ -87,7 +91,7 @@ struct vertex
             }
         }
 
-        return finder.placements();
+        return placements;
     }
 };
 

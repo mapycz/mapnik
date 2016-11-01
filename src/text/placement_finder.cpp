@@ -300,7 +300,7 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
     if (extent_.intersects(label_box))
     {
         glyphs->layouts_ = std::move(layouts_);
-        placements_.push_back(std::move(glyphs));
+        placements_.emplace_back(std::move(glyphs));
     }
 
     return true;
@@ -471,7 +471,7 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
     if (extent_.intersects(label_box))
     {
         glyphs->layouts_ = std::move(layouts_);
-        placements_.push_back(std::move(glyphs));
+        placements_.emplace_back(std::move(glyphs));
     }
 
     return true;
