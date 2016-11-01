@@ -1,6 +1,8 @@
-# MinScaleDenominator
+# Scale denominator
 
-Activates the rule, if [ScaleAndPpi scale] >= minScaleDenominator - 1e-6
+## MinScaleDenominator
+
+Activates the rule, if [scale](scale.md) >= minScaleDenominator - 1e-6
 
 Example:
 
@@ -25,3 +27,20 @@ Example:
 ```
 
 It appears that both min and max scale denominators are required. Also, note that if you are writing multiple rules which format items different on x > y > z, reformat to rules which format on x > y + 1, y > z
+
+## MaxScaleDenominator
+
+Activates the rule, if [scale](scale.md) < MaxScaleDenominator + 1e-6
+
+Example:
+
+```xml
+    <Style name="text">
+      <Rule>
+        <Filter>[place] = 'city'</Filter>
+          <MaxScaleDenominator>10000000</MaxScaleDenominator>
+          <MinScaleDenominator>2000000</MinScaleDenominator>
+        <TextSymbolizer name="name" face_name="DejaVu Sans Book" size="10" fill="#000" dy="0" halo_radius="1" wrap_width="0"/>
+      </Rule>
+    </Style>
+```

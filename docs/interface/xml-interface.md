@@ -35,7 +35,7 @@ The Map object defines the master object of a mapnik configuration XML. It defin
 
 
 ## Style
-A Style object  defines the way objects can be rendered. A Mapnik configuration file can have an unlimited number of Style objects. Style objects are referenced by Layer objects in order to actually be rendered.
+A Style object defines the way objects can be rendered. A Mapnik configuration file can have an unlimited number of Style objects. Style objects are referenced by Layer objects in order to actually be rendered.
 
  * Element: *Style*
  * Element type: Collection of Rules
@@ -106,26 +106,27 @@ A Style object  defines the way objects can be rendered. A Mapnik configuration 
  * Element type:
 
  * Attributes
-  * *name*
-  * *title*
+  * `name`
+  * `title`
 
  * Children:
-  * *[Filter](elements/filter.md)*
-  * *[ElseFilter](elements/else-filter.md)*
-  * *[MinScaleDenominator](elements/min-scale-denominator.md)*
-  * *[MaxScaleDenominator](elements/max-scale-denominator.md)*
-  * *[PointSymbolizer](elements/symbolizers/point.md)* (Similar to MarkersSymbolizer, see [#2115](https://github.com/mapnik/mapnik/issues/2115))
-  * *[LineSymbolizer](elements/symbolizers/line.md)*
-  * *[LinePatternSymbolizer](elements/symbolizers/line-pattern.md)*
-  * *[MarkersSymbolizer](elements/symbolizers/markers.md)*
-  * *[ShieldSymbolizer](elements/symbolizers/shield.md)*
-  * *[PolygonSymbolizer](elements/symbolizers/polygon.md)*
-  * *[PolygonPatternSymbolizer](elements/symbolizers/polygon-pattern.md)*
-  * *[TextSymbolizer](elements/symbolizers/text.md)*
-  * *[RasterSymbolizer](elements/symbolizers/raster.md)*
-  * *[BuildingSymbolizer](elements/symbolizers/building.md)*
-  * *[GroupSymbolizer](elements/symbolizers/group.md)*
-  * *[DebugSymbolizer](elements/symbolizers/debug.md)*
+  * [`Filter`](elements/filter.md)
+  * [`ElseFilter`](elements/else-filter.md)
+  * [`AlsoFilter`](elements/also-filter.md)
+  * [`MinScaleDenominator`](elements/scale-denominator.md#minscaledenominator)
+  * [`MaxScaleDenominator`](elements/scale-denominator.md#maxscaledenominator)
+  * [`PointSymbolizer`](elements/symbolizers/point.md) (Similar to MarkersSymbolizer, see [#2115](https://github.com/mapnik/mapnik/issues/2115))
+  * [`LineSymbolizer`](elements/symbolizers/line.md)
+  * [`LinePatternSymbolizer`](elements/symbolizers/line-pattern.md)
+  * [`MarkersSymbolizer`](elements/symbolizers/markers.md)
+  * [`ShieldSymbolizer`](elements/symbolizers/shield.md)
+  * [`PolygonSymbolizer`](elements/symbolizers/polygon.md)
+  * [`PolygonPatternSymbolizer`](elements/symbolizers/polygon-pattern.md)
+  * [`TextSymbolizer`](elements/symbolizers/text.md)
+  * [`RasterSymbolizer`](elements/symbolizers/raster.md)
+  * [`BuildingSymbolizer`](elements/symbolizers/building.md)
+  * [`GroupSymbolizer`](elements/symbolizers/group.md)
+  * [`DebugSymbolizer`](elements/symbolizers/debug.md)
 
 ## Include
  * Element: *Include*
