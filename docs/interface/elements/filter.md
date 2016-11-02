@@ -20,6 +20,22 @@ And they can be combined in complex rules using brackets: `(` and `)`.
 
 Attributes can be compared against [Regular expressions](http://en.wikipedia.org/wiki/Regular_expression) using the `.match` operator.
 
+Following operators, functions and constants are also supported:
+ * Operators: `+`, `-`, `*`, `/`
+ * Unary functions: `sin`, `cos`, `tan`, `atan`, `exp`, `log`, `abs`, `length`,
+ * Binary functions: `min`, `max`, `pow`
+ * Constants:
+  * `null`
+  * `false`
+  * `true`
+  * `point` = 1
+  * `linestring` = 2
+  * `polygon` = 3
+  * `collection` = 4
+  * `pi` = 3.1415926535897932384626433832795
+  * `deg_to_rad` = `pi` / 180 = 0.017453292519943295769236907684886
+  * `rad_to_deg` = 180 / `pi` = 57.295779513082320876798154814105
+
 ## Examples in XML
 Matches all objects that have an attribute "amenity" with a value of "restaurant":
 

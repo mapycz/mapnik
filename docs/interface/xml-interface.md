@@ -32,7 +32,9 @@ A Style object defines the way objects can be rendered. A Mapnik configuration f
 
 ### `Layer`
 
-References a Style (StyleName) and a DataSource
+References a Style (StyleName) and a DataSource.  Each layer can reference 0...N styles.
+
+Order is important -- as in the 'painter model' or [Painter's algorithm](http://en.wikipedia.org/wiki/Painter's_algorithm) to be specific. Layers that are declared first in your XML file, or added programmatically through `Layer::add_style` are drawn first. Layers that are declared or added later are drawn last.
 
  * Children:
   * `StyleName`: The name of a defined [`Style`](#style). The style must contain the same string in the attribute `name`.
@@ -42,7 +44,9 @@ References a Style (StyleName) and a DataSource
 
 References the map data source and parameters. Mapnik can load data from various data sources. See [Plugin architecture](plugins.md) for more information.
 
-### Rule
+### `Rule`
+
+Each style can have 0...N rules. Rules can have min/max scale denominators, filter expressions and symbolizers.
 
  * Children:
   * [`Filter`](elements/filter.md)
@@ -63,9 +67,9 @@ References the map data source and parameters. Mapnik can load data from various
   * [`GroupSymbolizer`](elements/symbolizers/group.md)
   * [`DebugSymbolizer`](elements/symbolizers/debug.md)
 
-### Include
+### `Include`
 
-Provides a container for included XML.  Should be used only in included files as the outermost tag.
+Provides a container for included XML. Should be used only in included files as the outermost tag.
 
 ## Examples
 
