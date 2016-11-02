@@ -1,5 +1,7 @@
 # Mapnik configuration XML
 
+This is overview of XML interface of Mapnik. For complete reference of the configuration, see [mapnik.org/mapnik-reference/](http://mapnik.org/mapnik-reference/) or [github.com/mapnik/mapnik-reference/](https://github.com/mapnik/mapnik-reference/).
+
 ## General
 
 Comments can be placed in the configuration file using the default xml `<!-- -->` syntax
@@ -37,7 +39,6 @@ References a Style (StyleName) and a DataSource
   * [`Datasource`](#datasource)
 
 ### `Datasource`
-See also the [Python API docs](http://mapnik.org/docs/v2.1.0/api/python/index.html)
 
 References the map data source and parameters.
 
@@ -108,3 +109,7 @@ References the map data source and parameters.
 ## Examples
 
 A good source of simple examples are visual tests.
+
+## See also
+
+[Python API docs](http://mapnik.org/docs/v2.2.0/api/python/index.html)
