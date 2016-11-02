@@ -1,6 +1,6 @@
 # Mapnik configuration XML
 
-This is overview of XML interface of Mapnik. For complete reference of the configuration, see [mapnik.org/mapnik-reference/](http://mapnik.org/mapnik-reference/) or [github.com/mapnik/mapnik-reference/](https://github.com/mapnik/mapnik-reference/).
+This is overview of XML interface of Mapnik. For complete reference see [mapnik.org/mapnik-reference](http://mapnik.org/mapnik-reference/) or [github.com/mapnik/mapnik-reference](https://github.com/mapnik/mapnik-reference/).
 
 ## General
 
@@ -35,44 +35,14 @@ A Style object defines the way objects can be rendered. A Mapnik configuration f
 References a Style (StyleName) and a DataSource
 
  * Children:
-  * `StyleName`: The name of a defined [#Style style]. The style must contain the same string in the attribute *name*.
+  * `StyleName`: The name of a defined [`Style`](#style). The style must contain the same string in the attribute `name`.
   * [`Datasource`](#datasource)
 
 ### `Datasource`
 
-References the map data source and parameters.
-
- * Attributes:
-  * *name*: Create a datasource template ([37f49e2](https://github.com/mapnik/mapnik/commit/37f49e29cce2d334fe9839))
-  * *base*: Inherit from a datasource template ([37f49e2](https://github.com/mapnik/mapnik/commit/37f49e29cce2d334fe9839))
- * Generic Parameters:
-  * type: Specifies the format of the data source
-   * Possible values:
-     * '''shape'''  :   ESRI shapefile
-     * '''postgis'''    :   Postgis table or query
-     * '''pgraster'''   :   Postgis table or query (containing or returning raster)
-     * '''raster''' :   Tiled or stripped TIFF
-     * '''gdal'''   :   GDAL supported raster dataset (not build by default)
-     * '''ogr'''          :       OGR supported vector datasource (not build by default)
-     * '''osm'''        :   Open Street Map (not build by default)
-  * *estimate_extent*: boolean to tell Mapnik to estimate the extent of the layer (true) or not (false)
-  * *extent*:       manually enter an extent if estimate_extent is set to false
-
- * Additional parameters for type *postgis* see: Parameters on the [[PostGIS]] page. 
- * Additional parameters for type *pgraster* see: Parameters on the [[PgRaster]] page. 
- * Additional parameters for type *shape* see [[ShapeFile]]
- * Additional parameters for type *gdal* see [[GDAL]].
- * Additional parameters for type *ogr* see [[OGR]].
- * Additional parameters for type *osm*  see [[OsmPlugin]]
-
+References the map data source and parameters. Mapnik can load data from various data sources. See [Plugin architecture](plugins.md) for more information.
 
 ### Rule
- * Element: *Rule*
- * Element type:
-
- * Attributes
-  * `name`
-  * `title`
 
  * Children:
   * [`Filter`](elements/filter.md)
@@ -94,21 +64,12 @@ References the map data source and parameters.
   * [`DebugSymbolizer`](elements/symbolizers/debug.md)
 
 ### Include
- * Element: *Include*
- * Element type: Provides a container for included XML.  Should be used only in included files as the outermost tag.
 
- * Attributes - None
-
- * Children:
-  * *[Style](#style)*
-  * *[Layer](#layer)*
-  * *FileSource*:
-  * *Datasource*: See [Datasource](#datasource)
-  * *FontSet*: Defines a fontset for fallback fonts (if a character isn't found in the first font, proceed through the list until it is found)
+Provides a container for included XML.  Should be used only in included files as the outermost tag.
 
 ## Examples
 
-A good source of simple examples are visual tests.
+A good source of simple examples are visual tests: [github.com/mapnik/test-data-visual/tree/master/styles](https://github.com/mapnik/test-data-visual/tree/master/styles)
 
 ## See also
 

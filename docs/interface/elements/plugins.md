@@ -1,3 +1,5 @@
+# Plugin architecture
+
 ## Overview
 
 Mapnik supports a Plugin architecture read access to a variety of formats.
