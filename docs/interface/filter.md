@@ -22,7 +22,7 @@ Attributes can be compared against [Regular expressions](http://en.wikipedia.org
 
 Following operators, functions and constants are also supported:
  * Operators: `+`, `-`, `*`, `/`
- * Unary functions: `sin`, `cos`, `tan`, `atan`, `exp`, `log`, `abs`, `length`,
+ * Unary functions: `sin`, `cos`, `tan`, `atan`, `exp`, `log`, `abs`, `length`
  * Binary functions: `min`, `max`, `pow`
  * Constants:
   * `null`
