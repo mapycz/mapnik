@@ -1,9 +1,3 @@
-<!-- Name: OpenSuseInstallation -->
-<!-- Version: 4 -->
-<!-- Last-Modified: 2010/09/29 07:15:24 -->
-<!-- Author: gnijholt -->
-
-
 # Installing Mapnik on Suse
 
 One old guide for trunk is here:  http://lists.berlios.de/pipermail/mapnik-users/2010-January/002810.html
@@ -66,3 +60,4 @@ Still as root:
     701
     >>>
 ```
+

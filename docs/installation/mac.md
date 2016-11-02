@@ -1,6 +1,14 @@
-# Installing Mapnik on OS X with Homebrew
+# Installing Mapnik on Mac OS X
 
-## Install Homebrew
+## Binary Installers
+
+Binary Mapnik installers for Mac OS X are available at [mapnik.org/pages/downloads.html](http://mapnik.org/pages/downloads.html)
+
+## Using Homebrew
+
+Homebrew is the recommended OS X package manager for installing Mapnik.
+
+### Install Homebrew
 
 First, make sure you have homebrew [installed](http://github.com/mxcl/homebrew/wiki/installation)
 
@@ -10,14 +18,14 @@ Then make sure homebrew is updated:
 brew update
 ```
 
-## Install Options
+### Install Options
 
 Now you can either:
 
  - Install Mapnik itself with homebrew (which will automatically install all dependencies at the same time)
  - Install all Mapnik dependencies via homebrew and then Mapnik from source.
 
-### Understanding build options
+#### Understanding build options
 
 To see the options available for the build do:
 
@@ -37,7 +45,7 @@ Note that the current `mapnik` package in Homebrew is based on Mapnik 3 and does
 brew install homebrew/versions/mapnik2
 ```
 
-### pycairo support
+#### pycairo support
 
 If you want both cairo rendering support and the ability to work with cairo objects (and pass them to mapnik) in python do:
 
@@ -46,7 +54,7 @@ brew install py2cairo
 brew install mapnik --with-cairo
 ```
 
-### To install the latest Mapnik release from Homebrew do:
+#### To install the latest Mapnik release from Homebrew do:
 
 ```sh
 brew install cairo --without-x --without-glib
@@ -75,7 +83,7 @@ Note that on Lion, you need may to be more explicit about SQLite.  Change versio
  ./configure CXX="clang++" JOBS=`sysctl -n hw.ncpu` SQLITE_LIBS=/usr/local/Cellar/sqlite/3.7.12/lib/ SQLITE_INCLUDES=/usr/local/Cellar/sqlite/3.7.12/include/
 ```
 
-## Boost-Python Link Problems
+### Boost-Python Link Problems
 
 After you install mapnik, you may try to import it and get `Fatal Python error: Interpreter not initialized (version mismatch?)`. If so, you likely have boost linked with the wrong version of python. To see what version of python boost is linked from, try:
 
@@ -90,16 +98,17 @@ brew uninstall boost
 brew install --build-from-source boost
 ```
 
-## Mapbox Variant not found problem
+### Mapbox Variant not found problem
 After git clone of mapnik, execute the following to pull down additional dependencies
 ```
 git submodule update --init deps/mapbox/variant
 ```
 
-## Building with Cairo
+### Building with Cairo
 
 If you need Cairo and its Python bindings, install and link these (cairo and py2cairo) with homebrew as normal. Then, to build Mapnik from source with Cairo:
 
 ```
 ./configure CXX="clang++" JOBS=`sysctl -n hw.ncpu` CAIRO=True PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/X11/lib/pkgconfig
 ```
+

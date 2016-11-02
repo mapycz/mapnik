@@ -1,7 +1,3 @@
-<!-- Name: CentOS/RHEL -->
-<!-- Version: 6 -->
-<!-- Last-Modified: 2010/09/28 06:25:41 -->
-<!-- Author: springmeyer -->
 # CentOS/RHEL Installation
 
 *Note:* These instructions are out of date. Until these are updated better references are:

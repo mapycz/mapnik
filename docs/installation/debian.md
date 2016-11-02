@@ -1,10 +1,6 @@
-<!-- Name: DebianInstallation -->
-<!-- Version: 14 -->
-<!-- Last-Modified: 2011/06/08 10:41:44 -->
-<!-- Author: phispi -->
-## Install Mapnik on Debian
+# Install Mapnik on Debian
 
-### Install mapnik 2 from packages
+## Install mapnik 2 from packages
 
 **Wheezy**:
 
@@ -20,7 +16,7 @@ A backport was done from Wheezy version
 
 Follow instructions from http://osm.fsffrance.org/debian-backports/README to install
 
-## Dependencies for Debian 7: Wheezy (stable) for Mapnik 2.2
+# Dependencies for Debian 7: Wheezy (stable) for Mapnik 2.2
 
 ```sh
     sudo apt-get install \
@@ -50,7 +46,7 @@ Follow instructions from http://osm.fsffrance.org/debian-backports/README to ins
     subversion build-essential python-nose
 ```
 
-## Dependencies for Debian 6: Squeeze (stable)
+# Dependencies for Debian 6: Squeeze (stable)
 
 ```sh
     sudo apt-get install \
@@ -83,7 +79,7 @@ Follow instructions from http://osm.fsffrance.org/debian-backports/README to ins
 *Note:* We use libjpeg62 instead of libjpeg8 above because libtiff package still depends on 62.
 
 
-## Dependencies for Debian 5: Lenny
+# Dependencies for Debian 5: Lenny
 
 
 ```sh
@@ -124,7 +120,7 @@ Mapnik trunk:
     sudo ldconfig
 ```
 
-### Optional: Build and install mapnik without root permissions
+## Optional: Build and install mapnik without root permissions
 The development libraries have to be present as described above. In the following example `/home/$USER/mapnik_svn` (`$DIR_MAPNIK_SVN`) is the directory where you want to check out the source and `/home/$USER/mapnik_inst` (`$DIR_MAPNIK_INSTALL`) is the directory you want to use for installation. 
 
 ```sh
