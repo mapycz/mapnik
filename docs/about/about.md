@@ -3,7 +3,7 @@
 
 Mapnik is a free toolkit for developing mapping applications. It is written in modern C++ and can comfortably be used for both desktop map design and web development. The most widely used options are using XML config files, using the Python or Node bindings or using the API directly in C++.
 
-*Mapnik is about making beautiful maps*. It uses the AGG graphics library, which offers world-class anti-aliasing rendering with subpixel accuracy for geographic data.
+**Mapnik is about making beautiful maps**. It uses the AGG graphics library, which offers world-class anti-aliasing rendering with subpixel accuracy for geographic data.
 
 ## Bindings and interfaces
 
@@ -15,7 +15,7 @@ Mapnik is a free toolkit for developing mapping applications. It is written in m
 
 ## Who uses Mapnik?
 
-Have a look at some online uses of Mapnik!
+### Online uses of Mapnik
 
  * [OpenStreetMap](http://www.openstreetmap.org/index.html)
  * [OpenTopoMap](http://opentopomap.org)
@@ -25,11 +25,15 @@ Have a look at some online uses of Mapnik!
  * [Yandex.Maps](https://yandex.com/maps)
  * [Mapy.cz](https://mapy.cz/)
  * [MapQuest](https://www.mapquest.com)
- * [Космоснимки](http://kosmosnimki.ru/)
  * [University of Montana Campus Map](http://map.umt.edu/)
+ * [Карта Дрогобыча и Трускавца](http://nadoloni.com/)
+ * [Космоснимки](http://kosmosnimki.ru/)
  * http://afghanistanelectiondata.org/data
- * [Карта Дрогобыча и Трускавца. Бизнес справочник на карте](http://nadoloni.com/)
  * [Heritage Walks - The Engineering Heritage of Auckland](http://www.heritagewalks.co.nz/rw/aklhistoric/historic/)
+
+### Desktop apps
+
+ * [TileMill](http://mapbox.com/tilemill) is a useful wrapper around Mapnik for the purpose of map design.
 
 ## Blog posts about Mapnik
 

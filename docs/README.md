@@ -3,11 +3,6 @@
 
 - [About Mapnik](about/about.md)
 
-## Community
-
-- [Mailing List](https://groups.google.com/forum/#!forum/mapnik)
-- #mapnik channel on irc.freenode.net, [Webchat](http://webchat.freenode.net/?channels=#mapnik)
-
 ## Installing and building
 
 - [From the source code](https://github.com/mapnik/mapnik/blob/master/INSTALL.md)
@@ -30,5 +25,13 @@
 
 ## Mapping
 
+- [Using custom fonts](mapping/custom-fonts.md)
+- [Compositing](mapping/compositing.md)
+
 ## Development
+
+## Community
+
+- [Mailing List](https://groups.google.com/forum/#!forum/mapnik)
+- #mapnik channel on irc.freenode.net, [Webchat](http://webchat.freenode.net/?channels=#mapnik)
 

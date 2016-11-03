@@ -1,7 +1,5 @@
 Mapnik offers a base level of functionality which can be used to design great looking maps.
 
-[TileMill](http://mapbox.com/tilemill) is a useful wrapper around Mapnik for the purpose of map design.
-
 ### Finding map data
 
 First, you'll need some data. Mapnik [can currently read](http://mapnik.org/faq/) ESRI Shapefiles, TIFF image files, and can query the PostGIS spatial database. It can also read all OGR and GDAL supported vector and raster datasets.
@@ -25,6 +23,3 @@ Internally, a mapnik Map object may have multiple Layers, where each Layer shoul
 (To get access to the fundamental Map geometry, one can query a Map Layer's datasource by passing it a mapnik::query, specifying the
 axis-aligned bounding box, or "Envelope".)
 
-### Rendering with Mapnik
-
-As mentioned on SymbologySupport and Michal's blog post, [making sense of Mapnik](http://mike.teczno.com/notes/mapnik.html), order matters when using Mapnik to render maps. It uses the [Painter's algorithm](http://en.wikipedia.org/wiki/Painter's_algorithm) to determine Z-ordering, that is, layers are drawn in a specific order, and the "top" layer is drawn last, above all others.

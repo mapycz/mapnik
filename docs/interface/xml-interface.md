@@ -46,7 +46,8 @@ References the map data source and parameters. Mapnik can load data from various
 
 ### `Rule`
 
-Each style can have 0...N rules. Rules can have min/max scale denominators, filter expressions and symbolizers.
+Each style can have 0...N rules. Rules can have min/max scale denominators, filter expressions and symbolizers.  Rules and filters serve as predicates that determine when geometric features are displayed. Mapnik Symbolizers take input data and turn them into graphical form.
+
 
  * Children:
   * [`Filter`](filter.md)

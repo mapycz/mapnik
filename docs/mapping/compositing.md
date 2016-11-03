@@ -1,3 +1,5 @@
+#Compositing
+
 Mapnik has supported various custom compositing operations with raster layers since 0.7.x and with vector layers since 2.1.x.
 
 For some examples of what you can do with this feature see:

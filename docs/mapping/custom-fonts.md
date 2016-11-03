@@ -1,9 +1,3 @@
-<!-- Name: UsingCustomFonts -->
-<!-- Version: 8 -->
-<!-- Last-Modified: 2010/01/26 07:54:27 -->
-<!-- Author: springmeyer -->
-
-
 # Using Custom Fonts with Mapnik
 
 Doing this requires three steps:
