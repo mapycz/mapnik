@@ -1,4 +1,12 @@
 
+## Introductory Topics
+
+- [About Mapnik](about/about.md)
+
+## Community
+
+- [Mailing List](https://groups.google.com/forum/#!forum/mapnik)
+- #mapnik channel on irc.freenode.net, [Webchat](http://webchat.freenode.net/?channels=#mapnik)
 
 ## Installing and building
 
@@ -12,16 +20,15 @@
 - [CentOS, Red Hat Enterprise Linux](installation/centos-rhel.md)
 - Fedora - [wiki.openstreetmap.org/wiki/Mapnik/Fedora_Installation](http://wiki.openstreetmap.org/wiki/Mapnik/Fedora_Installation)
 - [FreeBSD](installation/freebsd.md)
-- [iOS](installation/ios.md)
 - [Mac](installation/mac.md)
+- [iOS](installation/ios.md)
 - [Windows](installation/windows.md)
 - [OpenSolaris](installation/opensolaris.md)
  - [32 bit](installation/opensolaris-32.md)
  - [64 bit](installation/opensolaris-64.md)
  - [Troubleshooting](installation/opensolaris_troubleshooting.md)
 
+## Mapping
 
-## Community
+## Development
 
-- [Mailing List](https://groups.google.com/forum/#!forum/mapnik)
-- #mapnik channel on irc.freenode.net, [Webchat](http://webchat.freenode.net/?channels=#mapnik)
