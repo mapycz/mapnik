@@ -25,8 +25,16 @@
 
 ## Mapping
 
+- [API](interface/xml-interface.md)
 - [Using custom fonts](mapping/custom-fonts.md)
 - [Compositing](mapping/compositing.md)
+- [Text rendering overview](mapping/text-overview.md)
+- [Scale factor](mapping/scale-factor.md)
+- [Aspect fix mode](mapping/aspect-fix-mode.md)
+- [RasterColorizer](mapping/raster-colorizer.md)
+- [Raster color interpretation](mapping/raster-color-interpretation.md)
+- [Managing complex map files using XML entities](mapping/large-xml.md)
+- [MetaWriter](mapping/metawriter.md)
 
 ## Development
 

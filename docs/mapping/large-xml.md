@@ -1,8 +1,3 @@
-<!-- Name: ManagingLargeXmlFiles -->
-<!-- Version: 11 -->
-<!-- Last-Modified: 2010/07/17 10:06:46 -->
-<!-- Author: oldtopos -->
-
 # Managing complex map files using XML entities
 
 **Note**: you will need a copy of mapnik built against libxml2.  This is not the default, please read the **Mapnik XML Support** or [issue here](https://github.com/mapnik/mapnik/issues/3191) for details.
@@ -16,14 +11,14 @@ demonstrates how to avoid duplicate data in the XML file, like:
 * icon directories
 
 It also shows how to split a single, monolithic map file into reusable
-components using external entities and XInclude. 
+components using external entities and XInclude.
 
 ## Mapnik XML support
 
 Mapnik currently supports three different XML parsers:
 
 * the boost spirit based parser
-* the tinyxml parser 
+* the tinyxml parser
 * libxml2
 
 The three parsers differ in size, external dependencies and the number of XML
@@ -33,7 +28,7 @@ when building the Mapnik source with SCons, and available in the Windows binarie
 
 ## Compiling mapnik with libxml2 support
 
-If not default in your Mapnik version (< 0.6.0) the libxml2 parser is enabled by setting the XMLPARSER option at 
+If not default in your Mapnik version (< 0.6.0) the libxml2 parser is enabled by setting the XMLPARSER option at
 compile time:
 
 ```sh
@@ -119,11 +114,11 @@ External entities are declared by adding the keyword SYSTEM:
         <Layer name="volcanos" status="on">
             <StyleName>volcanos</StyleName>
             <Datasource>
-    
+
                 <Parameter name="table">volcanos</Parameter>
-    
+
                 &db_settings;
-    
+
             </Datasource>
         </Layer>
     </Map>
@@ -139,7 +134,7 @@ filename is given the file is searched relative to the document. The file
 ```xml
     <Parameter name="type">postgis</Parameter>
     <Parameter name="host">www.example.org</Parameter>
-    <Parameter name="port">5433</Parameter>     
+    <Parameter name="port">5433</Parameter>
     <Parameter name="user">david</Parameter>
     <Parameter name="dbname">geo</Parameter>
 ```
@@ -159,19 +154,19 @@ File earthquake.map:
     <!DOCTYPE Map[
         <!ENTITY since_year "1970">
         <!ENTITY earthquakes_since SYSTEM "earthquakes_since.lay">
-    
+
         <!ENTITY earthquakes_default_style SYSTEM "earthquakes.sty">
         <!ENTITY common_styles SYSTEM "common.sty">
         <!ENTITY common_layers SYSTEM "common.lay">
         <!ENTITY db_settings SYSTEM "db_settings">
-    
+
         <!-- colors -->
     ]>
     <Map>
         &earthquakes_default_style;
-    
+
         &earthquakes_since;
-    
+
         &common_styles;
         &common_layers;
     </Map>
@@ -185,7 +180,7 @@ File earthquakes_since.lay:
         <Datasource>
 
             <Parameter name="table">
-                (SELECT * FROM earthquakes 
+                (SELECT * FROM earthquakes
                  WHERE year &gt;= &since_year; ) AS earthquakes_since
             </Parameter>
 
@@ -197,7 +192,7 @@ File earthquakes_since.lay:
 
 This is a quite flexible setup. It is very easy to add and remove thematic
 overlays. Other overlays may use the same parameters by referencing the
-same entities. Styles can be changed by replacing the reference to 
+same entities. Styles can be changed by replacing the reference to
 `&earthquakes_default_style;` with a custom one. It is also possible to have
 many map files all referencing the same set of styles and layer files but with
 different settings.
@@ -215,7 +210,7 @@ components can be parameterized using other entities as needed.
 
 libxml2 also provides support for decomposing large mapnik XML files through the use of XInclude.
 
-To enable XInclude in your root file, modify the Map container tag, adding the xi namespace.  Adding xi:include tags where the href attribute names the file to include completes the change to the root file.  
+To enable XInclude in your root file, modify the Map container tag, adding the xi namespace.  Adding xi:include tags where the href attribute names the file to include completes the change to the root file.
 
 File tests/data/good_maps/xinclude/map.xml:
 
@@ -223,18 +218,18 @@ File tests/data/good_maps/xinclude/map.xml:
     <?xml version="1.0" encoding="utf-8"?>
     <!DOCTYPE Map  >
     <Map xmlns:xi="http://www.w3.org/2001/XInclude" srs="+init=epsg:4326" bgcolor="rgb(255,255,255)" >
-    
+
     <!-- http://www.oreillynet.com/xml/blog/2004/05/transclude_with_xinclude_and_x.html -->
-    
+
     <xi:include href="styles.xml" />
-    
+
     <xi:include href="layers.xml" />
-    
+
     </Map>
 ```
 
 Included files wrap their content within an Include tag.  XInclude replaces the xi:include tags with the contents of the included file, yielding a single, merged XML document.
-mapnik's XML parser then merges the contents of the Include tag into the Map tag, resulting in an XML document tree identical to one produced by processing a single file containing 
+mapnik's XML parser then merges the contents of the Include tag into the Map tag, resulting in an XML document tree identical to one produced by processing a single file containing
 all Style and Layer tags.
 
 File styles.xml:
@@ -242,20 +237,20 @@ File styles.xml:
 ```xml
     <?xml version="1.0" encoding="utf-8"?>
     <Include xmlns:xi="http://www.w3.org/2001/XInclude">
-    
+
         <Style name="point_style">
             <Rule>
                 <PointSymbolizer file="../../svg/point.svg"/>
                 <TextSymbolizer face_name="DejaVu Sans Book" size="12" name="[name]" halo_fill="rgb(255,255,255,100)" halo_radius="1" dy="-5"/>
             </Rule>
         </Style>
-        
+
         <Style name="world_borders_style">
             <Rule>
                 <PolygonSymbolizer fill="grey" gamma="0.7"/>
             </Rule>
         </Style>
-    
+
     </Include>
 ```
 
@@ -264,7 +259,7 @@ File layers.xml:
 ```xml
     <?xml version="1.0" encoding="utf-8"?>
     <Include  xmlns:xi="http://www.w3.org/2001/XInclude">
-    
+
         <Layer name="world_borders" srs="+proj=merc +lon_0=0 +lat_ts=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs">
             <StyleName>world_borders_style</StyleName>
             <Datasource>
@@ -272,7 +267,7 @@ File layers.xml:
                 <Parameter name="type">shape</Parameter>
             </Datasource>
         </Layer>
-    
+
     </Include>
 ```
 
@@ -286,13 +281,13 @@ file: zoomsymbols.txt
 
 ```xml
     <?xml version="1.0" encoding="utf-8"?>
-    
+
     <!ENTITY zoom00max		"750000000" >
     <!ENTITY zoom00min		"540000000" >
-    
+
     <!ENTITY zoom01max		"500000000" >
     <!ENTITY zoom01min		"270000000" >
-    
+
     <!ENTITY zoom02max		"250000000" >
     <!ENTITY zoom02min		"130000000" >
 ```
@@ -305,9 +300,9 @@ File layers_with_entities.xml:
 ```xml
     <?xml version="1.0" encoding="utf-8"?>
     <!DOCTYPE Include SYSTEM "zoomsymbols.txt">
-    
+
     <Include  xmlns:xi="http://www.w3.org/2001/XInclude">
-    
+
         <Layer name="world_borders" minzoom="&zoom02min;" maxzoom="&zoom00max;" srs="+proj=merc +lon_0=0 +lat_ts=0 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs">
             <StyleName>world_borders_style</StyleName>
             <Datasource>
@@ -315,7 +310,7 @@ File layers_with_entities.xml:
                 <Parameter name="type">shape</Parameter>
             </Datasource>
         </Layer>
-    
+
     </Include>
 ```
 

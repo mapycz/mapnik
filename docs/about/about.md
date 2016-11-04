@@ -34,13 +34,15 @@ Mapnik is a free toolkit for developing mapping applications. It is written in m
 ### Desktop apps
 
  * [TileMill](http://mapbox.com/tilemill) is a useful wrapper around Mapnik for the purpose of map design.
+ * [Quantumnik](https://github.com/springmeyer/quantumnik) - Python integration of Mapnik with Quantum GIS
 
-## Blog posts about Mapnik
+## Blog posts and tutorials
 
  * [Michal Migurski: making sense of mapnik](http://mike.teczno.com/notes/mapnik.html)
  * [A List Apart: take control of your maps!](http://www.alistapart.com/articles/takecontrolofyourmaps)
  * [Dan Karran: Using the OSM export tab to render mapnik maps with no programming](http://www.dankarran.com/blog/archives/2008/09/16/making_maps_from_openstreetmap_geodata.php)
  * [GeospatialPython.com: Mapnik - Maybe the best Python Mapping Platform Yet](http://geospatialpython.com/2009/02/mapnik-maybe-best-python-mapping.html)
+ * [Maps From Scratch](http://mapsfromscratch.com)
 
 ## Other resources
 

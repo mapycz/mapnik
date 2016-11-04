@@ -1,3 +1,5 @@
+# Scale factor
+
 ## Designing stylesheets for variable resolution output
 
 A common problem with map rendering is that rendered features like fonts or symbols are commonly either too small or too large depending on the resolution of the device you are targeting. For example, most Mapnik stylesheets are designed with normal, moderate resolution computer displays in mind. For print graphics or for more modern and high resolution displays like on many mobile devices existing stylesheet design can lead to inscrutably small fonts, symbols, and line symbolization.

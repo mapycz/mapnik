@@ -1,12 +1,4 @@
-<!-- Name: RasterColorizer -->
-<!-- Version: 4 -->
-<!-- Last-Modified: 2011/06/28 01:28:45 -->
-<!-- Author: albertov -->
 # RasterColorizer
-
-*New in 0.8*
-
-(Note: This document has been copied and translated from https://github.com/BenMoores/mapnik-trunk/wiki/RasterColorizer
 
 The Raster Colorizer allows the palette of rasters to be modified, for example, colorizing a height map.
 

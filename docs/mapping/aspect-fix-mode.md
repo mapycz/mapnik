@@ -1,3 +1,5 @@
+# Aspect Fix Mode
+
 Mapnik's `aspect_fix_mode` is both wonderful and evil. This page explains why.
 
 ### Background

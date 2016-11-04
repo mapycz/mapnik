@@ -1,9 +1,4 @@
-```
-Author: Sandro Santilli <strk@keybit.net>
-Last Updated: 2014-07-16
-Version: 0.2 
-Status: draft
-```
+# Raster color interpretation
 
 Reading raster data into a mapnik::raster requires interpreting it as either RGB(A) or data.
 When the style uses a [[RasterColorizer]], a "data" interpretation is expected.
@@ -20,7 +15,7 @@ The band parameter could have the following values:
 
    Red, green and blue channels found in input.
    Where `<r>`, `<g>` and `<b>` are integer representing 1-based band indexes.
- 
+
  - `rgb`
 
    Same as `rgb:1,2,3`
@@ -29,7 +24,7 @@ The band parameter could have the following values:
 
     Red, green, blue and alpha channels found in input.
     Where `<r>`, `<g>`, `<b>` and `<a>` are integer representing 1-based band indexes.
-   
+
  - `rgba`
 
     Same as `rgba:1,2,3,4`
