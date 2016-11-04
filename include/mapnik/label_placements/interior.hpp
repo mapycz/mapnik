@@ -76,8 +76,7 @@ struct interior
                 params.scale_factor, params.feature, params.vars, params.symbol_cache);
 
         placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, *info_ptr, params.font_manager, params.scale_factor,
-            placements);
+            params.dims, *info_ptr, params.font_manager, params.scale_factor);
 
         pixel_position pos(pt.x, pt.y);
 
@@ -85,6 +84,7 @@ struct interior
         {
             if (finder.find_point_placement(pos))
             {
+                placements.emplace_back(std::move(finder.layouts_));
                 return placements;
             }
         }

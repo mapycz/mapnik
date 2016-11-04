@@ -92,18 +92,21 @@ struct thunk_renderer : render_thunk_list_dispatch
         cairo_save_restore guard(context_);
         context_.set_operator(thunk.comp_op_);
 
-        for (auto const& glyphs : thunk.placements_)
+        for (auto const& layouts : thunk.placements_)
         {
-            scoped_glyph_positions_offset tmp_off(*glyphs, offset_);
-
-            if (auto const& mark = glyphs->get_marker())
+            for (auto const& glyphs : layouts->placements_)
             {
-                ren_.render_marker(glyphs->marker_pos(),
-                                   *mark->marker_,
-                                   mark->transform_,
-                                   thunk.opacity_, thunk.comp_op_);
+                scoped_glyph_positions_offset tmp_off(*glyphs, offset_);
+
+                if (auto const& mark = glyphs->get_marker())
+                {
+                    ren_.render_marker(glyphs->marker_pos(),
+                                       *mark->marker_,
+                                       mark->transform_,
+                                       thunk.opacity_, thunk.comp_op_);
+                }
+                context_.add_text(*glyphs, face_manager_, src_over, src_over, common_.scale_factor_);
             }
-            context_.add_text(*glyphs, face_manager_, src_over, src_over, common_.scale_factor_);
         }
     }
 

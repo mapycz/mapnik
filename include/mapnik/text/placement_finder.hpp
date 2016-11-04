@@ -50,8 +50,7 @@ public:
                      box2d<double> const& extent,
                      text_placement_info const& placement_info,
                      face_manager_freetype & font_manager,
-                     double scale_factor,
-                     placements_list & placements);
+                     double scale_factor);
 
     // Try to place a single label at the given point.
     bool find_point_placement(pixel_position const& pos);
@@ -62,6 +61,7 @@ public:
     bool next_position();
 
     void set_marker(marker_info_ptr m, box2d<double> box, bool marker_unlocked, pixel_position const& marker_displacement);
+    std::unique_ptr<layout_container> layouts_;
 private:
     bool find_line_placements(vertex_cache & path, bool points);
     bool single_line_placement(vertex_cache &pp, text_upright_e orientation);
@@ -84,12 +84,10 @@ private:
     box2d<double> const& extent_;
     text_placement_info const& info_;
     evaluated_text_properties_ptr text_props_;
-    std::unique_ptr<layout_container> layouts_;
 
     double scale_factor_;
     face_manager_freetype &font_manager_;
 
-    placements_list & placements_;
     //std::vector<text_layout_ptr> processed_layouts_;
     //ShieldSymbolizer
     bool has_marker_;

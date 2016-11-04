@@ -34,6 +34,7 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/text/evaluated_format_properties_ptr.hpp>
 #include <mapnik/text/rotation.hpp>
+#include <mapnik/text/glyph_positions.hpp>
 
 //stl
 #include <vector>
@@ -188,7 +189,8 @@ class layout_container
 {
 public:
     layout_container(text_layout_ptr && layout)
-        : root_layout_(std::move(layout)),
+        : placements_(),
+          root_layout_(std::move(layout)),
           glyphs_count_(0),
           line_count_(0)
     {
@@ -217,6 +219,8 @@ public:
 
     text_layout const & root_layout() const { return *root_layout_; }
 
+    std::list<glyph_positions_ptr> placements_;
+
 private:
     void add(text_layout & layout);
 
@@ -230,6 +234,8 @@ private:
 
     box2d<double> bounds_;
 };
+
+using placements_list = std::list<std::unique_ptr<layout_container>>;
 
 }
 

@@ -57,17 +57,20 @@ void cairo_renderer<T>::process(shield_symbolizer const& sym,
     double opacity = get<double>(sym,keys::opacity,feature, common_.vars_, 1.0);
 
     placements_list const &placements = helper.get();
-    for (auto const& glyphs : placements)
+    for (auto const& layouts : placements)
     {
-        marker_info_ptr mark = glyphs->get_marker();
-        if (mark) {
-            pixel_position pos = glyphs->marker_pos();
-            render_marker(pos,
-                          *mark->marker_,
-                          mark->transform_,
-                          opacity);
+        for (auto const& glyphs : layouts->placements_)
+        {
+            marker_info_ptr mark = glyphs->get_marker();
+            if (mark) {
+                pixel_position pos = glyphs->marker_pos();
+                render_marker(pos,
+                              *mark->marker_,
+                              mark->transform_,
+                              opacity);
+            }
+            context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
         }
-        context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
     }
 }
 
@@ -96,9 +99,12 @@ void cairo_renderer<T>::process(text_symbolizer const& sym,
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_,  src_over);
 
     placements_list placements = helper.get();
-    for (auto const& glyphs : placements)
+    for (auto const& layouts : placements)
     {
-        context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
+        for (auto const& glyphs : layouts->placements_)
+        {
+            context_.add_text(*glyphs, face_manager_, comp_op, halo_comp_op, common_.scale_factor_);
+        }
     }
 }
 

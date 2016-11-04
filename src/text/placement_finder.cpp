@@ -81,8 +81,7 @@ placement_finder::placement_finder(feature_impl const& feature,
                                    box2d<double> const& extent,
                                    text_placement_info const& placement_info,
                                    face_manager_freetype & font_manager,
-                                   double scale_factor,
-                                   placements_list & placements)
+                                   double scale_factor)
     : feature_(feature),
       attr_(attr),
       detector_(detector),
@@ -91,7 +90,6 @@ placement_finder::placement_finder(feature_impl const& feature,
       text_props_(evaluate_text_properties(info_.properties,feature_,attr_)),
       scale_factor_(scale_factor),
       font_manager_(font_manager),
-      placements_(placements),
       has_marker_(false),
       marker_(),
       marker_box_(),
@@ -299,8 +297,9 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
     // do not render text off the canvas
     if (extent_.intersects(label_box))
     {
-        glyphs->layouts_ = std::move(layouts_);
-        placements_.emplace_back(std::move(glyphs));
+        layouts_->placements_.emplace_back(std::move(glyphs));
+        //glyphs->layouts_ = std::move(layouts_);
+        //placements_.emplace_back(std::move(glyphs));
     }
 
     return true;
@@ -470,8 +469,9 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
     // do not render text off the canvas
     if (extent_.intersects(label_box))
     {
-        glyphs->layouts_ = std::move(layouts_);
-        placements_.emplace_back(std::move(glyphs));
+        layouts_->placements_.emplace_back(std::move(glyphs));
+        //glyphs->layouts_ = std::move(layouts_);
+        //placements_.emplace_back(std::move(glyphs));
     }
 
     return true;

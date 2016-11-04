@@ -119,19 +119,22 @@ struct thunk_renderer : render_thunk_list_dispatch
 
         value_integer feature_id = feature_.id();
 
-        for (auto const& glyphs : thunk.placements_)
+        for (auto const& layouts : thunk.placements_)
         {
-            scoped_glyph_positions_offset tmp_off(*glyphs, offset_);
-
-            if (auto const& mark = glyphs->get_marker())
+            for (auto const& glyphs : layouts->placements_)
             {
-                ren_.render_marker(feature_,
-                                   glyphs->marker_pos(),
-                                   *mark->marker_,
-                                   mark->transform_,
-                                   thunk.opacity_, thunk.comp_op_);
+                scoped_glyph_positions_offset tmp_off(*glyphs, offset_);
+
+                if (auto const& mark = glyphs->get_marker())
+                {
+                    ren_.render_marker(feature_,
+                                       glyphs->marker_pos(),
+                                       *mark->marker_,
+                                       mark->transform_,
+                                       thunk.opacity_, thunk.comp_op_);
+                }
+                tex_.render(*glyphs, feature_id);
             }
-            tex_.render(*glyphs, feature_id);
         }
 
         pixmap_.add_feature(feature_);

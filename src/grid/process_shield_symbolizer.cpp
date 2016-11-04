@@ -68,19 +68,22 @@ void  grid_renderer<T>::process(shield_symbolizer const& sym,
     placements_list const& placements = helper.get();
     value_integer feature_id = feature.id();
 
-    for (auto const& glyphs : placements)
+    for (auto const& layouts : placements)
     {
-        marker_info_ptr mark = glyphs->get_marker();
-        if (mark)
+        for (auto const& glyphs : layouts->placements_)
         {
-            render_marker(feature,
-                          glyphs->marker_pos(),
-                          *mark->marker_,
-                          mark->transform_,
-                          opacity, comp_op);
+            marker_info_ptr mark = glyphs->get_marker();
+            if (mark)
+            {
+                render_marker(feature,
+                              glyphs->marker_pos(),
+                              *mark->marker_,
+                              mark->transform_,
+                              opacity, comp_op);
+            }
+            ren.render(*glyphs, feature_id);
+            placement_found = true;
         }
-        ren.render(*glyphs, feature_id);
-        placement_found = true;
     }
     if (placement_found)
     {

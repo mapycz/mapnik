@@ -67,10 +67,13 @@ void grid_renderer<T>::process(text_symbolizer const& sym,
     placements_list const& placements = helper.get();
     value_integer feature_id = feature.id();
 
-    for (auto const& glyphs : placements)
+    for (auto const& layouts : placements)
     {
-        ren.render(*glyphs, feature_id);
-        placement_found = true;
+        for (auto const& glyphs : layouts->placements_)
+        {
+            ren.render(*glyphs, feature_id);
+            placement_found = true;
+        }
     }
     if (placement_found)
     {
