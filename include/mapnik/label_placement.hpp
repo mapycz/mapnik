@@ -27,9 +27,9 @@
 #include <mapnik/label_placements/point.hpp>
 #include <mapnik/label_placements/interior.hpp>
 #include <mapnik/label_placements/vertex.hpp>
+#include <mapnik/label_placements/grid.hpp>
 /*
 #include <mapnik/label_placements/line.hpp>
-#include <mapnik/label_placements/grid.hpp>
 */
 #include <mapnik/symbolizer_enumerations.hpp>
 
@@ -49,11 +49,11 @@ struct finder
                 return interior::get(geom, params);
             case VERTEX_PLACEMENT:
                 return vertex::get(geom, params);
+            case GRID_PLACEMENT:
+                return label_placement::grid::get(geom, params);
             /*
             case LINE_PLACEMENT:
                 return line.get(geom, params);
-            case GRID_PLACEMENT:
-                return grid.get(geom, params);
                 */
         }
     }
