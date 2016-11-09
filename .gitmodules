@@ -9,4 +9,4 @@
 	url = git@github.com:mapycz/test-data-visual.git
 [submodule "deps/mapbox/variant"]
 	path = deps/mapbox/variant
-	url = https://github.com/mapbox/variant.git
+	url = git@github.com:mapbox/variant.git
