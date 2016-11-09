@@ -1,4 +1,3 @@
-
 # mapy.cz-mapnik
 
 This repository contains a fork of [github.com/mapnik/mapnik](https://github.com/mapnik/mapnik), used mostly for rendering maps on [mapy.cz](https://mapy.cz). Main differences against upstream are:
