@@ -76,7 +76,7 @@ struct vertex
 
         placements_list placements;
 
-        while (finder.next_position())
+        while (!points.empty() && finder.next_position())
         {
             for (auto it = points.begin(); it != points.end(); )
             {

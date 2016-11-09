@@ -94,7 +94,7 @@ struct grid
             params.dims, *info_ptr, params.font_manager, params.scale_factor);
 
         placements_list placements;
-        while (finder.next_position())
+        while (!points.empty() && finder.next_position())
         {
             for (auto it = points.begin(); it != points.end(); )
             {
