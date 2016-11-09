@@ -28,9 +28,7 @@
 #include <mapnik/label_placements/interior.hpp>
 #include <mapnik/label_placements/vertex.hpp>
 #include <mapnik/label_placements/grid.hpp>
-/*
 #include <mapnik/label_placements/line.hpp>
-*/
 #include <mapnik/symbolizer_enumerations.hpp>
 
 namespace mapnik { namespace label_placement {
@@ -50,11 +48,9 @@ struct finder
             case VERTEX_PLACEMENT:
                 return vertex::get(geom, params);
             case GRID_PLACEMENT:
-                return label_placement::grid::get(geom, params);
-            /*
+                return grid::get(geom, params);
             case LINE_PLACEMENT:
-                return line.get(geom, params);
-                */
+                return line::get(geom, params);
         }
     }
 };

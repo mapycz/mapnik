@@ -29,37 +29,101 @@
 
 namespace mapnik { namespace label_placement {
 
+struct placement_finder_adapter
+{
+    placement_finder_adapter(placement_finder & finder)
+        : finder_(finder) {}
+
+    template <typename PathT>
+    void add_path(PathT & path) const
+    {
+        status_ = finder_.find_line_placements(path, false);
+    }
+
+    bool status() const { return status_; }
+    placement_finder & finder_;
+    mutable bool status_ = false;
+};
+
+template <typename Adapter, typename VC>
+class line_placement_visitor
+{
+public:
+    line_placement_visitor(VC & converter,
+                                 Adapter const & adapter)
+        : converter_(converter), adapter_(adapter)
+    {
+    }
+
+    bool operator()(geometry::line_string<double> const & geo) const
+    {
+        geometry::line_string_vertex_adapter<double> va(geo);
+        converter_.apply(va, adapter_);
+        return adapter_.status();
+    }
+
+    bool operator()(geometry::polygon<double> const & geo) const
+    {
+        geometry::polygon_vertex_adapter<double> va(geo);
+        converter_.apply(va, adapter_);
+        return adapter_.status();
+    }
+
+    template <typename T>
+    bool operator()(T const&) const
+    {
+        return false;
+    }
+
+private:
+    VC & converter_;
+    Adapter const & adapter_;
+};
+
 struct line
 {
-    template <typename Geom>
-    static placements_list get(Geom const & geom, label_placement_params & params)
-    {
-        /*
-        using positions_type = std::list<pixel_position>;
-        using apply_vertex_placement = detail::apply_vertex_placement<positions_type>;
-        positions_type points;
-        apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
-        util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
+    using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
 
+    template <typename Geom>
+    static placements_list get(Geom const & geom, placement_params & params)
+    {
+        vertex_converter_type converter(params.query_extent, params.symbolizer,
+            params.view_transform, params.proj_transform, params.affine_transform,
+            params.feature, params.vars, params.scale_factor);
+
+        value_bool clip = mapnik::get<value_bool, keys::clip>(params.symbolizer, params.feature, params.vars);
+        value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(params.symbolizer, params.feature, params.vars);
+        value_double smooth = mapnik::get<value_double, keys::smooth>(params.symbolizer, params.feature, params.vars);
+        value_double extend = mapnik::get<value_double, keys::extend>(params.symbolizer, params.feature, params.vars);
+
+        if (clip) converter.template set<clip_line_tag>();
+        converter.template set<transform_tag>();
+        converter.template set<affine_transform_tag>();
+        if (extend > 0.0) converter.template set<extend_tag>();
+        if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
+        if (smooth > 0.0) converter.template set<smooth_tag>();
+
+        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
         placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, params.placement_info, params.font_manager, params.scale_factor);
+            params.dims, *info_ptr, params.font_manager, params.scale_factor);
+
+        placements_list placements;
 
         while (finder.next_position())
         {
-            for (auto it = points.begin(); it != point.end(); )
-            {
-                if (finder.find_point_placement(*it))
-                {
-                    it = points.erase(it);
-                }
-                else
-                {
-                    it++;
-                }
-            }
-        }*/
+            placement_finder_adapter adapter(finder);
+            line_placement_visitor<placement_finder_adapter, vertex_converter_type> v(converter, adapter);
+            util::apply_visitor(v, geom);
 
-        return finder.placements();
+            if (!finder.layouts_->placements_.empty())
+            {
+                placements.emplace_back(std::move(finder.layouts_));
+            }
+        }
+
+        return placements;
     }
 };
 
