@@ -84,33 +84,45 @@ struct grid
         evaluated_text_properties_ptr text_props(evaluate_text_properties(
             info_ptr->properties,params.feature,params.vars));
 
-        grid_placement_finder_adapter<double, positions_type> ga(
-            text_props->grid_cell_width, text_props->grid_cell_height, points);
-        auto const& poly = mapnik::util::get<geometry::polygon<double>>(geom);
-        geometry::polygon_vertex_adapter<double> va(poly);
-        converter.apply(va, ga);
-
-        placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, *info_ptr, params.font_manager, params.scale_factor);
-
         placements_list placements;
-        while (!points.empty() && finder.next_position())
-        {
-            for (auto it = points.begin(); it != points.end(); )
-            {
-                if (finder.find_point_placement(*it))
-                {
-                    it = points.erase(it);
-                }
-                else
-                {
-                    it++;
-                }
-            }
 
-            if (!finder.layouts_->placements_.empty())
+        //auto const& poly = mapnik::util::get<geometry::polygon<double>>(geom);
+        //geometry::polygon_vertex_adapter<double> va(poly);
+        using geom_type = geometry::cref_geometry<double>::geometry_type;
+        std::vector<geom_type> splitted;
+        geometry::split(geom, splitted);
+
+        for(auto const & geom_ref : splitted)
+        {
+            using polygon_type = geometry::cref_geometry<double>::polygon_type;
+            auto const & poly = mapnik::util::get<polygon_type>(geom_ref).get();
+            geometry::polygon_vertex_adapter<double> va(poly);
+
+            grid_placement_finder_adapter<double, positions_type> ga(
+                text_props->grid_cell_width, text_props->grid_cell_height, points);
+            converter.apply(va, ga);
+
+            placement_finder finder(params.feature, params.vars, params.detector,
+                params.dims, *info_ptr, params.font_manager, params.scale_factor);
+
+            while (!points.empty() && finder.next_position())
             {
-                placements.emplace_back(std::move(finder.layouts_));
+                for (auto it = points.begin(); it != points.end(); )
+                {
+                    if (finder.find_point_placement(*it))
+                    {
+                        it = points.erase(it);
+                    }
+                    else
+                    {
+                        it++;
+                    }
+                }
+
+                if (!finder.layouts_->placements_.empty())
+                {
+                    placements.emplace_back(std::move(finder.layouts_));
+                }
             }
         }
 

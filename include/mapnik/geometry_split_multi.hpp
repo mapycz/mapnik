@@ -27,15 +27,19 @@
 
 namespace mapnik { namespace geometry {
 
-    /*
-template <typename T, template <typename> typename Container>
+template <typename T>
+struct cref_geometry
+{
+    using point_type = std::reference_wrapper<point<T> const>;
+    using line_string_type = std::reference_wrapper<line_string<T> const>;
+    using polygon_type = std::reference_wrapper<polygon<T> const>;
+    using geometry_type = util::variant<point_type, line_string_type, polygon_type>;
+};
+
+template <typename T, typename Container>
 struct split_multi_geometries
 {
-    using point_cref = std::reference_wrapper<point<T> const>;
-    using line_string_cref = std::reference_wrapper<line_string<T> const>;
-    using polygon_cref = std::reference_wrapper<polygon<T> const>;
-    using geometry_cref = util::variant<point_cref, line_string_cref, polygon_cref>;
-    using container_type = Container<geometry_cref>;
+    using geometry_type = typename cref_geometry<T>::geometry_type;
 
     split_multi_geometries(Container & cont)
         : cont_(cont) { }
@@ -45,12 +49,12 @@ struct split_multi_geometries
     {
         for ( auto const& pt : multi_pt )
         {
-            cont_.push_back(geometry_cref(std::cref(pt)));
+            cont_.push_back(geometry_type(std::cref(pt)));
         }
     }
     void operator() (line_string<T> const& line) const
     {
-        cont_.push_back(geometry_cref(std::cref(line)));
+        cont_.push_back(geometry_type(std::cref(line)));
     }
 
     void operator() (multi_line_string<T> const& multi_line) const
@@ -63,7 +67,7 @@ struct split_multi_geometries
 
     void operator() (polygon<T> const& poly) const
     {
-        cont_.push_back(geometry_cref(std::cref(poly)));
+        cont_.push_back(geometry_type(std::cref(poly)));
     }
 
     void operator() (multi_polygon<T> const& multi_poly) const
@@ -85,19 +89,18 @@ struct split_multi_geometries
     template <typename Geometry>
     void operator() (Geometry const& geom) const
     {
-        cont_.push_back(geometry_cref(std::cref(geom)));
+        cont_.push_back(geometry_type(std::cref(geom)));
     }
 
-    container_type & cont_;
+    Container & cont_;
 };
 
-template <typename Geom, template <typename> typename Container = std::vector, typename T>
-inline bool split(Geom const & geom, Container<detail::split_multi_geometries<T, Container>::geometry_cref> & container)
+template <typename Geom, typename Container, typename T = double>
+inline void split(Geom const & geom, Container & container)
 {
-    detail::split_multi_geometries<T, Container> visitor(container);
-    return util::apply_visitor(visitor, geom);
+    split_multi_geometries<T, Container> visitor(container);
+    util::apply_visitor(visitor, geom);
 }
-*/
 
 }}
 
