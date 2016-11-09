@@ -23,6 +23,7 @@
 // mapnik
 #include <mapnik/text/placement_finder.hpp>
 #include <mapnik/extend_converter.hpp>
+#include <mapnik/vertex_cache.hpp>
 
 namespace mapnik
 {
