@@ -1,7 +1,7 @@
 
 # Text placement `grid`
 
-Allows placing repead text on area of a polygon. All possible placements creates grid of points. Only placements within given polygon are rendered. These are basic use cases:
+Allows placing repeated text on area of a polygon. All possible placements creates grid of points. Only placements within given polygon are rendered. These are basic use cases:
 
 * Labeling areas in given density.
 * Adding areas into collision detector by rendering labels with zero opacity.
