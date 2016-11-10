@@ -82,11 +82,17 @@ private:
 
 struct line
 {
-    using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
+    using vertex_converter_type = vertex_converter<
+        clip_line_tag,
+        clip_poly_tag,
+        transform_tag,
+        affine_transform_tag,
+        extend_tag,
+        simplify_tag,
+        smooth_tag>;
 
     static placements_list get(placement_params & params)
     {
-        auto const & geom = params.feature.get_geometry();
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
             params.feature, params.vars, params.scale_factor);
@@ -111,11 +117,25 @@ struct line
 
         placements_list placements;
 
-        while (finder.next_position())
+        using geom_type = geometry::cref_geometry<double>::geometry_type;
+        std::list<geom_type> geoms;
+        geometry::split(params.feature.get_geometry(), geoms);
+
+        while (!geoms.empty() && finder.next_position())
         {
-            placement_finder_adapter adapter(finder);
-            line_placement_visitor<placement_finder_adapter, vertex_converter_type> v(converter, adapter);
-            util::apply_visitor(v, geom);
+            for (auto it = geoms.begin(); it != geoms.end(); )
+            {
+                placement_finder_adapter adapter(finder);
+                line_placement_visitor<placement_finder_adapter, vertex_converter_type> v(converter, adapter);
+                if (util::apply_visitor(v, *it))
+                {
+                    it = geoms.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
 
             if (!finder.layouts_->placements_.empty())
             {
