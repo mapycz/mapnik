@@ -59,7 +59,6 @@ struct grid
 
     static placements_list get(placement_params & params)
     {
-        auto const & geom = params.feature.get_geometry();
         using positions_type = std::list<pixel_position>;
         positions_type points;
 
@@ -84,15 +83,16 @@ struct grid
         evaluated_text_properties_ptr text_props(evaluate_text_properties(
             info_ptr->properties,params.feature,params.vars));
 
+        placement_finder finder(params.feature, params.vars, params.detector,
+            params.dims, *info_ptr, params.font_manager, params.scale_factor);
+
         placements_list placements;
 
-        //auto const& poly = mapnik::util::get<geometry::polygon<double>>(geom);
-        //geometry::polygon_vertex_adapter<double> va(poly);
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::vector<geom_type> splitted;
-        geometry::split(geom, splitted);
+        geometry::split(params.feature.get_geometry(), splitted);
 
-        for(auto const & geom_ref : splitted)
+        for (auto const & geom_ref : splitted)
         {
             using polygon_type = geometry::cref_geometry<double>::polygon_type;
             auto const & poly = mapnik::util::get<polygon_type>(geom_ref).get();
@@ -101,9 +101,6 @@ struct grid
             grid_placement_finder_adapter<double, positions_type> ga(
                 text_props->grid_cell_width, text_props->grid_cell_height, points);
             converter.apply(va, ga);
-
-            placement_finder finder(params.feature, params.vars, params.detector,
-                params.dims, *info_ptr, params.font_manager, params.scale_factor);
 
             while (!points.empty() && finder.next_position())
             {

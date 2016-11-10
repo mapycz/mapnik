@@ -25,52 +25,75 @@
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_types.hpp>
+#include <mapnik/geometry_split_multi.hpp>
 
 namespace mapnik { namespace label_placement {
 
 struct interior
 {
-    static placements_list get(placement_params & params)
-    {
-        auto const & geom = params.feature.get_geometry();
-        placements_list placements;
-        auto type = geometry::geometry_type(geom);
+    using point_type = geometry::point<double>;
 
-        geometry::point<double> pt;
-        if (type == geometry::geometry_types::Point)
+    struct geometry_visitor
+    {
+        using cref_geom_type = geometry::cref_geometry<double>;
+
+        boost::optional<point_type> operator()(cref_geom_type::point_type const & point) const
         {
-            pt = mapnik::util::get<geometry::point<double>>(geom);
+            return point.get();
         }
-        else if (type == geometry::geometry_types::LineString)
+
+        boost::optional<point_type> operator()(cref_geom_type::line_string_type const & line) const
         {
-            auto const & line = mapnik::util::get<geometry::line_string<double>>(geom);
-            geometry::line_string_vertex_adapter<double> va(line);
+            point_type pt;
+            geometry::line_string_vertex_adapter<double> va(line.get());
             if (!label::middle_point(va, pt.x, pt.y))
             {
                 MAPNIK_LOG_ERROR(label_interior_placement) << "Middle point calculation failed.";
-                return placements;
+                return boost::none;
             }
+            return pt;
         }
-        else if (type == geometry::geometry_types::Polygon)
+
+        boost::optional<point_type> operator()(cref_geom_type::polygon_type const & poly) const
         {
-            auto const & poly = mapnik::util::get<geometry::polygon<double>>(geom);
-            geometry::polygon_vertex_adapter<double> va(poly);
+            point_type pt;
+            geometry::polygon_vertex_adapter<double> va(poly.get());
             if (!label::interior_position(va, pt.x, pt.y))
             {
                 MAPNIK_LOG_ERROR(label_interior_placement) << "Interior point calculation failed.";
-                return placements;
+                return boost::none;
             }
+            return pt;
         }
-        else
+
+        template <typename T>
+        boost::optional<point_type> operator()(T const & geom) const
         {
             MAPNIK_LOG_ERROR(symbolizer_helpers) << "ERROR: Unknown placement type in initialize_points()";
-            return placements;
+            return boost::none;
         }
+    };
 
-        double z = 0;
-        params.proj_transform.backward(pt.x, pt.y, z);
-        params.view_transform.forward(&pt.x, &pt.y);
+    template <typename Geom>
+    static boost::optional<pixel_position> get_pixel_position(
+        Geom const & geom,
+        proj_transform const & prj_trans,
+        view_transform const & view_trans)
+    {
+        geometry_visitor visitor;
+        if (boost::optional<point_type> point = util::apply_visitor(visitor, geom))
+        {
+            point_type & pt = *point;
+            double z = 0;
+            prj_trans.backward(pt.x, pt.y, z);
+            view_trans.forward(&pt.x, &pt.y);
+            return pixel_position(pt.x, pt.y);
+        }
+        return boost::none;
+    }
 
+    static placements_list get(placement_params & params)
+    {
         text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
             params.symbolizer, keys::text_placements_)->get_placement_info(
                 params.scale_factor, params.feature, params.vars, params.symbol_cache);
@@ -78,14 +101,25 @@ struct interior
         placement_finder finder(params.feature, params.vars, params.detector,
             params.dims, *info_ptr, params.font_manager, params.scale_factor);
 
-        pixel_position pos(pt.x, pt.y);
+        using geom_type = geometry::cref_geometry<double>::geometry_type;
+        std::vector<geom_type> splitted;
+        geometry::split(params.feature.get_geometry(), splitted);
 
-        while (finder.next_position())
+        placements_list placements;
+
+        for (auto const & geom_ref : splitted)
         {
-            if (finder.find_point_placement(pos))
+            boost::optional<pixel_position> pos(get_pixel_position(geom_ref, params.proj_transform, params.view_transform));
+            if (pos)
             {
-                placements.emplace_back(std::move(finder.layouts_));
-                return placements;
+                while (finder.next_position())
+                {
+                    if (finder.find_point_placement(*pos))
+                    {
+                        placements.emplace_back(std::move(finder.layouts_));
+                        return placements;
+                    }
+                }
             }
         }
 
