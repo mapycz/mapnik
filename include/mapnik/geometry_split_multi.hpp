@@ -47,19 +47,19 @@ struct split_multi_geometries
     void operator() (geometry_empty const&) const {}
     void operator() (multi_point<T> const& multi_pt) const
     {
-        for ( auto const& pt : multi_pt )
+        for (auto const& pt : multi_pt)
         {
-            cont_.push_back(geometry_type(std::cref(pt)));
+            cont_.emplace_back(std::cref(pt));
         }
     }
     void operator() (line_string<T> const& line) const
     {
-        cont_.push_back(geometry_type(std::cref(line)));
+        cont_.emplace_back(std::cref(line));
     }
 
     void operator() (multi_line_string<T> const& multi_line) const
     {
-        for ( auto const& line : multi_line )
+        for (auto const& line : multi_line)
         {
             (*this)(line);
         }
@@ -67,12 +67,12 @@ struct split_multi_geometries
 
     void operator() (polygon<T> const& poly) const
     {
-        cont_.push_back(geometry_type(std::cref(poly)));
+        cont_.emplace_back(std::cref(poly));
     }
 
     void operator() (multi_polygon<T> const& multi_poly) const
     {
-        for ( auto const& poly : multi_poly )
+        for (auto const& poly : multi_poly)
         {
             (*this)(poly);
         }
@@ -80,7 +80,7 @@ struct split_multi_geometries
 
     void operator() (geometry_collection<T> const& collection) const
     {
-        for ( auto const& geom : collection)
+        for (auto const& geom : collection)
         {
             util::apply_visitor(*this, geom);
         }
@@ -89,7 +89,7 @@ struct split_multi_geometries
     template <typename Geometry>
     void operator() (Geometry const& geom) const
     {
-        cont_.push_back(geometry_type(std::cref(geom)));
+        cont_.emplace_back(std::cref(geom));
     }
 
     Container & cont_;

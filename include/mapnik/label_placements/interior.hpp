@@ -65,13 +65,6 @@ struct interior
             }
             return pt;
         }
-
-        template <typename T>
-        boost::optional<point_type> operator()(T const & geom) const
-        {
-            MAPNIK_LOG_ERROR(symbolizer_helpers) << "ERROR: Unknown placement type in initialize_points()";
-            return boost::none;
-        }
     };
 
     template <typename Geom>
@@ -80,7 +73,7 @@ struct interior
         proj_transform const & prj_trans,
         view_transform const & view_trans)
     {
-        geometry_visitor visitor;
+        const geometry_visitor visitor;
         if (boost::optional<point_type> point = util::apply_visitor(visitor, geom))
         {
             point_type & pt = *point;
