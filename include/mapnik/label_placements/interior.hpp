@@ -31,21 +31,19 @@ namespace mapnik { namespace label_placement {
 
 struct interior
 {
-    using point_type = geometry::point<double>;
-
     struct geometry_visitor
     {
-        using cref_geom_type = geometry::cref_geometry<double>;
+        using return_type = boost::optional<geometry::point<double>>;
 
-        boost::optional<point_type> operator()(cref_geom_type::point_type const & point) const
+        return_type operator()(geometry::point<double> const & point) const
         {
-            return point.get();
+            return point;
         }
 
-        boost::optional<point_type> operator()(cref_geom_type::line_string_type const & line) const
+        return_type operator()(geometry::line_string<double> const & line) const
         {
-            point_type pt;
-            geometry::line_string_vertex_adapter<double> va(line.get());
+            geometry::point<double> pt;
+            geometry::line_string_vertex_adapter<double> va(line);
             if (!label::middle_point(va, pt.x, pt.y))
             {
                 MAPNIK_LOG_ERROR(label_interior_placement) << "Middle point calculation failed.";
@@ -54,10 +52,10 @@ struct interior
             return pt;
         }
 
-        boost::optional<point_type> operator()(cref_geom_type::polygon_type const & poly) const
+        return_type operator()(geometry::polygon<double> const & poly) const
         {
-            point_type pt;
-            geometry::polygon_vertex_adapter<double> va(poly.get());
+            geometry::point<double> pt;
+            geometry::polygon_vertex_adapter<double> va(poly);
             if (!label::interior_position(va, pt.x, pt.y))
             {
                 MAPNIK_LOG_ERROR(label_interior_placement) << "Interior point calculation failed.";
@@ -68,21 +66,30 @@ struct interior
     };
 
     template <typename Geom>
-    static boost::optional<pixel_position> get_pixel_position(
+    static std::list<pixel_position> get_pixel_position(
         Geom const & geom,
         proj_transform const & prj_trans,
         view_transform const & view_trans)
     {
-        const geometry_visitor visitor;
-        if (boost::optional<point_type> point = util::apply_visitor(visitor, geom))
+        using geom_type = geometry::cref_geometry<double>::geometry_type;
+        std::vector<geom_type> splitted;
+        geometry::split(geom, splitted);
+
+        std::list<pixel_position> positions;
+
+        for (auto const & geom_ref : splitted)
         {
-            point_type & pt = *point;
-            double z = 0;
-            prj_trans.backward(pt.x, pt.y, z);
-            view_trans.forward(&pt.x, &pt.y);
-            return pixel_position(pt.x, pt.y);
+            const geometry_visitor visitor;
+            if (boost::optional<geometry::point<double>> point = util::apply_visitor(visitor, geom_ref))
+            {
+                geometry::point<double> & pt = *point;
+                double z = 0;
+                prj_trans.backward(pt.x, pt.y, z);
+                view_trans.forward(&pt.x, &pt.y);
+                positions.emplace_back(pt.x, pt.y);
+            }
         }
-        return boost::none;
+        return positions;
     }
 
     static placements_list get(placement_params & params)
@@ -94,25 +101,30 @@ struct interior
         placement_finder finder(params.feature, params.vars, params.detector,
             params.dims, *info_ptr, params.font_manager, params.scale_factor);
 
-        using geom_type = geometry::cref_geometry<double>::geometry_type;
-        std::vector<geom_type> splitted;
-        geometry::split(params.feature.get_geometry(), splitted);
+        std::list<pixel_position> points(get_pixel_position(
+            params.feature.get_geometry(),
+            params.proj_transform,
+            params.view_transform));
 
         placements_list placements;
 
-        for (auto const & geom_ref : splitted)
+        while (!points.empty() && finder.next_position())
         {
-            boost::optional<pixel_position> pos(get_pixel_position(geom_ref, params.proj_transform, params.view_transform));
-            if (pos)
+            for (auto it = points.begin(); it != points.end(); )
             {
-                while (finder.next_position())
+                if (finder.find_point_placement(*it))
                 {
-                    if (finder.find_point_placement(*pos))
-                    {
-                        placements.emplace_back(std::move(finder.layouts_));
-                        return placements;
-                    }
+                    it = points.erase(it);
                 }
+                else
+                {
+                    ++it;
+                }
+            }
+
+            if (!finder.layouts_->placements_.empty())
+            {
+                placements.emplace_back(std::move(finder.layouts_));
             }
         }
 
