@@ -276,8 +276,6 @@ text_symbolizer_helper::text_symbolizer_helper(
 
 placements_list text_symbolizer_helper::get() const
 {
-    auto const& geom = params_.feature.get_geometry();
-
     text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
         params_.symbolizer, keys::text_placements_)->get_placement_info(params_.scale_factor, params_.feature, params_.vars, params_.symbol_cache);
     evaluated_text_properties_ptr text_props(evaluate_text_properties(
@@ -285,7 +283,7 @@ placements_list text_symbolizer_helper::get() const
 
     label_placement_enum placement_type = text_props->label_placement;
 
-    return label_placement::finder::get(geom, placement_type, params_);
+    return label_placement::finder::get(placement_type, params_);
     /*if (!geometries_to_process_.empty())
     {
         finder_.next_position();

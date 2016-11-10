@@ -32,9 +32,9 @@ namespace mapnik { namespace label_placement {
 
 struct point
 {
-    template <typename Geom>
-    static placements_list get(Geom const & geom, placement_params & params)
+    static placements_list get(placement_params & params)
     {
+        auto const & geom = params.feature.get_geometry();
         placements_list placements;
         auto type = geometry::geometry_type(geom);
 

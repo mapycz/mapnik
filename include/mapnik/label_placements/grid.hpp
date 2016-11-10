@@ -57,9 +57,9 @@ struct grid
 {
     using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
 
-    template <typename Geom>
-    static placements_list get(Geom const & geom, placement_params & params)
+    static placements_list get(placement_params & params)
     {
+        auto const & geom = params.feature.get_geometry();
         using positions_type = std::list<pixel_position>;
         positions_type points;
 

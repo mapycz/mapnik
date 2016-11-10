@@ -84,9 +84,9 @@ struct line
 {
     using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
 
-    template <typename Geom>
-    static placements_list get(Geom const & geom, placement_params & params)
+    static placements_list get(placement_params & params)
     {
+        auto const & geom = params.feature.get_geometry();
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
             params.feature, params.vars, params.scale_factor);

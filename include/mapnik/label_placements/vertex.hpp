@@ -59,9 +59,9 @@ struct apply_vertex_placement
 
 struct vertex
 {
-    template <typename Geom>
-    static placements_list get(Geom const & geom, placement_params & params)
+    static placements_list get(placement_params & params)
     {
+        auto const & geom = params.feature.get_geometry();
         using positions_type = std::list<pixel_position>;
         using apply_vertex_placement = apply_vertex_placement<positions_type>;
         positions_type points;
