@@ -27,6 +27,7 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/symbol_cache.hpp>
 #include <mapnik/symbolizer_base.hpp>
+#include <mapnik/geometry_split_multi.hpp>
 
 namespace mapnik { namespace label_placement { namespace detail {
 
@@ -50,6 +51,33 @@ struct label_placement_params
 }
 
 using placement_params = detail::label_placement_params<label_collision_detector4, face_manager_freetype>;
+
+template <typename GeomVisitor, typename Geom>
+static std::list<pixel_position> get_pixel_positions(
+    Geom const & geom,
+    proj_transform const & prj_trans,
+    view_transform const & view_trans)
+{
+    using geom_type = geometry::cref_geometry<double>::geometry_type;
+    std::vector<geom_type> splitted;
+    geometry::split(geom, splitted);
+
+    std::list<pixel_position> positions;
+
+    for (auto const & geom_ref : splitted)
+    {
+        const GeomVisitor visitor;
+        if (boost::optional<geometry::point<double>> point = util::apply_visitor(visitor, geom_ref))
+        {
+            geometry::point<double> & pt = *point;
+            double z = 0;
+            prj_trans.backward(pt.x, pt.y, z);
+            view_trans.forward(&pt.x, &pt.y);
+            positions.emplace_back(pt.x, pt.y);
+        }
+    }
+    return positions;
+}
 
 } }
 

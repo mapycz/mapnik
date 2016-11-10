@@ -25,7 +25,6 @@
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_types.hpp>
-#include <mapnik/geometry_split_multi.hpp>
 
 namespace mapnik { namespace label_placement {
 
@@ -65,33 +64,6 @@ struct interior
         }
     };
 
-    template <typename Geom>
-    static std::list<pixel_position> get_pixel_position(
-        Geom const & geom,
-        proj_transform const & prj_trans,
-        view_transform const & view_trans)
-    {
-        using geom_type = geometry::cref_geometry<double>::geometry_type;
-        std::vector<geom_type> splitted;
-        geometry::split(geom, splitted);
-
-        std::list<pixel_position> positions;
-
-        for (auto const & geom_ref : splitted)
-        {
-            const geometry_visitor visitor;
-            if (boost::optional<geometry::point<double>> point = util::apply_visitor(visitor, geom_ref))
-            {
-                geometry::point<double> & pt = *point;
-                double z = 0;
-                prj_trans.backward(pt.x, pt.y, z);
-                view_trans.forward(&pt.x, &pt.y);
-                positions.emplace_back(pt.x, pt.y);
-            }
-        }
-        return positions;
-    }
-
     static placements_list get(placement_params & params)
     {
         text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
@@ -100,7 +72,7 @@ struct interior
         placement_finder finder(params.feature, params.vars, params.detector,
             params.dims, *info_ptr, params.font_manager, params.scale_factor);
 
-        std::list<pixel_position> points(get_pixel_position(
+        std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
             params.view_transform));

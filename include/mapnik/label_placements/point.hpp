@@ -32,54 +32,74 @@ namespace mapnik { namespace label_placement {
 
 struct point
 {
-    static placements_list get(placement_params & params)
+    struct geometry_visitor
     {
-        auto const & geom = params.feature.get_geometry();
-        placements_list placements;
-        auto type = geometry::geometry_type(geom);
+        using return_type = boost::optional<geometry::point<double>>;
 
-        geometry::point<double> pt;
-        if (type == geometry::geometry_types::Point)
+        return_type operator()(geometry::point<double> const & point) const
         {
-            pt = mapnik::util::get<geometry::point<double>>(geom);
+            return point;
         }
-        else if (type == geometry::geometry_types::LineString)
+
+        return_type operator()(geometry::line_string<double> const & line) const
         {
-            auto const & line = mapnik::util::get<geometry::line_string<double>>(geom);
+            geometry::point<double> pt;
             geometry::line_string_vertex_adapter<double> va(line);
             if (!label::middle_point(va, pt.x, pt.y))
             {
-                MAPNIK_LOG_ERROR(label_point_placement) << "Middle point calculation failed.";
-                return placements;
+                MAPNIK_LOG_ERROR(label_interior_placement) << "Middle point calculation failed.";
+                return boost::none;
             }
+            return pt;
         }
-        else if (!geometry::centroid(geom, pt))
+
+        return_type operator()(geometry::polygon<double> const & poly) const
         {
-            MAPNIK_LOG_ERROR(label_point_placement) << "Centroid calculation failed.";
-            return placements;
+            geometry::point<double> pt;
+            if (!geometry::centroid(poly, pt))
+            {
+                MAPNIK_LOG_ERROR(label_interior_placement) << "Centroid point calculation failed.";
+                return boost::none;
+            }
+            return pt;
         }
+    };
 
-        double z = 0;
-        params.proj_transform.backward(pt.x, pt.y, z);
-        params.view_transform.forward(&pt.x, &pt.y);
-
+    static placements_list get(placement_params & params)
+    {
         text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
             params.symbolizer, keys::text_placements_)->get_placement_info(
                 params.scale_factor, params.feature, params.vars, params.symbol_cache);
-
         placement_finder finder(params.feature, params.vars, params.detector,
             params.dims, *info_ptr, params.font_manager, params.scale_factor);
 
-        pixel_position pos(pt.x, pt.y);
+        std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
+            params.feature.get_geometry(),
+            params.proj_transform,
+            params.view_transform));
 
-        while (finder.next_position())
+        placements_list placements;
+
+        while (!points.empty() && finder.next_position())
         {
-            if (finder.find_point_placement(pos))
+            for (auto it = points.begin(); it != points.end(); )
+            {
+                if (finder.find_point_placement(*it))
+                {
+                    it = points.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+
+            if (!finder.layouts_->placements_.empty())
             {
                 placements.emplace_back(std::move(finder.layouts_));
-                return placements;
             }
         }
+
         return placements;
     }
 };
