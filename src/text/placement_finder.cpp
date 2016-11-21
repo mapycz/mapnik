@@ -102,8 +102,6 @@ bool placement_finder::next_position()
 {
     if (info_.next())
     {
-        // parent layout, has top-level ownership of a new evaluated_format_properties_ptr (TODO is this good enough to stay in scope???)
-        // but does not take ownership of the text_symbolizer_properties (info_.properties)
         text_layout_ptr layout = std::make_unique<text_layout>(font_manager_,
                                                                feature_,
                                                                attr_,
@@ -111,19 +109,9 @@ bool placement_finder::next_position()
                                                                info_.properties,
                                                                info_.properties.layout_defaults,
                                                                info_.properties.format_tree());
-        // ensure layouts stay in scope after layouts_.clear()
-        //processed_layouts_.emplace_back(layout);
-        // TODO: why is this call needed?
-        // https://github.com/mapnik/mapnik/issues/2525
         text_props_ = evaluate_text_properties(info_.properties,feature_,attr_);
-        // Note: this clear call is needed when multiple placements are tried
-        // like with placement-type="simple|list"
         layouts_ = std::make_unique<layout_container>(std::move(layout));
-        //if (!layouts_.empty()) layouts_.clear();
-        // Note: multiple layouts_ may result from this add() call
-        //layouts_->add(layout);
         layouts_->layout();
-        // cache a few values for use elsewhere in placement finder
         move_dx_ = layouts_->root_layout().displacement().x;
         horizontal_alignment_ = layouts_->root_layout().horizontal_alignment();
         return true;
