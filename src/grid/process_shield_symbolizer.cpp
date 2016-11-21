@@ -50,12 +50,13 @@ void  grid_renderer<T>::process(shield_symbolizer const& sym,
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
 
-    shield_symbolizer_helper helper(
+    placements_list placements(text_symbolizer_helper::get(
             sym, feature, common_.vars_, prj_trans,
             common_.width_, common_.height_,
             common_.scale_factor_,
             common_.t_, common_.font_manager_, *common_.detector_,
-            common_.query_extent_, tr, common_.symbol_cache_);
+            common_.query_extent_, tr,
+            common_.symbol_cache_));
     bool placement_found = false;
 
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
@@ -65,7 +66,6 @@ void  grid_renderer<T>::process(shield_symbolizer const& sym,
                               comp_op,
                               common_.scale_factor_);
 
-    placements_list const& placements = helper.get();
     value_integer feature_id = feature.id();
 
     for (auto const& layouts : placements)

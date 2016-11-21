@@ -42,7 +42,7 @@
 #include <mapnik/proj_strategy.hpp>
 #include <mapnik/view_strategy.hpp>
 
-namespace mapnik {
+//namespace mapnik {
     /*
 namespace geometry {
 
@@ -229,7 +229,7 @@ void base_symbolizer_helper::initialize_geometries() const
     }
 }
 */
-
+/*
 template <typename FaceManagerT, typename DetectorT>
 text_symbolizer_helper::text_symbolizer_helper(
         symbolizer_base const& sym,
@@ -249,6 +249,7 @@ text_symbolizer_helper::text_symbolizer_helper(
     //converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
     // setup vertex converter
+    */
     /*value_bool clip = mapnik::get<value_bool, keys::clip>(sym_, feature_, vars_);
     value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(sym_, feature_, vars_);
     value_double smooth = mapnik::get<value_double, keys::smooth>(sym_, feature_, vars_);
@@ -272,6 +273,7 @@ text_symbolizer_helper::text_symbolizer_helper(
     if (extend > 0.0) converter_.template set<extend_tag>();
     if (simplify_tolerance > 0.0) converter_.template set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter_.template set<smooth_tag>(); // optional smooth converter*/
+/*
 }
 
 placements_list text_symbolizer_helper::get() const
@@ -284,6 +286,7 @@ placements_list text_symbolizer_helper::get() const
     label_placement_enum placement_type = text_props->label_placement;
 
     return label_placement::finder::get(placement_type, params_);
+    */
     /*if (!geometries_to_process_.empty())
     {
         finder_.next_position();
@@ -299,7 +302,7 @@ placements_list text_symbolizer_helper::get() const
         }
     }
     return finder_.placements();*/
-}
+//}
 /*
 placements_list const& shield_symbolizer_helper::get() const
 {
@@ -462,7 +465,7 @@ void text_symbolizer_helper::initialize_points() const
     }
     point_itr_ = points_.begin();
 }*/
-
+/*
 template text_symbolizer_helper::text_symbolizer_helper(
     symbolizer_base const& sym,
     feature_impl const& feature,
@@ -477,5 +480,6 @@ template text_symbolizer_helper::text_symbolizer_helper(
     box2d<double> const& query_extent,
     agg::trans_affine const&,
     symbol_cache const& sc);
+    */
 
-} //namespace
+//} //namespace

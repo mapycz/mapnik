@@ -31,11 +31,12 @@
 
 namespace mapnik { namespace label_placement { namespace detail {
 
-template <typename DetectorT, typename FaceManagerT>
+template <typename DetectorT, typename FaceManagerT, typename PlacementFinder>
 struct label_placement_params
 {
     DetectorT & detector;
     FaceManagerT & font_manager;
+    PlacementFinder & placement_finder;
     mapnik::proj_transform const & proj_transform;
     mapnik::view_transform const & view_transform;
     agg::trans_affine const & affine_transform;
@@ -50,7 +51,10 @@ struct label_placement_params
 
 }
 
-using placement_params = detail::label_placement_params<label_collision_detector4, face_manager_freetype>;
+using placement_params = detail::label_placement_params<
+    label_collision_detector4,
+    face_manager_freetype,
+    placement_finder>;
 
 template <typename GeomVisitor, typename Geom>
 static std::list<pixel_position> get_pixel_positions(

@@ -98,6 +98,7 @@ void render_thunk_extractor::operator()(markers_symbolizer const& sym) const
 
 void render_thunk_extractor::operator()(text_symbolizer const& sym) const
 {
+    /*
     using helper_type = text_symbolizer_helper;
     auto helper = std::make_unique<helper_type>(
         sym, feature_, vars_, prj_trans_,
@@ -108,10 +109,12 @@ void render_thunk_extractor::operator()(text_symbolizer const& sym) const
         common_.symbol_cache_);
 
     extract_text_thunk<helper_type>(std::move(helper), sym);
+    */
 }
 
 void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
 {
+/*
     using helper_type = shield_symbolizer_helper;
     auto helper = std::make_unique<helper_type>(
         sym, feature_, vars_, prj_trans_,
@@ -122,6 +125,7 @@ void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
         common_.symbol_cache_);
 
     extract_text_thunk<helper_type>(std::move(helper), sym);
+    */
 }
 
 template <typename Helper>
