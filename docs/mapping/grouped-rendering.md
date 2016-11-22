@@ -1,3 +1,5 @@
+# Grouped rendering
+
 Using "grouped rendering" on a layer renders all styles of one layer for all features that have the same value before proceeding to other features that have a different value.
 
 This feature was added in https://github.com/mapnik/mapnik/pull/916 and is first available in Mapnik v2.1.0.

@@ -1,3 +1,5 @@
+# Image input/output
+
 Mapnik supports reading and writing a variety of image formats.
 
 These formats can be used as:

@@ -35,6 +35,9 @@
 - [Raster color interpretation](mapping/raster-color-interpretation.md)
 - [Managing complex map files using XML entities](mapping/large-xml.md)
 - [MetaWriter](mapping/metawriter.md)
+- [Faster label rendering](mapping/faster-labeling.md)
+- [Grouped rendering](mapping/grouped-rendering.md)
+- [Image input/output](mapping/image-io.md)
 
 ## Development
 
