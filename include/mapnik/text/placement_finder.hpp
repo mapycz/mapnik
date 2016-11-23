@@ -29,6 +29,8 @@
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/text/rotation.hpp>
 #include <mapnik/util/noncopyable.hpp>
+#include <mapnik/extend_converter.hpp>
+#include <mapnik/vertex_cache.hpp>
 
 namespace mapnik
 {
@@ -37,7 +39,6 @@ class label_collision_detector4;
 using DetectorType = label_collision_detector4;
 
 class feature_impl;
-class vertex_cache;
 class text_placement_info;
 struct glyph_info;
 
@@ -100,6 +101,22 @@ private:
 
     const double halign_adjust_extend = 1000;
 };
+
+template <typename T>
+bool placement_finder::find_line_placements(T & path, bool points)
+{
+    if (!layouts_->line_count()) return true; //TODO
+
+    if (horizontal_alignment_ == H_ADJUST)
+    {
+        extend_converter<T> ec(path, halign_adjust_extend);
+        vertex_cache pp(ec);
+        return find_line_placements(pp, points);
+    }
+
+    vertex_cache pp(path);
+    return find_line_placements(pp, points);
+}
 
 }//ns mapnik
 

@@ -28,20 +28,4 @@
 namespace mapnik
 {
 
-template <typename T>
-bool placement_finder::find_line_placements(T & path, bool points)
-{
-    if (!layouts_->line_count()) return true; //TODO
-
-    if (horizontal_alignment_ == H_ADJUST)
-    {
-        extend_converter<T> ec(path, halign_adjust_extend);
-        vertex_cache pp(ec);
-        return find_line_placements(pp, points);
-    }
-
-    vertex_cache pp(path);
-    return find_line_placements(pp, points);
-}
-
 }// ns mapnik
