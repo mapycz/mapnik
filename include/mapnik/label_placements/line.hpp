@@ -109,12 +109,7 @@ struct line
         if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
-        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
-            params.symbolizer, keys::text_placements_)->get_placement_info(
-                params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, *info_ptr, params.font_manager, params.scale_factor);
-
+        placement_finder & finder = params.placement_finder;
         placements_list placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
