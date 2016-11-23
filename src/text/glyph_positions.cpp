@@ -58,6 +58,11 @@ void glyph_positions::reserve(unsigned count)
     data_.reserve(count);
 }
 
+void glyph_positions::clear()
+{
+    data_.clear();
+}
+
 pixel_position const& glyph_positions::get_base_point() const
 {
     return base_point_;

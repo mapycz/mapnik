@@ -195,6 +195,7 @@ public:
           line_count_(0)
     {
         add(*root_layout_);
+        layout();
     }
 
     void layout();

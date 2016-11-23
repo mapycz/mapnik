@@ -79,6 +79,7 @@ public:
 
     void emplace_back(glyph_info const& glyph, pixel_position offset, rotation const& rot);
     void reserve(unsigned count);
+    void clear();
 
     pixel_position const& get_base_point() const;
     void set_base_point(pixel_position const& base_point);
