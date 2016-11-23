@@ -24,7 +24,7 @@
 #include <mapnik/label_collision_detector.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/expression_evaluator.hpp>
-#include <mapnik/text/placement_finder_impl.hpp>
+#include <mapnik/text/point_layout.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/text/glyph_info.hpp>
@@ -32,7 +32,6 @@
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/util/math.hpp>
-#include <mapnik/tolerance_iterator.hpp>
 
 // stl
 #include <vector>
@@ -71,7 +70,7 @@ point_layout::point_layout(feature_impl const& feature,
 {
 }
 
-glyph_positions_ptr point_layout::get_placement(pixel_position const& pos)
+glyph_positions_ptr point_layout::get_placement(pixel_position const& pos) const
 {
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box2d<double> > bboxes;
@@ -157,6 +156,7 @@ glyph_positions_ptr point_layout::get_placement(pixel_position const& pos)
     // TODO: throw away single glyphs earlier?
     if (!extent_.intersects(label_box))
     {
+        //layouts_->placements_.emplace_back(std::move(glyphs));
         glyphs->clear();
     }
 

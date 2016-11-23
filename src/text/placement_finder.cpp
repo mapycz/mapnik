@@ -24,7 +24,7 @@
 #include <mapnik/label_collision_detector.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/expression_evaluator.hpp>
-#include <mapnik/text/placement_finder_impl.hpp>
+#include <mapnik/text/placement_finder.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/text/glyph_info.hpp>
@@ -111,7 +111,6 @@ bool placement_finder::next_position()
                                                                info_.properties.format_tree());
         text_props_ = evaluate_text_properties(info_.properties,feature_,attr_);
         layouts_ = std::make_unique<layout_container>(std::move(layout));
-        layouts_->layout();
         move_dx_ = layouts_->root_layout().displacement().x;
         horizontal_alignment_ = layouts_->root_layout().horizontal_alignment();
         return true;

@@ -36,7 +36,6 @@
 #include <mapnik/debug.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/value_types.hpp>
-#include <mapnik/text/placement_finder_impl.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/placements/dummy.hpp>
 #include <mapnik/proj_strategy.hpp>

@@ -27,6 +27,7 @@
 #include <mapnik/geometry_type.hpp>
 #include <mapnik/geometry_centroid.hpp>
 #include <mapnik/vertex_adapters.hpp>
+#include <mapnik/text/point_layout.hpp>
 
 namespace mapnik { namespace label_placement {
 
@@ -67,7 +68,7 @@ struct point
 
     static placements_list get(placement_params & params)
     {
-        placement_finder & finder = params.placement_finder;
+        //placement_finder & finder = params.placement_finder;
         std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
@@ -75,8 +76,16 @@ struct point
 
         placements_list placements;
 
-        while (!points.empty() && finder.next_position())
+
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            sym, keys::text_placements_)->get_placement_info(scale_factor,
+                feature, vars, sc);
+
+        while (!points.empty() && placement_info.next())
         {
+            point_layout layout(params.feature, params.vars, params.detector,
+                params.query_extent, placement_info, params.font_manager, params.scale_factor);
+
             for (auto it = points.begin(); it != points.end(); )
             {
                 if (finder.find_point_placement(*it))
@@ -91,6 +100,7 @@ struct point
 
             if (!finder.layouts_->placements_.empty())
             {
+TODO:
                 placements.emplace_back(std::move(finder.layouts_));
             }
         }

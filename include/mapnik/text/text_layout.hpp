@@ -195,10 +195,8 @@ public:
           line_count_(0)
     {
         add(*root_layout_);
-        layout();
+        this->layout();
     }
-
-    void layout();
 
     inline size_t size() const { return layouts_.size(); }
     inline bool empty() const { return layouts_.empty(); }
@@ -224,6 +222,7 @@ public:
 
 private:
     void add(text_layout & layout);
+    void layout();
 
     text_layout_ptr root_layout_;
     flat_layout_list_type layouts_;

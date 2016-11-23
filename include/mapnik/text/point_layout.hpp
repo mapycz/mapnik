@@ -54,9 +54,15 @@ public:
                      double scale_factor);
 
     // Try to place a single label at the given point.
-    glyph_positions_ptr get_placement(pixel_position const& pos);
+    glyph_positions_ptr get_placement(pixel_position const& pos) const;
 
     void set_marker(marker_info_ptr m, box2d<double> box, bool marker_unlocked, pixel_position const& marker_displacement);
+
+    std::unique_ptr<layout_container> & get_layouts()
+    {
+        return layouts_;
+    }
+
 private:
     // Checks for collision.
     bool collision(box2d<double> const& box, const value_unicode_string &repeat_key, bool line_placement) const;
@@ -68,9 +74,9 @@ private:
     attributes const& attr_;
     DetectorType & detector_;
     box2d<double> const& extent_;
-    evaluated_text_properties_ptr text_props_;
+    const evaluated_text_properties_ptr text_props_;
 
-    double scale_factor_;
+    const double scale_factor_;
     face_manager_freetype &font_manager_;
     std::unique_ptr<layout_container> layouts_;
 
