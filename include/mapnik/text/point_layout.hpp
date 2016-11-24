@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-#ifndef MAPNIK_PLACEMENT_FINDER_HPP
-#define MAPNIK_PLACEMENT_FINDER_HPP
+#ifndef MAPNIK_POINT_LAYOUT_HPP
+#define MAPNIK_POINT_LAYOUT_HPP
 
 //mapnik
 #include <mapnik/box2d.hpp>
@@ -42,53 +42,71 @@ class feature_impl;
 class text_placement_info;
 struct glyph_info;
 
+class text_layout_generator
+{
+}
+
 class point_layout : util::noncopyable
 {
 public:
+    using box_type = box2d<double>;
+
     point_layout(feature_impl const& feature,
                      attributes const& attr,
                      DetectorType & detector,
-                     box2d<double> const& extent,
+                     box_type const& extent,
                      text_placement_info const& placement_info,
                      face_manager_freetype & font_manager,
                      double scale_factor);
 
-    // Try to place a single label at the given point.
-    glyph_positions_ptr get_placement(pixel_position const& pos) const;
-
-    void set_marker(marker_info_ptr m, box2d<double> box, bool marker_unlocked, pixel_position const& marker_displacement);
+    bool try_placement(pixel_position const& pos);
 
     std::unique_ptr<layout_container> & get_layouts()
     {
         return layouts_;
     }
 
-private:
-    // Checks for collision.
-    bool collision(box2d<double> const& box, const value_unicode_string &repeat_key, bool line_placement) const;
-    // Adds marker to glyph_positions and to collision detector. Returns false if there is a collision.
-    bool add_marker(glyph_positions_ptr & glyphs, pixel_position const& pos, std::vector<box2d<double>> & bboxes) const;
-    // Maps upright==auto, left-only and right-only to left,right to simplify processing.
-    // angle = angle of at start of line (to estimate best option for upright==auto)
+protected:
+    bool try_placement(pixel_position const& pos, glyph_positions & glyphs, std::vector<box_type> & bboxes);
+    void process_bboxes(glyph_positions_ptr & glyphs, std::vector<box_type> & bboxes);
+    bool collision(box_type const& box, const value_unicode_string &repeat_key, bool line_placement) const;
+
     feature_impl const& feature_;
     attributes const& attr_;
     DetectorType & detector_;
-    box2d<double> const& extent_;
+    box_type const& extent_;
     const evaluated_text_properties_ptr text_props_;
-
     const double scale_factor_;
     face_manager_freetype &font_manager_;
     std::unique_ptr<layout_container> layouts_;
+};
 
-    //ShieldSymbolizer
-    bool has_marker_;
+class shield_layout : point_layout
+{
+public:
+    shield_layout(feature_impl const& feature,
+                     attributes const& attr,
+                     DetectorType & detector,
+                     box_type const& extent,
+                     text_placement_info const& placement_info,
+                     face_manager_freetype & font_manager,
+                     double scale_factor,
+                     marker_info_ptr marker,
+                     box_type marker_box,
+                     bool marker_unlocked,
+                     pixel_position const& marker_displacement);
+
+    bool try_placement(pixel_position const& pos);
+
+private:
+    bool add_marker(glyph_positions & glyphs, pixel_position const& pos, std::vector<box_type> & bboxes) const;
+
     marker_info_ptr marker_;
-    box2d<double> marker_box_;
+    box_type marker_box_;
     bool marker_unlocked_;
     pixel_position marker_displacement_;
-    double move_dx_;
 };
 
 }//ns mapnik
 
-#endif // PLACEMENT_FINDER_HPP
+#endif // MAPNIK_POINT_LAYOUT_HPP

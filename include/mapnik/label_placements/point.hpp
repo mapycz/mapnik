@@ -76,19 +76,18 @@ struct point
 
         placements_list placements;
 
-
         text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            sym, keys::text_placements_)->get_placement_info(scale_factor,
-                feature, vars, sc);
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
 
-        while (!points.empty() && placement_info.next())
+        while (!points.empty() && placement_info->next())
         {
             point_layout layout(params.feature, params.vars, params.detector,
-                params.query_extent, placement_info, params.font_manager, params.scale_factor);
+                params.query_extent, *placement_info, params.font_manager, params.scale_factor);
 
             for (auto it = points.begin(); it != points.end(); )
             {
-                if (finder.find_point_placement(*it))
+                if (layout.try_placement(*it))
                 {
                     it = points.erase(it);
                 }
@@ -98,10 +97,9 @@ struct point
                 }
             }
 
-            if (!finder.layouts_->placements_.empty())
+            if (!layout.get_layouts()->placements_.empty())
             {
-TODO:
-                placements.emplace_back(std::move(finder.layouts_));
+                placements.emplace_back(std::move(layout.get_layouts()));
             }
         }
 

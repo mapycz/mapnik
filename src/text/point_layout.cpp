@@ -53,11 +53,6 @@ point_layout::point_layout(feature_impl const& feature,
       text_props_(evaluate_text_properties(info.properties,feature_,attr_)),
       scale_factor_(scale_factor),
       font_manager_(font_manager),
-      has_marker_(false),
-      marker_(),
-      marker_box_(),
-      marker_unlocked_(false),
-      marker_displacement_(),
       layouts_(std::make_unique<layout_container>(
          std::move(std::make_unique<text_layout>(font_manager_,
                                                  feature_,
@@ -65,19 +60,12 @@ point_layout::point_layout(feature_impl const& feature,
                                                  scale_factor_,
                                                  info.properties,
                                                  info.properties.layout_defaults,
-                                                 info.properties.format_tree())))),
-      move_dx_(layouts_->root_layout().displacement().x)
+                                                 info.properties.format_tree()))))
 {
 }
 
-glyph_positions_ptr point_layout::get_placement(pixel_position const& pos) const
+bool point_layout::try_placement(pixel_position const& pos, glyph_positions & glyphs, std::vector<box_type> & bboxes)
 {
-    glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
-    std::vector<box2d<double> > bboxes;
-
-    glyphs->reserve(layouts_->glyphs_count());
-    bboxes.reserve(layouts_->size());
-
     bool base_point_set = false;
     for (auto const& layout_wrapper : *layouts_)
     {
@@ -89,7 +77,7 @@ glyph_positions_ptr point_layout::get_placement(pixel_position const& pos) const
 
         if (!base_point_set)
         {
-            glyphs->set_base_point(layout_center);
+            glyphs.set_base_point(layout_center);
             base_point_set = true;
         }
 
@@ -97,11 +85,11 @@ glyph_positions_ptr point_layout::get_placement(pixel_position const& pos) const
         bbox.re_center(layout_center.x, layout_center.y);
 
         /* For point placements it is faster to just check the bounding box. */
-        if (collision(bbox, layouts_->text(), false)) return glyph_positions_ptr();
+        if (collision(bbox, layouts_->text(), false)) return false;
 
         if (layout.glyphs_count()) bboxes.push_back(std::move(bbox));
 
-        pixel_position layout_offset = layout_center - glyphs->get_base_point();
+        pixel_position layout_offset = layout_center - glyphs.get_base_point();
         layout_offset.y = -layout_offset.y;
 
         // IMPORTANT NOTE:
@@ -123,7 +111,7 @@ glyph_positions_ptr point_layout::get_placement(pixel_position const& pos) const
             for (auto const& glyph : line)
             {
                 // place the character relative to the center of the string envelope
-                glyphs->emplace_back(glyph, (pixel_position(x, y).rotate(orientation)) + layout_offset, orientation);
+                glyphs.emplace_back(glyph, (pixel_position(x, y).rotate(orientation)) + layout_offset, orientation);
                 if (glyph.advance())
                 {
                     //Only advance if glyph is not part of a multiple glyph sequence
@@ -132,11 +120,29 @@ glyph_positions_ptr point_layout::get_placement(pixel_position const& pos) const
             }
         }
     }
+    return true;
+}
 
-    // add_marker first checks for collision and then updates the detector.
-    if (has_marker_ && !add_marker(glyphs, pos, bboxes)) return glyph_positions_ptr();
+bool point_layout::try_placement(pixel_position const& pos)
+{
+    glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
+    std::vector<box_type> bboxes;
 
-    box2d<double> label_box;
+    glyphs->reserve(layouts_->glyphs_count());
+    bboxes.reserve(layouts_->size());
+
+    if (try_placement(pos, *glyphs, bboxes))
+    {
+        process_bboxes(glyphs, bboxes);
+        return true;
+    }
+
+    return false;
+}
+
+void point_layout::process_bboxes(glyph_positions_ptr & glyphs, std::vector<box_type> & bboxes)
+{
+    box_type label_box;
     bool first = true;
     for (box2d<double> const& box : bboxes)
     {
@@ -156,11 +162,9 @@ glyph_positions_ptr point_layout::get_placement(pixel_position const& pos) const
     // TODO: throw away single glyphs earlier?
     if (!extent_.intersects(label_box))
     {
-        //layouts_->placements_.emplace_back(std::move(glyphs));
-        glyphs->clear();
+        layouts_->placements_.emplace_back(std::move(glyphs));
+        //glyphs->clear();
     }
-
-    return glyphs;
 }
 
 bool point_layout::collision(const box2d<double> &box, const value_unicode_string &repeat_key, bool line_placement) const
@@ -187,25 +191,54 @@ bool point_layout::collision(const box2d<double> &box, const value_unicode_strin
           (repeat_key.length() > 0 && !detector_.has_placement(box, margin, repeat_key, repeat_distance))));
 }
 
-void point_layout::set_marker(marker_info_ptr m, box2d<double> box, bool marker_unlocked, pixel_position const& marker_displacement)
+shield_layout::shield_layout(feature_impl const& feature,
+                     attributes const& vars,
+                     DetectorType & detector,
+                     box2d<double> const& extent,
+                     text_placement_info const& placement_info,
+                     face_manager_freetype & font_manager,
+                     double scale_factor,
+                     marker_info_ptr marker,
+                     box2d<double> marker_box,
+                     bool marker_unlocked,
+                     pixel_position const& marker_displacement)
+    : point_layout(feature, vars, detector, extent, placement_info, font_manager, scale_factor),
+      marker_(marker),
+      marker_box_(marker_box * scale_factor),
+      marker_displacement_(marker_displacement * scale_factor),
+      marker_unlocked_(marker_unlocked)
 {
-    marker_ = m;
-    marker_box_ = box * scale_factor_;
-    marker_displacement_ = marker_displacement * scale_factor_;
-    marker_unlocked_ = marker_unlocked;
-    has_marker_ = true;
 }
 
-
-bool point_layout::add_marker(glyph_positions_ptr & glyphs, pixel_position const& pos, std::vector<box2d<double>> & bboxes) const
+bool shield_layout::try_placement(pixel_position const& pos)
 {
-    pixel_position real_pos = (marker_unlocked_ ? pos : glyphs->get_base_point()) + marker_displacement_;
+    glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
+    std::vector<box_type> bboxes;
+
+    glyphs->reserve(layouts_->glyphs_count());
+    bboxes.reserve(layouts_->size());
+
+    if (point_layout::try_placement(pos, *glyphs, bboxes))
+    {
+        if (add_marker(*glyphs, pos, bboxes))
+        {
+            process_bboxes(glyphs, bboxes);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool shield_layout::add_marker(glyph_positions & glyphs, pixel_position const& pos, std::vector<box2d<double>> & bboxes) const
+{
+    pixel_position real_pos = (marker_unlocked_ ? pos : glyphs.get_base_point()) + marker_displacement_;
     box2d<double> bbox = marker_box_;
     bbox.move(real_pos.x, real_pos.y);
     if (collision(bbox, layouts_->text(), false)) return false;
     detector_.insert(bbox);
     bboxes.push_back(std::move(bbox));
-    glyphs->set_marker(marker_, real_pos);
+    glyphs.set_marker(marker_, real_pos);
     return true;
 }
 
