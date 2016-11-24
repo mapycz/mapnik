@@ -110,7 +110,7 @@ protected:
         bool line_placement) const;
 
     DetectorType & detector_;
-    box_type const& extent_;
+    box_type const& dims_;
     const double scale_factor_;
 };
 

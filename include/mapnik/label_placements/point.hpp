@@ -81,7 +81,6 @@ struct point
                 params.scale_factor, params.feature, params.vars, params.symbol_cache);
         text_layout_generator layout_generator(params.feature, params.vars,
             params.font_manager, params.scale_factor, *placement_info);
-        // TODO: dims over extent???
         point_layout layout(params.detector, params.dims, params.scale_factor);
 
         while (!points.empty() && layout_generator.next())

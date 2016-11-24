@@ -59,9 +59,6 @@ struct grid
 
     static placements_list get(placement_params & params)
     {
-        using positions_type = std::list<pixel_position>;
-        positions_type points;
-
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
             params.feature, params.vars, params.scale_factor);
@@ -78,14 +75,7 @@ struct grid
         if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
-        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
-            params.symbolizer, keys::text_placements_)->get_placement_info(params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        evaluated_text_properties_ptr text_props(evaluate_text_properties(
-            info_ptr->properties,params.feature,params.vars));
-
-        placement_finder finder(params.feature, params.vars, params.detector,
-            params.dims, *info_ptr, params.font_manager, params.scale_factor);
-
+        point_layout layout(params.detector, params.dims, params.scale_factor);
         placements_list placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
@@ -94,31 +84,41 @@ struct grid
 
         for (auto const & geom_ref : splitted)
         {
+            text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+                params.symbolizer, keys::text_placements_)->get_placement_info(
+                    params.scale_factor, params.feature, params.vars, params.symbol_cache);
+            text_layout_generator layout_generator(params.feature, params.vars,
+                params.font_manager, params.scale_factor, *placement_info);
+
             using polygon_type = geometry::cref_geometry<double>::polygon_type;
             auto const & poly = mapnik::util::get<polygon_type>(geom_ref).get();
             geometry::polygon_vertex_adapter<double> va(poly);
 
+            using positions_type = std::list<pixel_position>;
+            positions_type points;
+            evaluated_text_properties_ptr text_props(evaluate_text_properties(
+                placement_info->properties,params.feature,params.vars));
             grid_placement_finder_adapter<double, positions_type> ga(
                 text_props->grid_cell_width, text_props->grid_cell_height, points);
             converter.apply(va, ga);
 
-            while (!points.empty() && finder.next_position())
+            while (!points.empty() && layout_generator.next())
             {
                 for (auto it = points.begin(); it != points.end(); )
                 {
-                    if (finder.find_point_placement(*it))
+                    if (layout.try_placement(layout_generator, *it))
                     {
                         it = points.erase(it);
                     }
                     else
                     {
-                        it++;
+                        ++it;
                     }
                 }
 
-                if (!finder.layouts_->placements_.empty())
+                if (!layout_generator.get_layouts()->placements_.empty())
                 {
-                    placements.emplace_back(std::move(finder.layouts_));
+                    placements.emplace_back(std::move(layout_generator.get_layouts()));
                 }
             }
         }

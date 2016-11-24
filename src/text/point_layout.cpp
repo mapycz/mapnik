@@ -62,7 +62,7 @@ point_layout::point_layout(DetectorType &detector,
                            box2d<double> const& extent,
                            double scale_factor)
     : detector_(detector),
-      extent_(extent),
+      dims_(extent),
       scale_factor_(scale_factor)
 {
 }
@@ -175,7 +175,7 @@ void point_layout::process_bboxes(
 
     // do not render text off the canvas
     // TODO: throw away single glyphs earlier?
-    if (extent_.intersects(label_box))
+    if (dims_.intersects(label_box))
     {
         layouts.placements_.emplace_back(std::move(glyphs));
         //glyphs->clear();
@@ -199,10 +199,10 @@ bool point_layout::collision(
         margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * scale_factor_;
         repeat_distance = text_props.repeat_distance * scale_factor_;
     }
-    return (text_props.avoid_edges && !extent_.contains(box))
+    return (text_props.avoid_edges && !dims_.contains(box))
         ||
         (text_props.minimum_padding > 0 &&
-         !extent_.contains(box + (scale_factor_ * text_props.minimum_padding)))
+         !dims_.contains(box + (scale_factor_ * text_props.minimum_padding)))
         ||
         (!text_props.allow_overlap &&
          ((repeat_key.length() == 0 && !detector_.has_placement(box, margin))

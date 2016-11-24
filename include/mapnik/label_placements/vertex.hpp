@@ -68,26 +68,32 @@ struct vertex
         apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
         util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
 
-        placement_finder & finder = params.placement_finder;
+        //placement_finder & finder = params.placement_finder;
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        text_layout_generator layout_generator(params.feature, params.vars,
+            params.font_manager, params.scale_factor, *placement_info);
+        point_layout layout(params.detector, params.dims, params.scale_factor);
         placements_list placements;
 
-        while (!points.empty() && finder.next_position())
+        while (!points.empty() && layout_generator.next())
         {
             for (auto it = points.begin(); it != points.end(); )
             {
-                if (finder.find_point_placement(*it))
+                if (layout.try_placement(layout_generator, *it))
                 {
                     it = points.erase(it);
                 }
                 else
                 {
-                    it++;
+                    ++it;
                 }
             }
 
-            if (!finder.layouts_->placements_.empty())
+            if (!layout_generator.get_layouts()->placements_.empty())
             {
-                placements.emplace_back(std::move(finder.layouts_));
+                placements.emplace_back(std::move(layout_generator.get_layouts()));
             }
         }
 

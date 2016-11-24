@@ -66,18 +66,25 @@ struct interior
 
     static placements_list get(placement_params & params)
     {
-        placement_finder & finder = params.placement_finder;
+        //placement_finder & finder = params.placement_finder;
         std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
             params.view_transform));
         placements_list placements;
 
-        while (!points.empty() && finder.next_position())
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        text_layout_generator layout_generator(params.feature, params.vars,
+            params.font_manager, params.scale_factor, *placement_info);
+        point_layout layout(params.detector, params.dims, params.scale_factor);
+
+        while (!points.empty() && layout_generator.next())
         {
             for (auto it = points.begin(); it != points.end(); )
             {
-                if (finder.find_point_placement(*it))
+                if (layout.try_placement(layout_generator, *it))
                 {
                     it = points.erase(it);
                 }
@@ -87,9 +94,9 @@ struct interior
                 }
             }
 
-            if (!finder.layouts_->placements_.empty())
+            if (!layout_generator.get_layouts()->placements_.empty())
             {
-                placements.emplace_back(std::move(finder.layouts_));
+                placements.emplace_back(std::move(layout_generator.get_layouts()));
             }
         }
 
