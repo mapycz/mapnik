@@ -107,7 +107,7 @@ text_layout::text_layout(face_manager_freetype & font_manager,
       lines_(),
       layout_properties_(layout_defaults),
       properties_(properties),
-      format_(std::make_unique<detail::evaluated_format_properties>())
+      format_(std::make_unique<evaluated_format_properties>())
     {
         double dx = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dx);
         double dy = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dy);
@@ -165,7 +165,7 @@ void text_layout::add_child(text_layout_ptr && child_layout)
 
 evaluated_format_properties_ptr & text_layout::new_child_format_ptr(evaluated_format_properties_ptr const& p)
 {
-    format_ptrs_.emplace_back(std::make_unique<detail::evaluated_format_properties>(*p));
+    format_ptrs_.emplace_back(std::make_unique<evaluated_format_properties>(*p));
     return format_ptrs_.back();
 }
 

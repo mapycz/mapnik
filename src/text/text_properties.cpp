@@ -47,7 +47,7 @@ using boost::optional;
 evaluated_text_properties_ptr evaluate_text_properties(text_symbolizer_properties const& text_prop, feature_impl const& feature, attributes const& attrs)
 {
     // evaluate text properties
-    evaluated_text_properties_ptr prop = std::make_unique<detail::evaluated_text_properties>();
+    evaluated_text_properties_ptr prop = std::make_unique<evaluated_text_properties>();
     prop->label_placement = util::apply_visitor(extract_value<label_placement_enum>(feature,attrs), text_prop.expressions.label_placement);
     prop->label_spacing = util::apply_visitor(extract_value<value_double>(feature,attrs), text_prop.expressions.label_spacing);
     prop->label_position_tolerance = util::apply_visitor(extract_value<value_double>(feature,attrs), text_prop.expressions.label_position_tolerance);

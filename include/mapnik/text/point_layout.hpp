@@ -42,69 +42,105 @@ class feature_impl;
 class text_placement_info;
 struct glyph_info;
 
-class text_layout_generator
+struct text_layout_generator
 {
-}
+    text_layout_generator(feature_impl const& feature,
+                          attributes const& vars,
+                          face_manager_freetype & font_manager,
+                          double scale_factor,
+                          text_placement_info const& info)
+        : feature_(feature),
+          vars_(vars),
+          font_manager_(font_manager),
+          scale_factor_(scale_factor),
+          info_(info),
+          text_props_()
+    {
+    }
+
+    bool next();
+
+    inline std::unique_ptr<layout_container> & get_layouts()
+    {
+        return layouts_;
+    }
+
+    inline evaluated_text_properties const & get_text_props() const
+    {
+        return *text_props_;
+    }
+
+    feature_impl const& feature_;
+    attributes const& vars_;
+    face_manager_freetype &font_manager_;
+    const double scale_factor_;
+    text_placement_info const& info_;
+    evaluated_text_properties_ptr text_props_;
+    std::unique_ptr<layout_container> layouts_;
+};
 
 class point_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
 
-    point_layout(feature_impl const& feature,
-                     attributes const& attr,
-                     DetectorType & detector,
-                     box_type const& extent,
-                     text_placement_info const& placement_info,
-                     face_manager_freetype & font_manager,
-                     double scale_factor);
+    point_layout(DetectorType & detector,
+                 box_type const& extent,
+                 double scale_factor);
 
-    bool try_placement(pixel_position const& pos);
-
-    std::unique_ptr<layout_container> & get_layouts()
-    {
-        return layouts_;
-    }
+    bool try_placement(
+        text_layout_generator & layout_generator,
+        pixel_position const& pos);
 
 protected:
-    bool try_placement(pixel_position const& pos, glyph_positions & glyphs, std::vector<box_type> & bboxes);
-    void process_bboxes(glyph_positions_ptr & glyphs, std::vector<box_type> & bboxes);
-    bool collision(box_type const& box, const value_unicode_string &repeat_key, bool line_placement) const;
+    bool try_placement(
+        layout_container const & layouts,
+        evaluated_text_properties const & text_props,
+        pixel_position const& pos,
+        glyph_positions & glyphs,
+        std::vector<box_type> & bboxes);
+    void process_bboxes(
+        layout_container & layouts,
+        glyph_positions_ptr & glyphs,
+        std::vector<box_type> const & bboxes);
+    bool collision(
+        evaluated_text_properties const & text_props,
+        box_type const& box,
+        const value_unicode_string &repeat_key,
+        bool line_placement) const;
 
-    feature_impl const& feature_;
-    attributes const& attr_;
     DetectorType & detector_;
     box_type const& extent_;
-    const evaluated_text_properties_ptr text_props_;
     const double scale_factor_;
-    face_manager_freetype &font_manager_;
-    std::unique_ptr<layout_container> layouts_;
 };
 
 class shield_layout : point_layout
 {
 public:
-    shield_layout(feature_impl const& feature,
-                     attributes const& attr,
-                     DetectorType & detector,
-                     box_type const& extent,
-                     text_placement_info const& placement_info,
-                     face_manager_freetype & font_manager,
-                     double scale_factor,
-                     marker_info_ptr marker,
-                     box_type marker_box,
-                     bool marker_unlocked,
-                     pixel_position const& marker_displacement);
+    shield_layout(DetectorType & detector,
+                  box_type const& extent,
+                  double scale_factor,
+                  marker_info_ptr marker,
+                  box_type marker_box,
+                  bool marker_unlocked,
+                  pixel_position const& marker_displacement);
 
-    bool try_placement(pixel_position const& pos);
+    bool try_placement(
+        text_layout_generator & layout_generator,
+        pixel_position const& pos);
 
 private:
-    bool add_marker(glyph_positions & glyphs, pixel_position const& pos, std::vector<box_type> & bboxes) const;
+    bool add_marker(
+        layout_container const & layouts,
+        evaluated_text_properties const & text_props,
+        glyph_positions & glyphs,
+        pixel_position const& pos,
+        std::vector<box_type> & bboxes) const;
 
-    marker_info_ptr marker_;
-    box_type marker_box_;
+    const marker_info_ptr marker_;
+    const box_type marker_box_;
     bool marker_unlocked_;
-    pixel_position marker_displacement_;
+    const pixel_position marker_displacement_;
 };
 
 }//ns mapnik

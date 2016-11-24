@@ -47,8 +47,6 @@ namespace mapnik {
 class feature_impl;
 class text_layout;
 
-namespace detail {
-
 struct evaluated_format_properties
 {
     std::string face_name;
@@ -84,9 +82,7 @@ struct evaluated_text_properties : util::noncopyable
     double grid_cell_height;
 };
 
-}
-
-using evaluated_text_properties_ptr = std::unique_ptr<detail::evaluated_text_properties>;
+using evaluated_text_properties_ptr = std::unique_ptr<evaluated_text_properties>;
 
 enum directions_e : std::uint8_t
 {
