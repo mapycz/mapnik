@@ -76,8 +76,9 @@ bool point_layout::try_placement(
     layout_container & layouts = *layout_generator.get_layouts();
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
 
-    glyphs->reserve(layouts.glyphs_count());
-    bboxes.reserve(layouts.size());
+    // TODO: useful?
+    //glyphs->reserve(layouts.glyphs_count());
+    //bboxes.reserve(layouts.size());
 
     if (try_placement(layouts, text_props, pos, *glyphs, bboxes))
     {
@@ -234,8 +235,9 @@ bool shield_layout::try_placement(
     layout_container & layouts = *layout_generator.get_layouts();
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
 
-    glyphs->reserve(layouts.glyphs_count());
-    bboxes.reserve(layouts.size());
+    // TODO: useful?
+    //glyphs->reserve(layouts.glyphs_count());
+    //bboxes.reserve(layouts.size());
 
     if (point_layout::try_placement(layouts, text_props, pos, *glyphs, bboxes))
     {

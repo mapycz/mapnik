@@ -256,6 +256,7 @@ source = Split(
     text/placements/combined.cpp
     text/placements/angle.cpp
     text/point_layout.cpp
+    text/line_layout.cpp
     group/group_layout_manager.cpp
     group/group_rule.cpp
     group/group_symbolizer_helper.cpp

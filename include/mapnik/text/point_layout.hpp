@@ -84,13 +84,19 @@ class point_layout : util::noncopyable
 public:
     using box_type = box2d<double>;
 
-    point_layout(DetectorType & detector,
-                 box_type const& extent,
-                 double scale_factor);
+    point_layout(
+        DetectorType & detector,
+        box_type const& extent,
+        double scale_factor);
 
     bool try_placement(
         text_layout_generator & layout_generator,
         pixel_position const& pos);
+
+    inline double get_length(layout_container const &) const
+    {
+        return 0;
+    }
 
 protected:
     bool try_placement(
