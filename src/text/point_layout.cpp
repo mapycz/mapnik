@@ -211,6 +211,46 @@ bool point_layout::collision(
           (repeat_key.length() > 0 && !detector_.has_placement(box, margin, repeat_key, repeat_distance))));
 }
 
+shield_layout::shield_layout(
+    DetectorType & detector,
+    box_type const& extent,
+    double scale_factor,
+    symbolizer_base const& sym,
+    feature_impl const& feature,
+    attributes const& vars)
+      marker_displacement_(pixel_position(
+        mapnik::get<value_double, keys::shield_dx>(sym, feature, vars),
+        mapnik::get<value_double, keys::shield_dy>(sym, feature, vars)) * scale_factor),
+      marker_unlocked_(mapnik::get<value_bool, keys::unlock_image>(sym, feature, vars))
+{
+    std::string filename = mapnik::get<std::string,keys::file>(sym, feature, vars);
+    if (filename.empty()) return;
+    std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
+    if (marker->is<marker_null>()) return;
+    agg::trans_affine trans;
+    auto image_transform = get_optional<transform_type>(sym, keys::image_transform);
+    if (image_transform) evaluate_transform(trans, feature, vars, *image_transform, scale_factor);
+    double width = marker->width();
+    double height = marker->height();
+    double px0 = - 0.5 * width;
+    double py0 = - 0.5 * height;
+    double px1 = 0.5 * width;
+    double py1 = 0.5 * height;
+    double px2 = px1;
+    double py2 = py0;
+    double px3 = px0;
+    double py3 = py1;
+    trans.transform(&px0, &py0);
+    trans.transform(&px1, &py1);
+    trans.transform(&px2, &py2);
+    trans.transform(&px3, &py3);
+    box2d<double> bbox(px0, py0, px1, py1);
+    bbox.expand_to_include(px2, py2);
+    bbox.expand_to_include(px3, py3);
+    // TODO: shared?
+    marker_ = std::make_shared<marker_info>(marker, trans);
+}
+
 shield_layout::shield_layout(DetectorType & detector,
                              box_type const& extent,
                              double scale_factor,
@@ -241,7 +281,7 @@ bool shield_layout::try_placement(
 
     if (point_layout::try_placement(layouts, text_props, pos, *glyphs, bboxes))
     {
-        if (add_marker(layouts, text_props, *glyphs, pos, bboxes))
+        if (!marker_ || add_marker(layouts, text_props, *glyphs, pos, bboxes))
         {
             process_bboxes(layouts, glyphs, bboxes);
             return true;

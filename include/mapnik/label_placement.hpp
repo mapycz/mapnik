@@ -35,21 +35,22 @@ namespace mapnik { namespace label_placement {
 
 struct finder
 {
-    static placements_list get(label_placement_enum placement_type, placement_params & params)
+    template <typename Layout>
+    static placements_list get(label_placement_enum placement_type, Layout & layout, placement_params & params)
     {
         switch (placement_type)
         {
             default:
             case POINT_PLACEMENT:
-                return point::get(params);
+                return point::get(layout, params);
             case INTERIOR_PLACEMENT:
-                return interior::get(params);
+                return interior::get(layout, params);
             case VERTEX_PLACEMENT:
-                return vertex::get(params);
+                return vertex::get(layout, params);
             case GRID_PLACEMENT:
-                return grid::get(params);
+                return grid::get(layout, params);
             case LINE_PLACEMENT:
-                return line::get(params);
+                return line::get(layout, params);
         }
     }
 };

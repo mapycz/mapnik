@@ -123,13 +123,22 @@ protected:
 class shield_layout : point_layout
 {
 public:
-    shield_layout(DetectorType & detector,
-                  box_type const& extent,
-                  double scale_factor,
-                  marker_info_ptr marker,
-                  box_type marker_box,
-                  bool marker_unlocked,
-                  pixel_position const& marker_displacement);
+    shield_layout(
+        DetectorType & detector,
+        box_type const& extent,
+        double scale_factor,
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars);
+
+    shield_layout(
+        DetectorType & detector,
+        box_type const& extent,
+        double scale_factor,
+        marker_info_ptr marker,
+        box_type marker_box,
+        bool marker_unlocked,
+        pixel_position const& marker_displacement);
 
     bool try_placement(
         text_layout_generator & layout_generator,

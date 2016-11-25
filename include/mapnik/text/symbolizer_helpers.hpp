@@ -100,23 +100,30 @@ public:
         text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
-        placement_finder finder(feature, vars, detector,
-            dims, *info_ptr, font_manager, scale_factor);
-        evaluated_text_properties_ptr text_props(evaluate_text_properties(
-            info_ptr->properties, feature, vars));
-        init_marker(finder, sym, feature, vars, scale_factor);
 
-        label_placement_enum placement_type = text_props->label_placement;
+        text_layout_generator layout_generator(params.feature, params.vars,
+            params.font_manager, params.scale_factor, *placement_info);
+        shield_layout layout(params.detector, params.dims, params.scale_factor,
+                sym, feature, vars);
+
+        //placement_finder finder(feature, vars, detector,
+            //dims, *info_ptr, font_manager, scale_factor);
+        //evaluated_text_properties_ptr text_props(evaluate_text_properties(
+            //info_ptr->properties, feature, vars));
+        //init_marker(finder, sym, feature, vars, scale_factor);
+
+        label_placement_enum placement_type = layout_generator.get_text_props().label_placement;
 
         label_placement::placement_params params {
             detector, font_manager, finder, prj_trans, t, affine_trans, sym,
             feature, vars, box2d<double>(0, 0, width, height), query_extent,
             scale_factor, sc };
 
-        return label_placement::finder::get(placement_type, params);
+        return label_placement::finder::get(placement_type, layout, params);
     }
 
 protected:
+    /*
     static void init_marker(placement_finder & finder,
                             symbolizer_base const& sym,
                             feature_impl const& feature,
@@ -147,13 +154,14 @@ protected:
         box2d<double> bbox(px0, py0, px1, py1);
         bbox.expand_to_include(px2, py2);
         bbox.expand_to_include(px3, py3);
-        value_bool unlock_image = mapnik::get<value_bool, keys::unlock_image>(sym, feature, vars);
-        value_double shield_dx = mapnik::get<value_double, keys::shield_dx>(sym, feature, vars);
-        value_double shield_dy = mapnik::get<value_double, keys::shield_dy>(sym, feature, vars);
-        pixel_position marker_displacement;
-        marker_displacement.set(shield_dx,shield_dy);
+        //value_bool unlock_image = mapnik::get<value_bool, keys::unlock_image>(sym, feature, vars);
+        //value_double shield_dx = mapnik::get<value_double, keys::shield_dx>(sym, feature, vars);
+        //value_double shield_dy = mapnik::get<value_double, keys::shield_dy>(sym, feature, vars);
+        //pixel_position marker_displacement;
+        //marker_displacement.set(shield_dx,shield_dy);
         finder.set_marker(std::make_shared<marker_info>(marker, trans), bbox, unlock_image, marker_displacement);
     }
+    */
 };
 
 } //namespace mapnik

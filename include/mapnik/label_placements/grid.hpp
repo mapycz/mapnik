@@ -82,14 +82,14 @@ struct grid
         std::vector<geom_type> splitted;
         geometry::split(params.feature.get_geometry(), splitted);
 
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            params.symbolizer, keys::text_placements_)->get_placement_info(
+                params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        text_layout_generator layout_generator(params.feature, params.vars,
+            params.font_manager, params.scale_factor, *placement_info);
+
         for (auto const & geom_ref : splitted)
         {
-            text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-                params.symbolizer, keys::text_placements_)->get_placement_info(
-                    params.scale_factor, params.feature, params.vars, params.symbol_cache);
-            text_layout_generator layout_generator(params.feature, params.vars,
-                params.font_manager, params.scale_factor, *placement_info);
-
             using polygon_type = geometry::cref_geometry<double>::polygon_type;
             auto const & poly = mapnik::util::get<polygon_type>(geom_ref).get();
             geometry::polygon_vertex_adapter<double> va(poly);
@@ -101,6 +101,7 @@ struct grid
             grid_placement_finder_adapter<double, positions_type> ga(
                 text_props->grid_cell_width, text_props->grid_cell_height, points);
             converter.apply(va, ga);
+            placement_info->reset();
 
             while (!points.empty() && layout_generator.next())
             {

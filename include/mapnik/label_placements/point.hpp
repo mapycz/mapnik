@@ -66,9 +66,9 @@ struct point
         }
     };
 
-    static placements_list get(placement_params & params)
+    template <typename Layout>
+    static placements_list get(Layout & layout, placement_params & params)
     {
-        //placement_finder & finder = params.placement_finder;
         std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
@@ -81,7 +81,6 @@ struct point
                 params.scale_factor, params.feature, params.vars, params.symbol_cache);
         text_layout_generator layout_generator(params.feature, params.vars,
             params.font_manager, params.scale_factor, *placement_info);
-        point_layout layout(params.detector, params.dims, params.scale_factor);
 
         while (!points.empty() && layout_generator.next())
         {
