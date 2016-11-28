@@ -31,6 +31,7 @@
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/extend_converter.hpp>
 #include <mapnik/vertex_cache.hpp>
+#include <mapnik/text/text_layout_generator.hpp>
 
 namespace mapnik
 {
@@ -39,45 +40,7 @@ class label_collision_detector4;
 using DetectorType = label_collision_detector4;
 
 class feature_impl;
-class text_placement_info;
 struct glyph_info;
-
-struct text_layout_generator
-{
-    text_layout_generator(feature_impl const& feature,
-                          attributes const& vars,
-                          face_manager_freetype & font_manager,
-                          double scale_factor,
-                          text_placement_info const& info)
-        : feature_(feature),
-          vars_(vars),
-          font_manager_(font_manager),
-          scale_factor_(scale_factor),
-          info_(info),
-          text_props_()
-    {
-    }
-
-    bool next();
-
-    inline std::unique_ptr<layout_container> & get_layouts()
-    {
-        return layouts_;
-    }
-
-    inline evaluated_text_properties const & get_text_props() const
-    {
-        return *text_props_;
-    }
-
-    feature_impl const& feature_;
-    attributes const& vars_;
-    face_manager_freetype &font_manager_;
-    const double scale_factor_;
-    text_placement_info const& info_;
-    evaluated_text_properties_ptr text_props_;
-    std::unique_ptr<layout_container> layouts_;
-};
 
 class point_layout : util::noncopyable
 {
@@ -120,7 +83,7 @@ protected:
     const double scale_factor_;
 };
 
-class shield_layout : point_layout
+class shield_layout : public point_layout
 {
 public:
     shield_layout(
@@ -130,15 +93,6 @@ public:
         symbolizer_base const& sym,
         feature_impl const& feature,
         attributes const& vars);
-
-    shield_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        marker_info_ptr marker,
-        box_type marker_box,
-        bool marker_unlocked,
-        pixel_position const& marker_displacement);
 
     bool try_placement(
         text_layout_generator & layout_generator,
@@ -152,9 +106,9 @@ private:
         pixel_position const& pos,
         std::vector<box_type> & bboxes) const;
 
-    const marker_info_ptr marker_;
-    const box_type marker_box_;
-    bool marker_unlocked_;
+    marker_info_ptr marker_;
+    box_type marker_box_;
+    const bool marker_unlocked_;
     const pixel_position marker_displacement_;
 };
 

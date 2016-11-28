@@ -28,6 +28,7 @@
 #include <mapnik/symbol_cache.hpp>
 #include <mapnik/symbolizer_base.hpp>
 #include <mapnik/geometry_split_multi.hpp>
+#include <mapnik/text/text_layout_generator.hpp>
 
 namespace mapnik { namespace label_placement { namespace detail {
 
@@ -36,6 +37,7 @@ struct label_placement_params
 {
     DetectorT & detector;
     FaceManagerT & font_manager;
+    text_layout_generator & layout_generator;
     mapnik::proj_transform const & proj_transform;
     mapnik::view_transform const & view_transform;
     agg::trans_affine const & affine_transform;

@@ -44,6 +44,35 @@ class feature_impl;
 class text_placement_info;
 struct glyph_info;
 
+template <typename Layout>
+struct position_accessor
+{
+    template <typename T>
+    static T & get(T & geom)
+    {
+        return geom;
+    }
+};
+
+template <>
+struct position_accessor<point_layout>
+{
+    static pixel_position const & get(vertex_cache const & geom)
+    {
+        return geom.current_position();
+    }
+
+    static pixel_position const & get(pixel_position const & geom)
+    {
+        return geom;
+    }
+};
+
+template <>
+struct position_accessor<shield_layout> : position_accessor<point_layout>
+{
+};
+
 static const double halign_adjust_extend = 1000;
 
 template <typename SubLayout>
@@ -160,7 +189,8 @@ bool line_layout<SubLayout>::try_placement(text_layout_generator & layout_genera
             {
                 vertex_cache::scoped_state state(pp);
                 if (pp.move(tolerance_offset.get()) &&
-                    sublayout_.try_placement(layout_generator, pp))
+                    sublayout_.try_placement(layout_generator,
+                        position_accessor<SubLayout>::get(pp)))
                 {
                     success = true;
                     break;

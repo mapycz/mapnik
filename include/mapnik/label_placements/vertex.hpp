@@ -59,7 +59,8 @@ struct apply_vertex_placement
 
 struct vertex
 {
-    static placements_list get(placement_params & params)
+    template <typename Layout>
+    static placements_list get(Layout & layout, placement_params & params)
     {
         auto const & geom = params.feature.get_geometry();
         using positions_type = std::list<pixel_position>;
@@ -68,20 +69,19 @@ struct vertex
         apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
         util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
 
-        //placement_finder & finder = params.placement_finder;
-        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            params.symbolizer, keys::text_placements_)->get_placement_info(
-                params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        text_layout_generator layout_generator(params.feature, params.vars,
-            params.font_manager, params.scale_factor, *placement_info);
-        point_layout layout(params.detector, params.dims, params.scale_factor);
+        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            //params.symbolizer, keys::text_placements_)->get_placement_info(
+                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        //text_layout_generator layout_generator(params.feature, params.vars,
+            //params.font_manager, params.scale_factor, *placement_info);
+        //point_layout layout(params.detector, params.dims, params.scale_factor);
         placements_list placements;
 
-        while (!points.empty() && layout_generator.next())
+        while (!points.empty() && params.layout_generator.next())
         {
             for (auto it = points.begin(); it != points.end(); )
             {
-                if (layout.try_placement(layout_generator, *it))
+                if (layout.try_placement(params.layout_generator, *it))
                 {
                     it = points.erase(it);
                 }
@@ -91,9 +91,9 @@ struct vertex
                 }
             }
 
-            if (!layout_generator.get_layouts()->placements_.empty())
+            if (!params.layout_generator.get_layouts()->placements_.empty())
             {
-                placements.emplace_back(std::move(layout_generator.get_layouts()));
+                placements.emplace_back(std::move(params.layout_generator.get_layouts()));
             }
         }
 

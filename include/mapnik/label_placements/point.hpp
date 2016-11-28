@@ -76,17 +76,17 @@ struct point
 
         placements_list placements;
 
-        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            params.symbolizer, keys::text_placements_)->get_placement_info(
-                params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        text_layout_generator layout_generator(params.feature, params.vars,
-            params.font_manager, params.scale_factor, *placement_info);
+        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            //params.symbolizer, keys::text_placements_)->get_placement_info(
+                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        //text_layout_generator layout_generator(params.feature, params.vars,
+            //params.font_manager, params.scale_factor, *placement_info);
 
-        while (!points.empty() && layout_generator.next())
+        while (!points.empty() && params.layout_generator.next())
         {
             for (auto it = points.begin(); it != points.end(); )
             {
-                if (layout.try_placement(layout_generator, *it))
+                if (layout.try_placement(params.layout_generator, *it))
                 {
                     it = points.erase(it);
                 }
@@ -96,9 +96,9 @@ struct point
                 }
             }
 
-            if (!layout_generator.get_layouts()->placements_.empty())
+            if (!params.layout_generator.get_layouts()->placements_.empty())
             {
-                placements.emplace_back(std::move(layout_generator.get_layouts()));
+                placements.emplace_back(std::move(params.layout_generator.get_layouts()));
             }
         }
 

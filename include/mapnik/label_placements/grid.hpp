@@ -57,7 +57,8 @@ struct grid
 {
     using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
 
-    static placements_list get(placement_params & params)
+    template <typename Layout>
+    static placements_list get(Layout & layout, placement_params & params)
     {
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
@@ -75,18 +76,18 @@ struct grid
         if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
-        point_layout layout(params.detector, params.dims, params.scale_factor);
+        //point_layout layout(params.detector, params.dims, params.scale_factor);
         placements_list placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::vector<geom_type> splitted;
         geometry::split(params.feature.get_geometry(), splitted);
 
-        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            params.symbolizer, keys::text_placements_)->get_placement_info(
-                params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        text_layout_generator layout_generator(params.feature, params.vars,
-            params.font_manager, params.scale_factor, *placement_info);
+        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            //params.symbolizer, keys::text_placements_)->get_placement_info(
+                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        //text_layout_generator layout_generator(params.feature, params.vars,
+            //params.font_manager, params.scale_factor, *placement_info);
 
         for (auto const & geom_ref : splitted)
         {
@@ -94,20 +95,22 @@ struct grid
             auto const & poly = mapnik::util::get<polygon_type>(geom_ref).get();
             geometry::polygon_vertex_adapter<double> va(poly);
 
+            params.layout_generator.reset();
+
             using positions_type = std::list<pixel_position>;
             positions_type points;
-            evaluated_text_properties_ptr text_props(evaluate_text_properties(
-                placement_info->properties,params.feature,params.vars));
+            evaluated_text_properties const & text_props = params.layout_generator.get_text_props();
+            //evaluated_text_properties_ptr text_props(evaluate_text_properties(
+                //placement_info->properties, params.feature, params.vars));
             grid_placement_finder_adapter<double, positions_type> ga(
-                text_props->grid_cell_width, text_props->grid_cell_height, points);
+                text_props.grid_cell_width, text_props.grid_cell_height, points);
             converter.apply(va, ga);
-            placement_info->reset();
 
-            while (!points.empty() && layout_generator.next())
+            while (!points.empty() && params.layout_generator.next())
             {
                 for (auto it = points.begin(); it != points.end(); )
                 {
-                    if (layout.try_placement(layout_generator, *it))
+                    if (layout.try_placement(params.layout_generator, *it))
                     {
                         it = points.erase(it);
                     }
@@ -117,9 +120,9 @@ struct grid
                     }
                 }
 
-                if (!layout_generator.get_layouts()->placements_.empty())
+                if (!params.layout_generator.get_layouts()->placements_.empty())
                 {
-                    placements.emplace_back(std::move(layout_generator.get_layouts()));
+                    placements.emplace_back(std::move(params.layout_generator.get_layouts()));
                 }
             }
         }

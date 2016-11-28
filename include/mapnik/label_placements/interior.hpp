@@ -64,27 +64,27 @@ struct interior
         }
     };
 
-    static placements_list get(placement_params & params)
+    template <typename Layout>
+    static placements_list get(Layout & layout, placement_params & params)
     {
-        //placement_finder & finder = params.placement_finder;
         std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
             params.view_transform));
         placements_list placements;
 
-        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            params.symbolizer, keys::text_placements_)->get_placement_info(
-                params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        text_layout_generator layout_generator(params.feature, params.vars,
-            params.font_manager, params.scale_factor, *placement_info);
-        point_layout layout(params.detector, params.dims, params.scale_factor);
+        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            //params.symbolizer, keys::text_placements_)->get_placement_info(
+                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        //text_layout_generator layout_generator(params.feature, params.vars,
+            //params.font_manager, params.scale_factor, *placement_info);
+        //point_layout layout(params.detector, params.dims, params.scale_factor);
 
-        while (!points.empty() && layout_generator.next())
+        while (!points.empty() && params.layout_generator.next())
         {
             for (auto it = points.begin(); it != points.end(); )
             {
-                if (layout.try_placement(layout_generator, *it))
+                if (layout.try_placement(params.layout_generator, *it))
                 {
                     it = points.erase(it);
                 }
@@ -94,9 +94,9 @@ struct interior
                 }
             }
 
-            if (!layout_generator.get_layouts()->placements_.empty())
+            if (!params.layout_generator.get_layouts()->placements_.empty())
             {
-                placements.emplace_back(std::move(layout_generator.get_layouts()));
+                placements.emplace_back(std::move(params.layout_generator.get_layouts()));
             }
         }
 

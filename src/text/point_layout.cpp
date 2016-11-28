@@ -32,31 +32,14 @@
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/util/math.hpp>
+#include <mapnik/symbolizer.hpp>
+#include <mapnik/marker.hpp>
 
 // stl
 #include <vector>
 
 namespace mapnik
 {
-
-bool text_layout_generator::next()
-{
-    if (!info_.next())
-    {
-        return false;
-    }
-    text_props_ = evaluate_text_properties(info_.properties, feature_, vars_);
-    layouts_ = std::make_unique<layout_container>(
-        std::move(std::make_unique<text_layout>(
-            font_manager_,
-            feature_,
-            vars_,
-            scale_factor_,
-            info_.properties,
-            info_.properties.layout_defaults,
-            info_.properties.format_tree())));
-    return true;
-}
 
 point_layout::point_layout(DetectorType &detector,
                            box2d<double> const& extent,
@@ -218,6 +201,7 @@ shield_layout::shield_layout(
     symbolizer_base const& sym,
     feature_impl const& feature,
     attributes const& vars)
+    : point_layout(detector, extent, scale_factor),
       marker_displacement_(pixel_position(
         mapnik::get<value_double, keys::shield_dx>(sym, feature, vars),
         mapnik::get<value_double, keys::shield_dy>(sym, feature, vars)) * scale_factor),
@@ -247,23 +231,9 @@ shield_layout::shield_layout(
     box2d<double> bbox(px0, py0, px1, py1);
     bbox.expand_to_include(px2, py2);
     bbox.expand_to_include(px3, py3);
+    marker_box_ = bbox;
     // TODO: shared?
     marker_ = std::make_shared<marker_info>(marker, trans);
-}
-
-shield_layout::shield_layout(DetectorType & detector,
-                             box_type const& extent,
-                             double scale_factor,
-                             marker_info_ptr marker,
-                             box2d<double> marker_box,
-                             bool marker_unlocked,
-                             pixel_position const& marker_displacement)
-    : point_layout(detector, extent, scale_factor),
-      marker_(marker),
-      marker_box_(marker_box * scale_factor),
-      marker_displacement_(marker_displacement * scale_factor),
-      marker_unlocked_(marker_unlocked)
-{
 }
 
 bool shield_layout::try_placement(

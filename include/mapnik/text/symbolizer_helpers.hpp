@@ -59,22 +59,31 @@ public:
                            symbol_cache const& sc)
     {
         box2d<double> dims(0, 0, width, height);
-        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
-        placement_finder finder(feature, vars, detector,
-            dims, *info_ptr, font_manager, scale_factor);
-        evaluated_text_properties_ptr text_props(evaluate_text_properties(
-            info_ptr->properties, feature, vars));
+        text_layout_generator layout_generator(feature, vars,
+            font_manager, scale_factor, *placement_info);
+        //placement_finder finder(feature, vars, detector,
+            //dims, *info_ptr, font_manager, scale_factor);
+        //evaluated_text_properties_ptr text_props(evaluate_text_properties(
+            //info_ptr->properties, feature, vars));
 
-        label_placement_enum placement_type = text_props->label_placement;
+        const label_placement_enum placement_type = layout_generator.get_text_props().label_placement;
 
         label_placement::placement_params params {
-            detector, font_manager, finder, prj_trans, t, affine_trans, sym,
+            detector, font_manager, layout_generator, prj_trans, t, affine_trans, sym,
             feature, vars, box2d<double>(0, 0, width, height), query_extent,
             scale_factor, sc };
 
-        return label_placement::finder::get(placement_type, params);
+        if (placement_type == LINE_PLACEMENT)
+        {
+            single_line_layout layout(params.detector, params.dims, params.scale_factor);
+            return label_placement::line::get(layout, params);
+        }
+
+        point_layout layout(params.detector, params.dims, params.scale_factor);
+        return label_placement::finder::get(placement_type, layout, params);
     }
 };
 
@@ -97,14 +106,13 @@ public:
                            symbol_cache const& sc)
     {
         box2d<double> dims(0, 0, width, height);
-        text_placement_info_ptr info_ptr = mapnik::get<text_placements_ptr>(
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
 
-        text_layout_generator layout_generator(params.feature, params.vars,
-            params.font_manager, params.scale_factor, *placement_info);
-        shield_layout layout(params.detector, params.dims, params.scale_factor,
-                sym, feature, vars);
+        text_layout_generator layout_generator(feature, vars,
+            font_manager, scale_factor, *placement_info);
+        shield_layout layout(detector, dims, scale_factor, sym, feature, vars);
 
         //placement_finder finder(feature, vars, detector,
             //dims, *info_ptr, font_manager, scale_factor);
@@ -115,7 +123,7 @@ public:
         label_placement_enum placement_type = layout_generator.get_text_props().label_placement;
 
         label_placement::placement_params params {
-            detector, font_manager, finder, prj_trans, t, affine_trans, sym,
+            detector, font_manager, layout_generator, prj_trans, t, affine_trans, sym,
             feature, vars, box2d<double>(0, 0, width, height), query_extent,
             scale_factor, sc };
 

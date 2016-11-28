@@ -98,7 +98,8 @@ struct line
         simplify_tag,
         smooth_tag>;
 
-    static placements_list get(placement_params & params)
+    template <typename Layout>
+    static placements_list get(Layout & layout, placement_params & params)
     {
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
@@ -117,26 +118,26 @@ struct line
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
         //placement_finder & finder = params.placement_finder;
-        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            params.symbolizer, keys::text_placements_)->get_placement_info(
-                params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        text_layout_generator layout_generator(params.feature, params.vars,
-            params.font_manager, params.scale_factor, *placement_info);
-        single_line_layout single_layout(params.detector, params.dims, params.scale_factor);
-        using layout_type = line_layout<single_line_layout>;
-        layout_type layout(single_layout, params.detector, params.dims, params.scale_factor);
+        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            //params.symbolizer, keys::text_placements_)->get_placement_info(
+                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
+        //text_layout_generator layout_generator(params.feature, params.vars,
+            //params.font_manager, params.scale_factor, *placement_info);
+        //single_line_layout single_layout(params.detector, params.dims, params.scale_factor);
+        using layout_type = line_layout<Layout>;
+        layout_type line_layout(layout, params.detector, params.dims, params.scale_factor);
         placements_list placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
         geometry::split(params.feature.get_geometry(), geoms);
 
-        while (!geoms.empty() && layout_generator.next())
+        while (!geoms.empty() && params.layout_generator.next())
         {
             for (auto it = geoms.begin(); it != geoms.end(); )
             {
                 using adapter_type = placement_finder_adapter<layout_type>;
-                adapter_type adapter(layout, layout_generator);
+                adapter_type adapter(line_layout, params.layout_generator);
                 line_placement_visitor<adapter_type, vertex_converter_type> v(converter, adapter);
                 if (util::apply_visitor(v, *it))
                 {
@@ -148,9 +149,9 @@ struct line
                 }
             }
 
-            if (!layout_generator.get_layouts()->placements_.empty())
+            if (!params.layout_generator.get_layouts()->placements_.empty())
             {
-                placements.emplace_back(std::move(layout_generator.get_layouts()));
+                placements.emplace_back(std::move(params.layout_generator.get_layouts()));
             }
         }
 
