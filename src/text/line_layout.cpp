@@ -97,7 +97,10 @@ text_upright_e simplify_upright(text_upright_e upright, double angle)
 single_line_layout::single_line_layout(
     DetectorType & detector,
     box2d<double> const & extent,
-    double scale_factor)
+    double scale_factor,
+    symbolizer_base const& sym,
+    feature_impl const& feature,
+    attributes const& vars)
     : detector_(detector),
       dims_(extent),
       scale_factor_(scale_factor)

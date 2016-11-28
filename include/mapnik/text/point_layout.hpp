@@ -50,7 +50,10 @@ public:
     point_layout(
         DetectorType & detector,
         box_type const& extent,
-        double scale_factor);
+        double scale_factor,
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars);
 
     bool try_placement(
         text_layout_generator & layout_generator,

@@ -41,9 +41,13 @@
 namespace mapnik
 {
 
-point_layout::point_layout(DetectorType &detector,
-                           box2d<double> const& extent,
-                           double scale_factor)
+point_layout::point_layout(
+        DetectorType &detector,
+        box2d<double> const& extent,
+        double scale_factor,
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars)
     : detector_(detector),
       dims_(extent),
       scale_factor_(scale_factor)
@@ -201,7 +205,7 @@ shield_layout::shield_layout(
     symbolizer_base const& sym,
     feature_impl const& feature,
     attributes const& vars)
-    : point_layout(detector, extent, scale_factor),
+    : point_layout(detector, extent, scale_factor, sym, feature, vars),
       marker_displacement_(pixel_position(
         mapnik::get<value_double, keys::shield_dx>(sym, feature, vars),
         mapnik::get<value_double, keys::shield_dy>(sym, feature, vars)) * scale_factor),

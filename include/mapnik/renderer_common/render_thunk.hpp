@@ -102,8 +102,8 @@ struct base_text_render_thunk : util::movable
     {}
 };
 
-using text_render_thunk = base_text_render_thunk<text_symbolizer_helper>;
-using shield_render_thunk = base_text_render_thunk<shield_symbolizer_helper>;
+using text_render_thunk = base_text_render_thunk<text_symbolizer_helper<text_symbolizer_traits>>;
+using shield_render_thunk = base_text_render_thunk<text_symbolizer_helper<shield_symbolizer_traits>>;
 
 // Variant type for render thunks to allow us to re-render them
 // via a static visitor later.

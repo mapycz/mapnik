@@ -87,6 +87,7 @@ private:
     Adapter const & adapter_;
 };
 
+template <typename Layout>
 struct line
 {
     using vertex_converter_type = vertex_converter<
@@ -98,8 +99,7 @@ struct line
         simplify_tag,
         smooth_tag>;
 
-    template <typename Layout>
-    static placements_list get(Layout & layout, placement_params & params)
+    static placements_list get(placement_params & params)
     {
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
@@ -117,6 +117,8 @@ struct line
         if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
+        Layout layout(params.detector, params.dims, params.scale_factor,
+            params.symbolizer, params.feature, params.vars);
         using layout_type = line_layout<Layout>;
         layout_type line_layout(layout, params.detector, params.dims, params.scale_factor);
         placements_list placements;
