@@ -256,6 +256,8 @@ bool single_line_layout::try_placement(
         {
             // Try again with opposite orientation
             begin.restore();
+            glyphs.clear();
+            bboxes.clear();
             return try_placement(layouts, text_props, pp,
                 real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT,
                 glyphs, bboxes);
@@ -270,6 +272,8 @@ bool single_line_layout::try_placement(
     {
         // Try again with opposite orientation
         begin.restore();
+        glyphs.clear();
+        bboxes.clear();
         return try_placement(layouts, text_props, pp,
             real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT,
             glyphs, bboxes);

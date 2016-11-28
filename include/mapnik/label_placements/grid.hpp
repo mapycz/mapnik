@@ -76,18 +76,11 @@ struct grid
         if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
-        //point_layout layout(params.detector, params.dims, params.scale_factor);
         placements_list placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::vector<geom_type> splitted;
         geometry::split(params.feature.get_geometry(), splitted);
-
-        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            //params.symbolizer, keys::text_placements_)->get_placement_info(
-                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        //text_layout_generator layout_generator(params.feature, params.vars,
-            //params.font_manager, params.scale_factor, *placement_info);
 
         for (auto const & geom_ref : splitted)
         {
@@ -100,8 +93,6 @@ struct grid
             using positions_type = std::list<pixel_position>;
             positions_type points;
             evaluated_text_properties const & text_props = params.layout_generator.get_text_props();
-            //evaluated_text_properties_ptr text_props(evaluate_text_properties(
-                //placement_info->properties, params.feature, params.vars));
             grid_placement_finder_adapter<double, positions_type> ga(
                 text_props.grid_cell_width, text_props.grid_cell_height, points);
             converter.apply(va, ga);

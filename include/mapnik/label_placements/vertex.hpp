@@ -69,12 +69,6 @@ struct vertex
         apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
         util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
 
-        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            //params.symbolizer, keys::text_placements_)->get_placement_info(
-                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        //text_layout_generator layout_generator(params.feature, params.vars,
-            //params.font_manager, params.scale_factor, *placement_info);
-        //point_layout layout(params.detector, params.dims, params.scale_factor);
         placements_list placements;
 
         while (!points.empty() && params.layout_generator.next())

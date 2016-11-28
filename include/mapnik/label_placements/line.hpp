@@ -117,13 +117,6 @@ struct line
         if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
-        //placement_finder & finder = params.placement_finder;
-        //text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            //params.symbolizer, keys::text_placements_)->get_placement_info(
-                //params.scale_factor, params.feature, params.vars, params.symbol_cache);
-        //text_layout_generator layout_generator(params.feature, params.vars,
-            //params.font_manager, params.scale_factor, *placement_info);
-        //single_line_layout single_layout(params.detector, params.dims, params.scale_factor);
         using layout_type = line_layout<Layout>;
         layout_type line_layout(layout, params.detector, params.dims, params.scale_factor);
         placements_list placements;

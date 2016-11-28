@@ -64,10 +64,6 @@ public:
                 feature, vars, sc);
         text_layout_generator layout_generator(feature, vars,
             font_manager, scale_factor, *placement_info);
-        //placement_finder finder(feature, vars, detector,
-            //dims, *info_ptr, font_manager, scale_factor);
-        //evaluated_text_properties_ptr text_props(evaluate_text_properties(
-            //info_ptr->properties, feature, vars));
 
         const label_placement_enum placement_type = layout_generator.get_text_props().label_placement;
 
@@ -114,12 +110,6 @@ public:
             font_manager, scale_factor, *placement_info);
         shield_layout layout(detector, dims, scale_factor, sym, feature, vars);
 
-        //placement_finder finder(feature, vars, detector,
-            //dims, *info_ptr, font_manager, scale_factor);
-        //evaluated_text_properties_ptr text_props(evaluate_text_properties(
-            //info_ptr->properties, feature, vars));
-        //init_marker(finder, sym, feature, vars, scale_factor);
-
         label_placement_enum placement_type = layout_generator.get_text_props().label_placement;
 
         label_placement::placement_params params {
@@ -129,47 +119,6 @@ public:
 
         return label_placement::finder::get(placement_type, layout, params);
     }
-
-protected:
-    /*
-    static void init_marker(placement_finder & finder,
-                            symbolizer_base const& sym,
-                            feature_impl const& feature,
-                            attributes const& vars,
-                            double scale_factor)
-    {
-        std::string filename = mapnik::get<std::string,keys::file>(sym, feature, vars);
-        if (filename.empty()) return;
-        std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
-        if (marker->is<marker_null>()) return;
-        agg::trans_affine trans;
-        auto image_transform = get_optional<transform_type>(sym, keys::image_transform);
-        if (image_transform) evaluate_transform(trans, feature, vars, *image_transform, scale_factor);
-        double width = marker->width();
-        double height = marker->height();
-        double px0 = - 0.5 * width;
-        double py0 = - 0.5 * height;
-        double px1 = 0.5 * width;
-        double py1 = 0.5 * height;
-        double px2 = px1;
-        double py2 = py0;
-        double px3 = px0;
-        double py3 = py1;
-        trans.transform(&px0, &py0);
-        trans.transform(&px1, &py1);
-        trans.transform(&px2, &py2);
-        trans.transform(&px3, &py3);
-        box2d<double> bbox(px0, py0, px1, py1);
-        bbox.expand_to_include(px2, py2);
-        bbox.expand_to_include(px3, py3);
-        //value_bool unlock_image = mapnik::get<value_bool, keys::unlock_image>(sym, feature, vars);
-        //value_double shield_dx = mapnik::get<value_double, keys::shield_dx>(sym, feature, vars);
-        //value_double shield_dy = mapnik::get<value_double, keys::shield_dy>(sym, feature, vars);
-        //pixel_position marker_displacement;
-        //marker_displacement.set(shield_dx,shield_dy);
-        finder.set_marker(std::make_shared<marker_info>(marker, trans), bbox, unlock_image, marker_displacement);
-    }
-    */
 };
 
 } //namespace mapnik
