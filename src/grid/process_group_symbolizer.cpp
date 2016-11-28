@@ -140,12 +140,7 @@ struct thunk_renderer : render_thunk_list_dispatch
         pixmap_.add_feature(feature_);
     }
 
-    virtual void operator()(text_render_thunk const &thunk)
-    {
-        render_text(thunk);
-    }
-
-    virtual void operator()(shield_render_thunk const &thunk)
+    virtual void operator()(base_text_render_thunk const &thunk)
     {
         render_text(thunk);
     }
