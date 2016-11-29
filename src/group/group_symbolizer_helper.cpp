@@ -34,8 +34,9 @@
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/tolerance_iterator.hpp>
 
-namespace mapnik { namespace detail {
+namespace mapnik { //namespace detail {
 
+/*
 template <typename Helper>
 struct apply_find_line_placements : util::noncopyable
 {
@@ -210,5 +211,119 @@ double group_symbolizer_helper::get_spacing(double path_length) const
     }
     return path_length / num_labels;
 }
+
+*/
+
+group_layout_generator::group_layout_generator(
+    feature_impl const & feature,
+    attributes const & vars,
+    face_manager_freetype & font_manager,
+    double scale_factor,
+    text_placement_info & info)
+    : feature_(feature),
+      vars_(vars),
+      font_manager_(font_manager),
+      scale_factor_(scale_factor),
+      info_(info),
+      text_props_(evaluate_text_properties(info.properties, feature, vars)),
+      state_(true)
+{
+}
+
+bool group_layout_generator::next()
+{
+    if (state_)
+    {
+        state_ = false;
+        return true;
+    }
+    return false;
+}
+
+void group_layout_generator::reset()
+{
+    state_ = true;
+}
+
+
+
+
+group_point_layout::group_point_layout(
+        DetectorType &detector,
+        box2d<double> const& extent,
+        double scale_factor,
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars)
+    : detector_(detector),
+      dims_(extent),
+      scale_factor_(scale_factor)
+{
+}
+
+bool group_point_layout::try_placement(
+    group_layout_generator & layout_generator,
+    pixel_position const& pos)
+{
+    std::list<box_element> const & box_elements = layout_generator.box_elements_;
+
+    if (box_elements.empty()) return false;
+
+    evaluated_text_properties const & text_props = layout_generator.get_text_props();
+
+    // offset boxes and check collision
+    std::list<box2d<double>> real_boxes;
+    for (auto const& box_elem : box_elements)
+    {
+        box2d<double> real_box = box2d<double>(box_elem.box_);
+        real_box.move(pos.x, pos.y);
+        if (collision(text_props, real_box, box_elem.repeat_key_))
+        {
+            return false;
+        }
+        real_boxes.push_back(real_box);
+    }
+
+    // add boxes to collision detector
+    std::list<box_element>::const_iterator elem_itr = box_elements.cbegin();
+    std::list<box2d<double>>::const_iterator real_itr = real_boxes.cbegin();
+    while (elem_itr != box_elements.cend() && real_itr != real_boxes.cend())
+    {
+        detector_.insert(*real_itr, elem_itr->repeat_key_);
+        elem_itr++;
+        real_itr++;
+    }
+
+    layout_generator.results_.push_back(pos);
+
+    return true;
+}
+
+bool group_point_layout::collision(
+    evaluated_text_properties const & text_props,
+    box2d<double> const& box,
+    value_unicode_string const& repeat_key) const
+{
+    if (!detector_.extent().intersects(box)
+            ||
+        (text_props.avoid_edges && !dims_.contains(box))
+            ||
+        (text_props.minimum_padding > 0 &&
+         !dims_.contains(box + (scale_factor_ * text_props.minimum_padding)))
+            ||
+        (!text_props.allow_overlap &&
+            ((repeat_key.length() == 0 && !detector_.has_placement(
+                box, text_props.margin * scale_factor_))
+                ||
+             (repeat_key.length() > 0  && !detector_.has_placement(
+                box, text_props.margin * scale_factor_,
+                repeat_key, text_props.repeat_distance * scale_factor_))))
+        )
+    {
+        return true;
+    }
+    return false;
+}
+
 
 } //namespace

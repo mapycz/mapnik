@@ -32,6 +32,7 @@
 #include <mapnik/text/text_properties.hpp>
 #include <mapnik/label_placement.hpp>
 #include <mapnik/marker.hpp>
+#include <mapnik/group/group_symbolizer_helper.hpp>
 
 namespace mapnik {
 
@@ -47,6 +48,8 @@ struct text_symbolizer_traits
     using vertex = point_layout;
     using grid = point_layout;
     using line = single_line_layout;
+
+    using placements_type = placements_list;
 };
 
 struct shield_symbolizer_traits
@@ -56,6 +59,19 @@ struct shield_symbolizer_traits
     using vertex = shield_layout;
     using grid = shield_layout;
     using line = shield_layout;
+
+    using placements_type = placements_list;
+};
+
+struct group_symbolizer_traits
+{
+    using point = mapnik::group_point_layout;
+    using interior = group_point_layout;
+    using vertex = group_point_layout;
+    using grid = group_point_layout;
+    using line = group_point_layout;
+
+    using placements_type = pixel_position_list;
 };
 
 template <typename Traits>
@@ -63,7 +79,7 @@ class text_symbolizer_helper
 {
 public:
     template <typename FaceManagerT, typename DetectorT>
-    static placements_list get(symbolizer_base const& sym,
+    static typename Traits::placements_type get(symbolizer_base const& sym,
                            feature_impl const& feature,
                            attributes const& vars,
                            proj_transform const& prj_trans,

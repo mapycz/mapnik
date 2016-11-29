@@ -23,10 +23,13 @@
 #define GROUP_SYMBOLIZER_HELPER_HPP
 
 //mapnik
-#include <mapnik/text/symbolizer_helpers.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/value_types.hpp>
 #include <mapnik/pixel_position.hpp>
+#include <mapnik/font_engine_freetype.hpp>
+#include <mapnik/text/text_layout.hpp>
+
+#include <list>
 
 namespace mapnik {
 
@@ -38,6 +41,17 @@ using DetectorType = label_collision_detector4;
 
 using pixel_position_list = std::list<pixel_position>;
 
+struct box_element
+{
+    box_element(box2d<double> const& box, value_unicode_string const& repeat_key = "")
+       : box_(box),
+         repeat_key_(repeat_key)
+    {}
+    box2d<double> box_;
+    value_unicode_string repeat_key_;
+};
+
+/*
 // Helper object that does some of the GroupSymbolizer placement finding work.
 class group_symbolizer_helper
 {
@@ -67,16 +81,6 @@ public:
     inline void add_box_element(box2d<double> const& box, value_unicode_string const& repeat_key = "")
     {
         box_elements_.push_back(box_element(box, repeat_key));
-    }
-
-    inline void clear_box_elements()
-    {
-        box_elements_.clear();
-    }
-
-    inline text_symbolizer_properties const& get_properties() const
-    {
-        return info_ptr_->properties;
     }
 
     pixel_position_list const& get();
@@ -111,6 +115,73 @@ private:
     std::list<box_element> box_elements_;
 
     pixel_position_list results_;
+};*/
+
+struct group_layout_generator : util::noncopyable
+{
+    group_layout_generator(
+        feature_impl const& feature,
+        attributes const& vars,
+        face_manager_freetype & font_manager,
+        double scale_factor,
+        text_placement_info & info);
+
+    bool next();
+    void reset();
+
+    inline std::unique_ptr<layout_container> & get_layouts()
+    {
+        return layouts_;
+    }
+
+    inline evaluated_text_properties const & get_text_props() const
+    {
+        return *text_props_;
+    }
+
+    feature_impl const& feature_;
+    attributes const& vars_;
+    face_manager_freetype &font_manager_;
+    const double scale_factor_;
+    text_placement_info & info_;
+    evaluated_text_properties_ptr text_props_;
+    std::unique_ptr<layout_container> layouts_;
+    bool state_;
+    pixel_position_list results_;
+    std::list<box_element> box_elements_;
+};
+
+class group_point_layout : util::noncopyable
+{
+public:
+    using box_type = box2d<double>;
+
+    group_point_layout(
+        DetectorType & detector,
+        box_type const& extent,
+        double scale_factor,
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars);
+
+    bool try_placement(
+        group_layout_generator & layout_generator,
+        pixel_position const& pos);
+
+    inline double get_length(layout_container const &) const
+    {
+        return 0;
+    }
+
+protected:
+    bool collision(
+        evaluated_text_properties const & text_props,
+        box_type const& box,
+        const value_unicode_string &repeat_key) const;
+
+    DetectorType & detector_;
+    box_type const& dims_;
+    const double scale_factor_;
 };
 
 } //namespace
