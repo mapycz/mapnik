@@ -83,6 +83,41 @@ static std::list<pixel_position> get_pixel_positions(
     return positions;
 }
 
+struct layout_processor
+{
+    template <
+        typename Geoms,
+        typename Layout,
+        typename LayoutGenerator,
+        typename PlacementsType>
+    static void process(
+        Geoms & geoms,
+        Layout & layout,
+        LayoutGenerator & layout_generator,
+        PlacementsType & placements)
+    {
+        while (!geoms.empty() && layout_generator.next())
+        {
+            for (auto it = geoms.begin(); it != geoms.end(); )
+            {
+                if (layout.try_placement(layout_generator, *it))
+                {
+                    it = geoms.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+
+            if (!layout_generator.get_layouts()->placements_.empty())
+            {
+                placements.emplace_back(std::move(layout_generator.get_layouts()));
+            }
+        }
+    }
+};
+
 } }
 
 #endif // MAPNIK_LABEL_PLACEMENT_BASE_HPP

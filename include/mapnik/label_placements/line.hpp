@@ -82,6 +82,12 @@ public:
         return false;
     }
 
+    template <typename LayoutGenerator, typename Geom>
+    bool try_placement(LayoutGenerator & generator, Geom const & geom)
+    {
+        return util::apply_visitor(generator, geom);
+    }
+
 private:
     VC & converter_;
     Adapter const & adapter_;
@@ -127,14 +133,18 @@ struct line
         std::list<geom_type> geoms;
         geometry::split(params.feature.get_geometry(), geoms);
 
+        using adapter_type = placement_finder_adapter<layout_type>;
+        adapter_type adapter(line_layout, params.layout_generator);
+        line_placement_visitor<adapter_type, vertex_converter_type> v(converter, adapter);
+
+        layout_processor::process(points, layout, params.layout_generator, placements);
+
+        /*
         while (!geoms.empty() && params.layout_generator.next())
         {
             for (auto it = geoms.begin(); it != geoms.end(); )
             {
-                using adapter_type = placement_finder_adapter<layout_type>;
-                adapter_type adapter(line_layout, params.layout_generator);
-                line_placement_visitor<adapter_type, vertex_converter_type> v(converter, adapter);
-                if (util::apply_visitor(v, *it))
+                if (v.try_placement(v, *it))
                 {
                     it = geoms.erase(it);
                 }
@@ -149,6 +159,7 @@ struct line
                 placements.emplace_back(std::move(params.layout_generator.get_layouts()));
             }
         }
+        */
 
         return placements;
     }

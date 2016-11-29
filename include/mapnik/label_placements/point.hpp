@@ -78,7 +78,10 @@ struct point
 
         placements_list placements;
 
-        while (!points.empty() && params.layout_generator.next())
+        layout_processor::process(points, layout, params.layout_generator, placements);
+
+
+        /*while (!points.empty() && params.layout_generator.next())
         {
             for (auto it = points.begin(); it != points.end(); )
             {
@@ -96,7 +99,7 @@ struct point
             {
                 placements.emplace_back(std::move(params.layout_generator.get_layouts()));
             }
-        }
+        }*/
 
         return placements;
     }
