@@ -105,6 +105,23 @@ struct line
         simplify_tag,
         smooth_tag>;
 
+    template <typename Visitor>
+    struct layout_adapter
+    {
+        layout_adapter(Visitor & visitor)
+            : visitor_(visitor)
+        {
+        }
+
+        template <typename LayoutGenerator, typename Geom>
+        bool try_placement(LayoutGenerator & generator, Geom const & geom)
+        {
+            return util::apply_visitor(visitor_, geom);
+        }
+
+        Visitor visitor_;
+    };
+
     static placements_list get(placement_params & params)
     {
         vertex_converter_type converter(params.query_extent, params.symbolizer,
@@ -134,32 +151,12 @@ struct line
         geometry::split(params.feature.get_geometry(), geoms);
 
         using adapter_type = placement_finder_adapter<layout_type>;
+        using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
         adapter_type adapter(line_layout, params.layout_generator);
-        line_placement_visitor<adapter_type, vertex_converter_type> v(converter, adapter);
+        visitor_type visitor(converter, adapter);
+        layout_adapter<visitor_type> la(visitor);
 
-        layout_processor::process(points, layout, params.layout_generator, placements);
-
-        /*
-        while (!geoms.empty() && params.layout_generator.next())
-        {
-            for (auto it = geoms.begin(); it != geoms.end(); )
-            {
-                if (v.try_placement(v, *it))
-                {
-                    it = geoms.erase(it);
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-
-            if (!params.layout_generator.get_layouts()->placements_.empty())
-            {
-                placements.emplace_back(std::move(params.layout_generator.get_layouts()));
-            }
-        }
-        */
+        layout_processor::process(geoms, la, params.layout_generator, placements);
 
         return placements;
     }

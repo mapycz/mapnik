@@ -75,25 +75,7 @@ struct interior
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);
 
-        while (!points.empty() && params.layout_generator.next())
-        {
-            for (auto it = points.begin(); it != points.end(); )
-            {
-                if (layout.try_placement(params.layout_generator, *it))
-                {
-                    it = points.erase(it);
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-
-            if (!params.layout_generator.get_layouts()->placements_.empty())
-            {
-                placements.emplace_back(std::move(params.layout_generator.get_layouts()));
-            }
-        }
+        layout_processor::process(points, layout, params.layout_generator, placements);
 
         return placements;
     }
