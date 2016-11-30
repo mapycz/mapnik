@@ -50,6 +50,8 @@ struct text_symbolizer_traits
     using line = single_line_layout;
 
     using placements_type = placements_list;
+    using layout_generator_type = text_layout_generator;
+    using params_type = label_placement::placement_params<layout_generator_type>;
 };
 
 struct shield_symbolizer_traits
@@ -61,6 +63,8 @@ struct shield_symbolizer_traits
     using line = shield_layout;
 
     using placements_type = placements_list;
+    using layout_generator_type = text_layout_generator;
+    using params_type = label_placement::placement_params<layout_generator_type>;
 };
 
 struct group_symbolizer_traits
@@ -71,39 +75,45 @@ struct group_symbolizer_traits
     using grid = group_point_layout;
     using line = group_point_layout;
 
-    using placements_type = pixel_position_list;
+    using placements_type = std::vector<pixel_position_list>;
+    using layout_generator_type = group_layout_generator;
+    using params_type = label_placement::placement_params<layout_generator_type>;
 };
 
 template <typename Traits>
 class text_symbolizer_helper
 {
 public:
+    using params_type = typename Traits::params_type;
+    using layout_generator_type = typename Traits::layout_generator_type;
+
     template <typename FaceManagerT, typename DetectorT>
-    static typename Traits::placements_type get(symbolizer_base const& sym,
-                           feature_impl const& feature,
-                           attributes const& vars,
-                           proj_transform const& prj_trans,
-                           unsigned width,
-                           unsigned height,
-                           double scale_factor,
-                           view_transform const& t,
-                           FaceManagerT & font_manager,
-                           DetectorT & detector,
-                           box2d<double> const& query_extent,
-                           agg::trans_affine const affine_trans,
-                           symbol_cache const& sc)
+    static typename Traits::placements_type get(
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars,
+        proj_transform const& prj_trans,
+        unsigned width,
+        unsigned height,
+        double scale_factor,
+        view_transform const& t,
+        FaceManagerT & font_manager,
+        DetectorT & detector,
+        box2d<double> const& query_extent,
+        agg::trans_affine const affine_trans,
+        symbol_cache const& sc)
     {
         box2d<double> dims(0, 0, width, height);
         text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
-        text_layout_generator layout_generator(feature, vars,
+        layout_generator_type layout_generator(feature, vars,
             font_manager, scale_factor, *placement_info);
 
         const label_placement_enum placement_type =
             layout_generator.get_text_props().label_placement;
 
-        label_placement::placement_params params {
+        params_type params {
             detector, font_manager, layout_generator, prj_trans, t, affine_trans, sym,
             feature, vars, box2d<double>(0, 0, width, height), query_extent,
             scale_factor, sc };

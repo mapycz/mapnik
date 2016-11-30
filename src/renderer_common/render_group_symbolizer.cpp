@@ -32,6 +32,11 @@
 
 namespace mapnik {
 
+template <>
+struct position_accessor<group_point_layout> : position_accessor<point_layout>
+{
+};
+
 void render_group_symbolizer(group_symbolizer const& sym,
                              feature_impl & feature,
                              attributes const& vars,
@@ -155,7 +160,6 @@ void render_group_symbolizer(group_symbolizer const& sym,
                                    //common.scale_factor_, common.t_,
                                    //*common.detector_, clipping_extent,
                                    //common.symbol_cache_);
-/*
     std::list<box_element> box_elements;
 
     for (size_t i = 0; i < matches.size(); ++i)
@@ -182,24 +186,30 @@ void render_group_symbolizer(group_symbolizer const& sym,
         box_elements.emplace_back(layout_manager.offset_box_at(i), rpt_key_value);
     }
 
-    //pixel_position_list const& positions = helper.get();
-    placements_list placements(text_symbolizer_helper<group_symbolizer_traits>::get(
-            sym, feature, vars, prj_trans,
-            common_.width_, common_.height_,
-            common_.scale_factor_,
-            common_.t_, common_.font_manager_, *common_.detector_,
-            common_.query_extent_, tr,
-            common_.symbol_cache_));
-    for (pixel_position const& pos : positions)
+    agg::trans_affine tr;
+    auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
+    if (transform) evaluate_transform(tr, feature, common.vars_, *transform, common.scale_factor_);
+
+    std::vector<pixel_position_list> positions(text_symbolizer_helper<group_symbolizer_traits>::get(
+        sym, feature, vars, prj_trans,
+        common.width_, common.height_,
+        common.scale_factor_,
+        common.t_, common.font_manager_, *common.detector_,
+        common.query_extent_, tr,
+        common.symbol_cache_));
+
+    for (pixel_position_list const& pos_list : positions)
     {
-        for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
+        for (pixel_position const& pos : pos_list)
         {
-            pixel_position const& offset = layout_manager.offset_at(layout_i);
-            pixel_position render_offset = pos + offset;
-            render_thunks.render_list(layout_thunks[layout_i], render_offset);
+            for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
+            {
+                pixel_position const& offset = layout_manager.offset_at(layout_i);
+                pixel_position render_offset = pos + offset;
+                render_thunks.render_list(layout_thunks[layout_i], render_offset);
+            }
         }
     }
-*/
 }
 
 } // namespace mapnik

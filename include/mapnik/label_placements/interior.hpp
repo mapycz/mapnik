@@ -28,7 +28,7 @@
 
 namespace mapnik { namespace label_placement {
 
-template <typename Layout>
+template <typename Layout, typename Params, typename Placements>
 struct interior
 {
     struct geometry_visitor
@@ -65,13 +65,13 @@ struct interior
         }
     };
 
-    static placements_list get(placement_params & params)
+    static Placements get(Params & params)
     {
         std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
             params.view_transform));
-        placements_list placements;
+        Placements placements;
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);
 

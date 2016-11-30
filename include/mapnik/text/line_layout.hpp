@@ -86,14 +86,15 @@ public:
                 box_type const& extent,
                 double scale_factor);
 
-    template <typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
-        text_layout_generator & layout_generator,
+        LayoutGenerator & layout_generator,
         Geom & geom);
 
 private:
+    template <typename LayoutGenerator>
     bool try_placement(
-        text_layout_generator & layout_generator,
+        LayoutGenerator & layout_generator,
         vertex_cache & pp);
 
     // Moves dx pixels but makes sure not to fall of the end.
@@ -124,10 +125,10 @@ line_layout<SubLayout>::line_layout(
 {
 }
 
-template <typename SubLayout> template <typename Geom>
-bool line_layout<SubLayout>::try_placement(text_layout_generator & layout_generator, Geom & geom)
+template <typename SubLayout> template <typename LayoutGenerator, typename Geom>
+bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, Geom & geom)
 {
-    layout_container & layouts = *layout_generator.get_layouts();
+    layout_container & layouts = *layout_generator.layouts_;
 
     if (!layouts.line_count()) return true;
 
@@ -143,14 +144,14 @@ bool line_layout<SubLayout>::try_placement(text_layout_generator & layout_genera
     return try_placement(layout_generator, pp);
 }
 
-template <typename SubLayout>
-bool line_layout<SubLayout>::try_placement(text_layout_generator & layout_generator, vertex_cache & pp)
+template <typename SubLayout> template <typename LayoutGenerator>
+bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, vertex_cache & pp)
 {
     bool success = false;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
     while (pp.next_subpath())
     {
-        layout_container const & layouts = *layout_generator.get_layouts();
+        layout_container const & layouts = *layout_generator.layouts_;
 
         if (pp.length() < text_props.minimum_path_length * scale_factor_ ||
             pp.length() < sublayout_.get_length(layouts))

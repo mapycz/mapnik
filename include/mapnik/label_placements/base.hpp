@@ -30,14 +30,19 @@
 #include <mapnik/geometry_split_multi.hpp>
 #include <mapnik/text/text_layout_generator.hpp>
 
-namespace mapnik { namespace label_placement { namespace detail {
+namespace mapnik { namespace label_placement {
 
-template <typename DetectorT, typename FaceManagerT>
-struct label_placement_params
+template <
+    typename LayoutGenerator,
+    typename DetectorT = label_collision_detector4,
+    typename FaceManagerT = face_manager_freetype>
+struct placement_params
 {
+    using layout_generator_type = LayoutGenerator;
+
     DetectorT & detector;
     FaceManagerT & font_manager;
-    text_layout_generator & layout_generator;
+    LayoutGenerator & layout_generator;
     mapnik::proj_transform const & proj_transform;
     mapnik::view_transform const & view_transform;
     agg::trans_affine const & affine_transform;
@@ -49,12 +54,6 @@ struct label_placement_params
     double scale_factor;
     mapnik::symbol_cache const & symbol_cache;
 };
-
-}
-
-using placement_params = detail::label_placement_params<
-    label_collision_detector4,
-    face_manager_freetype>;
 
 template <typename GeomVisitor, typename Geom>
 static std::list<pixel_position> get_pixel_positions(
@@ -110,9 +109,9 @@ struct layout_processor
                 }
             }
 
-            if (!layout_generator.get_layouts()->placements_.empty())
+            if (layout_generator.has_placements())
             {
-                placements.emplace_back(std::move(layout_generator.get_layouts()));
+                placements.emplace_back(std::move(layout_generator.get_placements()));
             }
         }
     }

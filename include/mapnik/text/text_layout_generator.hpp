@@ -48,14 +48,19 @@ struct text_layout_generator : util::noncopyable
     bool next();
     void reset();
 
-    inline std::unique_ptr<layout_container> & get_layouts()
-    {
-        return layouts_;
-    }
-
     inline evaluated_text_properties const & get_text_props() const
     {
         return *text_props_;
+    }
+
+    inline bool has_placements() const
+    {
+        return !layouts_->placements_.empty();
+    }
+
+    inline std::unique_ptr<layout_container> & get_placements()
+    {
+        return layouts_;
     }
 
     feature_impl const& feature_;

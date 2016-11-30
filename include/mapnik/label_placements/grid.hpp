@@ -53,12 +53,12 @@ struct grid_placement_finder_adapter
     Points & points_;
 };
 
-template <typename Layout>
+template <typename Layout, typename Params, typename Placements>
 struct grid
 {
     using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
 
-    static placements_list get(placement_params & params)
+    static Placements get(Params & params)
     {
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
@@ -78,7 +78,7 @@ struct grid
 
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);
-        placements_list placements;
+        Placements placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::vector<geom_type> splitted;

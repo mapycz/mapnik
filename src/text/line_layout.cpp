@@ -113,7 +113,7 @@ bool single_line_layout::try_placement(
 {
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box_type> bboxes;
-    layout_container & layouts = *layout_generator.get_layouts();
+    layout_container & layouts = *layout_generator.layouts_;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
 
     // TODO: useful?

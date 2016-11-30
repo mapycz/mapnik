@@ -30,11 +30,11 @@
 
 namespace mapnik { namespace label_placement {
 
-template <typename Layout>
+template <typename Layout, typename LayoutGenerator>
 struct placement_finder_adapter
 {
     placement_finder_adapter(Layout & layout,
-        text_layout_generator & layout_generator)
+        LayoutGenerator & layout_generator)
         : layout_(layout),
           layout_generator_(layout_generator)
     {
@@ -48,7 +48,7 @@ struct placement_finder_adapter
 
     bool status() const { return status_; }
     Layout & layout_;
-    text_layout_generator & layout_generator_;
+    LayoutGenerator & layout_generator_;
     mutable bool status_ = false;
 };
 
@@ -93,7 +93,7 @@ private:
     Adapter const & adapter_;
 };
 
-template <typename Layout>
+template <typename Layout, typename Params, typename Placements>
 struct line
 {
     using vertex_converter_type = vertex_converter<
@@ -122,7 +122,7 @@ struct line
         Visitor visitor_;
     };
 
-    static placements_list get(placement_params & params)
+    static Placements get(Params & params)
     {
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
@@ -144,13 +144,14 @@ struct line
             params.symbolizer, params.feature, params.vars);
         using layout_type = line_layout<Layout>;
         layout_type line_layout(layout, params.detector, params.dims, params.scale_factor);
-        placements_list placements;
+        Placements placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
         geometry::split(params.feature.get_geometry(), geoms);
 
-        using adapter_type = placement_finder_adapter<layout_type>;
+        using layout_generator_type = typename Params::layout_generator_type;
+        using adapter_type = placement_finder_adapter<layout_type, layout_generator_type>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
         adapter_type adapter(line_layout, params.layout_generator);
         visitor_type visitor(converter, adapter);

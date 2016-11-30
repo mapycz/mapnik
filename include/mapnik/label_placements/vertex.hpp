@@ -57,10 +57,10 @@ struct apply_vertex_placement
     proj_transform const& prj_trans_;
 };
 
-template <typename Layout>
+template <typename Layout, typename Params, typename Placements>
 struct vertex
 {
-    static placements_list get(placement_params & params)
+    static Placements get(Params & params)
     {
         auto const & geom = params.feature.get_geometry();
         using positions_type = std::list<pixel_position>;
@@ -71,7 +71,7 @@ struct vertex
 
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);
-        placements_list placements;
+        Placements placements;
 
         layout_processor::process(points, layout, params.layout_generator, placements);
 
