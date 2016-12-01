@@ -71,4 +71,45 @@ void text_layout_generator::reset()
     info_.reset_state();
 }
 
+bool text_layout_generator::align(vertex_cache & path, double spacing) const
+{
+    horizontal_alignment_e halign = layouts_->root_layout().horizontal_alignment();
+
+    // halign == H_LEFT -> don't move
+    if (halign == H_MIDDLE ||
+        halign == H_AUTO)
+    {
+        if (!path.forward(spacing / 2.0))
+        {
+            return false;
+        }
+    }
+    else if (halign == H_RIGHT)
+    {
+        if (!path.forward(path.length()))
+        {
+            return false;
+        }
+    }
+    else if (halign == H_ADJUST)
+    {
+        spacing = path.length();
+        if (!path.forward(spacing / 2.0))
+        {
+            return false;
+        }
+    }
+
+    double move_dx = layouts_->root_layout().displacement().x;
+    if (move_dx != 0.0)
+    {
+        vertex_cache::state state = path.save_state();
+        if (!path.move(move_dx))
+        {
+            path.restore_state(state);
+        }
+    }
+    return true;
+}
+
 }// ns mapnik

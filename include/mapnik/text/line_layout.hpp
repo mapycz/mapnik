@@ -76,49 +76,45 @@ struct position_accessor<shield_layout> : position_accessor<point_layout>
 static const double halign_adjust_extend = 1000;
 
 template <typename SubLayout>
-class line_layout : util::noncopyable
+class text_extend_line_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
 
-    line_layout(SubLayout & sublayout,
-                DetectorType & detector,
-                box_type const& extent,
-                double scale_factor);
+    text_extend_line_layout(
+        DetectorType & detector,
+        box_type const& extent,
+        double scale_factor,
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars);
 
     template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
         Geom & geom);
 
+    inline double get_length(text_layout_generator const & layout_generator) const
+    {
+        return layout_generator.layouts_->width();
+    }
+
 private:
-    template <typename LayoutGenerator>
-    bool try_placement(
-        LayoutGenerator & layout_generator,
-        vertex_cache & pp);
-
-    // Moves dx pixels but makes sure not to fall of the end.
-    void path_move_dx(vertex_cache & pp, double dx);
-
-    // Adjusts user defined spacing to place an integer number of labels.
-    double get_spacing(
-        double path_length,
-        double label_spacing,
-        double layout_width) const;
-
-    SubLayout & sublayout_;
+    SubLayout sublayout_;
     DetectorType & detector_;
     box2d<double> const & dims_;
     double scale_factor_;
 };
 
 template <typename SubLayout>
-line_layout<SubLayout>::line_layout(
-    SubLayout & sublayout,
+text_extend_line_layout<SubLayout>::text_extend_line_layout(
     DetectorType & detector,
     box_type const& extent,
-    double scale_factor)
-    : sublayout_(sublayout),
+    double scale_factor,
+    symbolizer_base const& sym,
+    feature_impl const& feature,
+    attributes const& vars)
+    : sublayout_(detector, extent, scale_factor, sym, feature, vars),
       detector_(detector),
       dims_(extent),
       scale_factor_(scale_factor)
@@ -126,7 +122,7 @@ line_layout<SubLayout>::line_layout(
 }
 
 template <typename SubLayout> template <typename LayoutGenerator, typename Geom>
-bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, Geom & geom)
+bool text_extend_line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, Geom & geom)
 {
     layout_container & layouts = *layout_generator.layouts_;
 
@@ -137,9 +133,80 @@ bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, G
     {
         extend_converter<Geom> ec(geom, halign_adjust_extend);
         vertex_cache pp(ec);
-        return try_placement(layout_generator, pp);
+        return sublayout_.try_placement(layout_generator, pp);
     }
 
+    vertex_cache pp(geom);
+    return sublayout_.try_placement(layout_generator, pp);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+template <typename SubLayout>
+class line_layout : util::noncopyable
+{
+public:
+    using box_type = box2d<double>;
+
+    line_layout(
+        DetectorType & detector,
+        box_type const& extent,
+        double scale_factor,
+        symbolizer_base const& sym,
+        feature_impl const& feature,
+        attributes const& vars);
+
+    template <typename LayoutGenerator, typename Geom>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Geom & geom);
+
+    template <typename LayoutGenerator>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        vertex_cache & pp);
+
+private:
+    // Adjusts user defined spacing to place an integer number of labels.
+    double get_spacing(
+        double path_length,
+        double label_spacing,
+        double layout_width) const;
+
+    SubLayout sublayout_;
+    DetectorType & detector_;
+    box2d<double> const & dims_;
+    double scale_factor_;
+};
+
+template <typename SubLayout>
+line_layout<SubLayout>::line_layout(
+    DetectorType & detector,
+    box_type const& extent,
+    double scale_factor,
+    symbolizer_base const& sym,
+    feature_impl const& feature,
+    attributes const& vars)
+    : sublayout_(detector, extent, scale_factor, sym, feature, vars),
+      detector_(detector),
+      dims_(extent),
+      scale_factor_(scale_factor)
+{
+}
+
+template <typename SubLayout> template <typename LayoutGenerator, typename Geom>
+bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, Geom & geom)
+{
     vertex_cache pp(geom);
     return try_placement(layout_generator, pp);
 }
@@ -152,35 +219,20 @@ bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, v
     while (pp.next_subpath())
     {
         layout_container const & layouts = *layout_generator.layouts_;
+        double layout_length = sublayout_.get_length(layout_generator);
 
         if (pp.length() < text_props.minimum_path_length * scale_factor_ ||
-            pp.length() < sublayout_.get_length(layouts))
+            pp.length() < layout_length)
         {
             continue;
         }
 
-        double spacing = get_spacing(pp.length(), text_props.label_spacing,
-            sublayout_.get_length(layouts));
-        horizontal_alignment_e halign = layouts.root_layout().horizontal_alignment();
+        double spacing = get_spacing(pp.length(), text_props.label_spacing, layout_length);
 
-        // halign == H_LEFT -> don't move
-        if (halign == H_MIDDLE ||
-            halign == H_AUTO)
+        if (!layout_generator.align(pp, spacing))
         {
-            if (!pp.forward(spacing / 2.0)) continue;
+            continue;
         }
-        else if (halign == H_RIGHT)
-        {
-            if (!pp.forward(pp.length())) continue;
-        }
-        else if (halign == H_ADJUST)
-        {
-            spacing = pp.length();
-            if (!pp.forward(spacing / 2.0)) continue;
-        }
-
-        double move_dx = layouts.root_layout().displacement().x;
-        if (move_dx != 0.0) path_move_dx(pp, move_dx);
 
         do
         {
@@ -200,13 +252,6 @@ bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, v
         } while (pp.forward(spacing));
     }
     return success;
-}
-
-template <typename SubLayout>
-void line_layout<SubLayout>::path_move_dx(vertex_cache & pp, double dx)
-{
-    vertex_cache::state state = pp.save_state();
-    if (!pp.move(dx)) pp.restore_state(state);
 }
 
 template <typename SubLayout>
@@ -246,9 +291,9 @@ public:
         text_layout_generator & layout_generator,
         vertex_cache & path);
 
-    inline double get_length(layout_container const & layouts) const
+    inline double get_length(text_layout_generator const & layout_generator) const
     {
-        return layouts.width();
+        return layout_generator.layouts_->width();
     }
 
 private:

@@ -188,15 +188,29 @@ void render_group_symbolizer(group_symbolizer const& sym,
 
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
-    if (transform) evaluate_transform(tr, feature, common.vars_, *transform, common.scale_factor_);
+    if (transform)
+    {
+        evaluate_transform(tr, feature, common.vars_, *transform, common.scale_factor_);
+    }
 
-    std::vector<pixel_position_list> positions(text_symbolizer_helper<group_symbolizer_traits>::get(
-        sym, feature, vars, prj_trans,
-        common.width_, common.height_,
-        common.scale_factor_,
-        common.t_, common.font_manager_, *common.detector_,
-        common.query_extent_, tr,
-        common.symbol_cache_));
+    using traits = group_symbolizer_traits;
+    text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+        sym, keys::text_placements_)->get_placement_info(common.scale_factor_,
+            feature, vars, common.symbol_cache_);
+    group_layout_generator layout_generator(feature, vars, common.font_manager_,
+        common.scale_factor_, *placement_info, box_elements);
+
+    const label_placement_enum placement_type =
+        layout_generator.get_text_props().label_placement;
+
+    traits::params_type params {
+        *common.detector_, common.font_manager_, layout_generator, prj_trans,
+        common.t_, tr, sym, feature, vars,
+        box2d<double>(0, 0, common.width_, common.height_), common.query_extent_,
+        common.scale_factor_, common.symbol_cache_ };
+
+    std::vector<pixel_position_list> positions(
+        label_placement::finder<traits>::get(placement_type, params));
 
     for (pixel_position_list const& pos_list : positions)
     {

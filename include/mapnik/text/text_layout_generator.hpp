@@ -48,6 +48,8 @@ struct text_layout_generator : util::noncopyable
     bool next();
     void reset();
 
+    bool align(vertex_cache & path, double spacing) const;
+
     inline evaluated_text_properties const & get_text_props() const
     {
         return *text_props_;

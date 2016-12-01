@@ -219,14 +219,16 @@ group_layout_generator::group_layout_generator(
     attributes const & vars,
     face_manager_freetype & font_manager,
     double scale_factor,
-    text_placement_info & info)
+    text_placement_info & info,
+    std::list<box_element> const & box_elements)
     : feature_(feature),
       vars_(vars),
       font_manager_(font_manager),
       scale_factor_(scale_factor),
       info_(info),
       text_props_(evaluate_text_properties(info.properties, feature, vars)),
-      state_(true)
+      state_(true),
+      box_elements_(box_elements)
 {
 }
 
@@ -243,6 +245,11 @@ bool group_layout_generator::next()
 void group_layout_generator::reset()
 {
     state_ = true;
+}
+
+bool group_layout_generator::align(vertex_cache & path, double spacing) const
+{
+    return path.forward(spacing / 2.0);
 }
 
 
@@ -267,7 +274,7 @@ bool group_point_layout::try_placement(
 {
     std::list<box_element> const & box_elements = layout_generator.box_elements_;
 
-    if (box_elements.empty()) return false;
+    if (box_elements.empty()) return true;
 
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
 

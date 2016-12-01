@@ -37,6 +37,7 @@ class label_collision_detector4;
 class feature_impl;
 class proj_transform;
 class view_transform;
+class vertex_cache;
 using DetectorType = label_collision_detector4;
 
 using pixel_position_list = std::list<pixel_position>;
@@ -124,10 +125,13 @@ struct group_layout_generator : util::noncopyable
         attributes const& vars,
         face_manager_freetype & font_manager,
         double scale_factor,
-        text_placement_info & info);
+        text_placement_info & info,
+        std::list<box_element> const & box_elements);
 
     bool next();
     void reset();
+
+    bool align(vertex_cache & path, double spacing) const;
 
     inline evaluated_text_properties const & get_text_props() const
     {
@@ -173,7 +177,7 @@ public:
         group_layout_generator & layout_generator,
         pixel_position const& pos);
 
-    inline double get_length(layout_container const &) const
+    inline double get_length(group_layout_generator const &) const
     {
         return 0;
     }

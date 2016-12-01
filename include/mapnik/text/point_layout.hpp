@@ -59,7 +59,7 @@ public:
         text_layout_generator & layout_generator,
         pixel_position const& pos);
 
-    inline double get_length(layout_container const &) const
+    inline double get_length(text_layout_generator const &) const
     {
         return 0;
     }

@@ -32,6 +32,20 @@
 
 namespace mapnik { namespace label_placement {
 
+// TODO
+struct symbolizer_context
+{
+    symbolizer_base const & symbolizer;
+    feature_impl const & feature;
+    attributes const & vars;
+
+    template <typename T, mapnik::keys key>
+    T get()
+    {
+        return mapnik::get<T, key>(symbolizer, feature, vars);
+    }
+};
+
 template <
     typename LayoutGenerator,
     typename DetectorT = label_collision_detector4,

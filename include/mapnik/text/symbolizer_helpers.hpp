@@ -47,7 +47,7 @@ struct text_symbolizer_traits
     using interior = point_layout;
     using vertex = point_layout;
     using grid = point_layout;
-    using line = single_line_layout;
+    using line = text_extend_line_layout<line_layout<single_line_layout>>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -60,7 +60,7 @@ struct shield_symbolizer_traits
     using interior = shield_layout;
     using vertex = shield_layout;
     using grid = shield_layout;
-    using line = shield_layout;
+    using line = line_layout<shield_layout>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -69,11 +69,11 @@ struct shield_symbolizer_traits
 
 struct group_symbolizer_traits
 {
-    using point = mapnik::group_point_layout;
+    using point = group_point_layout;
     using interior = group_point_layout;
     using vertex = group_point_layout;
     using grid = group_point_layout;
-    using line = group_point_layout;
+    using line = line_layout<group_point_layout>;
 
     using placements_type = std::vector<pixel_position_list>;
     using layout_generator_type = group_layout_generator;
@@ -103,7 +103,6 @@ public:
         agg::trans_affine const affine_trans,
         symbol_cache const& sc)
     {
-        box2d<double> dims(0, 0, width, height);
         text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);

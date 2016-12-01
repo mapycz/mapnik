@@ -142,8 +142,8 @@ struct line
 
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);
-        using layout_type = line_layout<Layout>;
-        layout_type line_layout(layout, params.detector, params.dims, params.scale_factor);
+        //using layout_type = line_layout<Layout>;
+        //layout_type line_layout(layout, params.detector, params.dims, params.scale_factor);
         Placements placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
@@ -151,9 +151,9 @@ struct line
         geometry::split(params.feature.get_geometry(), geoms);
 
         using layout_generator_type = typename Params::layout_generator_type;
-        using adapter_type = placement_finder_adapter<layout_type, layout_generator_type>;
+        using adapter_type = placement_finder_adapter<Layout, layout_generator_type>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
-        adapter_type adapter(line_layout, params.layout_generator);
+        adapter_type adapter(layout, params.layout_generator);
         visitor_type visitor(converter, adapter);
         layout_adapter<visitor_type> la(visitor);
 
