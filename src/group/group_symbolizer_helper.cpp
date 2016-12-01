@@ -134,7 +134,7 @@ bool group_symbolizer_helper::find_line_placements(T & path)
 
 bool group_symbolizer_helper::check_point_placement(pixel_position const& pos)
 {
-    if (box_elements_.empty()) return false;
+    if (box_elements_.empty()) return true;
 
     // offset boxes and check collision
     std::list< box2d<double> > real_boxes;
