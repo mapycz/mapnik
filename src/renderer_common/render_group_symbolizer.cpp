@@ -123,6 +123,11 @@ void render_group_symbolizer(group_symbolizer const& sym,
         // get the layout for this set of properties
         for (auto const& rule : props->get_rules())
         {
+            if (rule->get_symbolizers().empty())
+            {
+                continue;
+            }
+
              if (util::apply_visitor(evaluate<feature_impl,value_type,attributes>(*sub_feature,common.vars_),
                                                *(rule->get_filter())).to_bool())
              {
