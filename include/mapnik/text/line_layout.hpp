@@ -140,18 +140,6 @@ bool text_extend_line_layout<SubLayout>::try_placement(LayoutGenerator & layout_
     return sublayout_.try_placement(layout_generator, pp);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 template <typename SubLayout>
 class line_layout : util::noncopyable
 {

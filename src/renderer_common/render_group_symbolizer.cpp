@@ -155,11 +155,6 @@ void render_group_symbolizer(group_symbolizer const& sym,
     }
 
     // create a symbolizer helper
-    //group_symbolizer_helper helper(sym, feature, vars, prj_trans,
-                                   //common.width_, common.height_,
-                                   //common.scale_factor_, common.t_,
-                                   //*common.detector_, clipping_extent,
-                                   //common.symbol_cache_);
     std::list<box_element> box_elements;
 
     for (size_t i = 0; i < matches.size(); ++i)
@@ -180,8 +175,9 @@ void render_group_symbolizer(group_symbolizer const& sym,
         // evaluate the repeat key with the matched sub feature if we have one
         if (rpt_key_expr)
         {
-            rpt_key_value = util::apply_visitor(evaluate<feature_impl,value_type,attributes>(*match_feature,common.vars_),
-                                                *rpt_key_expr).to_unicode();
+            rpt_key_value = util::apply_visitor(
+                evaluate<feature_impl,value_type,attributes>(*match_feature,common.vars_),
+                    *rpt_key_expr).to_unicode();
         }
         box_elements.emplace_back(layout_manager.offset_box_at(i), rpt_key_value);
     }
