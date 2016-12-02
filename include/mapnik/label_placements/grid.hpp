@@ -81,10 +81,11 @@ struct grid
         Placements placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
-        std::vector<geom_type> splitted;
-        geometry::split(params.feature.get_geometry(), splitted);
+        std::vector<geom_type> geoms;
+        split(params.feature.get_geometry(), geoms,
+            params.layout_generator.largest_box_only());
 
-        for (auto const & geom_ref : splitted)
+        for (auto const & geom_ref : geoms)
         {
             using polygon_type = geometry::cref_geometry<double>::polygon_type;
             auto const & poly = mapnik::util::get<polygon_type>(geom_ref).get();

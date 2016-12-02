@@ -62,12 +62,20 @@ struct vertex
 {
     static Placements get(Params & params)
     {
-        auto const & geom = params.feature.get_geometry();
+        using geom_type = geometry::cref_geometry<double>::geometry_type;
+        std::list<geom_type> geoms;
+        split(params.feature.get_geometry(), geoms,
+            params.layout_generator.largest_box_only());
+
         using positions_type = std::list<pixel_position>;
-        using apply_vertex_placement = apply_vertex_placement<positions_type>;
         positions_type points;
-        apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
-        util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
+
+        for (auto const & geom : geoms)
+        {
+            using apply_vertex_placement = apply_vertex_placement<positions_type>;
+            apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
+            util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
+        }
 
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);

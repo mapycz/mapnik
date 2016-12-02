@@ -146,7 +146,8 @@ struct line
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
-        geometry::split(params.feature.get_geometry(), geoms);
+        split(params.feature.get_geometry(), geoms,
+            params.layout_generator.largest_box_only());
 
         using layout_generator_type = typename Params::layout_generator_type;
         using adapter_type = placement_finder_adapter<Layout, layout_generator_type>;
