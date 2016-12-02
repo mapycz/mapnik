@@ -142,8 +142,6 @@ struct line
 
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);
-        //using layout_type = line_layout<Layout>;
-        //layout_type line_layout(layout, params.detector, params.dims, params.scale_factor);
         Placements placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;

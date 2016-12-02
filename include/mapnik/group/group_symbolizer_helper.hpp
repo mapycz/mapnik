@@ -82,6 +82,11 @@ struct group_layout_generator : util::noncopyable
         return results_;
     }
 
+    inline bool largest_box_only() const
+    {
+        return text_props_->largest_bbox_only;
+    }
+
     feature_impl const& feature_;
     attributes const& vars_;
     face_manager_freetype &font_manager_;

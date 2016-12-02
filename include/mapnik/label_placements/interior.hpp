@@ -70,7 +70,8 @@ struct interior
         std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
-            params.view_transform));
+            params.view_transform,
+            params.layout_generator.largest_box_only()));
         Placements placements;
         Layout layout(params.detector, params.dims, params.scale_factor,
             params.symbolizer, params.feature, params.vars);

@@ -23,18 +23,9 @@
 #ifndef MAPNIK_GEOMETRY_SPLIT_MULTI_HPP
 #define MAPNIK_GEOMETRY_SPLIT_MULTI_HPP
 
-#include <mapnik/geometry.hpp>
+#include <mapnik/geometry_cref.hpp>
 
 namespace mapnik { namespace geometry {
-
-template <typename T>
-struct cref_geometry
-{
-    using point_type = std::reference_wrapper<point<T> const>;
-    using line_string_type = std::reference_wrapper<line_string<T> const>;
-    using polygon_type = std::reference_wrapper<polygon<T> const>;
-    using geometry_type = util::variant<point_type, line_string_type, polygon_type>;
-};
 
 template <typename T, typename Container>
 struct split_multi_geometries

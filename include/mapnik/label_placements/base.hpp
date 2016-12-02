@@ -69,19 +69,54 @@ struct placement_params
     mapnik::symbol_cache const & symbol_cache;
 };
 
+struct largest_bbox_first
+{
+    using geom_type = geometry::cref_geometry<double>::geometry_type;
+
+    bool operator() (geom_type const & g0, geom_type const & g1) const
+    {
+        box2d<double> b0 = geometry::envelope(g0);
+        box2d<double> b1 = geometry::envelope(g1);
+        return b0.width() * b0.height() < b1.width() * b1.height();
+    }
+};
+
+template <typename Geom, typename SplitGeoms>
+void split(Geom const & geom, SplitGeoms & split_geoms, bool largest_box_only)
+{
+    geometry::split(geom, split_geoms);
+    if (largest_box_only && split_geoms.size() > 1)
+    {
+        auto type = geometry::geometry_type(geom);
+        if (type == geometry::geometry_types::Polygon ||
+            type == geometry::geometry_types::MultiPolygon)
+        {
+            largest_bbox_first compare;
+            auto max_it(std::max_element(split_geoms.begin(), split_geoms.end(), compare));
+            if (max_it != split_geoms.end())
+            {
+                auto max(*max_it);
+                split_geoms.clear();
+                split_geoms.push_back(max);
+            }
+        }
+    }
+}
+
 template <typename GeomVisitor, typename Geom>
 static std::list<pixel_position> get_pixel_positions(
     Geom const & geom,
     proj_transform const & prj_trans,
-    view_transform const & view_trans)
+    view_transform const & view_trans,
+    bool largest_box_only)
 {
     using geom_type = geometry::cref_geometry<double>::geometry_type;
-    std::vector<geom_type> splitted;
-    geometry::split(geom, splitted);
+    std::vector<geom_type> split_geoms;
+    split(geom, split_geoms, largest_box_only);
 
     std::list<pixel_position> positions;
 
-    for (auto const & geom_ref : splitted)
+    for (auto const & geom_ref : split_geoms)
     {
         const GeomVisitor visitor;
         if (boost::optional<geometry::point<double>> point = util::apply_visitor(visitor, geom_ref))

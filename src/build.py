@@ -261,6 +261,7 @@ source = Split(
     group/group_layout_manager.cpp
     group/group_rule.cpp
     group/group_symbolizer_helper.cpp
+    geometry_cref.cpp
     xml_tree.cpp
     config_error.cpp
     color_factory.cpp
