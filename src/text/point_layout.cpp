@@ -235,7 +235,7 @@ shield_layout::shield_layout(
     box2d<double> bbox(px0, py0, px1, py1);
     bbox.expand_to_include(px2, py2);
     bbox.expand_to_include(px3, py3);
-    marker_box_ = bbox;
+    marker_box_ = bbox * scale_factor;
     // TODO: shared?
     marker_ = std::make_shared<marker_info>(marker, trans);
 }
