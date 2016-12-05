@@ -112,7 +112,7 @@ public:
             layout_generator.get_text_props().label_placement;
 
         params_type params {
-            detector, font_manager, layout_generator, prj_trans, t, affine_trans, sym,
+            detector, layout_generator, prj_trans, t, affine_trans, sym,
             feature, vars, box2d<double>(0, 0, width, height), query_extent,
             scale_factor, sc };
 

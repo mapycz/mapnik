@@ -200,7 +200,7 @@ void render_group_symbolizer(group_symbolizer const& sym,
         layout_generator.get_text_props().label_placement;
 
     traits::params_type params {
-        *common.detector_, common.font_manager_, layout_generator, prj_trans,
+        *common.detector_, layout_generator, prj_trans,
         common.t_, tr, sym, feature, vars,
         box2d<double>(0, 0, common.width_, common.height_), common.query_extent_,
         common.scale_factor_, common.symbol_cache_ };

@@ -55,7 +55,6 @@ struct placement_params
     using layout_generator_type = LayoutGenerator;
 
     DetectorT & detector;
-    FaceManagerT & font_manager;
     LayoutGenerator & layout_generator;
     mapnik::proj_transform const & proj_transform;
     mapnik::view_transform const & view_transform;
