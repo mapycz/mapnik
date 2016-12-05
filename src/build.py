@@ -271,6 +271,7 @@ source = Split(
     math.cpp
     symbol_cache.cpp
     value.cpp
+    marker_layout_generator.cpp
     """
     )
 

@@ -39,17 +39,16 @@ struct symbolizer_context
     feature_impl const & feature;
     attributes const & vars;
 
-    template <typename T, mapnik::keys key>
+    template <typename T>
     T get()
     {
-        return mapnik::get<T, key>(symbolizer, feature, vars);
+        return mapnik::get<T, mapnik::keys>(symbolizer, feature, vars);
     }
 };
 
 template <
     typename LayoutGenerator,
-    typename DetectorT = label_collision_detector4,
-    typename FaceManagerT = face_manager_freetype>
+    typename DetectorT = label_collision_detector4>
 struct placement_params
 {
     using layout_generator_type = LayoutGenerator;
@@ -68,6 +67,7 @@ struct placement_params
     mapnik::symbol_cache const & symbol_cache;
 };
 
+// TODO
 struct largest_bbox_first
 {
     using geom_type = geometry::cref_geometry<double>::geometry_type;

@@ -33,6 +33,19 @@
 namespace mapnik
 {
 
+struct marker_symbolizer_traits
+{
+    using point = marker_layout;
+    using interior = marker_layout;
+    using vertex = marker_layout;
+    using grid = marker_layout;
+    using line = line_layout<marker_layout>;
+
+    using placements_type = std::vector<pixel_position_list>;
+    using layout_generator_type = marker_layout_generator;
+    using params_type = label_placement::placement_params<layout_generator_type>;
+};
+
 template <typename Locator, typename Detector>
 class markers_placement_finder : util::noncopyable
 {
