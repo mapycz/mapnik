@@ -23,7 +23,6 @@
 #define SYMBOLIZER_HELPERS_HPP
 
 // mapnik
-#include <mapnik/text/placement_finder.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/symbol_cache.hpp>
