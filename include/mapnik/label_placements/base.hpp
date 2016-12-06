@@ -27,6 +27,7 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/symbol_cache.hpp>
 #include <mapnik/symbolizer_base.hpp>
+#include <mapnik/symbolizer.hpp>
 #include <mapnik/geometry_split_multi.hpp>
 #include <mapnik/text/text_layout_generator.hpp>
 

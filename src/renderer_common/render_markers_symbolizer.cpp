@@ -175,6 +175,26 @@ struct render_marker_symbolizer_visitor
                                                  snap_to_pixels,
                                                  renderer_context_);
 
+        agg::trans_affine tr;
+        auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
+        if (transform) evaluate_transform(tr, feature_, common_.vars_, *transform, common_.scale_factor_);
+
+        using traits = marker_symbolizer_traits;
+
+        marker_layout_generator layout_generator(feature_, common_.vars_,
+            common_.scale_factor_, marker_ptr, svg_path, r_attributes, image_tr);
+        const auto placement_method = POINT_PLACEMENT; //TODO
+
+        traits::params_type params {
+            *common_.detector_, layout_generator, prj_trans_,
+            common_.t_, tr, sym_, feature_, common_.vars_,
+            box2d<double>(0, 0, common_.width_, common_.height_), common_.query_extent_,
+            common_.scale_factor_, common_.symbol_cache_ };
+
+        typename traits::placements_type placements(
+            label_placement::finder<traits>::get(placement_method, params));
+
+
         render_marker(mark, rasterizer_dispatch);
     }
 

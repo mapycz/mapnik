@@ -96,31 +96,6 @@ struct render_marker_symbolizer_visitor
             auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
             if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform, common_.scale_factor_);
 
-
-
-            agg::trans_affine tr;
-            auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
-            if (transform) evaluate_transform(tr, feature_, common_.vars_, *transform, common_.scale_factor_);
-
-            using traits = marker_symbolizer_traits;
-
-            marker_layout_generator layout_generator(feature_, common_.vars_, common_.scale_factor_);
-            const auto placement_method = params_.placement_method;
-
-            traits::params_type params {
-                *common_.detector_, layout_generator, prj_trans_,
-                common_.t_, tr, sym_, feature_, common_.vars_,
-                box2d<double>(0, 0, common_.width_, common_.height_), common_.query_extent_,
-                common_.scale_factor_, common_.symbol_cache_ };
-
-            //std::vector<pixel_position_list> positions(
-                //label_placement::finder<traits>::get(placement_method, params));
-
-
-
-
-            /*
-
             vector_dispatch_type rasterizer_dispatch(marker_ellipse,
                                                      svg_path,
                                                      result ? attributes : (*stock_vector_marker)->attributes(),
@@ -157,7 +132,6 @@ struct render_marker_symbolizer_visitor
             if (simplify_tolerance > 0.0) converter.template set<simplify_tag>(); // optional simplify converter
             if (smooth > 0.0) converter.template set<smooth_tag>(); // optional smooth converter
             apply_markers_multi(feature_, common_.vars_, converter, rasterizer_dispatch, sym_);
-            */
         }
         else
         {

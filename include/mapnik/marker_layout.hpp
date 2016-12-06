@@ -23,11 +23,10 @@
 #define MAPNIK_MARKER_LAYOUT_HPP
 
 //mapnik
-#include <mapnik/text/placements/base.hpp>
 #include <mapnik/value_types.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/font_engine_freetype.hpp>
-#include <mapnik/text/text_layout.hpp>
+#include <mapnik/marker_layout_generator.hpp>
 
 #include <list>
 
@@ -56,23 +55,34 @@ public:
         attributes const& vars);
 
     bool try_placement(
-        group_layout_generator & layout_generator,
-        pixel_position const& pos);
+        marker_layout_generator & layout_generator,
+        vertex_cache const & path);
 
-    inline double get_length(group_layout_generator const &) const
+    bool try_placement(
+        marker_layout_generator & layout_generator,
+        pixel_position const & pos);
+
+    inline double get_length(marker_layout_generator const &) const
     {
         return 0;
     }
 
 protected:
-    bool collision(
-        evaluated_text_properties const & text_props,
-        box_type const& box,
-        const value_unicode_string &repeat_key) const;
+    bool set_direction(double & angle) const;
+
+    bool push_to_detector(
+        pixel_position const & pos,
+        double angle,
+        marker_layout_generator & layout_generator,
+        box2d<double> & box);
 
     DetectorType & detector_;
-    box_type const& dims_;
+    box_type const & dims_;
     const double scale_factor_;
+    const value_bool ignore_placement_;
+    const value_bool allow_overlap_;
+    const value_bool avoid_edges_;
+    direction_enum direction_;
 };
 
 } //namespace

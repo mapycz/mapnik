@@ -27,6 +27,7 @@
 #include <mapnik/geometry_types.hpp>
 #include <mapnik/geometry_split_multi.hpp>
 #include <mapnik/grid_vertex_adapter.hpp>
+#include <mapnik/vertex_converters.hpp>
 
 namespace mapnik { namespace label_placement {
 
@@ -56,7 +57,14 @@ struct grid_placement_finder_adapter
 template <typename Layout, typename Params, typename Placements>
 struct grid
 {
-    using vertex_converter_type = vertex_converter<clip_line_tag, clip_poly_tag, transform_tag, affine_transform_tag, extend_tag, simplify_tag, smooth_tag>;
+    using vertex_converter_type = vertex_converter<
+        clip_line_tag,
+        clip_poly_tag,
+        transform_tag,
+        affine_transform_tag,
+        extend_tag,
+        simplify_tag,
+        smooth_tag>;
 
     static Placements get(Params & params)
     {

@@ -21,17 +21,15 @@
  *****************************************************************************/
 
 // mapnik
-#include <mapnik/group/group_symbolizer_helper.hpp>
 #include <mapnik/label_collision_detector.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/value_types.hpp>
-#include <mapnik/text/placements/base.hpp>
-#include <mapnik/text/placements/dummy.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/tolerance_iterator.hpp>
+#include <mapnik/marker_layout.hpp>
 
 namespace mapnik { //namespace detail {
 
@@ -44,7 +42,11 @@ marker_layout::marker_layout(
         attributes const& vars)
     : detector_(detector),
       dims_(extent),
-      scale_factor_(scale_factor)
+      scale_factor_(scale_factor),
+      ignore_placement_(get<value_bool, keys::ignore_placement>(sym, feature, vars))
+      allow_overlap_(get<value_bool, keys::allow_overlap>(sym, feature, vars)),
+      avoid_edges_(get<value_bool, keys::avoid_edges>(sym, feature, vars)),
+      direction_(get<direction_enum, keys::direction>(sym, feature, vars))
 {
 }
 
@@ -58,54 +60,14 @@ bool marker_layout::try_placement(
     {
         return false;
     }
-    return push_to_detector(pos, angle, ignore_placement, box);
+    return push_to_detector(pos, angle, layout_generator, box);
 }
 
 bool marker_layout::try_placement(
     marker_layout_generator & layout_generator,
-    pixel_position const& pos)
+    pixel_position const & pos)
 {
-    return push_to_detector(pos, 0, ignore_placement, box);
-
-    std::list<box_element> const & box_elements = layout_generator.box_elements_;
-
-    if (box_elements.empty()) return true;
-
-    evaluated_text_properties const & text_props = layout_generator.get_text_props();
-
-    // offset boxes and check collision
-    std::list<box2d<double>> real_boxes;
-    for (auto const& box_elem : box_elements)
-    {
-        box2d<double> real_box = box2d<double>(box_elem.box_);
-        real_box.move(pos.x, pos.y);
-        if (collision(text_props, real_box, box_elem.repeat_key_))
-        {
-            return false;
-        }
-        real_boxes.push_back(real_box);
-    }
-
-    // add boxes to collision detector
-    std::list<box_element>::const_iterator elem_itr = box_elements.cbegin();
-    std::list<box2d<double>>::const_iterator real_itr = real_boxes.cbegin();
-    while (elem_itr != box_elements.cend() && real_itr != real_boxes.cend())
-    {
-        detector_.insert(*real_itr, elem_itr->repeat_key_);
-        elem_itr++;
-        real_itr++;
-    }
-
-    layout_generator.results_.push_back(pos);
-
-    return true;
-}
-
-// Rotates the size_ box and translates the position.
-box2d<double> perform_transform(double angle, double dx, double dy) const
-{
-    auto tr = params_.tr * agg::trans_affine_rotation(angle).translate(dx, dy);
-    return box2d<double>(params_.size, tr);
+    return push_to_detector(pos, 0, layout_generator, box);
 }
 
 // Checks transformed box placement with collision detector.
@@ -117,28 +79,29 @@ box2d<double> perform_transform(double angle, double dx, double dy) const
 bool marker_layout::push_to_detector(
     pixel_position const & pos,
     double angle,
-    bool ignore_placement,
-    box2d<double> &box)
+    marker_layout_generator & lg,
+    box2d<double> & box)
 {
-    box = perform_transform(angle, pos.x, pos.y);
-    if (params_.avoid_edges && !detector_.extent().contains(box))
+    auto tr = lg.trans_ * agg::trans_affine_rotation(angle).translate(pos.x, pos.y);
+    box = box2d<double>(lg.size_, tr);
+    if (avoid_edges_ && !detector_.extent().contains(box))
     {
         return false;
     }
-    if (!params_.allow_overlap && !detector_.has_placement(box))
+    if (!allow_overlap_ && !detector_.has_placement(box))
     {
         return false;
     }
-    if (!ignore_placement)
+    if (!ignore_placement_)
     {
         detector_.insert(box);
     }
     return true;
 }
 
-bool set_direction(double & angle) const
+bool marker_layout::set_direction(double & angle) const
 {
-    switch (params_.direction)
+    switch (direction_)
     {
         case DIRECTION_UP:
             angle = 0;
@@ -167,6 +130,5 @@ bool set_direction(double & angle) const
             return true;
     }
 }
-
 
 } //namespace

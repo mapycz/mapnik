@@ -20,10 +20,7 @@
  *
  *****************************************************************************/
 //mapnik
-#include <mapnik/text/text_layout_generator.hpp>
-#include <mapnik/text/placements/base.hpp>
-#include <mapnik/text/text_layout.hpp>
-#include <mapnik/text/text_properties.hpp>
+#include <mapnik/marker_layout_generator.hpp>
 #include <mapnik/make_unique.hpp>
 
 // stl
@@ -32,84 +29,36 @@
 namespace mapnik
 {
 
-text_layout_generator::text_layout_generator(
+marker_layout_generator::marker_layout_generator(
     feature_impl const & feature,
     attributes const & vars,
-    face_manager_freetype & font_manager,
     double scale_factor,
-    text_placement_info & info)
+    svg_path_ptr const & src,
+    svg_path_adapter & path,
+    svg_attribute_type const & attrs,
+    agg::trans_affine const & marker_trans)
     : feature_(feature),
       vars_(vars),
-      font_manager_(font_manager),
       scale_factor_(scale_factor),
-      info_(info),
-      text_props_(evaluate_text_properties(info.properties, feature, vars))
+      state_(true),
+      size_(src->bounding_box()),
+      tr_(recenter(src) * marker_trans)
 {
 }
 
-bool text_layout_generator::next()
+bool marker_layout_generator::next()
 {
-    if (!info_.next())
+    if (state_)
     {
-        return false;
+        state_ = false;
+        return true;
     }
-    text_props_ = evaluate_text_properties(info_.properties, feature_, vars_);
-    layouts_ = std::make_unique<layout_container>(
-        std::move(std::make_unique<text_layout>(
-            font_manager_,
-            feature_,
-            vars_,
-            scale_factor_,
-            info_.properties,
-            info_.properties.layout_defaults,
-            info_.properties.format_tree())));
-    return true;
+    return false;
 }
 
-void text_layout_generator::reset()
+void marker_layout_generator::reset()
 {
-    info_.reset_state();
-}
-
-bool text_layout_generator::align(vertex_cache & path, double spacing) const
-{
-    horizontal_alignment_e halign = layouts_->root_layout().horizontal_alignment();
-
-    // halign == H_LEFT -> don't move
-    if (halign == H_MIDDLE ||
-        halign == H_AUTO)
-    {
-        if (!path.forward(spacing / 2.0))
-        {
-            return false;
-        }
-    }
-    else if (halign == H_RIGHT)
-    {
-        if (!path.forward(path.length()))
-        {
-            return false;
-        }
-    }
-    else if (halign == H_ADJUST)
-    {
-        spacing = path.length();
-        if (!path.forward(spacing / 2.0))
-        {
-            return false;
-        }
-    }
-
-    double move_dx = layouts_->root_layout().displacement().x;
-    if (move_dx != 0.0)
-    {
-        vertex_cache::state state = path.save_state();
-        if (!path.move(move_dx))
-        {
-            path.restore_state(state);
-        }
-    }
-    return true;
+    state_ = true;
 }
 
 }// ns mapnik

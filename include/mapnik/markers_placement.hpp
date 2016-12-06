@@ -30,6 +30,10 @@
 #include <mapnik/markers_placements/vertext_last.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 
+#include <mapnik/marker_layout.hpp>
+#include <mapnik/text/line_layout.hpp>
+#include <mapnik/label_placement.hpp>
+
 namespace mapnik
 {
 
@@ -41,7 +45,7 @@ struct marker_symbolizer_traits
     using grid = marker_layout;
     using line = line_layout<marker_layout>;
 
-    using placements_type = std::vector<pixel_position_list>;
+    using placements_type = std::vector<marker_positions_type>;
     using layout_generator_type = marker_layout_generator;
     using params_type = label_placement::placement_params<layout_generator_type>;
 };
