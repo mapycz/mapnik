@@ -47,6 +47,7 @@ public:
     template <typename Detector>
     bool try_placement(
         marker_layout_generator & layout_generator,
+        Detector & detector,
         pixel_position const & pos);
 
     inline double get_length(marker_layout_generator const &) const

@@ -272,7 +272,6 @@ source = Split(
     symbol_cache.cpp
     value.cpp
     marker_layout_generator.cpp
-    text/grid_layout.cpp
     """
     )
 

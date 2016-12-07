@@ -41,7 +41,7 @@ struct placement_params
     symbolizer_base const & symbolizer;
     feature_impl const & feature;
     attributes const & vars;
-    box2d<double> dims;
+    const box2d<double> dims;
     box2d<double> const & query_extent;
     double scale_factor;
     mapnik::symbol_cache const & symbol_cache;
