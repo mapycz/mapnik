@@ -185,14 +185,14 @@ struct render_marker_symbolizer_visitor
             common_.scale_factor_, marker_ptr, svg_path, r_attributes, image_tr);
         const auto placement_method = POINT_PLACEMENT; //TODO
 
-        traits::params_type params {
-            *common_.detector_, layout_generator, prj_trans_,
-            common_.t_, tr, sym_, feature_, common_.vars_,
-            box2d<double>(0, 0, common_.width_, common_.height_), common_.query_extent_,
-            common_.scale_factor_, common_.symbol_cache_ };
+        label_placement::placement_params params {
+            prj_trans_, common_.t_, tr, sym_, feature_, common_.vars_,
+            box2d<double>(0, 0, common_.width_, common_.height_),
+            common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
 
-        typename traits::placements_type placements(
-            label_placement::finder<traits>::get(placement_method, params));
+        //typename traits::placements_type placements(
+            //label_placement::finder<traits>::get(placement_method,
+                //layout_generator, *common_.detector_, params));
 
 
         render_marker(mark, rasterizer_dispatch);

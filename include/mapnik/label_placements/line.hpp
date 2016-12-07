@@ -27,28 +27,32 @@
 #include <mapnik/geometry_types.hpp>
 #include <mapnik/geometry_split_multi.hpp>
 #include <mapnik/text/line_layout.hpp>
+#include <mapnik/vertex_converters.hpp>
 
 namespace mapnik { namespace label_placement {
 
-template <typename Layout, typename LayoutGenerator>
+template <typename Layout, typename LayoutGenerator, typename Detector>
 struct placement_finder_adapter
 {
     placement_finder_adapter(Layout & layout,
-        LayoutGenerator & layout_generator)
+        LayoutGenerator & layout_generator,
+        Detector & detector)
         : layout_(layout),
-          layout_generator_(layout_generator)
+          layout_generator_(layout_generator),
+          detector_(detector)
     {
     }
 
     template <typename PathT>
     void add_path(PathT & path) const
     {
-        status_ = layout_.try_placement(layout_generator_, path);
+        status_ = layout_.try_placement(layout_generator_, detector_, path);
     }
 
     bool status() const { return status_; }
     Layout & layout_;
     LayoutGenerator & layout_generator_;
+    Detector & detector_;
     mutable bool status_ = false;
 };
 
@@ -93,7 +97,7 @@ private:
     Adapter const & adapter_;
 };
 
-template <typename Layout, typename Params, typename Placements>
+template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
 struct line
 {
     using vertex_converter_type = vertex_converter<
@@ -113,8 +117,11 @@ struct line
         {
         }
 
-        template <typename LayoutGenerator, typename Geom>
-        bool try_placement(LayoutGenerator & generator, Geom const & geom)
+        template <typename Geom>
+        bool try_placement(
+            LayoutGenerator & generator,
+            Detector & detector,
+            Geom const & geom)
         {
             return util::apply_visitor(visitor_, geom);
         }
@@ -122,7 +129,10 @@ struct line
         Visitor visitor_;
     };
 
-    static Placements get(Params & params)
+    static Placements get(
+        LayoutGenerator & layout_generator,
+        Detector & detector,
+        placement_params const & params)
     {
         vertex_converter_type converter(params.query_extent, params.symbolizer,
             params.view_transform, params.proj_transform, params.affine_transform,
@@ -140,23 +150,21 @@ struct line
         if (simplify_tolerance > 0.0) converter.template set<simplify_tag>();
         if (smooth > 0.0) converter.template set<smooth_tag>();
 
-        Layout layout(params.detector, params.dims, params.scale_factor,
-            params.symbolizer, params.feature, params.vars);
+        Layout layout(params);
         Placements placements;
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
         split(params.feature.get_geometry(), geoms,
-            params.layout_generator.largest_box_only());
+            layout_generator.largest_box_only());
 
-        using layout_generator_type = typename Params::layout_generator_type;
-        using adapter_type = placement_finder_adapter<Layout, layout_generator_type>;
+        using adapter_type = placement_finder_adapter<Layout, LayoutGenerator, Detector>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
-        adapter_type adapter(layout, params.layout_generator);
+        adapter_type adapter(layout, layout_generator, detector);
         visitor_type visitor(converter, adapter);
         layout_adapter<visitor_type> la(visitor);
 
-        layout_processor::process(geoms, la, params.layout_generator, placements);
+        layout_processor::process(geoms, la, layout_generator, detector, placements);
 
         return placements;
     }

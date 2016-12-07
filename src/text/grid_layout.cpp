@@ -35,64 +35,12 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/grid_vertex_adapter.hpp>
+#include <mapnik/vertex_adapters.hpp>
 
 // stl
 #include <vector>
 
 namespace mapnik
 {
-
-template <typename T, typename Points>
-struct grid_placement_finder_adapter
-{
-    grid_placement_finder_adapter(T dx, T dy, Points & points)
-        : dx_(dx), dy_(dy),
-          points_(points) {}
-
-    template <typename PathT>
-    void add_path(PathT & path) const
-    {
-        geometry::grid_vertex_adapter<PathT, T> gpa(path, dx_, dy_);
-        gpa.rewind(0);
-        double label_x, label_y;
-        for (unsigned cmd; (cmd = gpa.vertex(&label_x, &label_y)) != SEG_END; )
-        {
-            points_.emplace_back(label_x, label_y);
-        }
-    }
-
-    T dx_, dy_;
-    Points & points_;
-};
-
-template <typename SubLayout>
-grid_layout<SubLayout>::grid_layout(placement_params const & params)
-    : sublayout_(params),
-      params_(params)
-{
-}
-
-template <typename SubLayout> template <typename Geom>
-bool grid_layout<SubLayout>::try_placement(
-    text_layout_generator & layout_generator,
-    Geom & geom)
-{
-    geometry::polygon_vertex_adapter<double> va(geom);
-    using positions_type = std::list<pixel_position>;
-    positions_type points;
-    evaluated_text_properties const & text_props = layout_generator.get_text_props();
-    grid_placement_finder_adapter<double, positions_type> ga(
-        text_props.grid_cell_width, text_props.grid_cell_height, points);
-    converter.apply(va, ga);
-
-    bool success = false;
-
-    for (auto const & point : points)
-    {
-        success |= sublayout_.try_placement(layout_generator, point);
-    }
-
-    return success;
-}
 
 } // ns mapnik

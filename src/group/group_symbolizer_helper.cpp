@@ -75,22 +75,17 @@ bool group_layout_generator::align(vertex_cache & path, double spacing) const
 
 
 
+using detector_type = label_collision_detector4;
 
-group_point_layout::group_point_layout(
-        DetectorType &detector,
-        box2d<double> const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars)
-    : detector_(detector),
-      dims_(extent),
-      scale_factor_(scale_factor)
+group_point_layout::group_point_layout(params_type const & params)
+    : params_(params)
 {
 }
 
+template <typename Detector>
 bool group_point_layout::try_placement(
     group_layout_generator & layout_generator,
+    Detector & detector,
     pixel_position const& pos)
 {
     std::list<box_element> const & box_elements = layout_generator.box_elements_;
@@ -105,7 +100,7 @@ bool group_point_layout::try_placement(
     {
         box2d<double> real_box = box2d<double>(box_elem.box_);
         real_box.move(pos.x, pos.y);
-        if (collision(text_props, real_box, box_elem.repeat_key_))
+        if (collision(detector, text_props, real_box, box_elem.repeat_key_))
         {
             return false;
         }
@@ -117,7 +112,7 @@ bool group_point_layout::try_placement(
     std::list<box2d<double>>::const_iterator real_itr = real_boxes.cbegin();
     while (elem_itr != box_elements.cend() && real_itr != real_boxes.cend())
     {
-        detector_.insert(*real_itr, elem_itr->repeat_key_);
+        detector.insert(*real_itr, elem_itr->repeat_key_);
         elem_itr++;
         real_itr++;
     }
@@ -127,31 +122,44 @@ bool group_point_layout::try_placement(
     return true;
 }
 
+template bool group_point_layout::try_placement(
+    group_layout_generator & layout_generator,
+    detector_type & detector,
+    pixel_position const& pos);
+
+template <typename Detector>
 bool group_point_layout::collision(
+    Detector & detector,
     evaluated_text_properties const & text_props,
     box2d<double> const& box,
     value_unicode_string const& repeat_key) const
 {
-    if (!detector_.extent().intersects(box)
+    if (!detector.extent().intersects(box)
             ||
-        (text_props.avoid_edges && !dims_.contains(box))
+        (text_props.avoid_edges && !params_.dims.contains(box))
             ||
         (text_props.minimum_padding > 0 &&
-         !dims_.contains(box + (scale_factor_ * text_props.minimum_padding)))
+         !params_.dims.contains(box + (params_.scale_factor * text_props.minimum_padding)))
             ||
         (!text_props.allow_overlap &&
-            ((repeat_key.length() == 0 && !detector_.has_placement(
-                box, text_props.margin * scale_factor_))
+            ((repeat_key.length() == 0 && !detector.has_placement(
+                box, text_props.margin * params_.scale_factor))
                 ||
-             (repeat_key.length() > 0  && !detector_.has_placement(
-                box, text_props.margin * scale_factor_,
-                repeat_key, text_props.repeat_distance * scale_factor_))))
+             (repeat_key.length() > 0  && !detector.has_placement(
+                box, text_props.margin * params_.scale_factor,
+                repeat_key, text_props.repeat_distance * params_.scale_factor))))
         )
     {
         return true;
     }
     return false;
 }
+
+template bool group_point_layout::collision(
+    detector_type & detector,
+    evaluated_text_properties const & text_props,
+    box2d<double> const& box,
+    value_unicode_string const& repeat_key) const;
 
 
 } //namespace

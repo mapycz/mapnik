@@ -22,7 +22,6 @@
 #ifndef MAPNIK_POINT_LAYOUT_HPP
 #define MAPNIK_POINT_LAYOUT_HPP
 
-//mapnik
 #include <mapnik/box2d.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/text/text_layout.hpp>
@@ -32,31 +31,23 @@
 #include <mapnik/extend_converter.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/text/text_layout_generator.hpp>
+#include <mapnik/label_placements/base.hpp>
 
 namespace mapnik
 {
-
-class label_collision_detector4;
-using DetectorType = label_collision_detector4;
-
-class feature_impl;
-struct glyph_info;
 
 class point_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
 
-    point_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars);
+    point_layout(params_type const & params);
 
+    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
+        Detector & detector,
         pixel_position const& pos);
 
     inline double get_length(text_layout_generator const &) const
@@ -65,44 +56,48 @@ public:
     }
 
 protected:
+    template <typename Detector>
     bool try_placement(
         layout_container const & layouts,
+        Detector & detector,
         evaluated_text_properties const & text_props,
         pixel_position const& pos,
         glyph_positions & glyphs,
         std::vector<box_type> & bboxes);
+
+    template <typename Detector>
     void process_bboxes(
+        Detector & detector,
         layout_container & layouts,
         glyph_positions_ptr & glyphs,
         std::vector<box_type> const & bboxes);
+
+    template <typename Detector>
     bool collision(
+        Detector & detector,
         evaluated_text_properties const & text_props,
         box_type const& box,
         const value_unicode_string &repeat_key,
         bool line_placement) const;
 
-    DetectorType & detector_;
-    box_type const& dims_;
-    const double scale_factor_;
+    params_type const & params_;
 };
 
 class shield_layout : public point_layout
 {
 public:
-    shield_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars);
+    shield_layout(params_type const & params);
 
+    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
+        Detector & detector,
         pixel_position const& pos);
 
 private:
+    template <typename Detector>
     bool add_marker(
+        Detector & detector,
         layout_container const & layouts,
         evaluated_text_properties const & text_props,
         glyph_positions & glyphs,

@@ -32,6 +32,7 @@
 #include <mapnik/label_placement.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/group/group_symbolizer_helper.hpp>
+#include <mapnik/text/grid_layout.hpp>
 
 namespace mapnik {
 
@@ -45,12 +46,11 @@ struct text_symbolizer_traits
     using point = point_layout;
     using interior = point_layout;
     using vertex = point_layout;
-    using grid = point_layout;
+    using grid = grid_layout<point_layout>;
     using line = text_extend_line_layout<line_layout<single_line_layout>>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
-    using params_type = label_placement::placement_params<layout_generator_type>;
 };
 
 struct shield_symbolizer_traits
@@ -58,12 +58,11 @@ struct shield_symbolizer_traits
     using point = shield_layout;
     using interior = shield_layout;
     using vertex = shield_layout;
-    using grid = shield_layout;
+    using grid = grid_layout<shield_layout>;
     using line = line_layout<shield_layout>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
-    using params_type = label_placement::placement_params<layout_generator_type>;
 };
 
 struct group_symbolizer_traits
@@ -71,19 +70,17 @@ struct group_symbolizer_traits
     using point = group_point_layout;
     using interior = group_point_layout;
     using vertex = group_point_layout;
-    using grid = group_point_layout;
+    using grid = grid_layout<group_point_layout>;
     using line = line_layout<group_point_layout>;
 
     using placements_type = std::vector<pixel_position_list>;
     using layout_generator_type = group_layout_generator;
-    using params_type = label_placement::placement_params<layout_generator_type>;
 };
 
 template <typename Traits>
 class text_symbolizer_helper
 {
 public:
-    using params_type = typename Traits::params_type;
     using layout_generator_type = typename Traits::layout_generator_type;
 
     template <typename FaceManagerT, typename DetectorT>
@@ -111,12 +108,13 @@ public:
         const label_placement_enum placement_type =
             layout_generator.get_text_props().label_placement;
 
-        params_type params {
-            detector, layout_generator, prj_trans, t, affine_trans, sym,
-            feature, vars, box2d<double>(0, 0, width, height), query_extent,
+        label_placement::placement_params params {
+            prj_trans, t, affine_trans, sym, feature, vars,
+            box2d<double>(0, 0, width, height), query_extent,
             scale_factor, sc };
 
-        return label_placement::finder<Traits>::get(placement_type, params);
+        return label_placement::finder<Traits>::get(placement_type, layout_generator,
+            detector, params);
     }
 };
 

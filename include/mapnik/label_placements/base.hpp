@@ -23,39 +23,18 @@
 #ifndef MAPNIK_LABEL_PLACEMENT_BASE_HPP
 #define MAPNIK_LABEL_PLACEMENT_BASE_HPP
 
-#include <mapnik/label_collision_detector.hpp>
-#include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/symbol_cache.hpp>
 #include <mapnik/symbolizer_base.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/geometry_split_multi.hpp>
-#include <mapnik/text/text_layout_generator.hpp>
+#include <mapnik/view_transform.hpp>
+
+#include <list>
 
 namespace mapnik { namespace label_placement {
 
-// TODO
-struct symbolizer_context
-{
-    symbolizer_base const & symbolizer;
-    feature_impl const & feature;
-    attributes const & vars;
-
-    template <typename T>
-    T get()
-    {
-        return mapnik::get<T, mapnik::keys>(symbolizer, feature, vars);
-    }
-};
-
-template <
-    typename LayoutGenerator,
-    typename DetectorT = label_collision_detector4>
 struct placement_params
 {
-    using layout_generator_type = LayoutGenerator;
-
-    DetectorT & detector;
-    LayoutGenerator & layout_generator;
     mapnik::proj_transform const & proj_transform;
     mapnik::view_transform const & view_transform;
     agg::trans_affine const & affine_transform;
@@ -66,6 +45,12 @@ struct placement_params
     box2d<double> const & query_extent;
     double scale_factor;
     mapnik::symbol_cache const & symbol_cache;
+
+    template <typename T>
+    T get()
+    {
+        return mapnik::get<T, mapnik::keys>(symbolizer, feature, vars);
+    }
 };
 
 // TODO
@@ -137,18 +122,20 @@ struct layout_processor
         typename Geoms,
         typename Layout,
         typename LayoutGenerator,
+        typename Detector,
         typename PlacementsType>
     static void process(
         Geoms & geoms,
         Layout & layout,
         LayoutGenerator & layout_generator,
+        Detector & detector,
         PlacementsType & placements)
     {
         while (!geoms.empty() && layout_generator.next())
         {
             for (auto it = geoms.begin(); it != geoms.end(); )
             {
-                if (layout.try_placement(layout_generator, *it))
+                if (layout.try_placement(layout_generator, detector, *it))
                 {
                     it = geoms.erase(it);
                 }

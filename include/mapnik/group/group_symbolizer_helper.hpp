@@ -22,23 +22,17 @@
 #ifndef GROUP_SYMBOLIZER_HELPER_HPP
 #define GROUP_SYMBOLIZER_HELPER_HPP
 
-//mapnik
-#include <mapnik/text/placements/base.hpp>
 #include <mapnik/value_types.hpp>
+#include <mapnik/vertex_cache.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/font_engine_freetype.hpp>
+#include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/text_layout.hpp>
+#include <mapnik/label_placements/base.hpp>
 
 #include <list>
 
 namespace mapnik {
-
-class label_collision_detector4;
-class feature_impl;
-class proj_transform;
-class view_transform;
-class vertex_cache;
-using DetectorType = label_collision_detector4;
 
 using pixel_position_list = std::list<pixel_position>;
 
@@ -103,17 +97,14 @@ class group_point_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
 
-    group_point_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars);
+    group_point_layout(params_type const & params);
 
+    template <typename Detector>
     bool try_placement(
         group_layout_generator & layout_generator,
+        Detector & detector,
         pixel_position const& pos);
 
     inline double get_length(group_layout_generator const &) const
@@ -122,14 +113,14 @@ public:
     }
 
 protected:
+    template <typename Detector>
     bool collision(
+        Detector & detector,
         evaluated_text_properties const & text_props,
         box_type const& box,
         const value_unicode_string &repeat_key) const;
 
-    DetectorType & detector_;
-    box_type const& dims_;
-    const double scale_factor_;
+    params_type const & params_;
 };
 
 } //namespace

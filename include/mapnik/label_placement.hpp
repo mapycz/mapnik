@@ -30,30 +30,56 @@
 #include <mapnik/label_placements/grid.hpp>
 #include <mapnik/label_placements/line.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
+#include <mapnik/label_collision_detector.hpp>
 
 namespace mapnik { namespace label_placement {
 
 template <typename T>
 struct finder
 {
-    using params_type = typename T::params_type;
+    using detector_type = label_collision_detector4;
     using placements_type = typename T::placements_type;
+    using layout_generator_type = typename T::layout_generator_type;
 
-    static placements_type get(label_placement_enum placement_type, params_type & params)
+    static placements_type get(
+        label_placement_enum placement_type,
+        layout_generator_type & layout_generator,
+        detector_type & detector,
+        placement_params const & params)
     {
         switch (placement_type)
         {
             default:
             case POINT_PLACEMENT:
-                return point<typename T::point, params_type, placements_type>::get(params);
+                return point<
+                    typename T::point,
+                    layout_generator_type,
+                    detector_type,
+                    placements_type>::get(layout_generator, detector, params);
             case INTERIOR_PLACEMENT:
-                return interior<typename T::interior, params_type, placements_type>::get(params);
+                return interior<
+                    typename T::interior,
+                    layout_generator_type,
+                    detector_type,
+                    placements_type>::get(layout_generator, detector, params);
             case VERTEX_PLACEMENT:
-                return vertex<typename T::vertex, params_type, placements_type>::get(params);
+                return vertex<
+                    typename T::vertex,
+                    layout_generator_type,
+                    detector_type,
+                    placements_type>::get(layout_generator, detector, params);
             case GRID_PLACEMENT:
-                return grid<typename T::grid, params_type, placements_type>::get(params);
+                return grid<
+                    typename T::grid,
+                    layout_generator_type,
+                    detector_type,
+                    placements_type>::get(layout_generator, detector, params);
             case LINE_PLACEMENT:
-                return line<typename T::line, params_type, placements_type>::get(params);
+                return line<
+                    typename T::line,
+                    layout_generator_type,
+                    detector_type,
+                    placements_type>::get(layout_generator, detector, params);
         }
     }
 };

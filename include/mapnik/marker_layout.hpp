@@ -22,42 +22,29 @@
 #ifndef MAPNIK_MARKER_LAYOUT_HPP
 #define MAPNIK_MARKER_LAYOUT_HPP
 
-//mapnik
 #include <mapnik/value_types.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/marker_layout_generator.hpp>
-
-#include <list>
+#include <mapnik/label_placements/base.hpp>
 
 namespace mapnik {
-
-class label_collision_detector4;
-class feature_impl;
-class proj_transform;
-class view_transform;
-class vertex_cache;
-using DetectorType = label_collision_detector4;
-
-using pixel_position_list = std::list<pixel_position>;
 
 class marker_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
 
-    marker_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars);
+    marker_layout(params_type const & params);
 
+    template <typename Detector>
     bool try_placement(
         marker_layout_generator & layout_generator,
+        Detector & detector,
         vertex_cache const & path);
 
+    template <typename Detector>
     bool try_placement(
         marker_layout_generator & layout_generator,
         pixel_position const & pos);
@@ -70,15 +57,15 @@ public:
 protected:
     bool set_direction(double & angle) const;
 
+    template <typename Detector>
     bool push_to_detector(
+        Detector & detector,
         pixel_position const & pos,
         double angle,
         marker_layout_generator & layout_generator,
         box2d<double> & box);
 
-    DetectorType & detector_;
-    box_type const & dims_;
-    const double scale_factor_;
+    params_type const & params;
     const value_bool ignore_placement_;
     const value_bool allow_overlap_;
     const value_bool avoid_edges_;

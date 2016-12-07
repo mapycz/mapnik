@@ -37,13 +37,6 @@
 namespace mapnik
 {
 
-class label_collision_detector4;
-using DetectorType = label_collision_detector4;
-
-class feature_impl;
-class text_placement_info;
-struct glyph_info;
-
 template <typename Layout>
 struct position_accessor
 {
@@ -80,18 +73,14 @@ class text_extend_line_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
 
-    text_extend_line_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars);
+    text_extend_line_layout(params_type const & params);
 
-    template <typename LayoutGenerator, typename Geom>
+    template <typename LayoutGenerator, typename Detector, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
+        Detector & detector,
         Geom & geom);
 
     inline double get_length(text_layout_generator const & layout_generator) const
@@ -101,28 +90,23 @@ public:
 
 private:
     SubLayout sublayout_;
-    DetectorType & detector_;
-    box2d<double> const & dims_;
-    double scale_factor_;
+    params_type const & params_;
 };
 
 template <typename SubLayout>
 text_extend_line_layout<SubLayout>::text_extend_line_layout(
-    DetectorType & detector,
-    box_type const& extent,
-    double scale_factor,
-    symbolizer_base const& sym,
-    feature_impl const& feature,
-    attributes const& vars)
-    : sublayout_(detector, extent, scale_factor, sym, feature, vars),
-      detector_(detector),
-      dims_(extent),
-      scale_factor_(scale_factor)
+    params_type const & params)
+    : sublayout_(params),
+      params_(params)
 {
 }
 
-template <typename SubLayout> template <typename LayoutGenerator, typename Geom>
-bool text_extend_line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, Geom & geom)
+template <typename SubLayout>
+template <typename LayoutGenerator, typename Detector, typename Geom>
+bool text_extend_line_layout<SubLayout>::try_placement(
+    LayoutGenerator & layout_generator,
+    Detector & detector,
+    Geom & geom)
 {
     layout_container & layouts = *layout_generator.layouts_;
 
@@ -133,11 +117,11 @@ bool text_extend_line_layout<SubLayout>::try_placement(LayoutGenerator & layout_
     {
         extend_converter<Geom> ec(geom, halign_adjust_extend);
         vertex_cache pp(ec);
-        return sublayout_.try_placement(layout_generator, pp);
+        return sublayout_.try_placement(layout_generator, detector, pp);
     }
 
     vertex_cache pp(geom);
-    return sublayout_.try_placement(layout_generator, pp);
+    return sublayout_.try_placement(layout_generator, detector, pp);
 }
 
 template <typename SubLayout>
@@ -145,23 +129,20 @@ class line_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
 
-    line_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars);
+    line_layout(params_type const & params);
 
-    template <typename LayoutGenerator, typename Geom>
+    template <typename LayoutGenerator, typename Detector, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
+        Detector & detector,
         Geom & geom);
 
-    template <typename LayoutGenerator>
+    template <typename LayoutGenerator, typename Detector>
     bool try_placement(
         LayoutGenerator & layout_generator,
+        Detector & detector,
         vertex_cache & pp);
 
 private:
@@ -172,35 +153,33 @@ private:
         double layout_width) const;
 
     SubLayout sublayout_;
-    DetectorType & detector_;
-    box2d<double> const & dims_;
-    double scale_factor_;
+    params_type const & params_;
 };
 
 template <typename SubLayout>
-line_layout<SubLayout>::line_layout(
-    DetectorType & detector,
-    box_type const& extent,
-    double scale_factor,
-    symbolizer_base const& sym,
-    feature_impl const& feature,
-    attributes const& vars)
-    : sublayout_(detector, extent, scale_factor, sym, feature, vars),
-      detector_(detector),
-      dims_(extent),
-      scale_factor_(scale_factor)
+line_layout<SubLayout>::line_layout(params_type const & params)
+    : sublayout_(params),
+      params_(params)
 {
 }
 
-template <typename SubLayout> template <typename LayoutGenerator, typename Geom>
-bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, Geom & geom)
+template <typename SubLayout> template
+<typename LayoutGenerator, typename Detector, typename Geom>
+bool line_layout<SubLayout>::try_placement(
+    LayoutGenerator & layout_generator,
+    Detector & detector,
+    Geom & geom)
 {
     vertex_cache pp(geom);
-    return try_placement(layout_generator, pp);
+    return try_placement(layout_generator, detector, pp);
 }
 
-template <typename SubLayout> template <typename LayoutGenerator>
-bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, vertex_cache & pp)
+template <typename SubLayout>
+template <typename LayoutGenerator, typename Detector>
+bool line_layout<SubLayout>::try_placement(
+    LayoutGenerator & layout_generator,
+    Detector & detector,
+    vertex_cache & pp)
 {
     bool success = false;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
@@ -209,7 +188,7 @@ bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, v
         layout_container const & layouts = *layout_generator.layouts_;
         double layout_length = sublayout_.get_length(layout_generator);
 
-        if (pp.length() < text_props.minimum_path_length * scale_factor_ ||
+        if (pp.length() < text_props.minimum_path_length * params_.scale_factor ||
             pp.length() < layout_length)
         {
             continue;
@@ -225,12 +204,12 @@ bool line_layout<SubLayout>::try_placement(LayoutGenerator & layout_generator, v
         do
         {
             tolerance_iterator<exponential_function> tolerance_offset(
-                text_props.label_position_tolerance * scale_factor_, spacing);
+                text_props.label_position_tolerance * params_.scale_factor, spacing);
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(pp);
                 if (pp.move(tolerance_offset.get()) &&
-                    sublayout_.try_placement(layout_generator,
+                    sublayout_.try_placement(layout_generator, detector,
                         position_accessor<SubLayout>::get(pp)))
                 {
                     success = true;
@@ -252,7 +231,7 @@ double line_layout<SubLayout>::get_spacing(
     if (label_spacing > 0)
     {
         num_labels = static_cast<int>(std::floor(
-            path_length / (label_spacing * scale_factor_ + layout_width)));
+            path_length / (label_spacing * params_.scale_factor + layout_width)));
     }
     if (num_labels <= 0)
     {
@@ -266,17 +245,14 @@ class single_line_layout : util::noncopyable
 {
 public:
     using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
 
-    single_line_layout(
-        DetectorType & detector,
-        box_type const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars);
+    single_line_layout(params_type const & params);
 
+    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
+        Detector & detector,
         vertex_cache & path);
 
     inline double get_length(text_layout_generator const & layout_generator) const
@@ -285,28 +261,32 @@ public:
     }
 
 private:
+    template <typename Detector>
     bool try_placement(
         layout_container const & layouts,
+        Detector & detector,
         evaluated_text_properties const & text_props,
         vertex_cache &pp,
         text_upright_e orientation,
         glyph_positions & glyphs,
         std::vector<box_type> & bboxes);
 
+    template <typename Detector>
     void process_bboxes(
+        Detector & detector,
         layout_container & layouts,
         glyph_positions_ptr & glyphs,
         std::vector<box_type> const & bboxes);
 
+    template <typename Detector>
     bool collision(
+        Detector & detector,
         evaluated_text_properties const & text_props,
         box_type const& box,
         const value_unicode_string &repeat_key,
         bool line_placement) const;
 
-    DetectorType & detector_;
-    box2d<double> const& dims_;
-    double scale_factor_;
+    params_type const & params_;
 };
 
 }//ns mapnik

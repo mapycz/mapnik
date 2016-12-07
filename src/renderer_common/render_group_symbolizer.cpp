@@ -199,14 +199,14 @@ void render_group_symbolizer(group_symbolizer const& sym,
     const label_placement_enum placement_type =
         layout_generator.get_text_props().label_placement;
 
-    traits::params_type params {
-        *common.detector_, layout_generator, prj_trans,
-        common.t_, tr, sym, feature, vars,
+    label_placement::placement_params params {
+        prj_trans, common.t_, tr, sym, feature, vars,
         box2d<double>(0, 0, common.width_, common.height_), common.query_extent_,
         common.scale_factor_, common.symbol_cache_ };
 
     std::vector<pixel_position_list> positions(
-        label_placement::finder<traits>::get(placement_type, params));
+        label_placement::finder<traits>::get(placement_type, layout_generator,
+            *common.detector_, params));
 
     for (pixel_position_list const& pos_list : positions)
     {

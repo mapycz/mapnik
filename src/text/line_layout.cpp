@@ -38,8 +38,14 @@
 
 namespace mapnik
 {
+
 namespace {
-box2d<double> get_bbox(text_layout const& layout, glyph_info const& glyph, pixel_position const& pos, rotation const& rot)
+
+box2d<double> get_bbox(
+    text_layout const& layout,
+    glyph_info const& glyph,
+    pixel_position const& pos,
+    rotation const& rot)
 {
     /*
 
@@ -72,6 +78,8 @@ box2d<double> get_bbox(text_layout const& layout, glyph_info const& glyph, pixel
     return bbox;
 }
 
+using detector_type = label_collision_detector4;
+
 text_upright_e simplify_upright(text_upright_e upright, double angle)
 {
     if (upright == UPRIGHT_AUTO)
@@ -94,21 +102,15 @@ text_upright_e simplify_upright(text_upright_e upright, double angle)
 }
 } // anonymous namespace
 
-single_line_layout::single_line_layout(
-    DetectorType & detector,
-    box2d<double> const & extent,
-    double scale_factor,
-    symbolizer_base const& sym,
-    feature_impl const& feature,
-    attributes const& vars)
-    : detector_(detector),
-      dims_(extent),
-      scale_factor_(scale_factor)
+single_line_layout::single_line_layout(params_type const & params)
+    : params_(params)
 {
 }
 
+template <typename Detector>
 bool single_line_layout::try_placement(
     text_layout_generator & layout_generator,
+    Detector & detector,
     vertex_cache & path)
 {
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
@@ -120,17 +122,24 @@ bool single_line_layout::try_placement(
     //glyphs->reserve(layouts.glyphs_count());
     //bboxes.reserve(layouts.glyphs_count());
 
-    if (try_placement(layouts, text_props, path, text_props.upright, *glyphs, bboxes))
+    if (try_placement(layouts, detector, text_props, path, text_props.upright, *glyphs, bboxes))
     {
-        process_bboxes(layouts, glyphs, bboxes);
+        process_bboxes(detector, layouts, glyphs, bboxes);
         return true;
     }
 
     return false;
 }
 
+template bool single_line_layout::try_placement(
+    text_layout_generator & layout_generator,
+    detector_type & detector,
+    vertex_cache & path);
+
+template <typename Detector>
 bool single_line_layout::try_placement(
     layout_container const & layouts,
+    Detector & detector,
     evaluated_text_properties const & text_props,
     vertex_cache &pp,
     text_upright_e orientation,
@@ -213,7 +222,7 @@ bool single_line_layout::try_placement(
                         {
                             return false;
                         }
-                        last_glyph_spacing = glyph.format->character_spacing * scale_factor_;
+                        last_glyph_spacing = glyph.format->character_spacing * params_.scale_factor;
                     }
                     current_cluster = glyph.char_index;
                     // Only calculate new angle at the start of each cluster!
@@ -244,7 +253,7 @@ bool single_line_layout::try_placement(
                 cluster_offset.y -= rot.sin * glyph.advance();
 
                 box2d<double> bbox = get_bbox(layout, glyph, pos, rot);
-                if (collision(text_props, bbox, layouts.text(), true)) return false;
+                if (collision(detector, text_props, bbox, layouts.text(), true)) return false;
                 bboxes.push_back(std::move(bbox));
                 glyphs.emplace_back(glyph, pos, rot);
             }
@@ -261,7 +270,7 @@ bool single_line_layout::try_placement(
             begin.restore();
             glyphs.clear();
             bboxes.clear();
-            return try_placement(layouts, text_props, pp,
+            return try_placement(layouts, detector, text_props, pp,
                 real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT,
                 glyphs, bboxes);
         }
@@ -277,15 +286,25 @@ bool single_line_layout::try_placement(
         begin.restore();
         glyphs.clear();
         bboxes.clear();
-        return try_placement(layouts, text_props, pp,
+        return try_placement(layouts, detector, text_props, pp,
             real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT,
             glyphs, bboxes);
     }
 
     return true;
 }
+template bool single_line_layout::try_placement(
+    layout_container const & layouts,
+    detector_type & detector,
+    evaluated_text_properties const & text_props,
+    vertex_cache &pp,
+    text_upright_e orientation,
+    glyph_positions & glyphs,
+    std::vector<box_type> & bboxes);
 
+template <typename Detector>
 void single_line_layout::process_bboxes(
+    Detector & detector,
     layout_container & layouts,
     glyph_positions_ptr & glyphs,
     std::vector<box_type> const & bboxes)
@@ -303,18 +322,25 @@ void single_line_layout::process_bboxes(
         {
             label_box.expand_to_include(box);
         }
-        detector_.insert(box, layouts.text());
+        detector.insert(box, layouts.text());
     }
 
     // do not render text off the canvas
     // TODO: throw away single glyphs earlier?
-    if (dims_.intersects(label_box))
+    if (params_.dims.intersects(label_box))
     {
         layouts.placements_.emplace_back(std::move(glyphs));
     }
 }
+template void single_line_layout::process_bboxes(
+    detector_type & detector,
+    layout_container & layouts,
+    glyph_positions_ptr & glyphs,
+    std::vector<box_type> const & bboxes);
 
+template <typename Detector>
 bool single_line_layout::collision(
+    Detector & detector,
     evaluated_text_properties const & text_props,
     const box2d<double> &box,
     const value_unicode_string &repeat_key,
@@ -323,23 +349,30 @@ bool single_line_layout::collision(
     double margin, repeat_distance;
     if (line_placement)
     {
-        margin = text_props.margin * scale_factor_;
-        repeat_distance = (text_props.repeat_distance != 0 ? text_props.repeat_distance : text_props.minimum_distance) * scale_factor_;
+        margin = text_props.margin * params_.scale_factor;
+        repeat_distance = (text_props.repeat_distance != 0 ? text_props.repeat_distance : text_props.minimum_distance) * params_.scale_factor;
     }
     else
     {
-        margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * scale_factor_;
-        repeat_distance = text_props.repeat_distance * scale_factor_;
+        margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * params_.scale_factor;
+        repeat_distance = text_props.repeat_distance * params_.scale_factor;
     }
-    return (text_props.avoid_edges && !dims_.contains(box))
+    return (text_props.avoid_edges && !params_.dims.contains(box))
         ||
         (text_props.minimum_padding > 0 &&
-         !dims_.contains(box + (scale_factor_ * text_props.minimum_padding)))
+         !params_.dims.contains(box + (params_.scale_factor * text_props.minimum_padding)))
         ||
         (!text_props.allow_overlap &&
-         ((repeat_key.length() == 0 && !detector_.has_placement(box, margin))
+         ((repeat_key.length() == 0 && !detector.has_placement(box, margin))
           ||
-          (repeat_key.length() > 0 && !detector_.has_placement(box, margin, repeat_key, repeat_distance))));
+          (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance))));
 }
+
+template bool single_line_layout::collision(
+    detector_type & detector,
+    evaluated_text_properties const & text_props,
+    const box2d<double> &box,
+    const value_unicode_string &repeat_key,
+    bool line_placement) const;
 
 }// ns mapnik

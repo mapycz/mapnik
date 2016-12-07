@@ -31,7 +31,7 @@
 
 namespace mapnik { namespace label_placement {
 
-template <typename Layout, typename Params, typename Placements>
+template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
 struct point
 {
     struct geometry_visitor
@@ -67,19 +67,21 @@ struct point
         }
     };
 
-    static Placements get(Params & params)
+    static Placements get(
+        LayoutGenerator & layout_generator,
+        Detector & detector,
+        placement_params const & params)
     {
         std::list<pixel_position> points(get_pixel_positions<geometry_visitor>(
             params.feature.get_geometry(),
             params.proj_transform,
             params.view_transform,
-            params.layout_generator.largest_box_only()));
-        Layout layout(params.detector, params.dims, params.scale_factor,
-            params.symbolizer, params.feature, params.vars);
+            layout_generator.largest_box_only()));
+        Layout layout(params);
 
         Placements placements;
 
-        layout_processor::process(points, layout, params.layout_generator, placements);
+        layout_processor::process(points, layout, layout_generator, detector, placements);
 
         return placements;
     }

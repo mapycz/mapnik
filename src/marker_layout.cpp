@@ -33,16 +33,8 @@
 
 namespace mapnik { //namespace detail {
 
-marker_layout::marker_layout(
-        DetectorType &detector,
-        box2d<double> const& extent,
-        double scale_factor,
-        symbolizer_base const& sym,
-        feature_impl const& feature,
-        attributes const& vars)
-    : detector_(detector),
-      dims_(extent),
-      scale_factor_(scale_factor),
+marker_layout::marker_layout(placement_params const & params)
+    : params_(params),
       ignore_placement_(get<value_bool, keys::ignore_placement>(sym, feature, vars))
       allow_overlap_(get<value_bool, keys::allow_overlap>(sym, feature, vars)),
       avoid_edges_(get<value_bool, keys::avoid_edges>(sym, feature, vars)),
@@ -50,8 +42,10 @@ marker_layout::marker_layout(
 {
 }
 
+template <typename Detector>
 bool marker_layout::try_placement(
     marker_layout_generator & layout_generator,
+    Detector & detector,
     vertex_cache const & path)
 {
     pixel_position const & pos = geom.current_position();
@@ -60,14 +54,16 @@ bool marker_layout::try_placement(
     {
         return false;
     }
-    return push_to_detector(pos, angle, layout_generator, box);
+    return push_to_detector(detector, pos, angle, layout_generator, box);
 }
 
+template <typename Detector>
 bool marker_layout::try_placement(
     marker_layout_generator & layout_generator,
+    Detector & detector,
     pixel_position const & pos)
 {
-    return push_to_detector(pos, 0, layout_generator, box);
+    return push_to_detector(detector, pos, 0, layout_generator, box);
 }
 
 // Checks transformed box placement with collision detector.
@@ -76,7 +72,9 @@ bool marker_layout::try_placement(
 //  - b) collides with something and allow_overlap == false
 // otherwise returns true, and if ignore_placement == false,
 //  also adds the box to collision detector
+template <typename Detector>
 bool marker_layout::push_to_detector(
+    Detector & detector,
     pixel_position const & pos,
     double angle,
     marker_layout_generator & lg,

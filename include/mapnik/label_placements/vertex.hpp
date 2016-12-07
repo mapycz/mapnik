@@ -57,15 +57,18 @@ struct apply_vertex_placement
     proj_transform const& prj_trans_;
 };
 
-template <typename Layout, typename Params, typename Placements>
+template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
 struct vertex
 {
-    static Placements get(Params & params)
+    static Placements get(
+        LayoutGenerator & layout_generator,
+        Detector & detector,
+        placement_params const & params)
     {
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
         split(params.feature.get_geometry(), geoms,
-            params.layout_generator.largest_box_only());
+            layout_generator.largest_box_only());
 
         using positions_type = std::list<pixel_position>;
         positions_type points;
@@ -77,11 +80,10 @@ struct vertex
             util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
         }
 
-        Layout layout(params.detector, params.dims, params.scale_factor,
-            params.symbolizer, params.feature, params.vars);
+        Layout layout(params);
         Placements placements;
 
-        layout_processor::process(points, layout, params.layout_generator, placements);
+        layout_processor::process(points, layout, layout_generator, detector, placements);
 
         return placements;
     }
