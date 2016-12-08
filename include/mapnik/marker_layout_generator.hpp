@@ -39,7 +39,17 @@ class text_placement_info;
 
 struct marker_position
 {
+    marker_position(
+        pixel_position pos,
+        double angle,
+        box2d<double> box)
+        : pos(pos), angle(angle), box(box)
+    {
+    }
+
     pixel_position pos;
+    double angle;
+    box2d<double> box;
 };
 
 using marker_positions_type = std::vector<marker_position>;
@@ -57,6 +67,8 @@ struct marker_layout_generator : util::noncopyable
 
     bool next();
     void reset();
+
+    bool align(vertex_cache & path, double spacing) const;
 
     inline bool has_placements() const
     {

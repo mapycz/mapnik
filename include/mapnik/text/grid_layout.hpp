@@ -55,6 +55,13 @@ public:
         Geom const & geom);
 
 protected:
+    template <typename LayoutGenerator, typename Detector, typename Geom>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Detector & detector,
+        Geom const & geom_ref,
+        double dx, double dy);
+
     using vertex_converter_type = vertex_converter<
         clip_line_tag,
         clip_poly_tag,
@@ -123,16 +130,28 @@ template <typename LayoutGenerator, typename Detector, typename Geom>
 bool grid_layout<SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
     Detector & detector,
-    Geom const & geom_ref)
+    Geom const & geom)
+{
+    evaluated_text_properties const & text_props = layout_generator.get_text_props();
+    double dx = text_props.grid_cell_width;
+    double dy = text_props.grid_cell_height;
+    return try_placement(layout_generator, detector, geom, dx, dy);
+}
+
+template <typename SubLayout>
+template <typename LayoutGenerator, typename Detector, typename Geom>
+bool grid_layout<SubLayout>::try_placement(
+    LayoutGenerator & layout_generator,
+    Detector & detector,
+    Geom const & geom_ref,
+    double dx, double dy)
 {
     using polygon_type = geometry::cref_geometry<double>::polygon_type;
     auto const & poly = mapnik::util::get<polygon_type>(geom_ref).get();
     geometry::polygon_vertex_adapter<double> va(poly);
     using positions_type = std::list<pixel_position>;
     positions_type points;
-    evaluated_text_properties const & text_props = layout_generator.get_text_props();
-    detail::grid_placement_finder_adapter<double, positions_type> ga(
-        text_props.grid_cell_width, text_props.grid_cell_height, points);
+    detail::grid_placement_finder_adapter<double, positions_type> ga(dx, dy, points);
     converter_.apply(va, ga);
 
     bool success = false;

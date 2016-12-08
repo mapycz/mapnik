@@ -97,6 +97,8 @@ enum class keys : std::uint8_t
     shadow_length,
     shadow_opacity,
     extend,
+    grid_cell_width,
+    grid_cell_height,
     MAX_SYMBOLIZER_KEY
 };
 

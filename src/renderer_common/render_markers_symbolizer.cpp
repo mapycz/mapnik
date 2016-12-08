@@ -190,9 +190,9 @@ struct render_marker_symbolizer_visitor
             box2d<double>(0, 0, common_.width_, common_.height_),
             common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
 
-        typename traits::placements_type placements(
-            label_placement::finder<traits>::get(placement_method,
-                layout_generator, *common_.detector_, params));
+        //typename traits::placements_type placements(
+            //label_placement::finder<traits>::get(placement_method,
+                //layout_generator, *common_.detector_, params));
 
 
         render_marker(mark, rasterizer_dispatch);

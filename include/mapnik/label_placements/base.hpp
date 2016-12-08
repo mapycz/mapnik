@@ -46,10 +46,10 @@ struct placement_params
     double scale_factor;
     mapnik::symbol_cache const & symbol_cache;
 
-    template <typename T>
-    T get()
+    template <typename T, mapnik::keys key>
+    T get() const
     {
-        return mapnik::get<T, mapnik::keys>(symbolizer, feature, vars);
+        return mapnik::get<T, key>(symbolizer, feature, vars);
     }
 };
 

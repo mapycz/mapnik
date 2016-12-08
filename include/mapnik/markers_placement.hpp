@@ -34,6 +34,8 @@
 #include <mapnik/text/line_layout.hpp>
 #include <mapnik/text/grid_layout.hpp>
 #include <mapnik/label_placement.hpp>
+#include <mapnik/marker_grid_layout.hpp>
+#include <mapnik/marker_line_layout.hpp>
 
 namespace mapnik
 {
@@ -43,8 +45,8 @@ struct marker_symbolizer_traits
     using point = marker_layout;
     using interior = marker_layout;
     using vertex = marker_layout;
-    using grid = grid_layout<marker_layout>;
-    using line = line_layout<marker_layout>;
+    using grid = marker_grid_layout<marker_layout>;
+    using line = marker_line_layout<marker_layout>;
 
     using placements_type = std::vector<marker_positions_type>;
     using layout_generator_type = marker_layout_generator;

@@ -145,7 +145,16 @@ public:
         Detector & detector,
         vertex_cache & pp);
 
-private:
+protected:
+    template <typename LayoutGenerator, typename Detector>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Detector & detector,
+        vertex_cache & pp,
+        double minimum_path_length,
+        double label_spacing,
+        double label_position_tolerance);
+
     // Adjusts user defined spacing to place an integer number of labels.
     double get_spacing(
         double path_length,
@@ -181,20 +190,35 @@ bool line_layout<SubLayout>::try_placement(
     Detector & detector,
     vertex_cache & pp)
 {
-    bool success = false;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
+    return try_placement(layout_generator, detector, pp,
+        text_props.minimum_path_length,
+        text_props.label_spacing,
+        text_props.label_position_tolerance);
+}
+
+template <typename SubLayout>
+template <typename LayoutGenerator, typename Detector>
+bool line_layout<SubLayout>::try_placement(
+    LayoutGenerator & layout_generator,
+    Detector & detector,
+    vertex_cache & pp,
+    double minimum_path_length,
+    double label_spacing,
+    double label_position_tolerance)
+{
+    bool success = false;
     while (pp.next_subpath())
     {
-        layout_container const & layouts = *layout_generator.layouts_;
         double layout_length = sublayout_.get_length(layout_generator);
 
-        if (pp.length() < text_props.minimum_path_length * params_.scale_factor ||
+        if (pp.length() < minimum_path_length * params_.scale_factor ||
             pp.length() < layout_length)
         {
             continue;
         }
 
-        double spacing = get_spacing(pp.length(), text_props.label_spacing, layout_length);
+        double spacing = get_spacing(pp.length(), label_spacing, layout_length);
 
         if (!layout_generator.align(pp, spacing))
         {
@@ -204,7 +228,7 @@ bool line_layout<SubLayout>::try_placement(
         do
         {
             tolerance_iterator<exponential_function> tolerance_offset(
-                text_props.label_position_tolerance * params_.scale_factor, spacing);
+                label_position_tolerance * params_.scale_factor, spacing);
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(pp);

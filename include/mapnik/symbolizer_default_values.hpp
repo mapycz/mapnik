@@ -397,6 +397,20 @@ struct symbolizer_default<value_double, keys::extend>
     static value_double value() { return 0.0; }
 };
 
+// grid_cell_width
+template <>
+struct symbolizer_default<value_double, keys::grid_cell_width>
+{
+    static value_double value() { return 10.0; }
+};
+
+// grid_cell_height
+template <>
+struct symbolizer_default<value_double, keys::grid_cell_height>
+{
+    static value_double value() { return 10.0; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP

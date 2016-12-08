@@ -42,7 +42,7 @@ public:
     bool try_placement(
         marker_layout_generator & layout_generator,
         Detector & detector,
-        vertex_cache const & path);
+        vertex_cache & path);
 
     template <typename Detector>
     bool try_placement(
@@ -63,14 +63,13 @@ protected:
         Detector & detector,
         pixel_position const & pos,
         double angle,
-        marker_layout_generator & layout_generator,
-        box2d<double> & box);
+        marker_layout_generator & layout_generator);
 
-    params_type const & params;
+    params_type const & params_;
     const value_bool ignore_placement_;
     const value_bool allow_overlap_;
     const value_bool avoid_edges_;
-    direction_enum direction_;
+    const direction_enum direction_;
 };
 
 } //namespace

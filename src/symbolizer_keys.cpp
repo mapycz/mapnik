@@ -163,6 +163,8 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "shadow-length", nullptr, property_types::target_double },
     property_meta_type{ "shadow-opacity", nullptr, property_types::target_double},
     property_meta_type{ "extend", nullptr, property_types::target_double},
+    property_meta_type{ "grid-cell-width", nullptr, property_types::target_double},
+    property_meta_type{ "grid-cell-height", nullptr, property_types::target_double},
 
 };
 

@@ -19,24 +19,24 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-#ifndef MAPNIK_MARKER_GRID_LAYOUT_HPP
-#define MAPNIK_MARKER_GRID_LAYOUT_HPP
+#ifndef MAPNIK_MARKER_LINE_LAYOUT_HPP
+#define MAPNIK_MARKER_LINE_LAYOUT_HPP
 
-#include <mapnik/text/grid_layout.hpp>
+#include <mapnik/text/line_layout.hpp>
 
 namespace mapnik
 {
 
 template <typename SubLayout>
-class marker_grid_layout : grid_layout<SubLayout>
+class marker_line_layout : line_layout<SubLayout>
 {
 public:
     using params_type = label_placement::placement_params;
 
-    marker_grid_layout(params_type const & params)
-        : grid_layout<SubLayout>(params),
-          dx_(params.get<value_double, keys::grid_cell_width>()),
-          dy_(params.get<value_double, keys::grid_cell_height>())
+    marker_line_layout(params_type const & params)
+        : line_layout<SubLayout>(params),
+          spacing_(get_spacing()),
+          position_tolerance_(spacing_ * params.get<value_double, keys::max_error>())
     {
     }
 
@@ -44,15 +44,25 @@ public:
     bool try_placement(
         LayoutGenerator & layout_generator,
         Detector & detector,
-        Geom const & geom)
+        Geom & geom)
     {
-        return grid_layout<SubLayout>::try_placement(layout_generator, detector, geom, dx_, dy_);
+        vertex_cache path(geom);
+        return line_layout<SubLayout>::try_placement(
+            layout_generator, detector, path,
+            0, spacing_, position_tolerance_);
     }
 
 protected:
-    const double dx_, dy_;
+    double get_spacing()
+    {
+        double spacing = this->params_.get<value_double, keys::spacing>();
+        return spacing < 1 ? 100 : spacing;
+    }
+
+    const double spacing_;
+    const double position_tolerance_;
 };
 
 }//ns mapnik
 
-#endif // MAPNIK_MARKER_GRID_LAYOUT_HPP
+#endif // MAPNIK_MARKER_LINE_LAYOUT_HPP
