@@ -211,11 +211,10 @@ struct render_marker_symbolizer_visitor
                 matrix.rotate(placement.angle);
                 matrix.translate(placement.pos.x, placement.pos.y);
 
-                markers_dispatch_params p(box2d<double>(), marker_trans,
-                    sym_, feature_, common_.vars_, common_.scale_factor_);
+                const markers_dispatch_params p(box2d<double>(), marker_trans,
+                    sym_, feature_, common_.vars_, common_.scale_factor_, snap_to_pixels);
 
-                renderer_context_.render_marker(marker_ptr, svg_path, r_attributes,
-                    p, matrix);
+                renderer_context_.render_marker(marker_ptr, svg_path, r_attributes, p, matrix);
                 /*if (params_.key)
                 {
                     symbol_cache_.insert(*params_.key, box);

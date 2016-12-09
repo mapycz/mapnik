@@ -47,8 +47,8 @@ struct markers_dispatch_params
                             symbolizer_base const& sym,
                             feature_impl const& feature,
                             attributes const& vars,
-                            double scale_factor = 1.0,
-                            bool snap_to_pixels = false);
+                            double scale_factor,
+                            bool snap_to_pixels);
 };
 
 struct markers_renderer_context : util::noncopyable
