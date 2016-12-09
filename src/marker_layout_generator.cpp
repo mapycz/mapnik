@@ -33,16 +33,14 @@ marker_layout_generator::marker_layout_generator(
     feature_impl const & feature,
     attributes const & vars,
     double scale_factor,
-    svg_path_ptr const & src,
-    svg_path_adapter & path,
-    svg_attribute_type const & attrs,
+    box2d<double> marker_box,
     agg::trans_affine const & marker_trans)
     : feature_(feature),
       vars_(vars),
       scale_factor_(scale_factor),
       state_(true),
-      size_(src->bounding_box()),
-      tr_(recenter(src) * marker_trans)
+      size_(marker_box),
+      tr_(marker_trans)
 {
 }
 

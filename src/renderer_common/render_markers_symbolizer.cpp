@@ -185,8 +185,13 @@ struct render_marker_symbolizer_visitor
 
         using traits = marker_symbolizer_traits;
 
+        const box2d<double> marker_box(marker_ptr->bounding_box());
+        const coord2d marker_center(marker_box.center());
+        const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
+        const agg::trans_affine marker_trans = recenter * image_tr;
+
         marker_layout_generator layout_generator(feature_, common_.vars_,
-            common_.scale_factor_, marker_ptr, svg_path, r_attributes, image_tr);
+            common_.scale_factor_, marker_box, marker_trans);
 
         const label_placement::placement_params params {
             prj_trans_, common_.t_, tr, sym_, feature_, common_.vars_,
@@ -198,7 +203,6 @@ struct render_marker_symbolizer_visitor
             label_placement::finder<traits>::get(placement_method,
                 layout_generator, *common_.detector_, params));
 
-        agg::trans_affine marker_trans = recenter(marker_ptr) * image_tr;
         for (auto const & placements_part : placements)
         {
             for (auto const & placement : placements_part)
@@ -222,11 +226,11 @@ struct render_marker_symbolizer_visitor
         //render_marker(mark, rasterizer_dispatch);
     }
 
-    static agg::trans_affine recenter(svg_path_ptr const& src)
+    /*static agg::trans_affine recenter(svg_path_ptr const& src)
     {
         coord2d center = src->bounding_box().center();
         return agg::trans_affine_translation(-center.x, -center.y);
-    }
+    }*/
 
     void operator() (marker_rgba8 const& mark)
     {
@@ -239,8 +243,8 @@ struct render_marker_symbolizer_visitor
         mapnik::image_rgba8 const& marker = mark.get_data();
         // - clamp sizes to > 4 pixels of interactivity
         coord2d center = bbox.center();
-        agg::trans_affine_translation recenter(-center.x, -center.y);
-        agg::trans_affine marker_trans = recenter * image_tr;
+        //agg::trans_affine_translation recenter(-center.x, -center.y);
+        //agg::trans_affine marker_trans = recenter * image_tr;
         /*raster_dispatch_type rasterizer_dispatch(marker,
                                                  marker_trans,
                                                  sym_,

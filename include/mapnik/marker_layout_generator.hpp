@@ -60,9 +60,7 @@ struct marker_layout_generator : util::noncopyable
         feature_impl const& feature,
         attributes const& vars,
         double scale_factor,
-        svg_path_ptr const & src,
-        svg_path_adapter & path,
-        svg_attribute_type const & attrs,
+        box2d<double> marker_box,
         agg::trans_affine const & marker_trans);
 
     bool next();
@@ -84,12 +82,6 @@ struct marker_layout_generator : util::noncopyable
     {
         // TODO
         return true;
-    }
-
-    agg::trans_affine recenter(svg_path_ptr const& src) const
-    {
-        coord2d center = src->bounding_box().center();
-        return agg::trans_affine_translation(-center.x, -center.y);
     }
 
     feature_impl const& feature_;
