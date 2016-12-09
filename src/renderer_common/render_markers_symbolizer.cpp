@@ -198,15 +198,16 @@ struct render_marker_symbolizer_visitor
             label_placement::finder<traits>::get(placement_method,
                 layout_generator, *common_.detector_, params));
 
+        agg::trans_affine marker_trans = recenter(marker_ptr) * image_tr;
         for (auto const & placements_part : placements)
         {
             for (auto const & placement : placements_part)
             {
-                agg::trans_affine matrix = image_tr;
+                agg::trans_affine matrix = marker_trans;
                 matrix.rotate(placement.angle);
                 matrix.translate(placement.pos.x, placement.pos.y);
 
-                markers_dispatch_params p(box2d<double>(), image_tr,
+                markers_dispatch_params p(box2d<double>(), marker_trans,
                     sym_, feature_, common_.vars_, common_.scale_factor_);
 
                 renderer_context_.render_marker(marker_ptr, svg_path, r_attributes,
@@ -219,6 +220,12 @@ struct render_marker_symbolizer_visitor
         }
 
         //render_marker(mark, rasterizer_dispatch);
+    }
+
+    static agg::trans_affine recenter(svg_path_ptr const& src)
+    {
+        coord2d center = src->bounding_box().center();
+        return agg::trans_affine_translation(-center.x, -center.y);
     }
 
     void operator() (marker_rgba8 const& mark)
