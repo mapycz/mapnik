@@ -52,6 +52,7 @@ struct marker_symbolizer_traits
     using layout_generator_type = marker_layout_generator;
 };
 
+/*
 template <typename Locator, typename Detector>
 class markers_placement_finder : util::noncopyable
 {
@@ -150,6 +151,7 @@ private:
         what->~T();
     }
 };
+*/
 
 }
 

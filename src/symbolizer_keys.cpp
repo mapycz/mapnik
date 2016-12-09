@@ -112,12 +112,6 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "placement",
                         [](enumeration_wrapper e)
                         { return enumeration<label_placement_enum,label_placement_enum_MAX>(label_placement_enum(e.value)).as_string();}, property_types::target_placement },
-    property_meta_type{ "placement", // FIXME - change property name
-                        [](enumeration_wrapper e)
-                        {
-                            return enumeration<marker_placement_enum,marker_placement_enum_MAX>(marker_placement_enum(e.value)).as_string();
-                        },
-                        property_types::target_markers_placement },
     property_meta_type{ "multi-policy",
                         [](enumeration_wrapper e)
                         {

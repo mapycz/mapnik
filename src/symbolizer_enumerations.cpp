@@ -61,17 +61,6 @@ static const char * line_rasterizer_strings[] = {
 IMPLEMENT_ENUM( line_rasterizer_e, line_rasterizer_strings )
 
 // markers symbolizer
-static const char * marker_placement_strings[] = {
-    "point",
-    "interior",
-    "line",
-    "vertex-first",
-    "vertex-last",
-    ""
-};
-
-IMPLEMENT_ENUM( marker_placement_e, marker_placement_strings )
-
 static const char * marker_multi_policy_strings[] = {
     "each",
     "whole",
@@ -117,6 +106,8 @@ static const char * label_placement_strings[] = {
     "vertex",
     "interior",
     "grid",
+    "vertex-first",
+    "vertex-last",
     ""
 };
 

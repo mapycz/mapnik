@@ -171,6 +171,7 @@ void setup_transform_scaling(agg::trans_affine & tr,
     }
 }
 
+/*
 template <typename Processor>
 void apply_markers_single(vertex_converter_type & converter, Processor & proc,
                           geometry::geometry<double> const& geom, geometry::geometry_types type)
@@ -309,4 +310,5 @@ template void apply_markers_multi<raster_dispatch_type>(feature_impl const& feat
                                                         vertex_converter_type & converter, raster_dispatch_type & proc,
                                                         symbolizer_base const& sym);
 
+*/
 } // end namespace mapnik

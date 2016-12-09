@@ -34,7 +34,7 @@ struct markers_dispatch_params
 {
     // placement
     markers_placement_params placement_params;
-    marker_placement_enum placement_method;
+    //marker_placement_enum placement_method;
     value_bool ignore_placement;
     boost::optional<std::string> key;
     // rendering
@@ -71,7 +71,6 @@ void render_markers_symbolizer(markers_symbolizer const& sym,
                                renderer_common & common,
                                box2d<double> const& clip_box,
                                markers_renderer_context & renderer_context);
-
 } // namespace mapnik
 
 #endif // MAPNIK_RENDERER_COMMON_RENDER_MARKERS_SYMBOLIZER_HPP

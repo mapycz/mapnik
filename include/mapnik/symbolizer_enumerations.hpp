@@ -95,21 +95,6 @@ enum debug_symbolizer_mode_enum : std::uint8_t
 
 DEFINE_ENUM( debug_symbolizer_mode_e, debug_symbolizer_mode_enum );
 
-
-// markers
-// TODO - consider merging with text_symbolizer label_placement_e
-enum marker_placement_enum : std::uint8_t
-{
-    MARKER_POINT_PLACEMENT,
-    MARKER_INTERIOR_PLACEMENT,
-    MARKER_LINE_PLACEMENT,
-    MARKER_VERTEX_FIRST_PLACEMENT,
-    MARKER_VERTEX_LAST_PLACEMENT,
-    marker_placement_enum_MAX
-};
-
-DEFINE_ENUM( marker_placement_e, marker_placement_enum );
-
 enum marker_multi_policy_enum : std::uint8_t
 {
     MARKER_EACH_MULTI, // each component in a multi gets its marker
@@ -139,6 +124,8 @@ enum label_placement_enum : std::uint8_t
     VERTEX_PLACEMENT,
     INTERIOR_PLACEMENT,
     GRID_PLACEMENT,
+    VERTEX_FIRST_PLACEMENT,
+    VERTEX_LAST_PLACEMENT,
     label_placement_enum_MAX
 };
 

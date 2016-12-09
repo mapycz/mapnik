@@ -312,19 +312,18 @@ struct symbolizer_default<halo_rasterizer_enum, keys::halo_rasterizer>
 };
 
 // text-placements
+template <>
+struct symbolizer_default<label_placement_enum, keys::label_placement>
+{
+    static label_placement_enum value() { return POINT_PLACEMENT; }
+};
+
 
 // placement (point-placement-type FIXME)
 template <>
 struct symbolizer_default<point_placement_enum, keys::point_placement_type>
 {
     static point_placement_enum value() { return CENTROID_POINT_PLACEMENT; }
-};
-
-// marker placement
-template <>
-struct symbolizer_default<marker_placement_enum, keys::markers_placement_type>
-{
-    static marker_placement_enum value() { return MARKER_POINT_PLACEMENT; }
 };
 
 // multi-policy

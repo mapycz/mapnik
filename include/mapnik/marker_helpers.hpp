@@ -49,7 +49,7 @@
 #include <memory>
 
 namespace mapnik {
-
+/*
 struct clip_poly_tag;
 
 using svg_attribute_type = agg::pod_bvector<svg::path_attributes>;
@@ -163,21 +163,11 @@ protected:
     symbol_cache & symbol_cache_;
 };
 
-void build_ellipse(symbolizer_base const& sym, mapnik::feature_impl & feature, attributes const& vars,
-                   svg_storage_type & marker_ellipse, svg::svg_path_adapter & svg_path);
-
 bool push_explicit_style(svg_attribute_type const& src,
                          svg_attribute_type & dst,
                          symbolizer_base const& sym,
                          feature_impl & feature,
                          attributes const& vars);
-
-void setup_transform_scaling(agg::trans_affine & tr,
-                             double svg_width,
-                             double svg_height,
-                             mapnik::feature_impl & feature,
-                             attributes const& vars,
-                             symbolizer_base const& sym);
 
 using vertex_converter_type = vertex_converter<clip_line_tag,
                                                clip_poly_tag,
@@ -202,7 +192,23 @@ extern template void apply_markers_multi<vector_dispatch_type>(feature_impl cons
 extern template void apply_markers_multi<raster_dispatch_type>(feature_impl const& feature, attributes const& vars,
                          vertex_converter_type & converter, raster_dispatch_type & proc, symbolizer_base const& sym);
 
+*/
 
+void build_ellipse(symbolizer_base const& sym, mapnik::feature_impl & feature, attributes const& vars,
+                   svg_storage_type & marker_ellipse, svg::svg_path_adapter & svg_path);
+
+bool push_explicit_style(svg_attribute_type const& src,
+                         svg_attribute_type & dst,
+                         symbolizer_base const& sym,
+                         feature_impl & feature,
+                         attributes const& vars);
+
+void setup_transform_scaling(agg::trans_affine & tr,
+                             double svg_width,
+                             double svg_height,
+                             mapnik::feature_impl & feature,
+                             attributes const& vars,
+                             symbolizer_base const& sym);
 }
 
 #endif //MAPNIK_MARKER_HELPERS_HPP

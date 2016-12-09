@@ -36,8 +36,8 @@ namespace detail {
 template <typename Detector, typename RendererType, typename ContextType>
 struct render_marker_symbolizer_visitor
 {
-    using vector_dispatch_type = vector_markers_dispatch<Detector>;
-    using raster_dispatch_type = raster_markers_dispatch<Detector>;
+    //using vector_dispatch_type = vector_markers_dispatch<Detector>;
+    //using raster_dispatch_type = raster_markers_dispatch<Detector>;
 
     render_marker_symbolizer_visitor(std::string const& filename,
                                      markers_symbolizer const& sym,
@@ -64,6 +64,7 @@ struct render_marker_symbolizer_visitor
             return stock_attr;
     }
 
+    /*
     template <typename Marker, typename Dispatch>
     void render_marker(Marker const& mark, Dispatch & rasterizer_dispatch) const
     {
@@ -116,6 +117,7 @@ struct render_marker_symbolizer_visitor
 
         apply_markers_multi(feature_, vars, converter, rasterizer_dispatch, sym_);
     }
+    */
 
     void operator() (marker_null const&) const {}
 
@@ -162,6 +164,7 @@ struct render_marker_symbolizer_visitor
             evaluate_transform(image_tr, feature_, common_.vars_, *image_transform, common_.scale_factor_);
         }
 
+        /*
         vector_dispatch_type rasterizer_dispatch(marker_ptr,
                                                  svg_path,
                                                  r_attributes,
@@ -174,6 +177,7 @@ struct render_marker_symbolizer_visitor
                                                  common_.symbol_cache_,
                                                  snap_to_pixels,
                                                  renderer_context_);
+                                                 */
 
         agg::trans_affine tr;
         auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
@@ -183,19 +187,38 @@ struct render_marker_symbolizer_visitor
 
         marker_layout_generator layout_generator(feature_, common_.vars_,
             common_.scale_factor_, marker_ptr, svg_path, r_attributes, image_tr);
-        const auto placement_method = POINT_PLACEMENT; //TODO
 
-        label_placement::placement_params params {
+        const label_placement::placement_params params {
             prj_trans_, common_.t_, tr, sym_, feature_, common_.vars_,
             box2d<double>(0, 0, common_.width_, common_.height_),
             common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
+        const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
 
-        //typename traits::placements_type placements(
-            //label_placement::finder<traits>::get(placement_method,
-                //layout_generator, *common_.detector_, params));
+        typename traits::placements_type placements(
+            label_placement::finder<traits>::get(placement_method,
+                layout_generator, *common_.detector_, params));
 
+        for (auto const & placements_part : placements)
+        {
+            for (auto const & placement : placements_part)
+            {
+                agg::trans_affine matrix = image_tr;
+                matrix.rotate(placement.angle);
+                matrix.translate(placement.pos.x, placement.pos.y);
 
-        render_marker(mark, rasterizer_dispatch);
+                markers_dispatch_params p(box2d<double>(), image_tr,
+                    sym_, feature_, common_.vars_, common_.scale_factor_);
+
+                renderer_context_.render_marker(marker_ptr, svg_path, r_attributes,
+                    p, matrix);
+                /*if (params_.key)
+                {
+                    symbol_cache_.insert(*params_.key, box);
+                }*/
+            }
+        }
+
+        //render_marker(mark, rasterizer_dispatch);
     }
 
     void operator() (marker_rgba8 const& mark)
@@ -211,7 +234,7 @@ struct render_marker_symbolizer_visitor
         coord2d center = bbox.center();
         agg::trans_affine_translation recenter(-center.x, -center.y);
         agg::trans_affine marker_trans = recenter * image_tr;
-        raster_dispatch_type rasterizer_dispatch(marker,
+        /*raster_dispatch_type rasterizer_dispatch(marker,
                                                  marker_trans,
                                                  sym_,
                                                  *common_.detector_,
@@ -221,7 +244,7 @@ struct render_marker_symbolizer_visitor
                                                  common_.symbol_cache_,
                                                  renderer_context_);
 
-        render_marker(mark, rasterizer_dispatch);
+        render_marker(mark, rasterizer_dispatch);*/
     }
 
   private:
@@ -251,7 +274,7 @@ markers_dispatch_params::markers_dispatch_params(box2d<double> const& size,
         get<value_bool, keys::allow_overlap>(sym, feature, vars),
         get<value_bool, keys::avoid_edges>(sym, feature, vars),
         get<direction_enum, keys::direction>(sym, feature, vars)}
-    , placement_method(get<marker_placement_enum, keys::markers_placement_type>(sym, feature, vars))
+    //, placement_method(get<marker_placement_enum, keys::markers_placement_type>(sym, feature, vars))
     , ignore_placement(get<value_bool, keys::ignore_placement>(sym, feature, vars))
     , key(get_optional<std::string>(sym, keys::symbol_key, feature, vars))
     , snap_to_pixels(snap)

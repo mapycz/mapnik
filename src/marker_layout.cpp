@@ -53,7 +53,7 @@ bool marker_layout::try_placement(
 {
     pixel_position const & pos = path.current_position();
     double angle = path.angle();
-    if (set_direction(angle))
+    if (!set_direction(angle))
     {
         return false;
     }
