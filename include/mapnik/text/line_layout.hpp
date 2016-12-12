@@ -33,6 +33,7 @@
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/text/point_layout.hpp>
 #include <mapnik/tolerance_iterator.hpp>
+#include <mapnik/text/text_line_policy.hpp>
 
 namespace mapnik
 {
@@ -190,11 +191,9 @@ bool line_layout<SubLayout>::try_placement(
     Detector & detector,
     vertex_cache & pp)
 {
-    evaluated_text_properties const & text_props = layout_generator.get_text_props();
-    return try_placement(layout_generator, detector, pp,
-        text_props.minimum_path_length,
-        text_props.label_spacing,
-        text_props.label_position_tolerance);
+    double layout_width = sublayout_.get_length(layout_generator);
+    text_line_policy<LayoutGenerator> policy(pp, layout_generator, layout_width, params_);
+    return try_placement(layout_generator, detector, policy);
 }
 
 template <typename SubLayout>
@@ -202,10 +201,7 @@ template <typename LayoutGenerator, typename Detector>
 bool line_layout<SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
     Detector & detector,
-    vertex_cache & pp,
-    double minimum_path_length,
-    double label_spacing,
-    double label_position_tolerance)
+    text_line_policy<LayoutGenerator> & policy)
 {
     bool success = false;
     while (pp.next_subpath())
@@ -218,7 +214,7 @@ bool line_layout<SubLayout>::try_placement(
             continue;
         }
 
-        double spacing = get_spacing(pp.length(), label_spacing, layout_length);
+        double spacing = label_spacing;//get_spacing(pp.length(), label_spacing, layout_length);
 
         if (!layout_generator.align(pp, spacing))
         {
@@ -232,7 +228,7 @@ bool line_layout<SubLayout>::try_placement(
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(pp);
-                if (pp.move(tolerance_offset.get()) &&
+                if (pp.move(tolerance_offset.get()) && (pp.linear_position() + layout_length / 2.0) < pp.length() &&
                     sublayout_.try_placement(layout_generator, detector,
                         position_accessor<SubLayout>::get(pp)))
                 {

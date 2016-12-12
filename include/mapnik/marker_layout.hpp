@@ -50,9 +50,9 @@ public:
         Detector & detector,
         pixel_position const & pos);
 
-    inline double get_length(marker_layout_generator const &) const
+    inline double get_length(marker_layout_generator const & lg) const
     {
-        return 0;
+        return lg.size_.width();
     }
 
 protected:
