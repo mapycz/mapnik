@@ -33,17 +33,14 @@ namespace mapnik
 {
 
 text_layout_generator::text_layout_generator(
-    feature_impl const & feature,
-    attributes const & vars,
+    params_type const & params,
     face_manager_freetype & font_manager,
-    double scale_factor,
     text_placement_info & info)
-    : feature_(feature),
-      vars_(vars),
+    : params_(params),
       font_manager_(font_manager),
-      scale_factor_(scale_factor),
       info_(info),
-      text_props_(evaluate_text_properties(info.properties, feature, vars))
+      text_props_(evaluate_text_properties(
+        info.properties, params.feature, params.vars))
 {
 }
 
@@ -53,13 +50,14 @@ bool text_layout_generator::next()
     {
         return false;
     }
-    text_props_ = evaluate_text_properties(info_.properties, feature_, vars_);
+    text_props_ = evaluate_text_properties(
+        info_.properties, params_.feature, params_.vars);
     layouts_ = std::make_unique<layout_container>(
         std::move(std::make_unique<text_layout>(
             font_manager_,
-            feature_,
-            vars_,
-            scale_factor_,
+            params_.feature,
+            params_.vars,
+            params_.scale_factor,
             info_.properties,
             info_.properties.layout_defaults,
             info_.properties.format_tree())));

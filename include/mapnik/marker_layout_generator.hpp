@@ -57,9 +57,6 @@ using marker_positions_type = std::vector<marker_position>;
 struct marker_layout_generator : util::noncopyable
 {
     marker_layout_generator(
-        feature_impl const& feature,
-        attributes const& vars,
-        double scale_factor,
         box2d<double> marker_box,
         agg::trans_affine const & marker_trans);
 
@@ -82,9 +79,6 @@ struct marker_layout_generator : util::noncopyable
         return true;
     }
 
-    feature_impl const& feature_;
-    attributes const& vars_;
-    const double scale_factor_;
     bool state_;
     const box2d<double> size_;
     agg::trans_affine tr_;

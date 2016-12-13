@@ -29,6 +29,7 @@
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/extend_converter.hpp>
 #include <mapnik/vertex_cache.hpp>
+#include <mapnik/label_placements/base.hpp>
 
 namespace mapnik
 {
@@ -38,11 +39,11 @@ class text_placement_info;
 
 struct text_layout_generator : util::noncopyable
 {
+    using params_type = label_placement::placement_params;
+
     text_layout_generator(
-        feature_impl const& feature,
-        attributes const& vars,
+        params_type const & params,
         face_manager_freetype & font_manager,
-        double scale_factor,
         text_placement_info & info);
 
     bool next();
@@ -68,10 +69,8 @@ struct text_layout_generator : util::noncopyable
         return text_props_->largest_bbox_only;
     }
 
-    feature_impl const& feature_;
-    attributes const& vars_;
+    params_type const & params_;
     face_manager_freetype &font_manager_;
-    const double scale_factor_;
     text_placement_info & info_;
     evaluated_text_properties_ptr text_props_;
     std::unique_ptr<layout_container> layouts_;

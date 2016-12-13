@@ -99,19 +99,18 @@ public:
         agg::trans_affine const affine_trans,
         symbol_cache const& sc)
     {
-        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
-            sym, keys::text_placements_)->get_placement_info(scale_factor,
-                feature, vars, sc);
-        layout_generator_type layout_generator(feature, vars,
-            font_manager, scale_factor, *placement_info);
-
-        const label_placement_enum placement_type =
-            layout_generator.get_text_props().label_placement;
-
         label_placement::placement_params params {
             prj_trans, t, affine_trans, sym, feature, vars,
             box2d<double>(0, 0, width, height), query_extent,
             scale_factor, sc };
+
+        text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
+            sym, keys::text_placements_)->get_placement_info(scale_factor,
+                feature, vars, sc);
+        layout_generator_type layout_generator(params, font_manager, *placement_info);
+
+        const label_placement_enum placement_type =
+            layout_generator.get_text_props().label_placement;
 
         return label_placement::finder<Traits>::get(placement_type, layout_generator,
             detector, params);

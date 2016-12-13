@@ -36,18 +36,13 @@
 namespace mapnik { //namespace detail {
 
 group_layout_generator::group_layout_generator(
-    feature_impl const & feature,
-    attributes const & vars,
+    params_type const & params,
     face_manager_freetype & font_manager,
-    double scale_factor,
     text_placement_info & info,
     std::list<box_element> const & box_elements)
-    : feature_(feature),
-      vars_(vars),
-      font_manager_(font_manager),
-      scale_factor_(scale_factor),
+    : font_manager_(font_manager),
       info_(info),
-      text_props_(evaluate_text_properties(info.properties, feature, vars)),
+      text_props_(evaluate_text_properties(info.properties, params.feature, params.vars)),
       state_(true),
       box_elements_(box_elements)
 {

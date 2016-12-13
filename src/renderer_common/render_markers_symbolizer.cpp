@@ -190,8 +190,7 @@ struct render_marker_symbolizer_visitor
         const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
         const agg::trans_affine marker_trans = recenter * image_tr;
 
-        marker_layout_generator layout_generator(feature_, common_.vars_,
-            common_.scale_factor_, marker_box, marker_trans);
+        marker_layout_generator layout_generator(marker_box, marker_trans);
 
         const label_placement::placement_params params {
             prj_trans_, common_.t_, tr, sym_, feature_, common_.vars_,

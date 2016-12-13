@@ -50,11 +50,11 @@ struct box_element
 
 struct group_layout_generator : util::noncopyable
 {
+    using params_type = label_placement::placement_params;
+
     group_layout_generator(
-        feature_impl const& feature,
-        attributes const& vars,
+        params_type const & params,
         face_manager_freetype & font_manager,
-        double scale_factor,
         text_placement_info & info,
         std::list<box_element> const & box_elements);
 
@@ -81,10 +81,7 @@ struct group_layout_generator : util::noncopyable
         return text_props_->largest_bbox_only;
     }
 
-    feature_impl const& feature_;
-    attributes const& vars_;
     face_manager_freetype &font_manager_;
-    const double scale_factor_;
     text_placement_info & info_;
     evaluated_text_properties_ptr text_props_;
     std::unique_ptr<layout_container> layouts_;

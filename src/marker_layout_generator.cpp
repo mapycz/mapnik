@@ -30,15 +30,9 @@ namespace mapnik
 {
 
 marker_layout_generator::marker_layout_generator(
-    feature_impl const & feature,
-    attributes const & vars,
-    double scale_factor,
     box2d<double> marker_box,
     agg::trans_affine const & marker_trans)
-    : feature_(feature),
-      vars_(vars),
-      scale_factor_(scale_factor),
-      state_(true),
+    : state_(true),
       size_(marker_box),
       tr_(marker_trans)
 {
