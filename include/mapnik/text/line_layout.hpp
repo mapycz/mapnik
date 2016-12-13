@@ -121,6 +121,7 @@ bool text_extend_line_layout<SubLayout>::try_placement(
         return sublayout_.try_placement(layout_generator, detector, pp);
     }
 
+    //TODO
     vertex_cache pp(geom);
     return sublayout_.try_placement(layout_generator, detector, pp);
 }
@@ -147,14 +148,12 @@ public:
         vertex_cache & pp);
 
 protected:
-    template <typename LayoutGenerator, typename Detector>
+    template <typename LayoutGenerator, typename LineLayoutPolicy, typename Detector>
     bool try_placement(
         LayoutGenerator & layout_generator,
         Detector & detector,
-        vertex_cache & pp,
-        double minimum_path_length,
-        double label_spacing,
-        double label_position_tolerance);
+        vertex_cache & path,
+        LineLayoutPolicy & policy);
 
     // Adjusts user defined spacing to place an integer number of labels.
     double get_spacing(
@@ -193,30 +192,30 @@ bool line_layout<SubLayout>::try_placement(
 {
     double layout_width = sublayout_.get_length(layout_generator);
     text_line_policy<LayoutGenerator> policy(pp, layout_generator, layout_width, params_);
-    return try_placement(layout_generator, detector, policy);
+    return try_placement(layout_generator, detector, pp, policy);
 }
 
 template <typename SubLayout>
-template <typename LayoutGenerator, typename Detector>
+template <typename LayoutGenerator, typename LineLayoutPolicy, typename Detector>
 bool line_layout<SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
     Detector & detector,
-    text_line_policy<LayoutGenerator> & policy)
+    vertex_cache & path,
+    LineLayoutPolicy & policy)
 {
     bool success = false;
-    while (pp.next_subpath())
+    while (path.next_subpath())
     {
         double layout_length = sublayout_.get_length(layout_generator);
 
-        if (pp.length() < minimum_path_length * params_.scale_factor ||
-            pp.length() < layout_length)
+        if (!policy.check_size())
         {
             continue;
         }
 
-        double spacing = label_spacing;//get_spacing(pp.length(), label_spacing, layout_length);
+        double spacing = policy.get_spacing();
 
-        if (!layout_generator.align(pp, spacing))
+        if (!layout_generator.align(path, spacing))
         {
             continue;
         }
@@ -224,19 +223,19 @@ bool line_layout<SubLayout>::try_placement(
         do
         {
             tolerance_iterator<exponential_function> tolerance_offset(
-                label_position_tolerance * params_.scale_factor, spacing);
+                policy.position_tolerance_, spacing);
             while (tolerance_offset.next())
             {
-                vertex_cache::scoped_state state(pp);
-                if (pp.move(tolerance_offset.get()) && (pp.linear_position() + layout_length / 2.0) < pp.length() &&
+                vertex_cache::scoped_state state(path);
+                if (policy.move(tolerance_offset.get()) &&
                     sublayout_.try_placement(layout_generator, detector,
-                        position_accessor<SubLayout>::get(pp)))
+                        position_accessor<SubLayout>::get(path)))
                 {
                     success = true;
                     break;
                 }
             }
-        } while (pp.forward(spacing));
+        } while (path.forward(spacing));
     }
     return success;
 }

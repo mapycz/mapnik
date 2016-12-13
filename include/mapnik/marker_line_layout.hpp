@@ -23,6 +23,7 @@
 #define MAPNIK_MARKER_LINE_LAYOUT_HPP
 
 #include <mapnik/text/line_layout.hpp>
+#include <mapnik/marker_line_policy.hpp>
 
 namespace mapnik
 {
@@ -46,10 +47,12 @@ public:
         Detector & detector,
         Geom & geom)
     {
+        double layout_width = this->sublayout_.get_length(layout_generator);
         vertex_cache path(geom);
+        marker_line_policy<LayoutGenerator> policy(path, layout_generator,
+            layout_width, spacing_, position_tolerance_, this->params_);
         return line_layout<SubLayout>::try_placement(
-            layout_generator, detector, path,
-            0, spacing_, position_tolerance_);
+            layout_generator, detector, path, policy);
     }
 
 protected:

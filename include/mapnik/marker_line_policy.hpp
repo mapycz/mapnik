@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-#ifndef MAPNIK_TEXT_LINE_POLICY_HPP
-#define MAPNIK_TEXT_LINE_POLICY_HPP
+#ifndef MAPNIK_MARKER_LINE_POLICY_HPP
+#define MAPNIK_MARKER_LINE_POLICY_HPP
 
 #include <mapnik/vertex_cache.hpp>
 
@@ -28,60 +28,49 @@ namespace mapnik
 {
 
 template <typename LayoutGenerator>
-struct text_line_policy
+struct marker_line_policy
 {
     using params_type = label_placement::placement_params;
 
-    text_line_policy(
+    marker_line_policy(
         vertex_cache & path,
         LayoutGenerator const & lg,
         double layout_width,
+        double spacing,
+        double position_tolerance,
         params_type const & params)
         : path_(path),
           params_(params),
           layout_width_(layout_width),
-          minimum_path_length_(lg.get_text_props().minimum_path_length),
-          label_spacing_(lg.get_text_props().label_spacing),
-          position_tolerance_(
-            lg.get_text_props().label_position_tolerance * params.scale_factor)
+          spacing_(spacing),
+          position_tolerance_(position_tolerance)
     {
     }
 
     bool check_size() const
     {
-        return !(
-            path_.length() < minimum_path_length_ * params_.scale_factor ||
-            path_.length() < layout_width_);
+        return true;
     }
 
     double get_spacing() const
     {
-        int num_labels = 1;
-        if (label_spacing_ > 0)
-        {
-            num_labels = static_cast<int>(std::floor(
-                path_.length() / (label_spacing_ * params_.scale_factor + layout_width_)));
-        }
-        if (num_labels <= 0)
-        {
-            num_labels = 1;
-        }
-        return path_.length() / num_labels;
+        return spacing_;
     }
 
     bool move(double distance)
     {
-        return path_.move(distance);
+        return path_.move(distance) &&
+            (path_.linear_position() + layout_width_ / 2.0) < path_.length();
     }
 
     vertex_cache & path_;
     params_type const & params_;
     const double layout_width_;
-    const double minimum_path_length_;
-    const double label_spacing_;
+    const double spacing_;
     const double position_tolerance_;
 };
 
+
 }//ns mapnik
 
-#endif // MAPNIK_TEXT_LINE_POLICY_HPP
+#endif // MAPNIK_MARKER_LINE_POLICY_HPP
