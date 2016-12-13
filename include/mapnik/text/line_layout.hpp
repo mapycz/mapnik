@@ -186,17 +186,17 @@ bool line_layout<SubLayout>::try_placement(
             continue;
         }
 
-        double spacing = policy.get_spacing();
-
         if (!policy.align())
         {
             continue;
         }
 
+        double spacing = policy.get_spacing();
+
         do
         {
             tolerance_iterator<exponential_function> tolerance_offset(
-                policy.position_tolerance_, spacing);
+                policy.position_tolerance_, spacing /* TODO */);
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(path);
