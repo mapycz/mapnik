@@ -155,8 +155,8 @@ struct line
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
-        split(params.feature.get_geometry(), geoms,
-            layout_generator.largest_box_only());
+        apply_multi_policy(params.feature.get_geometry(), geoms,
+            layout_generator.multi_policy());
 
         using adapter_type = placement_finder_adapter<Layout, LayoutGenerator, Detector>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;

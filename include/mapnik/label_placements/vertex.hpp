@@ -67,8 +67,8 @@ struct vertex
     {
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
-        split(params.feature.get_geometry(), geoms,
-            layout_generator.largest_box_only());
+        apply_multi_policy(params.feature.get_geometry(), geoms,
+            layout_generator.multi_policy());
 
         using positions_type = std::list<pixel_position>;
         positions_type points;

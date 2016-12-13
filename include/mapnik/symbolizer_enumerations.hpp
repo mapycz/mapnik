@@ -95,15 +95,15 @@ enum debug_symbolizer_mode_enum : std::uint8_t
 
 DEFINE_ENUM( debug_symbolizer_mode_e, debug_symbolizer_mode_enum );
 
-enum marker_multi_policy_enum : std::uint8_t
+enum multi_policy_enum : std::uint8_t
 {
-    MARKER_EACH_MULTI, // each component in a multi gets its marker
-    MARKER_WHOLE_MULTI, // consider all components of a multi as a whole
-    MARKER_LARGEST_MULTI, // only the largest component of a multi gets a marker
-    marker_multi_policy_enum_MAX
+    EACH_MULTI, // each component in a multi gets its placement
+    WHOLE_MULTI, // consider all components of a multi as a whole
+    LARGEST_MULTI, // only the largest component of a multi gets a placement
+    multi_policy_enum_MAX
 };
 
-DEFINE_ENUM( marker_multi_policy_e, marker_multi_policy_enum );
+DEFINE_ENUM( multi_policy_e, multi_policy_enum );
 
 enum text_transform_enum : std::uint8_t
 {

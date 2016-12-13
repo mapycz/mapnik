@@ -22,7 +22,6 @@
 #ifndef MAPNIK_TEXT_LAYOUT_GENERATOR
 #define MAPNIK_TEXT_LAYOUT_GENERATOR
 
-//mapnik
 #include <mapnik/box2d.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/text/text_layout.hpp>
@@ -64,9 +63,9 @@ struct text_layout_generator : util::noncopyable
         return layouts_;
     }
 
-    inline bool largest_box_only() const
+    inline multi_policy_enum multi_policy() const
     {
-        return text_props_->largest_bbox_only;
+        return text_props_->largest_bbox_only ? LARGEST_MULTI : EACH_MULTI;
     }
 
     params_type const & params_;

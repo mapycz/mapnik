@@ -30,11 +30,13 @@ namespace mapnik
 {
 
 marker_layout_generator::marker_layout_generator(
+    params_type const & params,
     box2d<double> marker_box,
     agg::trans_affine const & marker_trans)
     : state_(true),
       size_(marker_box),
-      tr_(marker_trans)
+      tr_(marker_trans),
+      multi_policy_(params.get<multi_policy_enum, keys::multipolicy>())
 {
 }
 

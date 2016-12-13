@@ -74,7 +74,7 @@ enum class property_types : std::uint8_t
     target_point_placement,
     target_pattern_alignment,
     target_debug_symbolizer_mode,
-    target_marker_multi_policy,
+    target_multi_policy,
     target_string,
     target_transform,
     target_placement,
@@ -84,7 +84,6 @@ enum class property_types : std::uint8_t
     target_group_symbolizer_properties,
     target_halo_comp_op,
     target_simplify_algorithm,
-    target_markers_multipolicy,
     target_gamma_method,
     target_text_transform,
     target_horizontal_alignment,
@@ -174,7 +173,7 @@ ENUM_FROM_STRING( line_cap_enum )
 ENUM_FROM_STRING( line_join_enum )
 ENUM_FROM_STRING( point_placement_enum )
 ENUM_FROM_STRING( line_rasterizer_enum )
-ENUM_FROM_STRING( marker_multi_policy_enum )
+ENUM_FROM_STRING( multi_policy_enum )
 ENUM_FROM_STRING( debug_symbolizer_mode_enum )
 ENUM_FROM_STRING( pattern_alignment_enum )
 ENUM_FROM_STRING( halo_rasterizer_enum )

@@ -183,6 +183,12 @@ struct render_marker_symbolizer_visitor
         auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
         if (transform) evaluate_transform(tr, feature_, common_.vars_, *transform, common_.scale_factor_);
 
+        const label_placement::placement_params params {
+            prj_trans_, common_.t_, tr, sym_, feature_, common_.vars_,
+            box2d<double>(0, 0, common_.width_, common_.height_),
+            common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
+        const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
+
         using traits = marker_symbolizer_traits;
 
         const box2d<double> marker_box(marker_ptr->bounding_box());
@@ -190,13 +196,7 @@ struct render_marker_symbolizer_visitor
         const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
         const agg::trans_affine marker_trans = recenter * image_tr;
 
-        marker_layout_generator layout_generator(marker_box, marker_trans);
-
-        const label_placement::placement_params params {
-            prj_trans_, common_.t_, tr, sym_, feature_, common_.vars_,
-            box2d<double>(0, 0, common_.width_, common_.height_),
-            common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
-        const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
+        marker_layout_generator layout_generator(params, marker_box, marker_trans);
 
         typename traits::placements_type placements(
             label_placement::finder<traits>::get(placement_method,

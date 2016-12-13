@@ -57,8 +57,19 @@ struct point
 
         return_type operator()(geometry::polygon<double> const & poly) const
         {
+            return centroid(poly);
+        }
+
+        return_type operator()(geometry::multi_polygon<double> const & multi) const
+        {
+            return centroid(multi);
+        }
+
+        template <typename Geom>
+        return_type centroid(Geom const & geom) const
+        {
             geometry::point<double> pt;
-            if (!geometry::centroid(poly, pt))
+            if (!geometry::centroid(geom, pt))
             {
                 MAPNIK_LOG_ERROR(label_interior_placement) << "Centroid point calculation failed.";
                 return boost::none;
@@ -76,7 +87,7 @@ struct point
             params.feature.get_geometry(),
             params.proj_transform,
             params.view_transform,
-            layout_generator.largest_box_only()));
+            layout_generator.multi_policy()));
         Layout layout(params);
 
         Placements placements;

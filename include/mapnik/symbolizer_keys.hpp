@@ -72,7 +72,7 @@ enum class keys : std::uint8_t
     halo_rasterizer,
     text_placements_,
     label_placement,
-    markers_multipolicy,
+    multipolicy,
     point_placement_type,
     colorizer,
     halo_transform,

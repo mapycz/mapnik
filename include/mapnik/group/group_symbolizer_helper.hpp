@@ -76,9 +76,9 @@ struct group_layout_generator : util::noncopyable
         return results_;
     }
 
-    inline bool largest_box_only() const
+    inline multi_policy_enum multi_policy() const
     {
-        return text_props_->largest_bbox_only;
+        return text_props_->largest_bbox_only ? LARGEST_MULTI : EACH_MULTI;
     }
 
     face_manager_freetype &font_manager_;

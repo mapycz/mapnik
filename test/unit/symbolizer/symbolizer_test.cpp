@@ -11,13 +11,13 @@ TEST_CASE("symbolizer") {
 SECTION("enums") {
 
     try {
-        marker_multi_policy_enum policy_in = MARKER_WHOLE_MULTI;
-        REQUIRE(policy_in == MARKER_WHOLE_MULTI);
+        multi_policy_enum policy_in = WHOLE_MULTI;
+        REQUIRE(policy_in == WHOLE_MULTI);
         markers_symbolizer sym;
-        put(sym, keys::markers_multipolicy, policy_in);
-        REQUIRE(sym.properties.count(keys::markers_multipolicy) == static_cast<unsigned long>(1));
-        marker_multi_policy_enum policy_out = get<mapnik::marker_multi_policy_enum>(sym, keys::markers_multipolicy);
-        REQUIRE(policy_out == MARKER_WHOLE_MULTI);
+        put(sym, keys::multipolicy, policy_in);
+        REQUIRE(sym.properties.count(keys::multipolicy) == static_cast<unsigned long>(1));
+        multi_policy_enum policy_out = get<mapnik::multi_policy_enum>(sym, keys::multipolicy);
+        REQUIRE(policy_out == WHOLE_MULTI);
     }
     catch (std::exception const & ex)
     {

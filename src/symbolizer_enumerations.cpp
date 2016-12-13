@@ -61,14 +61,14 @@ static const char * line_rasterizer_strings[] = {
 IMPLEMENT_ENUM( line_rasterizer_e, line_rasterizer_strings )
 
 // markers symbolizer
-static const char * marker_multi_policy_strings[] = {
+static const char * multi_policy_strings[] = {
     "each",
     "whole",
     "largest",
     ""
 };
 
-IMPLEMENT_ENUM( marker_multi_policy_e, marker_multi_policy_strings )
+IMPLEMENT_ENUM( multi_policy_e, multi_policy_strings )
 
 // debug symbolizer
 static const char * debug_symbolizer_mode_strings[] = {

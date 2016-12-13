@@ -115,9 +115,9 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "multi-policy",
                         [](enumeration_wrapper e)
                         {
-                            return enumeration<marker_multi_policy_enum,marker_multi_policy_enum_MAX>(marker_multi_policy_enum(e.value)).as_string();
+                            return enumeration<multi_policy_enum,multi_policy_enum_MAX>(multi_policy_enum(e.value)).as_string();
                         },
-                        property_types::target_markers_multipolicy },
+                        property_types::target_multi_policy },
     property_meta_type{ "placement", // FIXME - change property name
                         [](enumeration_wrapper e) { return enumeration<point_placement_enum,point_placement_enum_MAX>(point_placement_enum(e.value)).as_string();},
                         property_types::target_double },

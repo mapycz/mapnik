@@ -1051,7 +1051,7 @@ void map_parser::parse_markers_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base,color>(sym, keys::fill, node);
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
         set_symbolizer_property<symbolizer_base,label_placement_enum>(sym, keys::label_placement, node);
-        set_symbolizer_property<symbolizer_base,marker_multi_policy_enum>(sym, keys::markers_multipolicy, node);
+        set_symbolizer_property<symbolizer_base,multi_policy_enum>(sym, keys::multipolicy, node);
         set_symbolizer_property<symbolizer_base,direction_enum>(sym, keys::direction, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::grid_cell_width, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::grid_cell_height, node);

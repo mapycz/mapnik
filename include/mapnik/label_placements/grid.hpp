@@ -42,8 +42,8 @@ struct grid
 
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::vector<geom_type> geoms;
-        split(params.feature.get_geometry(), geoms,
-            layout_generator.largest_box_only());
+        apply_multi_policy(params.feature.get_geometry(), geoms,
+            layout_generator.multi_policy());
 
         layout_processor::process(geoms, layout, layout_generator, detector, placements);
 

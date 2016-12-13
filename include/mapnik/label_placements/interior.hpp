@@ -74,7 +74,7 @@ struct interior
             params.feature.get_geometry(),
             params.proj_transform,
             params.view_transform,
-            layout_generator.largest_box_only()));
+            layout_generator.multi_policy()));
         Placements placements;
         Layout layout(params);
 

@@ -328,9 +328,9 @@ struct symbolizer_default<point_placement_enum, keys::point_placement_type>
 
 // multi-policy
 template <>
-struct symbolizer_default<marker_multi_policy_enum, keys::markers_multipolicy>
+struct symbolizer_default<multi_policy_enum, keys::multipolicy>
 {
-    static marker_multi_policy_enum value() { return  MARKER_EACH_MULTI; }
+    static multi_policy_enum value() { return EACH_MULTI; }
 };
 
 // direction

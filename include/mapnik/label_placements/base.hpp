@@ -53,36 +53,58 @@ struct placement_params
     }
 };
 
-// TODO
-struct largest_bbox_first
+template <typename It>
+static It largest_bbox(It begin, It end)
 {
-    using geom_type = geometry::cref_geometry<double>::geometry_type;
-
-    bool operator() (geom_type const & g0, geom_type const & g1) const
+    if (begin == end)
     {
-        box2d<double> b0 = geometry::envelope(g0);
-        box2d<double> b1 = geometry::envelope(g1);
-        return b0.width() * b0.height() < b1.width() * b1.height();
+        return end;
     }
-};
+    It largest_geom = begin;
+    double largest_bbox = geometry::envelope(*largest_geom).area();
+    for (++begin; begin != end; ++begin)
+    {
+        double bbox = geometry::envelope(*begin).area();
+        if (bbox > largest_bbox)
+        {
+            largest_bbox = bbox;
+            largest_geom = begin;
+        }
+    }
+    return largest_geom;
+}
 
 template <typename Geom, typename SplitGeoms>
-void split(Geom const & geom, SplitGeoms & split_geoms, bool largest_box_only)
+void apply_multi_policy(
+    Geom const & geom,
+    SplitGeoms & split_geoms,
+    multi_policy_enum multi_policy)
 {
-    geometry::split(geom, split_geoms);
-    if (largest_box_only && split_geoms.size() > 1)
+    switch (multi_policy)
     {
-        auto type = geometry::geometry_type(geom);
-        if (type == geometry::geometry_types::Polygon ||
-            type == geometry::geometry_types::MultiPolygon)
+        default:
+        case EACH_MULTI:
+            geometry::split(geom, split_geoms);
+            break;
+        case WHOLE_MULTI:
+            split_geoms.emplace_back(geometry::to_cref(geom));
+            break;
+        case LARGEST_MULTI:
         {
-            largest_bbox_first compare;
-            auto max_it(std::max_element(split_geoms.begin(), split_geoms.end(), compare));
-            if (max_it != split_geoms.end())
+            geometry::split(geom, split_geoms);
+
+            if (split_geoms.size() > 1)
             {
-                auto max(*max_it);
-                split_geoms.clear();
-                split_geoms.push_back(max);
+                auto type = geometry::geometry_type(geom);
+                if (type == geometry::geometry_types::Polygon ||
+                    type == geometry::geometry_types::MultiPolygon)
+                {
+                    auto largest_geom = *largest_bbox(
+                        split_geoms.begin(),
+                        split_geoms.end());
+                    split_geoms.clear();
+                    split_geoms.push_back(largest_geom);
+                }
             }
         }
     }
@@ -93,11 +115,11 @@ static std::list<pixel_position> get_pixel_positions(
     Geom const & geom,
     proj_transform const & prj_trans,
     view_transform const & view_trans,
-    bool largest_box_only)
+    multi_policy_enum multi_policy)
 {
     using geom_type = geometry::cref_geometry<double>::geometry_type;
     std::vector<geom_type> split_geoms;
-    split(geom, split_geoms, largest_box_only);
+    apply_multi_policy(geom, split_geoms, multi_policy);
 
     std::list<pixel_position> positions;
 

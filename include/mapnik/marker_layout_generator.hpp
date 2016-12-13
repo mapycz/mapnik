@@ -30,6 +30,7 @@
 #include <mapnik/attribute.hpp>
 #include <mapnik/svg/svg_path_attributes.hpp>
 #include <mapnik/marker.hpp> // for svg_storage_type
+#include <mapnik/label_placements/base.hpp>
 
 namespace mapnik
 {
@@ -56,7 +57,10 @@ using marker_positions_type = std::vector<marker_position>;
 
 struct marker_layout_generator : util::noncopyable
 {
+    using params_type = label_placement::placement_params;
+
     marker_layout_generator(
+        params_type const & params,
         box2d<double> marker_box,
         agg::trans_affine const & marker_trans);
 
@@ -73,15 +77,15 @@ struct marker_layout_generator : util::noncopyable
         return placements_;
     }
 
-    inline bool largest_box_only() const
+    inline multi_policy_enum multi_policy() const
     {
-        // TODO
-        return true;
+        return multi_policy_;
     }
 
     bool state_;
     const box2d<double> size_;
-    agg::trans_affine tr_;
+    const agg::trans_affine tr_;
+    const multi_policy_enum multi_policy_;
     marker_positions_type placements_;
 };
 
