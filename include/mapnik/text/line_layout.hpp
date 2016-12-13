@@ -117,13 +117,10 @@ bool text_extend_line_layout<SubLayout>::try_placement(
     if (halign == H_ADJUST)
     {
         extend_converter<Geom> ec(geom, halign_adjust_extend);
-        vertex_cache pp(ec);
-        return sublayout_.try_placement(layout_generator, detector, pp);
+        return sublayout_.try_placement(layout_generator, detector, ec);
     }
 
-    //TODO
-    vertex_cache pp(geom);
-    return sublayout_.try_placement(layout_generator, detector, pp);
+    return sublayout_.try_placement(layout_generator, detector, geom);
 }
 
 template <typename SubLayout>
@@ -141,12 +138,6 @@ public:
         Detector & detector,
         Geom & geom);
 
-    template <typename LayoutGenerator, typename Detector>
-    bool try_placement(
-        LayoutGenerator & layout_generator,
-        Detector & detector,
-        vertex_cache & pp);
-
 protected:
     template <typename LayoutGenerator, typename LineLayoutPolicy, typename Detector>
     bool try_placement(
@@ -154,12 +145,6 @@ protected:
         Detector & detector,
         vertex_cache & path,
         LineLayoutPolicy & policy);
-
-    // Adjusts user defined spacing to place an integer number of labels.
-    double get_spacing(
-        double path_length,
-        double label_spacing,
-        double layout_width) const;
 
     SubLayout sublayout_;
     params_type const & params_;
@@ -179,20 +164,10 @@ bool line_layout<SubLayout>::try_placement(
     Detector & detector,
     Geom & geom)
 {
-    vertex_cache pp(geom);
-    return try_placement(layout_generator, detector, pp);
-}
-
-template <typename SubLayout>
-template <typename LayoutGenerator, typename Detector>
-bool line_layout<SubLayout>::try_placement(
-    LayoutGenerator & layout_generator,
-    Detector & detector,
-    vertex_cache & pp)
-{
+    vertex_cache path(geom);
     double layout_width = sublayout_.get_length(layout_generator);
-    text_line_policy<LayoutGenerator> policy(pp, layout_generator, layout_width, params_);
-    return try_placement(layout_generator, detector, pp, policy);
+    text_line_policy<LayoutGenerator> policy(path, layout_generator, layout_width, params_);
+    return try_placement(layout_generator, detector, path, policy);
 }
 
 template <typename SubLayout>
@@ -206,8 +181,6 @@ bool line_layout<SubLayout>::try_placement(
     bool success = false;
     while (path.next_subpath())
     {
-        double layout_length = sublayout_.get_length(layout_generator);
-
         if (!policy.check_size())
         {
             continue;
@@ -215,7 +188,7 @@ bool line_layout<SubLayout>::try_placement(
 
         double spacing = policy.get_spacing();
 
-        if (!layout_generator.align(path, spacing))
+        if (!policy.align())
         {
             continue;
         }
@@ -238,25 +211,6 @@ bool line_layout<SubLayout>::try_placement(
         } while (path.forward(spacing));
     }
     return success;
-}
-
-template <typename SubLayout>
-double line_layout<SubLayout>::get_spacing(
-    double path_length,
-    double label_spacing,
-    double layout_width) const
-{
-    int num_labels = 1;
-    if (label_spacing > 0)
-    {
-        num_labels = static_cast<int>(std::floor(
-            path_length / (label_spacing * params_.scale_factor + layout_width)));
-    }
-    if (num_labels <= 0)
-    {
-        num_labels = 1;
-    }
-    return path_length / num_labels;
 }
 
 

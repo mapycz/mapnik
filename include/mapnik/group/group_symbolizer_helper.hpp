@@ -29,6 +29,8 @@
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/label_placements/base.hpp>
+#include <mapnik/text/text_line_policy.hpp>
+#include <mapnik/text/line_layout.hpp>
 
 #include <list>
 
@@ -58,8 +60,6 @@ struct group_layout_generator : util::noncopyable
 
     bool next();
     void reset();
-
-    bool align(vertex_cache & path, double spacing) const;
 
     inline evaluated_text_properties const & get_text_props() const
     {
@@ -91,6 +91,40 @@ struct group_layout_generator : util::noncopyable
     bool state_;
     pixel_position_list results_;
     std::list<box_element> box_elements_;
+};
+
+struct group_line_policy : text_line_policy<group_layout_generator>
+{
+    using text_line_policy<group_layout_generator>::text_line_policy;
+
+    inline bool align()
+    {
+        return path_.forward(this->get_spacing() / 2.0);
+    }
+};
+
+template <typename SubLayout>
+class group_line_layout : line_layout<SubLayout>
+{
+public:
+    using params_type = label_placement::placement_params;
+
+    group_line_layout(params_type const & params)
+        : line_layout<SubLayout>(params)
+    {
+    }
+
+    template <typename LayoutGenerator, typename Detector, typename Geom>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Detector & detector,
+        Geom & geom)
+    {
+        vertex_cache path(geom);
+        group_line_policy policy(path, layout_generator, 0, this->params_);
+        return line_layout<SubLayout>::try_placement(
+            layout_generator, detector, path, policy);
+    }
 };
 
 class group_point_layout : util::noncopyable

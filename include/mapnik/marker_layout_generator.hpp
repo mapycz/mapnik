@@ -66,8 +66,6 @@ struct marker_layout_generator : util::noncopyable
     bool next();
     void reset();
 
-    bool align(vertex_cache & path, double spacing) const;
-
     inline bool has_placements() const
     {
         return !placements_.empty();

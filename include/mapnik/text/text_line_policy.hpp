@@ -38,10 +38,11 @@ struct text_line_policy
         double layout_width,
         params_type const & params)
         : path_(path),
+          layout_generator_(lg),
           params_(params),
           layout_width_(layout_width),
           minimum_path_length_(lg.get_text_props().minimum_path_length),
-          label_spacing_(lg.get_text_props().label_spacing),
+          spacing_(lg.get_text_props().label_spacing),
           position_tolerance_(
             lg.get_text_props().label_position_tolerance * params.scale_factor)
     {
@@ -57,10 +58,10 @@ struct text_line_policy
     double get_spacing() const
     {
         int num_labels = 1;
-        if (label_spacing_ > 0)
+        if (spacing_ > 0)
         {
             num_labels = static_cast<int>(std::floor(
-                path_.length() / (label_spacing_ * params_.scale_factor + layout_width_)));
+                path_.length() / (spacing_ * params_.scale_factor + layout_width_)));
         }
         if (num_labels <= 0)
         {
@@ -69,16 +70,60 @@ struct text_line_policy
         return path_.length() / num_labels;
     }
 
+    bool align()
+    {
+        double spacing = get_spacing();
+        auto const & root_layout = layout_generator_.layouts_->root_layout();
+        horizontal_alignment_e halign = root_layout.horizontal_alignment();
+
+        // halign == H_LEFT -> don't move
+        if (halign == H_MIDDLE ||
+            halign == H_AUTO)
+        {
+            if (!path_.forward(spacing / 2.0))
+            {
+                return false;
+            }
+        }
+        else if (halign == H_RIGHT)
+        {
+            if (!path_.forward(path_.length()))
+            {
+                return false;
+            }
+        }
+        else if (halign == H_ADJUST)
+        {
+            spacing = path_.length();
+            if (!path_.forward(spacing / 2.0))
+            {
+                return false;
+            }
+        }
+
+        double move_dx = root_layout.displacement().x;
+        if (move_dx != 0.0)
+        {
+            vertex_cache::state state = path_.save_state();
+            if (!path_.move(move_dx))
+            {
+                path_.restore_state(state);
+            }
+        }
+        return true;
+    }
+
     bool move(double distance)
     {
         return path_.move(distance);
     }
 
     vertex_cache & path_;
+    LayoutGenerator const & layout_generator_;
     params_type const & params_;
     const double layout_width_;
     const double minimum_path_length_;
-    const double label_spacing_;
+    const double spacing_;
     const double position_tolerance_;
 };
 

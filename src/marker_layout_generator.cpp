@@ -59,9 +59,4 @@ void marker_layout_generator::reset()
     state_ = true;
 }
 
-bool marker_layout_generator::align(vertex_cache & path, double spacing) const
-{
-    return path.forward(spacing / 2.0);
-}
-
 }// ns mapnik

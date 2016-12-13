@@ -71,7 +71,7 @@ struct group_symbolizer_traits
     using interior = group_point_layout;
     using vertex = group_point_layout;
     using grid = grid_layout<group_point_layout>;
-    using line = line_layout<group_point_layout>;
+    using line = group_line_layout<group_point_layout>;
 
     using placements_type = std::vector<pixel_position_list>;
     using layout_generator_type = group_layout_generator;

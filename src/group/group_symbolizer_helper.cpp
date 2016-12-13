@@ -68,11 +68,6 @@ void group_layout_generator::reset()
     state_ = true;
 }
 
-bool group_layout_generator::align(vertex_cache & path, double spacing) const
-{
-    return path.forward(spacing / 2.0);
-}
-
 
 
 using detector_type = label_collision_detector4;

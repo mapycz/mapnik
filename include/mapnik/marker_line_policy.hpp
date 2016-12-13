@@ -27,14 +27,13 @@
 namespace mapnik
 {
 
-template <typename LayoutGenerator>
 struct marker_line_policy
 {
     using params_type = label_placement::placement_params;
 
     marker_line_policy(
         vertex_cache & path,
-        LayoutGenerator const & lg,
+        marker_layout_generator const & lg,
         double layout_width,
         double spacing,
         double position_tolerance,
@@ -47,17 +46,22 @@ struct marker_line_policy
     {
     }
 
-    bool check_size() const
+    inline bool check_size() const
     {
         return true;
     }
 
-    double get_spacing() const
+    inline double get_spacing() const
     {
         return spacing_;
     }
 
-    bool move(double distance)
+    inline bool align()
+    {
+        return path_.forward(get_spacing() / 2.0);
+    }
+
+    inline bool move(double distance)
     {
         return path_.move(distance) &&
             (path_.linear_position() + layout_width_ / 2.0) < path_.length();
