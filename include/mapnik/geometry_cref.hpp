@@ -35,21 +35,23 @@ namespace mapnik { namespace geometry {
 template <typename T>
 struct cref_geometry
 {
-    using empty = std::reference_wrapper<geometry_empty const>;
+    using empty_type = std::reference_wrapper<geometry_empty const>;
     using point_type = std::reference_wrapper<point<T> const>;
     using line_string_type = std::reference_wrapper<line_string<T> const>;
     using polygon_type = std::reference_wrapper<polygon<T> const>;
     using multi_point_type = std::reference_wrapper<multi_point<T> const>;
     using multi_line_string_type = std::reference_wrapper<multi_line_string<T> const>;
     using multi_polygon_type = std::reference_wrapper<multi_polygon<T> const>;
+    using collection_type = std::reference_wrapper<geometry_collection<T> const>;
     using geometry_type = util::variant<
-        empty,
+        empty_type,
         point_type,
         line_string_type,
         polygon_type,
         multi_point_type,
         multi_line_string_type,
-        multi_polygon_type>;
+        multi_polygon_type,
+        collection_type>;
 };
 
 template <typename T>
@@ -73,6 +75,11 @@ inline typename cref_geometry<T>::geometry_type to_cref(Geom const & geom)
 
 struct envelope_impl
 {
+    box2d<double> operator() (geometry_empty const& ref) const
+    {
+        return box2d<double>();
+    }
+
     template <typename T>
     box2d<double> operator() (T const& ref) const
     {

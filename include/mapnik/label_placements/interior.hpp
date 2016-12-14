@@ -63,6 +63,13 @@ struct interior
             }
             return pt;
         }
+
+        template <typename Geom>
+        return_type operator()(Geom const & geom) const
+        {
+            MAPNIK_LOG_WARN(label_interior_placement) << "Trying to find interior position on unsupported geometry";
+            return boost::none;
+        }
     };
 
     static Placements get(
