@@ -202,6 +202,9 @@ struct render_marker_symbolizer_visitor
             label_placement::finder<traits>::get(placement_method,
                 layout_generator, *common_.detector_, params));
 
+        boost::optional<std::string> key(get_optional<std::string>(
+            sym_, keys::symbol_key, feature_, common_.vars_));
+
         for (auto const & placements_part : placements)
         {
             for (auto const & placement : placements_part)
@@ -214,10 +217,10 @@ struct render_marker_symbolizer_visitor
                     sym_, feature_, common_.vars_, common_.scale_factor_, snap_to_pixels);
 
                 renderer_context_.render_marker(marker_ptr, svg_path, r_attributes, p, matrix);
-                /*if (params_.key)
+                if (key)
                 {
-                    symbol_cache_.insert(*params_.key, box);
-                }*/
+                    common_.symbol_cache_.insert(*key, placement.box);
+                }
             }
         }
 
@@ -275,6 +278,9 @@ struct render_marker_symbolizer_visitor
             label_placement::finder<traits>::get(placement_method,
                 layout_generator, *common_.detector_, params));
 
+        boost::optional<std::string> key(get_optional<std::string>(
+            sym_, keys::symbol_key, feature_, common_.vars_));
+
         for (auto const & placements_part : placements)
         {
             for (auto const & placement : placements_part)
@@ -287,10 +293,10 @@ struct render_marker_symbolizer_visitor
                     sym_, feature_, common_.vars_, common_.scale_factor_, false);
 
                 renderer_context_.render_marker(marker, p, matrix);
-                /*if (params_.key)
+                if (key)
                 {
-                    symbol_cache_.insert(*params_.key, box);
-                }*/
+                    common_.symbol_cache_.insert(*key, placement.box);
+                }
             }
         }
 
