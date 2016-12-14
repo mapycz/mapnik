@@ -237,10 +237,10 @@ struct render_marker_symbolizer_visitor
         setup_transform_scaling(image_tr, mark.width(), mark.height(), feature_, common_.vars_, sym_);
         auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
         if (image_transform) evaluate_transform(image_tr, feature_, common_.vars_, *image_transform, common_.scale_factor_);
-        box2d<double> const& bbox = mark.bounding_box();
+        box2d<double> const& marker_box = mark.bounding_box();
         mapnik::image_rgba8 const& marker = mark.get_data();
         // - clamp sizes to > 4 pixels of interactivity
-        coord2d center = bbox.center();
+        coord2d marker_center = marker_box.center();
         //agg::trans_affine_translation recenter(-center.x, -center.y);
         //agg::trans_affine marker_trans = recenter * image_tr;
         /*raster_dispatch_type rasterizer_dispatch(marker,
@@ -254,6 +254,46 @@ struct render_marker_symbolizer_visitor
                                                  renderer_context_);
 
         render_marker(mark, rasterizer_dispatch);*/
+        agg::trans_affine tr;
+        auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
+        if (transform) evaluate_transform(tr, feature_, common_.vars_, *transform, common_.scale_factor_);
+
+        const label_placement::placement_params params {
+            prj_trans_, common_.t_, tr, sym_, feature_, common_.vars_,
+            box2d<double>(0, 0, common_.width_, common_.height_),
+            common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
+        const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
+
+        using traits = marker_symbolizer_traits;
+
+        const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
+        const agg::trans_affine marker_trans = recenter * image_tr;
+
+        marker_layout_generator layout_generator(params, marker_box, marker_trans);
+
+        typename traits::placements_type placements(
+            label_placement::finder<traits>::get(placement_method,
+                layout_generator, *common_.detector_, params));
+
+        for (auto const & placements_part : placements)
+        {
+            for (auto const & placement : placements_part)
+            {
+                agg::trans_affine matrix = marker_trans;
+                matrix.rotate(placement.angle);
+                matrix.translate(placement.pos.x, placement.pos.y);
+
+                const markers_dispatch_params p(box2d<double>(), marker_trans,
+                    sym_, feature_, common_.vars_, common_.scale_factor_, false);
+
+                renderer_context_.render_marker(marker, p, matrix);
+                /*if (params_.key)
+                {
+                    symbol_cache_.insert(*params_.key, box);
+                }*/
+            }
+        }
+
     }
 
   private:
