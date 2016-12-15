@@ -40,8 +40,8 @@ template <typename Function>
 class tolerance_iterator
 {
 public:
-    tolerance_iterator(double label_position_tolerance, double spacing, Function function)
-        : tolerance_(label_position_tolerance > 0 ? label_position_tolerance : spacing / 2.0),
+    tolerance_iterator(double label_position_tolerance, Function function)
+        : tolerance_(label_position_tolerance),
           linear_position_(1.0),
           value_(0),
           initialized_(false),
@@ -50,8 +50,8 @@ public:
     {
     }
 
-    tolerance_iterator(double label_position_tolerance, double spacing)
-        : tolerance_iterator(label_position_tolerance, spacing, Function())
+    tolerance_iterator(double label_position_tolerance)
+        : tolerance_iterator(label_position_tolerance, Function())
     {
     }
 

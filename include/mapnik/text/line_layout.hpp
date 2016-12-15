@@ -196,7 +196,7 @@ bool line_layout<SubLayout>::try_placement(
         do
         {
             tolerance_iterator<exponential_function> tolerance_offset(
-                policy.position_tolerance_, spacing /* TODO */);
+                policy.position_tolerance());
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(path);

@@ -118,6 +118,12 @@ struct text_line_policy
         return path_.move(distance);
     }
 
+    double position_tolerance() const
+    {
+        return position_tolerance_ > 0 ?
+            position_tolerance_ : (get_spacing() / 2.0);
+    }
+
     vertex_cache & path_;
     LayoutGenerator const & layout_generator_;
     params_type const & params_;

@@ -67,6 +67,11 @@ struct marker_line_policy
             (path_.linear_position() + layout_width_ / 2.0) < path_.length();
     }
 
+    double position_tolerance() const
+    {
+        return position_tolerance_;
+    }
+
     vertex_cache & path_;
     params_type const & params_;
     const double layout_width_;
