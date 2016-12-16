@@ -79,6 +79,20 @@ template bool marker_layout::try_placement(
     detector_type & detector,
     pixel_position const & pos);
 
+template <typename Detector>
+bool marker_layout::try_placement(
+    marker_layout_generator & layout_generator,
+    Detector & detector,
+    point_position const & pos)
+{
+    return push_to_detector(detector, pos.coords, pos.angle, layout_generator);
+}
+
+template bool marker_layout::try_placement(
+    marker_layout_generator & layout_generator,
+    detector_type & detector,
+    point_position const & pos);
+
 // Checks transformed box placement with collision detector.
 // returns false if the box:
 //  - a) isn't wholly inside extent and avoid_edges == true

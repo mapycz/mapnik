@@ -47,6 +47,7 @@ struct marker_symbolizer_traits
     using vertex = marker_layout;
     using grid = marker_grid_layout<marker_layout>;
     using line = marker_line_layout<marker_layout>;
+    using vertex_first = marker_layout;
 
     using placements_type = std::vector<marker_positions_type>;
     using layout_generator_type = marker_layout_generator;

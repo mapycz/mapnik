@@ -20,130 +20,113 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_LABEL_PLACEMENTS_POINT_HPP
-#define MAPNIK_LABEL_PLACEMENTS_POINT_HPP
+#ifndef MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
+#define MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_type.hpp>
 #include <mapnik/geometry_centroid.hpp>
-#include <mapnik/vertex_adapters.hpp>
+#include <mapnik/vertex_processor.hpp>
 #include <mapnik/text/point_layout.hpp>
 
 namespace mapnik { namespace label_placement {
 
+namespace detail {
+
+template <typename Geom>
+boost::optional<point_position> get_first_vertext(Geom & geom)
+{
+    point_position pos;
+
+    if (agg::is_stop(geom.vertex(&pos.coords.x, &pos.coords.y)))
+    {
+        return boost::none;
+    }
+
+    pos.angle = 0;
+
+    double x1, y1;
+
+    if (agg::is_line_to(geom.vertex(&x1, &y1)))
+    {
+        pos.angle = std::atan2(y1 - pos.coords.y, x1 - pos.coords.x);
+    }
+
+    return pos;
+}
+
+template <typename Layout, typename LayoutGenerator, typename Detector>
+struct vertex_converter_adapter
+{
+    vertex_converter_adapter(Layout & layout,
+        LayoutGenerator & layout_generator,
+        Detector & detector)
+        : layout_(layout),
+          layout_generator_(layout_generator),
+          detector_(detector)
+    {
+    }
+
+    template <typename PathT>
+    void add_path(PathT & path)
+    {
+        boost::optional<point_position> pos = get_first_vertext(path);
+        if (!pos)
+        {
+            status_ = false;
+            return;
+        }
+        status_ = layout_.try_placement(layout_generator_, detector_, *pos);
+    }
+
+    bool status() const { return status_; }
+    Layout & layout_;
+    LayoutGenerator & layout_generator_;
+    Detector & detector_;
+    bool status_ = false;
+};
+
+template <typename VertexConverter, typename VertexConverterAdapter>
+struct layout_adapter
+{
+    using this_type = layout_adapter<VertexConverter, VertexConverterAdapter>;
+
+    layout_adapter(
+        VertexConverter & converter,
+        VertexConverterAdapter & adapter)
+        : vertex_converter_(converter),
+          vertex_converter_adapter_(adapter)
+    {
+    }
+
+    template <typename VertexAdapter>
+    bool operator()(VertexAdapter & vertex_adapter)
+    {
+        vertex_converter_.apply(vertex_adapter, vertex_converter_adapter_);
+        return vertex_converter_adapter_.status();
+    }
+
+    template <typename LayoutGenerator, typename Detector, typename Geom>
+    bool try_placement(
+        LayoutGenerator & generator,
+        Detector & detector,
+        Geom const & geom)
+    {
+
+        geometry::vertex_processor<this_type> processor(*this);
+        util::apply_visitor(processor, geom);
+        return vertex_converter_adapter_.status();
+    }
+
+    VertexConverter & vertex_converter_;
+    VertexConverterAdapter & vertex_converter_adapter_;
+};
+
+}
+
 template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
 struct vertex_first
 {
-    struct point_position
-    {
-        double x, y;
-        double angle;
-    };
-
-    template <typename Geom>
-    boost::optional<point_position> get_first_vertext(Geom & geom)
-    {
-        point_position pos;
-
-        if (agg::is_stop(geom.vertex(&pos.x, &pos.y)))
-        {
-            this->done_ = true;
-            return boost::none;
-        }
-
-        pos.angle = 0;
-
-        double x1, y1;
-
-        if (agg::is_line_to(geom.vertex(&x1, &y1)))
-        {
-            pos.angle = std::atan2(y1 - pos.y, x1 - pos.x);
-        }
-
-        return pos;
-    }
-
-    template <typename Visitor>
-    struct layout_adapter
-    {
-        layout_adapter(Visitor & visitor)
-            : visitor_(visitor)
-        {
-        }
-
-        template <typename Geom>
-        bool try_placement(
-            LayoutGenerator & generator,
-            Detector & detector,
-            Geom const & geom)
-        {
-            return util::apply_visitor(visitor_, geom);
-        }
-
-        Visitor visitor_;
-    };
-
-    struct geometry_visitor
-    {
-        using return_type = boost::optional<geometry::point<double>>;
-
-        return_type operator()(geometry::point<double> const & point) const
-        {
-            return point;
-        }
-
-        return_type operator()(geometry::line_string<double> const & line) const
-        {
-            geometry::point<double> pt;
-            geometry::line_string_vertex_adapter<double> va(line);
-            if (!label::middle_point(va, pt.x, pt.y))
-            {
-                MAPNIK_LOG_ERROR(label_point_placement) << "Middle point calculation failed.";
-                return boost::none;
-            }
-            return pt;
-        }
-
-        return_type operator()(geometry::polygon<double> const & poly) const
-        {
-            return centroid(poly);
-        }
-
-        return_type operator()(geometry::multi_point<double> const & multi) const
-        {
-            return centroid(multi);
-        }
-
-        return_type operator()(geometry::multi_polygon<double> const & multi) const
-        {
-            return centroid(multi);
-        }
-
-        return_type operator()(geometry::multi_line_string<double> const & multi) const
-        {
-            return centroid(multi);
-        }
-
-        template <typename Geom>
-        return_type operator()(Geom const & geom) const
-        {
-            MAPNIK_LOG_WARN(label_point_placement) << "Trying to find point position on unsupported geometry";
-            return boost::none;
-        }
-
-        template <typename Geom>
-        return_type centroid(Geom const & geom) const
-        {
-            geometry::point<double> pt;
-            if (!geometry::centroid(geom, pt))
-            {
-                MAPNIK_LOG_ERROR(label_point_placement) << "Centroid point calculation failed.";
-                return boost::none;
-            }
-            return pt;
-        }
-    };
-
     using vertex_converter_type = vertex_converter<
         clip_line_tag,
         clip_poly_tag,
@@ -162,10 +145,10 @@ struct vertex_first
             params.view_transform, params.proj_transform, params.affine_transform,
             params.feature, params.vars, params.scale_factor);
 
-        value_bool clip = mapnik::get<value_bool, keys::clip>(params.symbolizer, params.feature, params.vars);
-        value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(params.symbolizer, params.feature, params.vars);
-        value_double smooth = mapnik::get<value_double, keys::smooth>(params.symbolizer, params.feature, params.vars);
-        value_double extend = mapnik::get<value_double, keys::extend>(params.symbolizer, params.feature, params.vars);
+        value_bool clip = params.get<value_bool, keys::clip>();
+        value_double simplify_tolerance = params.get<value_double, keys::simplify_tolerance>();
+        value_double smooth = params.get<value_double, keys::smooth>();
+        value_double extend = params.get<value_double, keys::extend>();
 
         if (clip) converter.template set<clip_line_tag>();
         converter.template set<transform_tag>();
@@ -182,11 +165,9 @@ struct vertex_first
         apply_multi_policy(params.feature.get_geometry(), geoms,
             layout_generator.multi_policy());
 
-        using adapter_type = placement_finder_adapter<Layout, LayoutGenerator, Detector>;
-        using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
+        using adapter_type = detail::vertex_converter_adapter<Layout, LayoutGenerator, Detector>;
         adapter_type adapter(layout, layout_generator, detector);
-        visitor_type visitor(converter, adapter);
-        layout_adapter<visitor_type> la(visitor);
+        detail::layout_adapter<vertex_converter_type, adapter_type> la(converter, adapter);
 
         layout_processor::process(geoms, la, layout_generator, detector, placements);
 
@@ -196,4 +177,4 @@ struct vertex_first
 
 } }
 
-#endif // MAPNIK_LABEL_PLACEMENTS_POINT_HPP
+#endif // MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP

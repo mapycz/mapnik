@@ -50,6 +50,12 @@ public:
         Detector & detector,
         pixel_position const& pos);
 
+    template <typename Detector>
+    bool try_placement(
+        text_layout_generator & layout_generator,
+        Detector & detector,
+        point_position const& pos);
+
     inline double get_length(text_layout_generator const &) const
     {
         return 0;
@@ -93,6 +99,12 @@ public:
         text_layout_generator & layout_generator,
         Detector & detector,
         pixel_position const& pos);
+
+    template <typename Detector>
+    bool try_placement(
+        text_layout_generator & layout_generator,
+        Detector & detector,
+        point_position const& pos);
 
 private:
     template <typename Detector>

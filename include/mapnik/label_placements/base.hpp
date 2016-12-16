@@ -175,6 +175,14 @@ struct layout_processor
     }
 };
 
-} }
+}
+
+struct point_position
+{
+    pixel_position coords;
+    double angle;
+};
+
+}
 
 #endif // MAPNIK_LABEL_PLACEMENT_BASE_HPP

@@ -157,8 +157,8 @@ line_layout<SubLayout>::line_layout(params_type const & params)
 {
 }
 
-template <typename SubLayout> template
-<typename LayoutGenerator, typename Detector, typename Geom>
+template <typename SubLayout>
+template <typename LayoutGenerator, typename Detector, typename Geom>
 bool line_layout<SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
     Detector & detector,

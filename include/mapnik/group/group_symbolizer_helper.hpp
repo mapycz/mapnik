@@ -138,6 +138,12 @@ public:
         Detector & detector,
         pixel_position const& pos);
 
+    template <typename Detector>
+    bool try_placement(
+        group_layout_generator & layout_generator,
+        Detector & detector,
+        point_position const& pos);
+
     inline double get_length(group_layout_generator const &) const
     {
         return 0;

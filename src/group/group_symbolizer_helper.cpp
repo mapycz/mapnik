@@ -118,6 +118,21 @@ template bool group_point_layout::try_placement(
     pixel_position const& pos);
 
 template <typename Detector>
+bool group_point_layout::try_placement(
+    group_layout_generator & layout_generator,
+    Detector & detector,
+    point_position const& pos)
+{
+    // TODO: angle
+    return try_placement(layout_generator, detector, pos.coords);
+}
+
+template bool group_point_layout::try_placement(
+    group_layout_generator & layout_generator,
+    detector_type & detector,
+    point_position const& pos);
+
+template <typename Detector>
 bool group_point_layout::collision(
     Detector & detector,
     evaluated_text_properties const & text_props,

@@ -138,10 +138,10 @@ struct line
             params.view_transform, params.proj_transform, params.affine_transform,
             params.feature, params.vars, params.scale_factor);
 
-        value_bool clip = mapnik::get<value_bool, keys::clip>(params.symbolizer, params.feature, params.vars);
-        value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(params.symbolizer, params.feature, params.vars);
-        value_double smooth = mapnik::get<value_double, keys::smooth>(params.symbolizer, params.feature, params.vars);
-        value_double extend = mapnik::get<value_double, keys::extend>(params.symbolizer, params.feature, params.vars);
+        value_bool clip = params.get<value_bool, keys::clip>();
+        value_double simplify_tolerance = params.get<value_double, keys::simplify_tolerance>();
+        value_double smooth = params.get<value_double, keys::smooth>();
+        value_double extend = params.get<value_double, keys::extend>();
 
         if (clip) converter.template set<clip_line_tag>();
         converter.template set<transform_tag>();

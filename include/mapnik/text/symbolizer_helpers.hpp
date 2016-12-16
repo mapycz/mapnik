@@ -48,6 +48,7 @@ struct text_symbolizer_traits
     using vertex = point_layout;
     using grid = grid_layout<point_layout>;
     using line = text_extend_line_layout<line_layout<single_line_layout>>;
+    using vertex_first = point_layout;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -60,6 +61,7 @@ struct shield_symbolizer_traits
     using vertex = shield_layout;
     using grid = grid_layout<shield_layout>;
     using line = line_layout<shield_layout>;
+    using vertex_first = shield_layout;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -72,6 +74,7 @@ struct group_symbolizer_traits
     using vertex = group_point_layout;
     using grid = grid_layout<group_point_layout>;
     using line = group_line_layout<group_point_layout>;
+    using vertex_first = group_point_layout;
 
     using placements_type = std::vector<pixel_position_list>;
     using layout_generator_type = group_layout_generator;

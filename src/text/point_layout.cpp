@@ -79,6 +79,21 @@ template bool point_layout::try_placement(
 
 template <typename Detector>
 bool point_layout::try_placement(
+    text_layout_generator & layout_generator,
+    Detector & detector,
+    point_position const & pos)
+{
+    // TODO: angle
+    return try_placement(layout_generator, detector, pos.coords);
+}
+
+template bool point_layout::try_placement(
+    text_layout_generator & layout_generator,
+    detector_type & detector,
+    point_position const & pos);
+
+template <typename Detector>
+bool point_layout::try_placement(
     layout_container const & layouts,
     Detector & detector,
     evaluated_text_properties const & text_props,
@@ -293,6 +308,21 @@ template bool shield_layout::try_placement(
     text_layout_generator & layout_generator,
     detector_type & detector,
     pixel_position const& pos);
+
+template <typename Detector>
+bool shield_layout::try_placement(
+    text_layout_generator & layout_generator,
+    Detector & detector,
+    point_position const & pos)
+{
+    // TODO: angle
+    return try_placement(layout_generator, detector, pos.coords);
+}
+
+template bool shield_layout::try_placement(
+    text_layout_generator & layout_generator,
+    detector_type & detector,
+    point_position const & pos);
 
 template <typename Detector>
 bool shield_layout::add_marker(
