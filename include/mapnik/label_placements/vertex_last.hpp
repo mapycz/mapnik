@@ -20,8 +20,8 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
-#define MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
+#ifndef MAPNIK_LABEL_PLACEMENTS_VERTEX_LAST_HPP
+#define MAPNIK_LABEL_PLACEMENTS_VERTEX_LAST_HPP
 
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry_type.hpp>
@@ -31,25 +31,41 @@
 
 namespace mapnik { namespace label_placement {
 
-namespace vertex_first_detail {
+namespace vertex_last_detail {
 
 template <typename Geom>
-boost::optional<point_position> get_first_vertext(Geom & geom)
+boost::optional<point_position> get_last_vertext(Geom & geom)
 {
     point_position pos;
 
-    if (agg::is_stop(geom.vertex(&pos.coords.x, &pos.coords.y)))
+    double x0, y0;
+    unsigned command0 = geom.vertex(&x0, &y0);
+
+    if (agg::is_stop(command0))
     {
         return boost::none;
     }
 
+    double next_x, next_y;
+    double x1 = x0, y1 = y0;
+    unsigned command1 = command0;
+
+    while (!agg::is_stop(command0 = geom.vertex(&next_x, &next_y)))
+    {
+        command1 = command0;
+        x1 = x0;
+        y1 = y0;
+        x0 = next_x;
+        y0 = next_y;
+    }
+
+    pos.coords.x = x0;
+    pos.coords.y = y0;
     pos.angle = 0;
 
-    double x1, y1;
-
-    if (agg::is_line_to(geom.vertex(&x1, &y1)))
+    if (agg::is_line_to(command1))
     {
-        pos.angle = std::atan2(y1 - pos.coords.y, x1 - pos.coords.x);
+        pos.angle = std::atan2(y0 - y1, x0 - x1);
     }
 
     return pos;
@@ -70,7 +86,7 @@ struct vertex_converter_adapter
     template <typename PathT>
     void add_path(PathT & path)
     {
-        boost::optional<point_position> pos = get_first_vertext(path);
+        boost::optional<point_position> pos = get_last_vertext(path);
         if (!pos)
         {
             status_ = false;
@@ -125,7 +141,7 @@ struct layout_adapter
 }
 
 template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
-struct vertex_first
+struct vertex_last
 {
     using vertex_converter_type = vertex_converter<
         clip_line_tag,
@@ -165,10 +181,10 @@ struct vertex_first
         apply_multi_policy(params.feature.get_geometry(), geoms,
             layout_generator.multi_policy());
 
-        using adapter_type = vertex_first_detail::vertex_converter_adapter<
+        using adapter_type = vertex_last_detail::vertex_converter_adapter<
             Layout, LayoutGenerator, Detector>;
         adapter_type adapter(layout, layout_generator, detector);
-        vertex_first_detail::layout_adapter<vertex_converter_type, adapter_type> la(
+        vertex_last_detail::layout_adapter<vertex_converter_type, adapter_type> la(
             converter, adapter);
 
         layout_processor::process(geoms, la, layout_generator, detector, placements);
@@ -179,4 +195,4 @@ struct vertex_first
 
 } }
 
-#endif // MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
+#endif // MAPNIK_LABEL_PLACEMENTS_VERTEX_LAST_HPP

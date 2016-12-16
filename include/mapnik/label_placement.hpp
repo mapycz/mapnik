@@ -30,6 +30,7 @@
 #include <mapnik/label_placements/grid.hpp>
 #include <mapnik/label_placements/line.hpp>
 #include <mapnik/label_placements/vertex_first.hpp>
+#include <mapnik/label_placements/vertex_last.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/label_collision_detector.hpp>
 
@@ -84,6 +85,12 @@ struct finder
             case VERTEX_FIRST_PLACEMENT:
                 return vertex_first<
                     typename T::vertex_first,
+                    layout_generator_type,
+                    detector_type,
+                    placements_type>::get(layout_generator, detector, params);
+            case VERTEX_LAST_PLACEMENT:
+                return vertex_last<
+                    typename T::vertex_last,
                     layout_generator_type,
                     detector_type,
                     placements_type>::get(layout_generator, detector, params);
