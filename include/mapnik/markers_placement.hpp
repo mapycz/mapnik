@@ -46,7 +46,8 @@ struct marker_symbolizer_traits
     using interior = marker_layout;
     using vertex = marker_layout;
     using grid = marker_grid_layout<marker_layout>;
-    using line = marker_line_layout<marker_layout>;
+    using line = text_vertex_converter<
+        marker_line_layout<marker_layout>>;
     using vertex_first = marker_layout;
     using vertex_last = marker_layout;
 

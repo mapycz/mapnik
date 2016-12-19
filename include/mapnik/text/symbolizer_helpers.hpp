@@ -47,7 +47,10 @@ struct text_symbolizer_traits
     using interior = point_layout;
     using vertex = point_layout;
     using grid = grid_layout<point_layout>;
-    using line = text_extend_line_layout<line_layout<single_line_layout>>;
+    using line = text_vertex_converter<
+        text_extend_line_layout<
+            line_layout<
+                single_line_layout>>>;
     using vertex_first = point_layout;
     using vertex_last = point_layout;
 
@@ -61,7 +64,8 @@ struct shield_symbolizer_traits
     using interior = shield_layout;
     using vertex = shield_layout;
     using grid = grid_layout<shield_layout>;
-    using line = line_layout<shield_layout>;
+    using line = text_vertex_converter<
+        line_layout<shield_layout>>;
     using vertex_first = shield_layout;
     using vertex_last = shield_layout;
 
@@ -75,7 +79,8 @@ struct group_symbolizer_traits
     using interior = group_point_layout;
     using vertex = group_point_layout;
     using grid = grid_layout<group_point_layout>;
-    using line = group_line_layout<group_point_layout>;
+    using line = text_vertex_converter<
+        group_line_layout<group_point_layout>>;
     using vertex_first = group_point_layout;
     using vertex_last = group_point_layout;
 
