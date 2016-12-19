@@ -53,10 +53,6 @@ bool marker_layout::try_placement(
 {
     pixel_position const & pos = path.current_position();
     double angle = path.angle();
-    if (!set_direction(angle))
-    {
-        return false;
-    }
     return push_to_detector(detector, pos, angle, layout_generator);
 }
 
@@ -106,6 +102,10 @@ bool marker_layout::push_to_detector(
     double angle,
     marker_layout_generator & lg)
 {
+    if (!set_direction(angle))
+    {
+        return false;
+    }
     auto tr = lg.tr_ * agg::trans_affine_rotation(angle).translate(pos.x, pos.y);
     box2d<double> box(lg.size_, tr);
     if (avoid_edges_ && !detector.extent().contains(box))
