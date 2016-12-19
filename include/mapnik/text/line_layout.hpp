@@ -71,71 +71,71 @@ struct position_accessor<shield_layout> : position_accessor<point_layout>
 
 // ===========================================
 
-template <typename Layout, typename LayoutGenerator, typename Detector>
-struct placement_finder_adapter
-{
-    placement_finder_adapter(Layout & layout,
-        LayoutGenerator & layout_generator,
-        Detector & detector)
-        : layout_(layout),
-          layout_generator_(layout_generator),
-          detector_(detector)
-    {
-    }
-
-    template <typename PathT>
-    void add_path(PathT & path) const
-    {
-        status_ = layout_.try_placement(layout_generator_, detector_, path);
-    }
-
-    bool status() const { return status_; }
-    Layout & layout_;
-    LayoutGenerator & layout_generator_;
-    Detector & detector_;
-    mutable bool status_ = false;
-};
-
-template <typename Adapter, typename VC>
-class line_placement_visitor
-{
-public:
-    line_placement_visitor(
-        VC & converter,
-        Adapter const & adapter)
-        : converter_(converter),
-          adapter_(adapter)
-    {
-    }
-
-    bool operator()(geometry::line_string<double> const & geo) const
-    {
-        geometry::line_string_vertex_adapter<double> va(geo);
-        converter_.apply(va, adapter_);
-        return adapter_.status();
-    }
-
-    bool operator()(geometry::polygon<double> const & geo) const
-    {
-        geometry::polygon_vertex_adapter<double> va(geo);
-        converter_.apply(va, adapter_);
-        return adapter_.status();
-    }
-
-    template <typename T>
-    bool operator()(T const&) const
-    {
-        return false;
-    }
-
-private:
-    VC & converter_;
-    Adapter const & adapter_;
-};
-
 template <typename SubLayout>
 class text_vertex_converter : util::noncopyable
 {
+    template <typename Layout, typename LayoutGenerator, typename Detector>
+    struct converter_adapter
+    {
+        converter_adapter(Layout & layout,
+            LayoutGenerator & layout_generator,
+            Detector & detector)
+            : layout_(layout),
+              layout_generator_(layout_generator),
+              detector_(detector)
+        {
+        }
+
+        template <typename PathT>
+        void add_path(PathT & path) const
+        {
+            status_ = layout_.try_placement(layout_generator_, detector_, path);
+        }
+
+        bool status() const { return status_; }
+        Layout & layout_;
+        LayoutGenerator & layout_generator_;
+        Detector & detector_;
+        mutable bool status_ = false;
+    };
+
+    template <typename Adapter, typename VC>
+    class line_placement_visitor
+    {
+    public:
+        line_placement_visitor(
+            VC & converter,
+            Adapter const & adapter)
+            : converter_(converter),
+              adapter_(adapter)
+        {
+        }
+
+        bool operator()(geometry::line_string<double> const & geo) const
+        {
+            geometry::line_string_vertex_adapter<double> va(geo);
+            converter_.apply(va, adapter_);
+            return adapter_.status();
+        }
+
+        bool operator()(geometry::polygon<double> const & geo) const
+        {
+            geometry::polygon_vertex_adapter<double> va(geo);
+            converter_.apply(va, adapter_);
+            return adapter_.status();
+        }
+
+        template <typename T>
+        bool operator()(T const&) const
+        {
+            return false;
+        }
+
+    private:
+        VC & converter_;
+        Adapter const & adapter_;
+    };
+
 public:
     using box_type = box2d<double>;
     using params_type = label_placement::placement_params;
@@ -175,7 +175,7 @@ public:
         Detector & detector,
         Geom & geom)
     {
-        using adapter_type = placement_finder_adapter<SubLayout, LayoutGenerator, Detector>;
+        using adapter_type = converter_adapter<SubLayout, LayoutGenerator, Detector>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
         adapter_type adapter(sublayout_, layout_generator, detector);
         visitor_type visitor(converter_, adapter);
