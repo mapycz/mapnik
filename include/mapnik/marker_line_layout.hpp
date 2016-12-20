@@ -71,7 +71,8 @@ public:
 protected:
     double get_spacing()
     {
-        double spacing = this->params_.get<value_double, keys::spacing>();
+        double spacing = this->params_.get<value_double, keys::spacing>() *
+            this->params_.scale_factor;
         return spacing < 1 ? 100 : spacing;
     }
 
