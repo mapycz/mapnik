@@ -51,20 +51,20 @@ struct marker_line_policy
         return true;
     }
 
-    inline double get_spacing() const
-    {
-        return spacing_;
-    }
-
     inline bool align()
     {
-        return path_.forward(get_spacing() / 2.0);
+        return path_.forward(spacing_ / 2.0);
     }
 
     inline bool move(double distance)
     {
         return path_.move(distance) &&
             (path_.linear_position() + layout_width_ / 2.0) < path_.length();
+    }
+
+    inline bool forward(bool success)
+    {
+        return path_.forward(success ? spacing_ : (spacing_ / 2.0));
     }
 
     double position_tolerance() const

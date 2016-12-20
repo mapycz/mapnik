@@ -313,8 +313,6 @@ bool line_layout<SubLayout>::try_placement(
             continue;
         }
 
-        double spacing = policy.get_spacing();
-
         do
         {
             tolerance_iterator<exponential_function> tolerance_offset(
@@ -330,7 +328,7 @@ bool line_layout<SubLayout>::try_placement(
                     break;
                 }
             }
-        } while (path.forward(spacing));
+        } while (policy.forward(success));
     }
     return success;
 }

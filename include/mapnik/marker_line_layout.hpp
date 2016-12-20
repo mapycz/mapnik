@@ -47,6 +47,19 @@ public:
         Detector & detector,
         Geom & geom)
     {
+        // TODO: Very dubious case needed by marker_line_placement_on_points.xml.
+        // Needs to be better solved conceptually or removed.
+        if (geom.type() == geometry::geometry_types::Point)
+        {
+            pixel_position pos;
+            if (label::centroid(geom, pos.x, pos.y))
+            {
+                return this->sublayout_.try_placement(
+                    layout_generator, detector, pos);
+            }
+            return false;
+        }
+
         double layout_width = this->sublayout_.get_length(layout_generator);
         vertex_cache path(geom);
         marker_line_policy policy(path, layout_generator,
@@ -124,6 +137,12 @@ class marker_vertex_converter : util::noncopyable
             geometry::polygon_vertex_adapter<double> va(geo);
             converter_.template unset<clip_line_tag>();
             converter_.template set<clip_poly_tag>();
+            return apply(va);
+        }
+
+        bool operator()(geometry::point<double> const & geo) const
+        {
+            geometry::point_vertex_adapter<double> va(geo);
             return apply(va);
         }
 

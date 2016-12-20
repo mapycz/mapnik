@@ -118,6 +118,11 @@ struct text_line_policy
         return path_.move(distance);
     }
 
+    inline bool forward(bool success)
+    {
+        return path_.forward(get_spacing());
+    }
+
     double position_tolerance() const
     {
         return position_tolerance_ > 0 ?
