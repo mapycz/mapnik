@@ -138,6 +138,15 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans)
 {
+    process_marker(sym, feature, prj_trans);
+}
+
+template <typename T>
+template <typename Sym>
+void grid_renderer<T>::process_marker(Sym const& sym,
+                               mapnik::feature_impl & feature,
+                               proj_transform const& prj_trans)
+{
     using buf_type = grid_rendering_buffer;
     using pixfmt_type = typename grid_renderer_base_type::pixfmt_type;
     using renderer_type = agg::renderer_scanline_bin_solid<grid_renderer_base_type>;
@@ -165,6 +174,14 @@ void grid_renderer<T>::process(markers_symbolizer const& sym,
 }
 
 template void grid_renderer<grid>::process(markers_symbolizer const&,
+                                           mapnik::feature_impl &,
+                                           proj_transform const&);
+
+template void grid_renderer<grid>::process_marker(point_symbolizer const&,
+                                           mapnik::feature_impl &,
+                                           proj_transform const&);
+
+template void grid_renderer<grid>::process_marker(markers_symbolizer const&,
                                            mapnik::feature_impl &,
                                            proj_transform const&);
 } // namespace mapnik
