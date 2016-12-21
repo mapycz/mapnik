@@ -53,6 +53,7 @@ struct finder
         {
             default:
             case POINT_PLACEMENT:
+            case CENTROID_PLACEMENT:
                 return point<
                     typename T::point,
                     layout_generator_type,

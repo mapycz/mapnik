@@ -71,7 +71,6 @@ enum class property_types : std::uint8_t
     target_line_join,
     target_line_rasterizer,
     target_halo_rasterizer,
-    target_point_placement,
     target_pattern_alignment,
     target_debug_symbolizer_mode,
     target_multi_policy,
@@ -171,7 +170,6 @@ template <> struct enum_traits<e> { \
 
 ENUM_FROM_STRING( line_cap_enum )
 ENUM_FROM_STRING( line_join_enum )
-ENUM_FROM_STRING( point_placement_enum )
 ENUM_FROM_STRING( line_rasterizer_enum )
 ENUM_FROM_STRING( multi_policy_enum )
 ENUM_FROM_STRING( debug_symbolizer_mode_enum )

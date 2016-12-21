@@ -29,7 +29,6 @@
 #include <mapnik/cairo/cairo_context.hpp>
 #include <mapnik/cairo/cairo_renderer.hpp>
 #include <mapnik/renderer_common.hpp>
-#include <mapnik/renderer_common/process_point_symbolizer.hpp>
 
 namespace agg { struct trans_affine; }
 
@@ -46,18 +45,6 @@ void cairo_renderer<T>::process(
     proj_transform const& prj_trans)
 {
     process_marker(sym, feature, prj_trans);
-
-    /*composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
-
-    cairo_save_restore guard(context_);
-    context_.set_operator(comp_op);
-
-    render_point_symbolizer(
-        sym, feature, prj_trans, common_,
-        [this](pixel_position const& pos, marker const& marker,
-            agg::trans_affine const& tr, double opacity) {
-            render_marker(pos, marker, tr, opacity);
-        });*/
 }
 
 template void cairo_renderer<cairo_ptr>::process(point_symbolizer const&,

@@ -73,7 +73,6 @@ enum class keys : std::uint8_t
     text_placements_,
     label_placement,
     multipolicy,
-    point_placement_type,
     colorizer,
     halo_transform,
     num_columns,

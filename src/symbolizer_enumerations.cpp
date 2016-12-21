@@ -43,15 +43,6 @@ static const char * line_join_strings[] = {
 
 IMPLEMENT_ENUM( line_join_e, line_join_strings )
 
-// point symbolizer
-static const char * point_placement_strings[] = {
-    "centroid",
-    "interior",
-    ""
-};
-
-IMPLEMENT_ENUM( point_placement_e, point_placement_strings )
-
 // line symbolizer
 static const char * line_rasterizer_strings[] = {
     "full",
@@ -108,6 +99,7 @@ static const char * label_placement_strings[] = {
     "grid",
     "vertex-first",
     "vertex-last",
+    "centroid",
     ""
 };
 

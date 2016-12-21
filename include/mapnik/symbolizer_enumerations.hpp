@@ -67,15 +67,6 @@ enum halo_rasterizer_enum : std::uint8_t
 
 DEFINE_ENUM(halo_rasterizer_e, halo_rasterizer_enum);
 
-enum point_placement_enum : std::uint8_t
-{
-    CENTROID_POINT_PLACEMENT,
-    INTERIOR_POINT_PLACEMENT,
-    point_placement_enum_MAX
-};
-
-DEFINE_ENUM( point_placement_e, point_placement_enum );
-
 enum pattern_alignment_enum : std::uint8_t
 {
     LOCAL_ALIGNMENT,
@@ -126,6 +117,7 @@ enum label_placement_enum : std::uint8_t
     GRID_PLACEMENT,
     VERTEX_FIRST_PLACEMENT,
     VERTEX_LAST_PLACEMENT,
+    CENTROID_PLACEMENT,
     label_placement_enum_MAX
 };
 

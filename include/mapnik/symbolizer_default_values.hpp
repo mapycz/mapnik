@@ -318,14 +318,6 @@ struct symbolizer_default<label_placement_enum, keys::label_placement>
     static label_placement_enum value() { return POINT_PLACEMENT; }
 };
 
-
-// placement (point-placement-type FIXME)
-template <>
-struct symbolizer_default<point_placement_enum, keys::point_placement_type>
-{
-    static point_placement_enum value() { return CENTROID_POINT_PLACEMENT; }
-};
-
 // multi-policy
 template <>
 struct symbolizer_default<multi_policy_enum, keys::multipolicy>
