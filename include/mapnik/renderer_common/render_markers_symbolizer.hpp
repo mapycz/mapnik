@@ -65,6 +65,14 @@ struct markers_renderer_context : util::noncopyable
 };
 
 MAPNIK_DECL
+void render_markers_symbolizer(point_symbolizer const& sym,
+                               mapnik::feature_impl & feature,
+                               proj_transform const& prj_trans,
+                               renderer_common & common,
+                               box2d<double> const& clip_box,
+                               markers_renderer_context & renderer_context);
+
+MAPNIK_DECL
 void render_markers_symbolizer(markers_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans,

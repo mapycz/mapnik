@@ -37,7 +37,7 @@ template <typename Detector, typename RendererType, typename ContextType>
 struct render_marker_symbolizer_visitor
 {
     render_marker_symbolizer_visitor(std::string const& filename,
-                                     markers_symbolizer const& sym,
+                                     symbolizer_base const& sym,
                                      mapnik::feature_impl & feature,
                                      proj_transform const& prj_trans,
                                      RendererType & common,
@@ -211,7 +211,7 @@ struct render_marker_symbolizer_visitor
 
   private:
     std::string const& filename_;
-    markers_symbolizer const& sym_;
+    symbolizer_base const& sym_;
     mapnik::feature_impl & feature_;
     proj_transform const& prj_trans_;
     RendererType & common_;
@@ -246,12 +246,15 @@ markers_dispatch_params::markers_dispatch_params(box2d<double> const& size,
     placement_params.spacing *= scale;
 }
 
-void render_markers_symbolizer(markers_symbolizer const& sym,
-                               mapnik::feature_impl & feature,
-                               proj_transform const& prj_trans,
-                               renderer_common & common,
-                               box2d<double> const& clip_box,
-                               markers_renderer_context & renderer_context)
+void render_marker(
+    symbolizer_base const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    renderer_common & common,
+    box2d<double> const& clip_box,
+    markers_renderer_context & renderer_context,
+    std::string const & filename,
+    std::shared_ptr<marker const> const & mark)
 {
     using Detector = label_collision_detector4;
     using RendererType = renderer_common;
@@ -260,14 +263,40 @@ void render_markers_symbolizer(markers_symbolizer const& sym,
                                                                  RendererType,
                                                                  ContextType>;
 
+    VisitorType visitor(filename, sym, feature, prj_trans, common, clip_box,
+                        renderer_context);
+    util::apply_visitor(visitor, *mark);
+}
+
+void render_markers_symbolizer(markers_symbolizer const& sym,
+                               mapnik::feature_impl & feature,
+                               proj_transform const& prj_trans,
+                               renderer_common & common,
+                               box2d<double> const& clip_box,
+                               markers_renderer_context & renderer_context)
+{
     std::string filename = get<std::string>(sym, keys::file, feature, common.vars_, "shape://ellipse");
     if (!filename.empty())
     {
         auto mark = mapnik::marker_cache::instance().find(filename, true);
-        VisitorType visitor(filename, sym, feature, prj_trans, common, clip_box,
-                            renderer_context);
-        util::apply_visitor(visitor, *mark);
+        render_marker(sym, feature, prj_trans, common, clip_box,
+            renderer_context, filename, mark);
     }
+}
+
+void render_markers_symbolizer(point_symbolizer const& sym,
+                               mapnik::feature_impl & feature,
+                               proj_transform const& prj_trans,
+                               renderer_common & common,
+                               box2d<double> const& clip_box,
+                               markers_renderer_context & renderer_context)
+{
+    std::string filename = get<std::string,keys::file>(sym,feature, common.vars_);
+    std::shared_ptr<mapnik::marker const> mark = filename.empty()
+       ? std::make_shared<mapnik::marker const>(mapnik::marker_rgba8())
+       : marker_cache::instance().find(filename, true);
+    render_marker(sym, feature, prj_trans, common, clip_box,
+        renderer_context, filename, mark);
 }
 
 } // namespace mapnik
