@@ -24,7 +24,6 @@
 #define MAPNIK_RENDERER_COMMON_RENDER_MARKERS_SYMBOLIZER_HPP
 
 #include <mapnik/marker.hpp>
-#include <mapnik/markers_placement.hpp>
 #include <mapnik/renderer_common.hpp>
 #include <mapnik/symbolizer_base.hpp>
 
@@ -33,8 +32,6 @@ namespace mapnik {
 struct markers_dispatch_params
 {
     // placement
-    markers_placement_params placement_params;
-    //marker_placement_enum placement_method;
     value_bool ignore_placement;
     boost::optional<std::string> key;
     // rendering

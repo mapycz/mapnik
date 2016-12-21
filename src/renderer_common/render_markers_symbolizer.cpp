@@ -29,7 +29,29 @@
 #include <mapnik/renderer_common/render_markers_symbolizer.hpp>
 #include <mapnik/symbolizer.hpp>
 
+#include <mapnik/marker_layout.hpp>
+#include <mapnik/text/line_layout.hpp>
+#include <mapnik/text/grid_layout.hpp>
+#include <mapnik/label_placement.hpp>
+#include <mapnik/marker_grid_layout.hpp>
+#include <mapnik/marker_line_layout.hpp>
+
 namespace mapnik {
+
+struct marker_symbolizer_traits
+{
+    using point = marker_layout;
+    using interior = marker_layout;
+    using vertex = marker_layout;
+    using grid = marker_grid_layout<marker_layout>;
+    using line = marker_vertex_converter<
+        marker_line_layout<marker_layout>>;
+    using vertex_first = marker_layout;
+    using vertex_last = marker_layout;
+
+    using placements_type = std::vector<marker_positions_type>;
+    using layout_generator_type = marker_layout_generator;
+};
 
 namespace detail {
 
@@ -228,22 +250,12 @@ markers_dispatch_params::markers_dispatch_params(box2d<double> const& size,
                                                  attributes const& vars,
                                                  double scale,
                                                  bool snap)
-    : placement_params{
-        size,
-        tr,
-        get<value_double, keys::spacing>(sym, feature, vars),
-        get<value_double, keys::max_error>(sym, feature, vars),
-        get<value_bool, keys::allow_overlap>(sym, feature, vars),
-        get<value_bool, keys::avoid_edges>(sym, feature, vars),
-        get<direction_enum, keys::direction>(sym, feature, vars)}
-    //, placement_method(get<marker_placement_enum, keys::markers_placement_type>(sym, feature, vars))
-    , ignore_placement(get<value_bool, keys::ignore_placement>(sym, feature, vars))
+    : ignore_placement(get<value_bool, keys::ignore_placement>(sym, feature, vars))
     , key(get_optional<std::string>(sym, keys::symbol_key, feature, vars))
     , snap_to_pixels(snap)
     , scale_factor(scale)
     , opacity(get<value_double, keys::opacity>(sym, feature, vars))
 {
-    placement_params.spacing *= scale;
 }
 
 void render_marker(
