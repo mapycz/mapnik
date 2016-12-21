@@ -36,9 +36,6 @@ namespace detail {
 template <typename Detector, typename RendererType, typename ContextType>
 struct render_marker_symbolizer_visitor
 {
-    //using vector_dispatch_type = vector_markers_dispatch<Detector>;
-    //using raster_dispatch_type = raster_markers_dispatch<Detector>;
-
     render_marker_symbolizer_visitor(std::string const& filename,
                                      markers_symbolizer const& sym,
                                      mapnik::feature_impl & feature,
@@ -63,61 +60,6 @@ struct render_marker_symbolizer_visitor
         else
             return stock_attr;
     }
-
-    /*
-    template <typename Marker, typename Dispatch>
-    void render_marker(Marker const& mark, Dispatch & rasterizer_dispatch) const
-    {
-        auto const& vars = common_.vars_;
-
-        agg::trans_affine geom_tr;
-        if (auto geometry_transform = get_optional<transform_type>(sym_, keys::geometry_transform))
-        {
-            evaluate_transform(geom_tr, feature_, vars, *geometry_transform, common_.scale_factor_);
-        }
-
-        vertex_converter_type converter(clip_box_,
-                                        sym_,
-                                        common_.t_,
-                                        prj_trans_,
-                                        geom_tr,
-                                        feature_,
-                                        vars,
-                                        common_.scale_factor_);
-
-        bool clip = get<value_bool, keys::clip>(sym_, feature_, vars);
-        double offset = get<value_double, keys::offset>(sym_, feature_, vars);
-        double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym_, feature_, vars);
-        double smooth = get<value_double, keys::smooth>(sym_, feature_, vars);
-
-        if (clip)
-        {
-            geometry::geometry_types type = geometry::geometry_type(feature_.get_geometry());
-            switch (type)
-            {
-                case geometry::geometry_types::Polygon:
-                case geometry::geometry_types::MultiPolygon:
-                    converter.template set<clip_poly_tag>();
-                    break;
-                case geometry::geometry_types::LineString:
-                case geometry::geometry_types::MultiLineString:
-                    converter.template set<clip_line_tag>();
-                    break;
-                default:
-                    // silence warning: 4 enumeration values not handled in switch
-                    break;
-            }
-        }
-
-        converter.template set<transform_tag>(); //always transform
-        if (std::fabs(offset) > 0.0) converter.template set<offset_transform_tag>(); // parallel offset
-        converter.template set<affine_transform_tag>(); // optional affine transform
-        if (simplify_tolerance > 0.0) converter.template set<simplify_tag>(); // optional simplify converter
-        if (smooth > 0.0) converter.template set<smooth_tag>(); // optional smooth converter
-
-        apply_markers_multi(feature_, vars, converter, rasterizer_dispatch, sym_);
-    }
-    */
 
     void operator() (marker_null const&) const {}
 
@@ -164,21 +106,6 @@ struct render_marker_symbolizer_visitor
             evaluate_transform(image_tr, feature_, common_.vars_, *image_transform, common_.scale_factor_);
         }
 
-        /*
-        vector_dispatch_type rasterizer_dispatch(marker_ptr,
-                                                 svg_path,
-                                                 r_attributes,
-                                                 image_tr,
-                                                 sym_,
-                                                 *common_.detector_,
-                                                 common_.scale_factor_,
-                                                 feature_,
-                                                 common_.vars_,
-                                                 common_.symbol_cache_,
-                                                 snap_to_pixels,
-                                                 renderer_context_);
-                                                 */
-
         agg::trans_affine tr;
         auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
         if (transform) evaluate_transform(tr, feature_, common_.vars_, *transform, common_.scale_factor_);
@@ -223,15 +150,7 @@ struct render_marker_symbolizer_visitor
                 }
             }
         }
-
-        //render_marker(mark, rasterizer_dispatch);
     }
-
-    /*static agg::trans_affine recenter(svg_path_ptr const& src)
-    {
-        coord2d center = src->bounding_box().center();
-        return agg::trans_affine_translation(-center.x, -center.y);
-    }*/
 
     void operator() (marker_rgba8 const& mark)
     {
@@ -244,19 +163,7 @@ struct render_marker_symbolizer_visitor
         mapnik::image_rgba8 const& marker = mark.get_data();
         // - clamp sizes to > 4 pixels of interactivity
         coord2d marker_center = marker_box.center();
-        //agg::trans_affine_translation recenter(-center.x, -center.y);
-        //agg::trans_affine marker_trans = recenter * image_tr;
-        /*raster_dispatch_type rasterizer_dispatch(marker,
-                                                 marker_trans,
-                                                 sym_,
-                                                 *common_.detector_,
-                                                 common_.scale_factor_,
-                                                 feature_,
-                                                 common_.vars_,
-                                                 common_.symbol_cache_,
-                                                 renderer_context_);
 
-        render_marker(mark, rasterizer_dispatch);*/
         agg::trans_affine tr;
         auto transform = get_optional<transform_type>(sym_, keys::geometry_transform);
         if (transform) evaluate_transform(tr, feature_, common_.vars_, *transform, common_.scale_factor_);
