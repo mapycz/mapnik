@@ -945,6 +945,7 @@ void map_parser::parse_point_symbolizer(rule & rule, xml_node const & node)
         set_symbolizer_property<symbolizer_base,value_bool>(sym, keys::ignore_placement, node);
         set_symbolizer_property<symbolizer_base,point_placement_enum>(sym, keys::point_placement_type, node);
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
+        put(sym, keys::multipolicy, WHOLE_MULTI);
         if (file && !file->empty())
         {
             if(base)
