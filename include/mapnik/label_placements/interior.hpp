@@ -64,11 +64,38 @@ struct interior
             return pt;
         }
 
+        return_type operator()(geometry::multi_point<double> const & multi) const
+        {
+            return centroid(multi);
+        }
+
+        return_type operator()(geometry::multi_polygon<double> const & multi) const
+        {
+            return centroid(multi);
+        }
+
+        return_type operator()(geometry::multi_line_string<double> const & multi) const
+        {
+            return centroid(multi);
+        }
+
         template <typename Geom>
         return_type operator()(Geom const & geom) const
         {
             MAPNIK_LOG_WARN(label_interior_placement) << "Trying to find interior position on unsupported geometry";
             return boost::none;
+        }
+
+        template <typename Geom>
+        return_type centroid(Geom const & geom) const
+        {
+            geometry::point<double> pt;
+            if (!geometry::centroid(geom, pt))
+            {
+                MAPNIK_LOG_ERROR(label_point_placement) << "Centroid point calculation failed.";
+                return boost::none;
+            }
+            return pt;
         }
     };
 
