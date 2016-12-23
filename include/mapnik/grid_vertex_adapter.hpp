@@ -157,7 +157,7 @@ struct grid_vertex_adapter
         return geometry_types::MultiPoint;
     }
 
-private:
+protected:
     grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
         : dx_(dx), dy_(dy),
         img_(create_bitmap(box)),
@@ -204,6 +204,34 @@ private:
     image_gray8 img_;
     const view_transform vt_;
     mutable spiral_iterator si_;
+};
+
+template <typename PathType, typename T>
+struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
+{
+    using grid_vertex_adapter<PathType, T>::grid_vertex_adapter;
+
+    unsigned vertex(T * x, T * y) const
+    {
+        int grid_x, grid_y;
+        while (this->si_.vertex(&grid_x, &grid_y))
+        {
+            int raster_x = grid_x * this->dx_;
+            int raster_y = grid_y * this->dy_;
+            if (grid_y % 2 == 0)
+            {
+                raster_x += this->dx_ / 2.0;
+            }
+            if (get_pixel<image_gray8::pixel_type>(this->img_, raster_x, raster_y))
+            {
+                *x = raster_x;
+                *y = raster_y;
+                this->vt_.backward(x, y);
+                return mapnik::SEG_MOVETO;
+            }
+        }
+        return mapnik::SEG_END;
+    }
 };
 
 }

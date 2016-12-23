@@ -33,6 +33,7 @@
 #include <mapnik/marker.hpp>
 #include <mapnik/group/group_symbolizer_helper.hpp>
 #include <mapnik/text/grid_layout.hpp>
+#include <mapnik/grid_vertex_adapter.hpp>
 
 namespace mapnik {
 
@@ -46,7 +47,8 @@ struct text_symbolizer_traits
     using point = point_layout;
     using interior = point_layout;
     using vertex = point_layout;
-    using grid = grid_layout<point_layout>;
+    using grid = grid_layout<geometry::grid_vertex_adapter, point_layout>;
+    using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, point_layout>;
     using line = text_vertex_converter<
         text_extend_line_layout<
             line_layout<
@@ -63,7 +65,8 @@ struct shield_symbolizer_traits
     using point = shield_layout;
     using interior = shield_layout;
     using vertex = shield_layout;
-    using grid = grid_layout<shield_layout>;
+    using grid = grid_layout<geometry::grid_vertex_adapter, shield_layout>;
+    using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, shield_layout>;
     using line = text_vertex_converter<
         line_layout<shield_layout>>;
     using vertex_first = shield_layout;
@@ -78,7 +81,8 @@ struct group_symbolizer_traits
     using point = group_point_layout;
     using interior = group_point_layout;
     using vertex = group_point_layout;
-    using grid = grid_layout<group_point_layout>;
+    using grid = grid_layout<geometry::grid_vertex_adapter, group_point_layout>;
+    using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, group_point_layout>;
     using line = text_vertex_converter<
         group_line_layout<group_point_layout>>;
     using vertex_first = group_point_layout;

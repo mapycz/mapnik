@@ -36,6 +36,8 @@
 #include <mapnik/marker_grid_layout.hpp>
 #include <mapnik/marker_line_layout.hpp>
 
+#include <mapnik/grid_vertex_adapter.hpp>
+
 namespace mapnik {
 
 struct marker_symbolizer_traits
@@ -43,7 +45,8 @@ struct marker_symbolizer_traits
     using point = marker_layout;
     using interior = marker_layout;
     using vertex = marker_layout;
-    using grid = marker_grid_layout<marker_layout>;
+    using grid = marker_grid_layout<geometry::grid_vertex_adapter, marker_layout>;
+    using alternating_grid = marker_grid_layout<geometry::alternating_grid_vertex_adapter, marker_layout>;
     using line = marker_vertex_converter<
         marker_line_layout<marker_layout>>;
     using vertex_first = marker_layout;

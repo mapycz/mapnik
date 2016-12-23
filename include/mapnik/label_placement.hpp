@@ -77,6 +77,12 @@ struct finder
                     layout_generator_type,
                     detector_type,
                     placements_type>::get(layout_generator, detector, params);
+            case ALTERNATING_GRID_PLACEMENT:
+                return grid<
+                    typename T::alternating_grid,
+                    layout_generator_type,
+                    detector_type,
+                    placements_type>::get(layout_generator, detector, params);
             case LINE_PLACEMENT:
                 return line<
                     typename T::line,
