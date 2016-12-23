@@ -133,8 +133,8 @@ bool grid_layout<SubLayout>::try_placement(
     Geom const & geom)
 {
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
-    double dx = text_props.grid_cell_width;
-    double dy = text_props.grid_cell_height;
+    double dx = text_props.grid_cell_width * params_.scale_factor;
+    double dy = text_props.grid_cell_height * params_.scale_factor;
     return try_placement(layout_generator, detector, geom, dx, dy);
 }
 
