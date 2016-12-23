@@ -35,8 +35,8 @@ public:
 
     marker_grid_layout(params_type const & params)
         : grid_layout<SubLayout>(params),
-          dx_(params.get<value_double, keys::grid_cell_width>()),
-          dy_(params.get<value_double, keys::grid_cell_height>())
+          dx_(params.scale_factor * params.get<value_double, keys::grid_cell_width>()),
+          dy_(params.scale_factor * params.get<value_double, keys::grid_cell_height>())
     {
     }
 
