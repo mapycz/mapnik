@@ -100,6 +100,7 @@ static const char * label_placement_strings[] = {
     "vertex-first",
     "vertex-last",
     "centroid",
+    "alternating-grid",
     ""
 };
 

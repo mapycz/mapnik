@@ -118,6 +118,7 @@ enum label_placement_enum : std::uint8_t
     VERTEX_FIRST_PLACEMENT,
     VERTEX_LAST_PLACEMENT,
     CENTROID_PLACEMENT,
+    ALTERNATING_GRID_PLACEMENT,
     label_placement_enum_MAX
 };
 

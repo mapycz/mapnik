@@ -35,12 +35,11 @@
 #include <mapnik/label_placements/base.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_adapters.hpp>
-#include <mapnik/grid_vertex_adapter.hpp>
 
 namespace mapnik
 {
 
-template <typename SubLayout>
+template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
 class grid_layout : util::noncopyable
 {
 public:
@@ -78,7 +77,7 @@ protected:
 
 namespace detail {
 
-template <typename T, typename Points>
+template <template <typename, typename> class GridVertexAdapter, typename T, typename Points>
 struct grid_placement_finder_adapter
 {
     grid_placement_finder_adapter(T dx, T dy, Points & points)
@@ -88,7 +87,7 @@ struct grid_placement_finder_adapter
     template <typename PathT>
     void add_path(PathT & path) const
     {
-        geometry::grid_vertex_adapter<PathT, T> gpa(path, dx_, dy_);
+        GridVertexAdapter<PathT, T> gpa(path, dx_, dy_);
         gpa.rewind(0);
         double label_x, label_y;
         for (unsigned cmd; (cmd = gpa.vertex(&label_x, &label_y)) != SEG_END; )
@@ -103,8 +102,8 @@ struct grid_placement_finder_adapter
 
 }
 
-template <typename SubLayout>
-grid_layout<SubLayout>::grid_layout(params_type const & params)
+template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
+grid_layout<GridVertexAdapter, SubLayout>::grid_layout(params_type const & params)
     : sublayout_(params),
       params_(params),
       converter_(params.query_extent, params.symbolizer,
@@ -125,9 +124,9 @@ grid_layout<SubLayout>::grid_layout(params_type const & params)
     if (smooth > 0.0) converter_.template set<smooth_tag>();
 }
 
-template <typename SubLayout>
+template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
 template <typename LayoutGenerator, typename Detector, typename Geom>
-bool grid_layout<SubLayout>::try_placement(
+bool grid_layout<GridVertexAdapter, SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
     Detector & detector,
     Geom const & geom)
@@ -138,9 +137,9 @@ bool grid_layout<SubLayout>::try_placement(
     return try_placement(layout_generator, detector, geom, dx, dy);
 }
 
-template <typename SubLayout>
+template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
 template <typename LayoutGenerator, typename Detector, typename Geom>
-bool grid_layout<SubLayout>::try_placement(
+bool grid_layout<GridVertexAdapter, SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
     Detector & detector,
     Geom const & geom_ref,
@@ -151,7 +150,7 @@ bool grid_layout<SubLayout>::try_placement(
     geometry::polygon_vertex_adapter<double> va(poly);
     using positions_type = std::list<pixel_position>;
     positions_type points;
-    detail::grid_placement_finder_adapter<double, positions_type> ga(dx, dy, points);
+    detail::grid_placement_finder_adapter<GridVertexAdapter, double, positions_type> ga(dx, dy, points);
     converter_.apply(va, ga);
 
     bool success = false;

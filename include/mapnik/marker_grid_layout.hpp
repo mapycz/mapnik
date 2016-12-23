@@ -27,14 +27,14 @@
 namespace mapnik
 {
 
-template <typename SubLayout>
-class marker_grid_layout : grid_layout<SubLayout>
+template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
+class marker_grid_layout : grid_layout<GridVertexAdapter, SubLayout>
 {
 public:
     using params_type = label_placement::placement_params;
 
     marker_grid_layout(params_type const & params)
-        : grid_layout<SubLayout>(params),
+        : grid_layout<GridVertexAdapter, SubLayout>(params),
           dx_(params.scale_factor * params.get<value_double, keys::grid_cell_width>()),
           dy_(params.scale_factor * params.get<value_double, keys::grid_cell_height>())
     {
@@ -46,7 +46,7 @@ public:
         Detector & detector,
         Geom const & geom)
     {
-        return grid_layout<SubLayout>::try_placement(layout_generator, detector, geom, dx_, dy_);
+        return grid_layout<GridVertexAdapter, SubLayout>::try_placement(layout_generator, detector, geom, dx_, dy_);
     }
 
 protected:
