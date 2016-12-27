@@ -232,7 +232,9 @@ void agg_renderer<T0,T1>::process(debug_symbolizer const& sym,
     }
     else if (mode == DEBUG_SYM_MODE_COLLISION)
     {
-        for (auto const& n : *common_.detector_)
+        boost::optional<std::string> collision_cache = get_optional<std::string>(sym, keys::collision_cache, feature, common_.vars_);
+        auto iteration_adapter = common_.detector_->iterate(collision_cache);
+        for (auto & n : iteration_adapter)
         {
             draw_rect(buffers_.top().get(), n.get().box);
         }

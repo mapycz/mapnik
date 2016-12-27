@@ -435,6 +435,18 @@ T get(symbolizer_base const& sym, keys key, mapnik::feature_impl const& feature,
 }
 
 
+template <typename T, keys key>
+boost::optional<T> get_optional(symbolizer_base const& sym, mapnik::feature_impl const& feature, attributes const& vars)
+{
+    using const_iterator = symbolizer_base::cont_type::const_iterator;
+    const_iterator itr = sym.properties.find(key);
+    if (itr != sym.properties.end())
+    {
+        return util::apply_visitor(extract_value<T>(feature,vars), itr->second);
+    }
+    return boost::optional<T>();
+}
+
 template <typename T>
 boost::optional<T> get_optional(symbolizer_base const& sym, keys key, mapnik::feature_impl const& feature, attributes const& vars)
 {

@@ -105,7 +105,9 @@ void cairo_renderer<T>::process(debug_symbolizer const& sym,
 
     if (mode == DEBUG_SYM_MODE_COLLISION)
     {
-        for (auto & n : *common_.detector_)
+        boost::optional<std::string> collision_cache = get_optional<std::string>(sym, keys::collision_cache, feature, common_.vars_);
+        auto iteration_adapter = common_.detector_->iterate(collision_cache);
+        for (auto & n : iteration_adapter)
         {
             render_debug_box(context_, n.get().box);
         }

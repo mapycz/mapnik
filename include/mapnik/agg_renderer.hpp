@@ -48,7 +48,6 @@ namespace mapnik {
   class Map;
   class feature_impl;
   class feature_type_style;
-  class label_collision_detector4;
   class layer;
   class color;
   struct marker;
@@ -107,7 +106,7 @@ private:
     typename std::deque<T>::iterator position_;
 };
 
-template <typename T0, typename T1=label_collision_detector4>
+template <typename T0, typename T1=renderer_common::detector_type>
 class MAPNIK_DECL agg_renderer : public feature_style_processor<agg_renderer<T0> >,
                                  private util::noncopyable
 {

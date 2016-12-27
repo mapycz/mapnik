@@ -21,7 +21,7 @@
  *****************************************************************************/
 
 // mapnik
-#include <mapnik/label_collision_detector.hpp>
+#include <mapnik/collision_cache.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/debug.hpp>
@@ -34,7 +34,7 @@
 
 namespace mapnik {
 
-using detector_type = label_collision_detector4;
+using detector_type = keyed_collision_cache<label_collision_detector4>;
 
 marker_layout::marker_layout(params_type const & params)
     : params_(params),
@@ -42,7 +42,8 @@ marker_layout::marker_layout(params_type const & params)
       allow_overlap_(params.get<value_bool, keys::allow_overlap>()),
       avoid_edges_(params.get<value_bool, keys::avoid_edges>()),
       direction_(params.get<direction_enum, keys::direction>()),
-      margin_(params.get<value_double, keys::margin>() * params.scale_factor)
+      margin_(params.get<value_double, keys::margin>() * params.scale_factor),
+      collision_cache_(params.get_optional<std::string, keys::collision_cache>())
 {
 }
 

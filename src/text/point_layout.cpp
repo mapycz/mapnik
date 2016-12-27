@@ -21,7 +21,7 @@
  *****************************************************************************/
 //mapnik
 #include <mapnik/debug.hpp>
-#include <mapnik/label_collision_detector.hpp>
+#include <mapnik/collision_cache.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/text/point_layout.hpp>
@@ -41,7 +41,7 @@
 namespace mapnik
 {
 
-using detector_type = label_collision_detector4;
+using detector_type = keyed_collision_cache<label_collision_detector4>;
 
 point_layout::point_layout(params_type const & params)
     : params_(params)

@@ -241,6 +241,7 @@ public:
     query_iterator begin() { return tree_.query_in_box(extent()); }
     query_iterator end() { return tree_.query_end(); }
 };
+
 }
 
 #endif // MAPNIK_LABEL_COLLISION_DETECTOR_HPP

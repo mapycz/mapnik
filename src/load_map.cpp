@@ -1468,6 +1468,7 @@ void map_parser::parse_debug_symbolizer(rule & rule, xml_node const & node)
     // TODO
     optional<debug_symbolizer_mode_e> mode = node.get_opt_attr<debug_symbolizer_mode_e>("mode");
     if (mode) put(symbol, keys::mode, debug_symbolizer_mode_enum(*mode));
+    set_symbolizer_property<debug_symbolizer, std::string>(symbol, keys::collision_cache, node);
     rule.append(std::move(symbol));
 }
 
