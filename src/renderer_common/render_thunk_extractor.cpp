@@ -32,7 +32,7 @@ virtual_renderer_common::virtual_renderer_common(renderer_common const& other)
     : renderer_common(other)
 {
     // replace collision detector with my own so that I don't pollute the original
-    detector_ = std::make_shared<label_collision_detector4>(other.detector_->extent());
+    detector_ = std::make_shared<renderer_common::detector_type>(other.detector_->extent());
 }
 
 namespace detail {
@@ -131,9 +131,9 @@ void render_thunk_extractor::extract_text_thunk(text_symbolizer const& sym) cons
 
 void render_thunk_extractor::update_box() const
 {
-    label_collision_detector4 & detector = *common_.detector_;
+    auto & detector = *common_.detector_;
 
-    for (auto const& label : detector)
+    for (auto const& label : detector.get_default())
     {
         if (box_.width() > 0 && box_.height() > 0)
         {

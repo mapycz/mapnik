@@ -87,6 +87,8 @@ protected:
         bool line_placement) const;
 
     params_type const & params_;
+    const std::vector<std::string> collision_cache_insert_;
+    const std::vector<std::string> collision_cache_detect_;
 };
 
 class shield_layout : public point_layout

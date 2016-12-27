@@ -409,6 +409,13 @@ struct symbolizer_default<value_double, keys::margin>
     static value_double value() { return 0.0; }
 };
 
+// collision_cache
+template <>
+struct symbolizer_default<std::string, keys::collision_cache>
+{
+    static std::string value() { return ""; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP

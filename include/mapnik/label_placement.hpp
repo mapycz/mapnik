@@ -32,14 +32,14 @@
 #include <mapnik/label_placements/vertex_first.hpp>
 #include <mapnik/label_placements/vertex_last.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
-#include <mapnik/label_collision_detector.hpp>
+#include <mapnik/collision_cache.hpp>
 
 namespace mapnik { namespace label_placement {
 
 template <typename T>
 struct finder
 {
-    using detector_type = label_collision_detector4;
+    using detector_type = keyed_collision_cache<label_collision_detector4>;
     using placements_type = typename T::placements_type;
     using layout_generator_type = typename T::layout_generator_type;
 

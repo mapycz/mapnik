@@ -945,6 +945,8 @@ void map_parser::parse_point_symbolizer(rule & rule, xml_node const & node)
         set_symbolizer_property<symbolizer_base,value_bool>(sym, keys::ignore_placement, node);
         set_symbolizer_property<symbolizer_base,label_placement_enum>(sym, keys::label_placement, node);
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_detect, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
         put(sym, keys::multipolicy, WHOLE_MULTI);
         if (file && !file->empty())
         {
@@ -1057,6 +1059,8 @@ void map_parser::parse_markers_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base,double>(sym, keys::margin, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::grid_cell_width, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::grid_cell_height, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_detect, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
         parse_stroke(sym,node);
         rule.append(std::move(sym));
     }
@@ -1174,6 +1178,8 @@ void map_parser::parse_text_symbolizer(rule & rule, xml_node const& node)
             set_symbolizer_property<symbolizer_base,composite_mode_e>(sym, keys::halo_comp_op, node);
             set_symbolizer_property<symbolizer_base,halo_rasterizer_enum>(sym, keys::halo_rasterizer, node);
             set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::halo_transform, node);
+            set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_detect, node);
+            set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
             rule.append(std::move(sym));
         }
     }
@@ -1211,6 +1217,8 @@ void map_parser::parse_shield_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base,double>(sym, keys::shield_dy, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::opacity, node);
         set_symbolizer_property<symbolizer_base,value_bool>(sym, keys::unlock_image, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_detect, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
 
         std::string file = node.get_attr<std::string>("file");
         if (file.empty())
@@ -1425,6 +1433,8 @@ void map_parser::parse_group_symbolizer(rule & rule, xml_node const & node)
         text_placements_ptr placements = std::make_shared<text_placements_dummy>();
         placements->defaults.text_properties_from_xml(node);
         put<text_placements_ptr>(symbol, keys::text_placements_, placements);
+        set_symbolizer_property<symbolizer_base, std::string>(symbol, keys::collision_cache_detect, node);
+        set_symbolizer_property<symbolizer_base, std::string>(symbol, keys::collision_cache_insert, node);
 
         size_t layout_count = 0;
         for (auto const& child_node : node)
@@ -1468,6 +1478,7 @@ void map_parser::parse_debug_symbolizer(rule & rule, xml_node const & node)
     // TODO
     optional<debug_symbolizer_mode_e> mode = node.get_opt_attr<debug_symbolizer_mode_e>("mode");
     if (mode) put(symbol, keys::mode, debug_symbolizer_mode_enum(*mode));
+    set_symbolizer_property<symbolizer_base, std::string>(symbol, keys::collision_cache, node);
     rule.append(std::move(symbol));
 }
 

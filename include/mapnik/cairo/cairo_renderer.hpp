@@ -45,7 +45,6 @@ namespace mapnik {
 class Map;
 class feature_impl;
 class feature_type_style;
-class label_collision_detector4;
 class layer;
 struct marker;
 class proj_transform;
@@ -85,7 +84,7 @@ public:
                    unsigned offset_y=0);
     cairo_renderer(Map const& m,
                    T const& obj,
-                   std::shared_ptr<label_collision_detector4> detector,
+                   std::shared_ptr<renderer_common::detector_type> detector,
                    double scale_factor=1.0,
                    unsigned offset_x=0,
                    unsigned offset_y=0);

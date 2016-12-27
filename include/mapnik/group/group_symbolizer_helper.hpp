@@ -158,6 +158,8 @@ protected:
         const value_unicode_string &repeat_key) const;
 
     params_type const & params_;
+    const std::vector<std::string> collision_cache_insert_;
+    const std::vector<std::string> collision_cache_detect_;
 };
 
 } //namespace

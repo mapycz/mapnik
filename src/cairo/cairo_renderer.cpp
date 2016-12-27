@@ -87,7 +87,7 @@ cairo_renderer<T>::cairo_renderer(Map const& m,
 template <typename T>
 cairo_renderer<T>::cairo_renderer(Map const& m,
                                  T const& cairo,
-                                 std::shared_ptr<label_collision_detector4> detector,
+                                 std::shared_ptr<renderer_common::detector_type> detector,
                                  double scale_factor,
                                  unsigned offset_x,
                                  unsigned offset_y)

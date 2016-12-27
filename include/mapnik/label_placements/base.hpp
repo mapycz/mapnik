@@ -51,6 +51,12 @@ struct placement_params
     {
         return mapnik::get<T, key>(symbolizer, feature, vars);
     }
+
+    template <typename T, mapnik::keys key>
+    boost::optional<T> get_optional() const
+    {
+        return mapnik::get_optional<T, key>(symbolizer, feature, vars);
+    }
 };
 
 template <typename It>

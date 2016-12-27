@@ -78,6 +78,8 @@ protected:
     const value_bool avoid_edges_;
     const direction_enum direction_;
     const value_double margin_;
+    const std::vector<std::string> collision_cache_insert_;
+    const std::vector<std::string> collision_cache_detect_;
 };
 
 } //namespace

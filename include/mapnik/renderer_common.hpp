@@ -30,10 +30,10 @@
 #include <mapnik/attribute.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/symbol_cache.hpp>
+#include <mapnik/collision_cache.hpp>
 
 // fwd declarations to speed up compile
 namespace mapnik {
-  class label_collision_detector4;
   class Map;
   class request;
 //  class attributes;
@@ -43,7 +43,8 @@ namespace mapnik {
 
 struct renderer_common : private util::noncopyable
 {
-    using detector_ptr = std::shared_ptr<label_collision_detector4>;
+    using detector_type = keyed_collision_cache<label_collision_detector4>;
+    using detector_ptr = std::shared_ptr<detector_type>;
 
     renderer_common(Map const &m, attributes const& vars, unsigned offset_x, unsigned offset_y,
                        unsigned width, unsigned height, double scale_factor);
