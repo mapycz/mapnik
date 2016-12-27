@@ -41,7 +41,8 @@ marker_layout::marker_layout(params_type const & params)
       ignore_placement_(params.get<value_bool, keys::ignore_placement>()),
       allow_overlap_(params.get<value_bool, keys::allow_overlap>()),
       avoid_edges_(params.get<value_bool, keys::avoid_edges>()),
-      direction_(params.get<direction_enum, keys::direction>())
+      direction_(params.get<direction_enum, keys::direction>()),
+      margin_(params.get<value_double, keys::margin>() * params.scale_factor)
 {
 }
 
@@ -112,7 +113,7 @@ bool marker_layout::push_to_detector(
     {
         return false;
     }
-    if (!allow_overlap_ && !detector.has_placement(box))
+    if (!allow_overlap_ && !detector.has_placement(box, margin_))
     {
         return false;
     }

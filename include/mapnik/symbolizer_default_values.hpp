@@ -402,6 +402,13 @@ struct symbolizer_default<value_double, keys::grid_cell_height>
     static value_double value() { return 10.0; }
 };
 
+// margin
+template <>
+struct symbolizer_default<value_double, keys::margin>
+{
+    static value_double value() { return 0.0; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP
