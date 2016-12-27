@@ -97,6 +97,7 @@ enum class keys : std::uint8_t
     extend,
     grid_cell_width,
     grid_cell_height,
+    margin,
     MAX_SYMBOLIZER_KEY
 };
 

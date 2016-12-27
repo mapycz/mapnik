@@ -77,6 +77,7 @@ protected:
     const value_bool allow_overlap_;
     const value_bool avoid_edges_;
     const direction_enum direction_;
+    const value_double margin_;
 };
 
 } //namespace
