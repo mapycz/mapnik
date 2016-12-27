@@ -68,7 +68,8 @@ protected:
         affine_transform_tag,
         extend_tag,
         simplify_tag,
-        smooth_tag>;
+        smooth_tag,
+        offset_transform_tag>;
 
     SubLayout sublayout_;
     params_type const & params_;
@@ -111,10 +112,11 @@ grid_layout<GridVertexAdapter, SubLayout>::grid_layout(params_type const & param
           params.affine_transform, params.feature,
           params.vars, params.scale_factor)
 {
-    value_bool clip = mapnik::get<value_bool, keys::clip>(params.symbolizer, params.feature, params.vars);
-    value_double simplify_tolerance = mapnik::get<value_double, keys::simplify_tolerance>(params.symbolizer, params.feature, params.vars);
-    value_double smooth = mapnik::get<value_double, keys::smooth>(params.symbolizer, params.feature, params.vars);
-    value_double extend = mapnik::get<value_double, keys::extend>(params.symbolizer, params.feature, params.vars);
+    value_bool clip = params.get<value_bool, keys::clip>();
+    value_double simplify_tolerance = params.get<value_double, keys::simplify_tolerance>();
+    value_double smooth = params.get<value_double, keys::smooth>();
+    value_double extend = params.get<value_double, keys::extend>();
+    value_double offset = params.get<value_double, keys::offset>();
 
     if (clip) converter_.template set<clip_poly_tag>();
     converter_.template set<transform_tag>();
@@ -122,6 +124,7 @@ grid_layout<GridVertexAdapter, SubLayout>::grid_layout(params_type const & param
     if (extend > 0.0) converter_.template set<extend_tag>();
     if (simplify_tolerance > 0.0) converter_.template set<simplify_tag>();
     if (smooth > 0.0) converter_.template set<smooth_tag>();
+    if (std::fabs(offset) > 0.0) converter_.template set<offset_transform_tag>();
 }
 
 template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
