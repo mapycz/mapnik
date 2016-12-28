@@ -99,6 +99,8 @@ enum class keys : std::uint8_t
     grid_cell_height,
     margin,
     collision_cache,
+    collision_cache_insert,
+    collision_cache_detect,
     MAX_SYMBOLIZER_KEY
 };
 

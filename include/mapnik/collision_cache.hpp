@@ -59,10 +59,80 @@ class keyed_collision_cache
             std::forward_as_tuple(default_.extent())).first->second;
     }
 
+    template <typename Keys, typename... Args>
+    bool detect(Keys const & keys, Args... args)
+    {
+        if (keys.empty())
+        {
+            return default_.has_placement(args...);
+        }
+        for (auto const & key : keys)
+        {
+            auto it = cache_.find(key);
+            if (it != cache_.end())
+            {
+                Detector & detector = it->second;
+                if (detector.has_placement(args...))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    template <typename Keys, typename... Args>
+    void push(Keys const & keys, Args... args)
+    {
+        if (keys.empty())
+        {
+            return default_.insert(args...);
+        }
+        for (auto const & key : keys)
+        {
+            auto it = cache_.find(key);
+            if (it == cache_.end())
+            {
+                it = cache_.emplace(
+                    std::piecewise_construct,
+                    std::forward_as_tuple(key),
+                    std::forward_as_tuple(default_.extent())).first;
+            }
+
+            Detector & detector = it->second;
+            detector.insert(args...);
+        }
+    }
+
 public:
     keyed_collision_cache(box2d<double> const & extent)
         : cache_(), default_(extent)
     {
+        in();go();
+    }
+
+    void in()
+    {
+        std::vector<std::string> keys;
+        keys.emplace_back("1");
+        box2d<double> box;
+        insert(box, keys);
+    }
+
+    bool go()
+    {
+        std::vector<std::string> keys;
+        keys.emplace_back("1");
+        box2d<double> box;
+        return has_placement(box, keys);
+    }
+
+    template <typename Keys>
+    bool has_placement(
+        box2d<double> const & box,
+        Keys const & keys)
+    {
+        return detect(keys, box);
     }
 
     bool has_placement(
@@ -91,6 +161,14 @@ public:
     {
         Detector & detector = get(key);
         return detector.has_placement(box, margin, text, repeat_distance);
+    }
+
+    template <typename Keys>
+    void insert(
+        box2d<double> const& box,
+        Keys const & keys)
+    {
+        push(keys, box);
     }
 
     void insert(
@@ -156,6 +234,9 @@ public:
         return iterator_adaper{it->second};
     }
 };
+
+std::vector<std::string> parse_collision_detector_keys(
+    boost::optional<std::string> const & keys);
 
 }
 

@@ -273,6 +273,7 @@ source = Split(
     value.cpp
     marker_layout_generator.cpp
     marker_layout.cpp
+    collision_cache.cpp
     """
     )
 

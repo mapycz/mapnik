@@ -158,6 +158,8 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "grid-cell-height", nullptr, property_types::target_double},
     property_meta_type{ "margin", nullptr, property_types::target_double},
     property_meta_type{ "collision-cache", nullptr, property_types::target_string },
+    property_meta_type{ "collision-cache-insert", nullptr, property_types::target_string },
+    property_meta_type{ "collision-cache-detect", nullptr, property_types::target_string },
 
 };
 
