@@ -87,6 +87,7 @@ protected:
         bool line_placement) const;
 
     params_type const & params_;
+    const boost::optional<std::string> collision_cache_;
 };
 
 class shield_layout : public point_layout

@@ -380,6 +380,7 @@ private:
         bool line_placement) const;
 
     params_type const & params_;
+    const boost::optional<std::string> collision_cache_;
 };
 
 }//ns mapnik

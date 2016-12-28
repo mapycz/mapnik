@@ -44,7 +44,8 @@ namespace mapnik
 using detector_type = keyed_collision_cache<label_collision_detector4>;
 
 point_layout::point_layout(params_type const & params)
-    : params_(params)
+    : params_(params),
+      collision_cache_(params.get_optional<std::string, keys::collision_cache>())
 {
 }
 
@@ -186,7 +187,7 @@ void point_layout::process_bboxes(
         {
             label_box.expand_to_include(box);
         }
-        detector.insert(box, layouts.text());
+        detector.insert(box, layouts.text(), collision_cache_);
     }
 
     // do not render text off the canvas
@@ -229,9 +230,9 @@ bool point_layout::collision(
          !params_.dims.contains(box + (params_.scale_factor * text_props.minimum_padding)))
         ||
         (!text_props.allow_overlap &&
-         ((repeat_key.length() == 0 && !detector.has_placement(box, margin))
+         ((repeat_key.length() == 0 && !detector.has_placement(box, margin, collision_cache_))
           ||
-          (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance))));
+          (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance, collision_cache_))));
 }
 
 template bool point_layout::collision(
@@ -338,7 +339,7 @@ bool shield_layout::add_marker(
     box2d<double> bbox = marker_box_;
     bbox.move(real_pos.x, real_pos.y);
     if (collision(detector, text_props, bbox, layouts.text(), false)) return false;
-    detector.insert(bbox);
+    detector.insert(bbox, this->collision_cache_);
     bboxes.push_back(std::move(bbox));
     glyphs.set_marker(marker_, real_pos);
     return true;

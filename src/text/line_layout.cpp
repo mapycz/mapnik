@@ -21,7 +21,7 @@
  *****************************************************************************/
 //mapnik
 #include <mapnik/debug.hpp>
-#include <mapnik/label_collision_detector.hpp>
+#include <mapnik/collision_cache.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/text/line_layout.hpp>
@@ -78,7 +78,7 @@ box2d<double> get_bbox(
     return bbox;
 }
 
-using detector_type = label_collision_detector4;
+using detector_type = keyed_collision_cache<label_collision_detector4>;
 
 text_upright_e simplify_upright(text_upright_e upright, double angle)
 {
@@ -103,7 +103,8 @@ text_upright_e simplify_upright(text_upright_e upright, double angle)
 } // anonymous namespace
 
 single_line_layout::single_line_layout(params_type const & params)
-    : params_(params)
+    : params_(params),
+      collision_cache_(params.get_optional<std::string, keys::collision_cache>())
 {
 }
 
@@ -322,7 +323,7 @@ void single_line_layout::process_bboxes(
         {
             label_box.expand_to_include(box);
         }
-        detector.insert(box, layouts.text());
+        detector.insert(box, layouts.text(), collision_cache_);
     }
 
     // do not render text off the canvas
@@ -363,9 +364,9 @@ bool single_line_layout::collision(
          !params_.dims.contains(box + (params_.scale_factor * text_props.minimum_padding)))
         ||
         (!text_props.allow_overlap &&
-         ((repeat_key.length() == 0 && !detector.has_placement(box, margin))
+         ((repeat_key.length() == 0 && !detector.has_placement(box, margin, collision_cache_))
           ||
-          (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance))));
+          (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance, collision_cache_))));
 }
 
 template bool single_line_layout::collision(

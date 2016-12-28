@@ -114,13 +114,13 @@ bool marker_layout::push_to_detector(
     {
         return false;
     }
-    if (!allow_overlap_ && !detector.has_placement(box, margin_))
+    if (!allow_overlap_ && !detector.has_placement(box, margin_, collision_cache_))
     {
         return false;
     }
     if (!ignore_placement_)
     {
-        detector.insert(box);
+        detector.insert(box, collision_cache_);
     }
     lg.placements_.emplace_back(pos, angle, box);
     return true;
