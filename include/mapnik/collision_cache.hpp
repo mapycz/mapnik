@@ -40,7 +40,7 @@ template <typename Detector>
 class keyed_collision_cache
 {
     std::map<std::string, Detector> cache_;
-    Detector default_;
+    Detector & default_;
 
     Detector & get(boost::optional<std::string> const & key)
     {
@@ -72,13 +72,13 @@ class keyed_collision_cache
             if (it != cache_.end())
             {
                 Detector & detector = it->second;
-                if (detector.has_placement(args...))
+                if (!detector.has_placement(args...))
                 {
-                    return true;
+                    return false;
                 }
             }
         }
-        return false;
+        return true;
     }
 
     template <typename Keys, typename... Args>
@@ -104,27 +104,19 @@ class keyed_collision_cache
         }
     }
 
+    Detector & create_default(box2d<double> const & extent)
+    {
+        auto it = cache_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple("default"),
+            std::forward_as_tuple(extent)).first;
+        return it->second;
+    }
+
 public:
     keyed_collision_cache(box2d<double> const & extent)
-        : cache_(), default_(extent)
+        : cache_(), default_(create_default(extent))
     {
-        in();go();
-    }
-
-    void in()
-    {
-        std::vector<std::string> keys;
-        keys.emplace_back("1");
-        box2d<double> box;
-        insert(box, keys);
-    }
-
-    bool go()
-    {
-        std::vector<std::string> keys;
-        keys.emplace_back("1");
-        box2d<double> box;
-        return has_placement(box, keys);
     }
 
     template <typename Keys>
@@ -135,32 +127,24 @@ public:
         return detect(keys, box);
     }
 
-    bool has_placement(
-        box2d<double> const & box,
-        boost::optional<std::string> const & key)
-    {
-        Detector & detector = get(key);
-        return detector.has_placement(box);
-    }
-
+    template <typename Keys>
     bool has_placement(
         box2d<double> const& box,
         double margin,
-        boost::optional<std::string> const & key)
+        Keys const & keys)
     {
-        Detector & detector = get(key);
-        return detector.has_placement(box, margin);
+        return detect(keys, box, margin);
     }
 
+    template <typename Keys>
     bool has_placement(
         box2d<double> const& box,
         double margin,
         mapnik::value_unicode_string const& text,
         double repeat_distance,
-        boost::optional<std::string> const & key)
+        Keys const & keys)
     {
-        Detector & detector = get(key);
-        return detector.has_placement(box, margin, text, repeat_distance);
+        return detect(keys, box, margin, text, repeat_distance);
     }
 
     template <typename Keys>
@@ -171,21 +155,13 @@ public:
         push(keys, box);
     }
 
-    void insert(
-        box2d<double> const& box,
-        boost::optional<std::string> const & key)
-    {
-        Detector & detector = get(key);
-        detector.insert(box);
-    }
-
+    template <typename Keys>
     void insert(
         box2d<double> const& box,
         mapnik::value_unicode_string const& text,
-        boost::optional<std::string> const & key)
+        Keys const & keys)
     {
-        Detector & detector = get(key);
-        detector.insert(box, text);
+        push(keys, box, text);
     }
 
     void clear()

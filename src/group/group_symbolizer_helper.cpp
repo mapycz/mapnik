@@ -70,7 +70,10 @@ using detector_type = renderer_common::detector_type;
 
 group_point_layout::group_point_layout(params_type const & params)
     : params_(params),
-      collision_cache_(params.get_optional<std::string, keys::collision_cache>())
+      collision_cache_insert_(parse_collision_detector_keys(
+          params.get_optional<std::string, keys::collision_cache_insert>())),
+      collision_cache_detect_(parse_collision_detector_keys(
+          params.get_optional<std::string, keys::collision_cache_detect>()))
 {
 }
 
@@ -104,7 +107,7 @@ bool group_point_layout::try_placement(
     std::list<box2d<double>>::const_iterator real_itr = real_boxes.cbegin();
     while (elem_itr != box_elements.cend() && real_itr != real_boxes.cend())
     {
-        detector.insert(*real_itr, elem_itr->repeat_key_, collision_cache_);
+        detector.insert(*real_itr, elem_itr->repeat_key_, collision_cache_insert_);
         elem_itr++;
         real_itr++;
     }
@@ -150,12 +153,12 @@ bool group_point_layout::collision(
             ||
         (!text_props.allow_overlap &&
             ((repeat_key.length() == 0 && !detector.has_placement(
-                box, text_props.margin * params_.scale_factor, collision_cache_))
+                box, text_props.margin * params_.scale_factor, collision_cache_detect_))
                 ||
              (repeat_key.length() > 0  && !detector.has_placement(
                 box, text_props.margin * params_.scale_factor,
                 repeat_key, text_props.repeat_distance * params_.scale_factor,
-                collision_cache_))))
+                collision_cache_detect_))))
         )
     {
         return true;

@@ -43,7 +43,10 @@ marker_layout::marker_layout(params_type const & params)
       avoid_edges_(params.get<value_bool, keys::avoid_edges>()),
       direction_(params.get<direction_enum, keys::direction>()),
       margin_(params.get<value_double, keys::margin>() * params.scale_factor),
-      collision_cache_(params.get_optional<std::string, keys::collision_cache>())
+      collision_cache_insert_(parse_collision_detector_keys(
+          params.get_optional<std::string, keys::collision_cache_insert>())),
+      collision_cache_detect_(parse_collision_detector_keys(
+          params.get_optional<std::string, keys::collision_cache_detect>()))
 {
 }
 
@@ -114,13 +117,13 @@ bool marker_layout::push_to_detector(
     {
         return false;
     }
-    if (!allow_overlap_ && !detector.has_placement(box, margin_, collision_cache_))
+    if (!allow_overlap_ && !detector.has_placement(box, margin_, collision_cache_detect_))
     {
         return false;
     }
     if (!ignore_placement_)
     {
-        detector.insert(box, collision_cache_);
+        detector.insert(box, collision_cache_insert_);
     }
     lg.placements_.emplace_back(pos, angle, box);
     return true;
