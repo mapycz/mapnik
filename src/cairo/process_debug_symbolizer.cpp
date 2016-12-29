@@ -105,11 +105,23 @@ void cairo_renderer<T>::process(debug_symbolizer const& sym,
 
     if (mode == DEBUG_SYM_MODE_COLLISION)
     {
-        boost::optional<std::string> collision_cache = get_optional<std::string>(sym, keys::collision_cache, feature, common_.vars_);
-        auto iteration_adapter = common_.detector_->iterate(collision_cache);
-        for (auto & n : iteration_adapter)
+        std::vector<std::string> keys = parse_collision_detector_keys(
+            get_optional<std::string>(sym, mapnik::keys::collision_cache, feature, common_.vars_));
+
+        if (keys.empty())
         {
-            render_debug_box(context_, n.get().box);
+            for (auto const & key : common_.detector_->keys())
+            {
+                keys.emplace_back(key);
+            }
+        }
+
+        for (auto const & key : keys)
+        {
+            for (auto & n : common_.detector_->detector(key))
+            {
+                render_debug_box(context_, n.get().box);
+            }
         }
     }
     else if (mode == DEBUG_SYM_MODE_VERTEX)

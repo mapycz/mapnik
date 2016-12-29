@@ -174,40 +174,32 @@ public:
         return default_.extent();
     }
 
-    struct iterator_adaper
+    Detector & detector(std::string const & key)
     {
-        Detector & detector_;
-
-        typename Detector::query_iterator begin()
-        {
-            return detector_.begin();
-        }
-
-        typename Detector::query_iterator end()
-        {
-            return detector_.end();
-        }
-    };
-
-    iterator_adaper iterate()
-    {
-        return iterator_adaper{default_};
-    }
-
-    iterator_adaper iterate(boost::optional<std::string> const & key)
-    {
-        if (!key)
-        {
-            return iterator_adaper{default_};
-        }
-        auto it = cache_.find(*key);
+        auto it = cache_.find(key);
         if (it == cache_.end())
         {
-            MAPNIK_LOG_ERROR(iterate) << "Collision cache '" <<
-                *key << "' does not exist. Default cache is used instead.";
-            return iterator_adaper{default_};
+            MAPNIK_LOG_ERROR(detector) << "Collision cache '" <<
+                key << "' does not exist. Default cache is used instead.";
+            return default_;
         }
-        return iterator_adaper{it->second};
+        return it->second;
+    }
+
+    std::vector<std::string> keys() const
+    {
+        std::vector<std::string> ns;
+        ns.reserve(cache_.size());
+        for (auto const & pair : cache_)
+        {
+            ns.emplace_back(pair.first);
+        }
+        return ns;
+    }
+
+    Detector & get_default()
+    {
+        return default_;
     }
 };
 

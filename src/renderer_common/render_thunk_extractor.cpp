@@ -133,7 +133,7 @@ void render_thunk_extractor::update_box() const
 {
     auto & detector = *common_.detector_;
 
-    for (auto const& label : detector.iterate())
+    for (auto const& label : detector.get_default())
     {
         if (box_.width() > 0 && box_.height() > 0)
         {
