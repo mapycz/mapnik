@@ -37,6 +37,7 @@
 #include <mapnik/label_placements/vertex_converter.hpp>
 #include <mapnik/label_placements/vertex_first_layout.hpp>
 #include <mapnik/label_placements/vertex_last_layout.hpp>
+#include <mapnik/label_placements/vertex_layout.hpp>
 
 namespace mapnik {
 
@@ -49,7 +50,7 @@ struct text_symbolizer_traits
 {
     using point = point_layout;
     using interior = point_layout;
-    using vertex = point_layout;
+    using vertex = label_placement::vertex_layout<point_layout>;
     using grid = grid_layout<geometry::grid_vertex_adapter, point_layout>;
     using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, point_layout>;
     using line = label_placement::vertex_converter<
@@ -69,7 +70,7 @@ struct shield_symbolizer_traits
 {
     using point = shield_layout;
     using interior = shield_layout;
-    using vertex = shield_layout;
+    using vertex = label_placement::vertex_layout<shield_layout>;
     using grid = grid_layout<geometry::grid_vertex_adapter, shield_layout>;
     using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, shield_layout>;
     using line = label_placement::vertex_converter<
@@ -87,7 +88,7 @@ struct group_symbolizer_traits
 {
     using point = group_point_layout;
     using interior = group_point_layout;
-    using vertex = group_point_layout;
+    using vertex = label_placement::vertex_layout<group_point_layout>;
     using grid = grid_layout<geometry::grid_vertex_adapter, group_point_layout>;
     using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, group_point_layout>;
     using line = label_placement::vertex_converter<

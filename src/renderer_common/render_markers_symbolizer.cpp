@@ -40,6 +40,7 @@
 #include <mapnik/label_placements/vertex_converter.hpp>
 #include <mapnik/label_placements/vertex_first_layout.hpp>
 #include <mapnik/label_placements/vertex_last_layout.hpp>
+#include <mapnik/label_placements/vertex_layout.hpp>
 
 namespace mapnik {
 
@@ -47,7 +48,7 @@ struct marker_symbolizer_traits
 {
     using point = marker_layout;
     using interior = marker_layout;
-    using vertex = marker_layout;
+    using vertex = label_placement::vertex_layout<marker_layout>;
     using grid = marker_grid_layout<geometry::grid_vertex_adapter, marker_layout>;
     using alternating_grid = marker_grid_layout<geometry::alternating_grid_vertex_adapter, marker_layout>;
     using line = marker_vertex_converter<
