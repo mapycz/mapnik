@@ -34,6 +34,9 @@
 #include <mapnik/group/group_symbolizer_helper.hpp>
 #include <mapnik/text/grid_layout.hpp>
 #include <mapnik/grid_vertex_adapter.hpp>
+#include <mapnik/label_placements/vertex_converter.hpp>
+#include <mapnik/label_placements/vertex_first_layout.hpp>
+#include <mapnik/label_placements/vertex_last_layout.hpp>
 
 namespace mapnik {
 
@@ -49,12 +52,14 @@ struct text_symbolizer_traits
     using vertex = point_layout;
     using grid = grid_layout<geometry::grid_vertex_adapter, point_layout>;
     using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, point_layout>;
-    using line = text_vertex_converter<
+    using line = label_placement::vertex_converter<
         text_extend_line_layout<
             line_layout<
                 single_line_layout>>>;
-    using vertex_first = point_layout;
-    using vertex_last = point_layout;
+    using vertex_first = label_placement::vertex_converter<
+        label_placement::vertex_first_layout<point_layout>>;
+    using vertex_last = label_placement::vertex_converter<
+        label_placement::vertex_last_layout<point_layout>>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -67,10 +72,12 @@ struct shield_symbolizer_traits
     using vertex = shield_layout;
     using grid = grid_layout<geometry::grid_vertex_adapter, shield_layout>;
     using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, shield_layout>;
-    using line = text_vertex_converter<
+    using line = label_placement::vertex_converter<
         line_layout<shield_layout>>;
-    using vertex_first = shield_layout;
-    using vertex_last = shield_layout;
+    using vertex_first = label_placement::vertex_converter<
+        label_placement::vertex_first_layout<shield_layout>>;
+    using vertex_last = label_placement::vertex_converter<
+        label_placement::vertex_last_layout<shield_layout>>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -83,10 +90,12 @@ struct group_symbolizer_traits
     using vertex = group_point_layout;
     using grid = grid_layout<geometry::grid_vertex_adapter, group_point_layout>;
     using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, group_point_layout>;
-    using line = text_vertex_converter<
+    using line = label_placement::vertex_converter<
         group_line_layout<group_point_layout>>;
-    using vertex_first = group_point_layout;
-    using vertex_last = group_point_layout;
+    using vertex_first = label_placement::vertex_converter<
+        label_placement::vertex_first_layout<group_point_layout>>;
+    using vertex_last = label_placement::vertex_converter<
+        label_placement::vertex_last_layout<group_point_layout>>;
 
     using placements_type = std::vector<pixel_position_list>;
     using layout_generator_type = group_layout_generator;
