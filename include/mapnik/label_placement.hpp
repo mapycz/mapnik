@@ -24,13 +24,6 @@
 #define MAPNIK_LABEL_PLACEMENT_HPP
 
 #include <mapnik/label_placements/base.hpp>
-#include <mapnik/label_placements/point.hpp>
-#include <mapnik/label_placements/interior.hpp>
-#include <mapnik/label_placements/vertex.hpp>
-#include <mapnik/label_placements/grid.hpp>
-#include <mapnik/label_placements/line.hpp>
-#include <mapnik/label_placements/vertex_first.hpp>
-#include <mapnik/label_placements/vertex_last.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/collision_cache.hpp>
 
@@ -39,69 +32,51 @@ namespace mapnik { namespace label_placement {
 template <typename T>
 struct finder
 {
-    using detector_type = keyed_collision_cache<label_collision_detector4>;
     using placements_type = typename T::placements_type;
     using layout_generator_type = typename T::layout_generator_type;
 
-    static placements_type get(
+    struct dispatch
+    {
+        layout_generator_type & layout_generator;
+        placement_params const & params;
+
+        template <typename Layout>
+        bool apply()
+        {
+            Layout layout(params);
+            return layout.try_placement(layout_generator, params);
+        }
+    };
+
+    static bool apply(
         label_placement_enum placement_type,
         layout_generator_type & layout_generator,
-        detector_type & detector,
         placement_params const & params)
     {
+        dispatch dsp{ layout_generator, params };
+
         switch (placement_type)
         {
             default:
             case POINT_PLACEMENT:
             case CENTROID_PLACEMENT:
-                return point<
-                    typename T::point,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::point>();
             case INTERIOR_PLACEMENT:
-                return interior<
-                    typename T::interior,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::interior>();
             case VERTEX_PLACEMENT:
-                return vertex<
-                    typename T::vertex,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::vertex>();
             case GRID_PLACEMENT:
-                return grid<
-                    typename T::grid,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::grid>();
             case ALTERNATING_GRID_PLACEMENT:
-                return grid<
-                    typename T::alternating_grid,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::alternating_grid>();
             case LINE_PLACEMENT:
-                return line<
-                    typename T::line,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::line>();
             case VERTEX_FIRST_PLACEMENT:
-                return vertex_first<
-                    typename T::vertex_first,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::vertex_first>();
             case VERTEX_LAST_PLACEMENT:
-                return vertex_last<
-                    typename T::vertex_last,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+                return dsp.template apply<typename T::vertex_last>();
         }
+        return false;
     }
 };
 

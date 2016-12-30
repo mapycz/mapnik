@@ -38,33 +38,16 @@ namespace mapnik { //namespace detail {
 
 group_layout_generator::group_layout_generator(
     params_type const & params,
+    detector_type & detector,
     face_manager_freetype & font_manager,
     text_placement_info & info,
     std::list<box_element> const & box_elements)
-    : font_manager_(font_manager),
-      info_(info),
+    : detector_(detector),
+      font_manager_(font_manager),
       text_props_(evaluate_text_properties(info.properties, params.feature, params.vars)),
-      state_(true),
       box_elements_(box_elements)
 {
 }
-
-bool group_layout_generator::next()
-{
-    if (state_)
-    {
-        state_ = false;
-        return true;
-    }
-    return false;
-}
-
-void group_layout_generator::reset()
-{
-    state_ = true;
-}
-
-
 
 using detector_type = renderer_common::detector_type;
 
@@ -77,13 +60,12 @@ group_point_layout::group_point_layout(params_type const & params)
 {
 }
 
-template <typename Detector>
 bool group_point_layout::try_placement(
     group_layout_generator & layout_generator,
-    Detector & detector,
     pixel_position const& pos)
 {
     std::list<box_element> const & box_elements = layout_generator.box_elements_;
+    detector_type & detector = layout_generator.detector_;
 
     if (box_elements.empty()) return true;
 
@@ -112,34 +94,21 @@ bool group_point_layout::try_placement(
         real_itr++;
     }
 
-    layout_generator.results_.push_back(pos);
+    layout_generator.placements_.push_back(pos);
 
     return true;
 }
 
-template bool group_point_layout::try_placement(
-    group_layout_generator & layout_generator,
-    detector_type & detector,
-    pixel_position const& pos);
-
-template <typename Detector>
 bool group_point_layout::try_placement(
     group_layout_generator & layout_generator,
-    Detector & detector,
     point_position const& pos)
 {
     // TODO: angle
-    return try_placement(layout_generator, detector, pos.coords);
+    return try_placement(layout_generator, pos.coords);
 }
 
-template bool group_point_layout::try_placement(
-    group_layout_generator & layout_generator,
-    detector_type & detector,
-    point_position const& pos);
-
-template <typename Detector>
 bool group_point_layout::collision(
-    Detector & detector,
+    detector_type & detector,
     evaluated_text_properties const & text_props,
     box2d<double> const& box,
     value_unicode_string const& repeat_key) const
@@ -165,12 +134,5 @@ bool group_point_layout::collision(
     }
     return false;
 }
-
-template bool group_point_layout::collision(
-    detector_type & detector,
-    evaluated_text_properties const & text_props,
-    box2d<double> const& box,
-    value_unicode_string const& repeat_key) const;
-
 
 } //namespace

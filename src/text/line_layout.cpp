@@ -21,7 +21,6 @@
  *****************************************************************************/
 //mapnik
 #include <mapnik/debug.hpp>
-#include <mapnik/collision_cache.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/text/line_layout.hpp>
@@ -78,8 +77,6 @@ box2d<double> get_bbox(
     return bbox;
 }
 
-using detector_type = keyed_collision_cache<label_collision_detector4>;
-
 text_upright_e simplify_upright(text_upright_e upright, double angle)
 {
     if (upright == UPRIGHT_AUTO)
@@ -111,16 +108,15 @@ single_line_layout::single_line_layout(params_type const & params)
 {
 }
 
-template <typename Detector>
 bool single_line_layout::try_placement(
     text_layout_generator & layout_generator,
-    Detector & detector,
     vertex_cache & path)
 {
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box_type> bboxes;
     layout_container & layouts = *layout_generator.layouts_;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
+    detector_type & detector = layout_generator.detector_;
 
     // TODO: useful?
     //glyphs->reserve(layouts.glyphs_count());
@@ -135,15 +131,9 @@ bool single_line_layout::try_placement(
     return false;
 }
 
-template bool single_line_layout::try_placement(
-    text_layout_generator & layout_generator,
-    detector_type & detector,
-    vertex_cache & path);
-
-template <typename Detector>
 bool single_line_layout::try_placement(
     layout_container const & layouts,
-    Detector & detector,
+    detector_type & detector,
     evaluated_text_properties const & text_props,
     vertex_cache &pp,
     text_upright_e orientation,
@@ -257,7 +247,7 @@ bool single_line_layout::try_placement(
                 cluster_offset.y -= rot.sin * glyph.advance();
 
                 box2d<double> bbox = get_bbox(layout, glyph, pos, rot);
-                if (collision(detector, text_props, bbox, layouts.text(), true)) return false;
+                if (collision(detector, text_props, bbox, layouts.text())) return false;
                 bboxes.push_back(std::move(bbox));
                 glyphs.emplace_back(glyph, pos, rot);
             }
@@ -297,18 +287,9 @@ bool single_line_layout::try_placement(
 
     return true;
 }
-template bool single_line_layout::try_placement(
-    layout_container const & layouts,
-    detector_type & detector,
-    evaluated_text_properties const & text_props,
-    vertex_cache &pp,
-    text_upright_e orientation,
-    glyph_positions & glyphs,
-    std::vector<box_type> & bboxes);
 
-template <typename Detector>
 void single_line_layout::process_bboxes(
-    Detector & detector,
+    detector_type & detector,
     layout_container & layouts,
     glyph_positions_ptr & glyphs,
     std::vector<box_type> const & bboxes)
@@ -336,31 +317,15 @@ void single_line_layout::process_bboxes(
         layouts.placements_.emplace_back(std::move(glyphs));
     }
 }
-template void single_line_layout::process_bboxes(
-    detector_type & detector,
-    layout_container & layouts,
-    glyph_positions_ptr & glyphs,
-    std::vector<box_type> const & bboxes);
 
-template <typename Detector>
 bool single_line_layout::collision(
-    Detector & detector,
+    detector_type & detector,
     evaluated_text_properties const & text_props,
     const box2d<double> &box,
-    const value_unicode_string &repeat_key,
-    bool line_placement) const
+    const value_unicode_string &repeat_key) const
 {
-    double margin, repeat_distance;
-    if (line_placement)
-    {
-        margin = text_props.margin * params_.scale_factor;
-        repeat_distance = (text_props.repeat_distance != 0 ? text_props.repeat_distance : text_props.minimum_distance) * params_.scale_factor;
-    }
-    else
-    {
-        margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * params_.scale_factor;
-        repeat_distance = text_props.repeat_distance * params_.scale_factor;
-    }
+    double margin = text_props.margin * params_.scale_factor;
+    double repeat_distance = (text_props.repeat_distance != 0 ? text_props.repeat_distance : text_props.minimum_distance) * params_.scale_factor;
     return (text_props.avoid_edges && !params_.dims.contains(box))
         ||
         (text_props.minimum_padding > 0 &&
@@ -371,12 +336,5 @@ bool single_line_layout::collision(
           ||
           (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance, collision_cache_detect_))));
 }
-
-template bool single_line_layout::collision(
-    detector_type & detector,
-    evaluated_text_properties const & text_props,
-    const box2d<double> &box,
-    const value_unicode_string &repeat_key,
-    bool line_placement) const;
 
 }// ns mapnik

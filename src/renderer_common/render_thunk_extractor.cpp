@@ -98,26 +98,26 @@ void render_thunk_extractor::operator()(markers_symbolizer const& sym) const
 
 void render_thunk_extractor::operator()(text_symbolizer const& sym) const
 {
-    using helper_type = text_symbolizer_helper<text_symbolizer_traits>;
+    using helper_type = text_symbolizer_helper<label_placement::text_symbolizer_traits>;
     extract_text_thunk<helper_type>(sym);
 }
 
 void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
 {
-    using helper_type = text_symbolizer_helper<shield_symbolizer_traits>;
+    using helper_type = text_symbolizer_helper<label_placement::shield_symbolizer_traits>;
     extract_text_thunk<helper_type>(sym);
 }
 
 template <typename Helper>
 void render_thunk_extractor::extract_text_thunk(text_symbolizer const& sym) const
 {
-    auto placements = Helper::get(
+    auto placements(Helper::get(
         sym, feature_, vars_, prj_trans_,
         common_.width_, common_.height_,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
         clipping_extent_, agg::trans_affine::identity,
-        common_.symbol_cache_);
+        common_.symbol_cache_));
 
     double opacity = get<double>(sym, keys::opacity, feature_, common_.vars_, 1.0);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature_, common_.vars_, src_over);

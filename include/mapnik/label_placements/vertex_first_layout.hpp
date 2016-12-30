@@ -19,29 +19,25 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-#ifndef MAPNIK_TEXT_GRID_LAYOUT_HPP
-#define MAPNIK_TEXT_GRID_LAYOUT_HPP
+#ifndef MAPNIK_LABEL_PLACEMENT_VERTEX_FIRST_LAYOUT_HPP
+#define MAPNIK_LABEL_PLACEMENT_VERTEX_FIRST_LAYOUT_HPP
 
 #include <mapnik/box2d.hpp>
-#include <mapnik/pixel_position.hpp>
-#include <mapnik/text/text_layout.hpp>
 #include <mapnik/util/noncopyable.hpp>
-#include <mapnik/vertex_cache.hpp>
-#include <mapnik/text/text_layout_generator.hpp>
-#include <mapnik/label_placements/base.hpp>
+#include <mapnik/vertex_converters.hpp>
+#include <mapnik/vertex_adapters.hpp>
 
-namespace mapnik
-{
+namespace mapnik { namespace label_placement {
 
-template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
-class grid_layout : util::noncopyable
+template <typename SubLayout>
+class vertex_first_layout : util::noncopyable
 {
 public:
+    using box_type = box2d<double>;
     using params_type = label_placement::placement_params;
 
-    grid_layout(params_type const & params)
-        : sublayout_(params),
-          params_(params)
+    vertex_first_layout(params_type const & params)
+        : sublayout_(params)
     {
     }
 
@@ -50,35 +46,40 @@ public:
         LayoutGenerator & layout_generator,
         Path & path)
     {
-        evaluated_text_properties const & text_props = layout_generator.get_text_props();
-        double dx = text_props.grid_cell_width * params_.scale_factor;
-        double dy = text_props.grid_cell_height * params_.scale_factor;
-        return try_placement(layout_generator, path, dx, dy);
+        boost::optional<point_position> pos = get_first_vertext(path);
+        if (!pos)
+        {
+            return false;
+        }
+        return sublayout_.try_placement(layout_generator, *pos);
     }
 
 protected:
-    template <typename LayoutGenerator, typename Path>
-    bool try_placement(
-        LayoutGenerator & layout_generator,
-        Path & path,
-        double dx, double dy)
+    template <typename Geom>
+    boost::optional<point_position> get_first_vertext(Geom & geom)
     {
-        bool success = false;
-        GridVertexAdapter<Path, double> gpa(path, dx, dy);
-        pixel_position point;
+        point_position pos;
 
-        for (unsigned cmd; (cmd = gpa.vertex(&point.x, &point.y)) != SEG_END; )
+        if (agg::is_stop(geom.vertex(&pos.coords.x, &pos.coords.y)))
         {
-            success |= sublayout_.try_placement(layout_generator, point);
+            return boost::none;
         }
 
-        return success;
+        pos.angle = 0;
+
+        double x1, y1;
+
+        if (agg::is_line_to(geom.vertex(&x1, &y1)))
+        {
+            pos.angle = std::atan2(y1 - pos.coords.y, x1 - pos.coords.x);
+        }
+
+        return pos;
     }
 
     SubLayout sublayout_;
-    params_type const & params_;
 };
 
-}//ns mapnik
+} }
 
-#endif // MAPNIK_TEXT_GRID_LAYOUT_HPP
+#endif // MAPNIK_LABEL_PLACEMENT_VERTEX_FIRST_LAYOUT_HPP

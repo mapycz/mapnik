@@ -194,29 +194,25 @@ void render_group_symbolizer(group_symbolizer const& sym,
         box2d<double>(0, 0, common.width_, common.height_), common.query_extent_,
         common.scale_factor_, common.symbol_cache_ };
 
-    using traits = group_symbolizer_traits;
+    using traits = label_placement::group_symbolizer_traits;
     text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
         sym, keys::text_placements_)->get_placement_info(common.scale_factor_,
             feature, vars, common.symbol_cache_);
-    group_layout_generator layout_generator(params, common.font_manager_,
+    group_layout_generator layout_generator(params,
+        *common.detector_, common.font_manager_,
         *placement_info, box_elements);
     const label_placement_enum placement_type =
         layout_generator.get_text_props().label_placement;
 
-    std::vector<pixel_position_list> positions(
-        label_placement::finder<traits>::get(placement_type, layout_generator,
-            *common.detector_, params));
+    label_placement::finder<traits>::apply(placement_type, layout_generator, params);
 
-    for (pixel_position_list const& pos_list : positions)
+    for (pixel_position const& pos : layout_generator.placements_)
     {
-        for (pixel_position const& pos : pos_list)
+        for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
         {
-            for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
-            {
-                pixel_position const& offset = layout_manager.offset_at(layout_i);
-                pixel_position render_offset = pos + offset;
-                render_thunks.render_list(layout_thunks[layout_i], render_offset);
-            }
+            pixel_position const& offset = layout_manager.offset_at(layout_i);
+            pixel_position render_offset = pos + offset;
+            render_thunks.render_list(layout_thunks[layout_i], render_offset);
         }
     }
 }

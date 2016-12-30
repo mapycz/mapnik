@@ -34,6 +34,16 @@
 #include <mapnik/group/group_symbolizer_helper.hpp>
 #include <mapnik/text/grid_layout.hpp>
 #include <mapnik/grid_vertex_adapter.hpp>
+#include <mapnik/label_placements/vertex_converter.hpp>
+#include <mapnik/label_placements/vertex_first_layout.hpp>
+#include <mapnik/label_placements/vertex_last_layout.hpp>
+#include <mapnik/label_placements/vertex_layout.hpp>
+#include <mapnik/label_placements/split_multi.hpp>
+#include <mapnik/label_placements/text_layout_iterator.hpp>
+#include <mapnik/label_placements/geom_iterator.hpp>
+#include <mapnik/label_placements/point_layout.hpp>
+#include <mapnik/label_placements/point_geometry_visitor.hpp>
+#include <mapnik/label_placements/interior_geometry_visitor.hpp>
 
 namespace mapnik {
 
@@ -42,19 +52,45 @@ class proj_transform;
 class view_transform;
 struct symbolizer_base;
 
+namespace label_placement {
+
 struct text_symbolizer_traits
 {
-    using point = point_layout;
-    using interior = point_layout;
-    using vertex = point_layout;
-    using grid = grid_layout<geometry::grid_vertex_adapter, point_layout>;
-    using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, point_layout>;
-    using line = text_vertex_converter<
-        text_extend_line_layout<
-            line_layout<
-                single_line_layout>>>;
-    using vertex_first = point_layout;
-    using vertex_last = point_layout;
+    using point = split_multi<
+        point_layout<point_geometry_visitor,
+            text_layout_iterator<
+                mapnik::point_layout>>>;
+    using interior = split_multi<
+        point_layout<interior_geometry_visitor,
+            text_layout_iterator<
+                mapnik::point_layout>>>;
+    using vertex = split_multi<
+        text_layout_iterator<
+            vertex_layout<mapnik::point_layout>>>;
+    using grid = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                grid_layout<geometry::grid_vertex_adapter,
+                    mapnik::point_layout>>>>;
+    using alternating_grid = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                grid_layout<geometry::alternating_grid_vertex_adapter,
+                    mapnik::point_layout>>>>;
+    using line = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                text_extend_line_layout<
+                    line_layout<
+                        single_line_layout>>>>>;
+    using vertex_first = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                vertex_first_layout<mapnik::point_layout>>>>;
+    using vertex_last = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                vertex_last_layout<mapnik::point_layout>>>>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -62,15 +98,39 @@ struct text_symbolizer_traits
 
 struct shield_symbolizer_traits
 {
-    using point = shield_layout;
-    using interior = shield_layout;
-    using vertex = shield_layout;
-    using grid = grid_layout<geometry::grid_vertex_adapter, shield_layout>;
-    using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, shield_layout>;
-    using line = text_vertex_converter<
-        line_layout<shield_layout>>;
-    using vertex_first = shield_layout;
-    using vertex_last = shield_layout;
+    using point = split_multi<
+        point_layout<point_geometry_visitor,
+            text_layout_iterator<
+                shield_layout>>>;
+    using interior = split_multi<
+        point_layout<interior_geometry_visitor,
+            text_layout_iterator<
+                shield_layout>>>;
+    using vertex = split_multi<
+        text_layout_iterator<
+            vertex_layout<shield_layout>>>;
+    using grid = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                grid_layout<geometry::grid_vertex_adapter,
+                    shield_layout>>>>;
+    using alternating_grid = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                grid_layout<geometry::alternating_grid_vertex_adapter,
+                    shield_layout>>>>;
+    using line = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                line_layout<shield_layout>>>>;
+    using vertex_first = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                vertex_first_layout<shield_layout>>>>;
+    using vertex_last = split_multi<
+        text_layout_iterator<
+            vertex_converter<
+                vertex_last_layout<shield_layout>>>>;
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
@@ -78,19 +138,49 @@ struct shield_symbolizer_traits
 
 struct group_symbolizer_traits
 {
-    using point = group_point_layout;
-    using interior = group_point_layout;
-    using vertex = group_point_layout;
-    using grid = grid_layout<geometry::grid_vertex_adapter, group_point_layout>;
-    using alternating_grid = grid_layout<geometry::alternating_grid_vertex_adapter, group_point_layout>;
-    using line = text_vertex_converter<
-        group_line_layout<group_point_layout>>;
-    using vertex_first = group_point_layout;
-    using vertex_last = group_point_layout;
+    using point = split_multi<
+        point_layout<point_geometry_visitor,
+            geom_iterator<
+                group_point_layout>>>;
+    using interior = split_multi<
+        point_layout<interior_geometry_visitor,
+            geom_iterator<
+                group_point_layout>>>;
+    using vertex = split_multi<
+        geom_iterator<
+            vertex_layout<
+                group_point_layout>>>;
+    using grid = split_multi<
+        geom_iterator<
+            vertex_converter<
+                grid_layout<geometry::grid_vertex_adapter,
+                    group_point_layout>>>>;
+    using alternating_grid = split_multi<
+        geom_iterator<
+            vertex_converter<
+                grid_layout<geometry::alternating_grid_vertex_adapter,
+                    group_point_layout>>>>;
+    using line = split_multi<
+        geom_iterator<
+            vertex_converter<
+                group_line_layout<
+                    group_point_layout>>>>;
+    using vertex_first = split_multi<
+        geom_iterator<
+            vertex_converter<
+                vertex_first_layout<
+                    group_point_layout>>>>;
+    using vertex_last = split_multi<
+        geom_iterator<
+            vertex_converter<
+                vertex_last_layout<
+                    group_point_layout>>>>;
 
-    using placements_type = std::vector<pixel_position_list>;
+    using placements_type = pixel_position_list;
     using layout_generator_type = group_layout_generator;
 };
+
+}
 
 template <typename Traits>
 class text_symbolizer_helper
@@ -122,13 +212,16 @@ public:
         text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
-        layout_generator_type layout_generator(params, font_manager, *placement_info);
+        layout_generator_type layout_generator(
+            params, detector, font_manager, *placement_info);
 
         const label_placement_enum placement_type =
             layout_generator.get_text_props().label_placement;
 
-        return label_placement::finder<Traits>::get(placement_type, layout_generator,
-            detector, params);
+        label_placement::finder<Traits>::apply(placement_type, layout_generator, params);
+
+        typename Traits::placements_type placements(std::move(layout_generator.placements_));
+        return placements;
     }
 };
 

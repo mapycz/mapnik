@@ -19,9 +19,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//mapnik
+
 #include <mapnik/debug.hpp>
-#include <mapnik/collision_cache.hpp>
 #include <mapnik/view_transform.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/text/point_layout.hpp>
@@ -35,13 +34,10 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/marker.hpp>
 
-// stl
 #include <vector>
 
 namespace mapnik
 {
-
-using detector_type = keyed_collision_cache<label_collision_detector4>;
 
 point_layout::point_layout(params_type const & params)
     : params_(params),
@@ -52,16 +48,15 @@ point_layout::point_layout(params_type const & params)
 {
 }
 
-template <typename Detector>
 bool point_layout::try_placement(
     text_layout_generator & layout_generator,
-    Detector & detector,
     pixel_position const & pos)
 {
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box_type> bboxes;
     layout_container & layouts = *layout_generator.layouts_;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
+    detector_type & detector = layout_generator.detector_;
 
     // TODO: useful?
     //glyphs->reserve(layouts.glyphs_count());
@@ -76,30 +71,17 @@ bool point_layout::try_placement(
     return false;
 }
 
-template bool point_layout::try_placement(
-    text_layout_generator & layout_generator,
-    detector_type & detector,
-    pixel_position const & pos);
-
-template <typename Detector>
 bool point_layout::try_placement(
     text_layout_generator & layout_generator,
-    Detector & detector,
     point_position const & pos)
 {
     // TODO: angle
-    return try_placement(layout_generator, detector, pos.coords);
+    return try_placement(layout_generator, pos.coords);
 }
 
-template bool point_layout::try_placement(
-    text_layout_generator & layout_generator,
-    detector_type & detector,
-    point_position const & pos);
-
-template <typename Detector>
 bool point_layout::try_placement(
     layout_container const & layouts,
-    Detector & detector,
+    detector_type & detector,
     evaluated_text_properties const & text_props,
     pixel_position const & pos,
     glyph_positions & glyphs,
@@ -124,7 +106,7 @@ bool point_layout::try_placement(
         bbox.re_center(layout_center.x, layout_center.y);
 
         /* For point placements it is faster to just check the bounding box. */
-        if (collision(detector, text_props, bbox, layouts.text(), false)) return false;
+        if (collision(detector, text_props, bbox, layouts.text())) return false;
 
         if (layout.glyphs_count()) bboxes.push_back(std::move(bbox));
 
@@ -162,17 +144,8 @@ bool point_layout::try_placement(
     return true;
 }
 
-template bool point_layout::try_placement(
-    layout_container const & layouts,
-    detector_type & detector,
-    evaluated_text_properties const & text_props,
-    pixel_position const & pos,
-    glyph_positions & glyphs,
-    std::vector<box_type> & bboxes);
-
-template <typename Detector>
 void point_layout::process_bboxes(
-    Detector & detector,
+    detector_type & detector,
     layout_container & layouts,
     glyph_positions_ptr & glyphs,
     std::vector<box_type> const & bboxes)
@@ -202,31 +175,14 @@ void point_layout::process_bboxes(
     }
 }
 
-template void point_layout::process_bboxes(
-    detector_type & detector,
-    layout_container & layouts,
-    glyph_positions_ptr & glyphs,
-    std::vector<box_type> const & bboxes);
-
-template <typename Detector>
 bool point_layout::collision(
-    Detector & detector,
+    detector_type & detector,
     evaluated_text_properties const & text_props,
     const box2d<double> &box,
-    const value_unicode_string &repeat_key,
-    bool line_placement) const
+    const value_unicode_string &repeat_key) const
 {
-    double margin, repeat_distance;
-    if (line_placement)
-    {
-        margin = text_props.margin * params_.scale_factor;
-        repeat_distance = (text_props.repeat_distance != 0 ? text_props.repeat_distance : text_props.minimum_distance) * params_.scale_factor;
-    }
-    else
-    {
-        margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * params_.scale_factor;
-        repeat_distance = text_props.repeat_distance * params_.scale_factor;
-    }
+    double margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * params_.scale_factor;
+    double repeat_distance = text_props.repeat_distance * params_.scale_factor;
     return (text_props.avoid_edges && !params_.dims.contains(box))
         ||
         (text_props.minimum_padding > 0 &&
@@ -237,13 +193,6 @@ bool point_layout::collision(
           ||
           (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance, collision_cache_detect_))));
 }
-
-template bool point_layout::collision(
-    detector_type & detector,
-    evaluated_text_properties const & text_props,
-    const box2d<double> &box,
-    const value_unicode_string &repeat_key,
-    bool line_placement) const;
 
 shield_layout::shield_layout(params_type const & params)
     : point_layout(params),
@@ -281,16 +230,15 @@ shield_layout::shield_layout(params_type const & params)
     marker_ = std::make_shared<marker_info>(marker, trans);
 }
 
-template <typename Detector>
 bool shield_layout::try_placement(
     text_layout_generator & layout_generator,
-    Detector & detector,
     pixel_position const& pos)
 {
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box_type> bboxes;
     layout_container & layouts = *layout_generator.layouts_;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
+    detector_type & detector = layout_generator.detector_;
 
     // TODO: useful?
     //glyphs->reserve(layouts.glyphs_count());
@@ -308,29 +256,16 @@ bool shield_layout::try_placement(
     return false;
 }
 
-template bool shield_layout::try_placement(
-    text_layout_generator & layout_generator,
-    detector_type & detector,
-    pixel_position const& pos);
-
-template <typename Detector>
 bool shield_layout::try_placement(
     text_layout_generator & layout_generator,
-    Detector & detector,
     point_position const & pos)
 {
     // TODO: angle
-    return try_placement(layout_generator, detector, pos.coords);
+    return try_placement(layout_generator, pos.coords);
 }
 
-template bool shield_layout::try_placement(
-    text_layout_generator & layout_generator,
-    detector_type & detector,
-    point_position const & pos);
-
-template <typename Detector>
 bool shield_layout::add_marker(
-    Detector & detector,
+    detector_type & detector,
     layout_container const & layouts,
     evaluated_text_properties const & text_props,
     glyph_positions & glyphs,
@@ -341,19 +276,11 @@ bool shield_layout::add_marker(
         glyphs.get_base_point()) + marker_displacement_;
     box2d<double> bbox = marker_box_;
     bbox.move(real_pos.x, real_pos.y);
-    if (collision(detector, text_props, bbox, layouts.text(), false)) return false;
+    if (collision(detector, text_props, bbox, layouts.text())) return false;
     detector.insert(bbox, this->collision_cache_insert_);
     bboxes.push_back(std::move(bbox));
     glyphs.set_marker(marker_, real_pos);
     return true;
 }
-
-template bool shield_layout::add_marker(
-    detector_type & detector,
-    layout_container const & layouts,
-    evaluated_text_properties const & text_props,
-    glyph_positions & glyphs,
-    pixel_position const& pos,
-    std::vector<box_type> & bboxes) const;
 
 }// ns mapnik

@@ -19,40 +19,22 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
-//mapnik
-#include <mapnik/marker_layout_generator.hpp>
-#include <mapnik/make_unique.hpp>
 
-// stl
-#include <vector>
+#include <mapnik/marker_layout_generator.hpp>
 
 namespace mapnik
 {
 
 marker_layout_generator::marker_layout_generator(
     params_type const & params,
+    detector_type & detector,
     box2d<double> marker_box,
     agg::trans_affine const & marker_trans)
-    : state_(true),
+    : detector_(detector),
       size_(marker_box),
       tr_(marker_trans),
       multi_policy_(params.get<multi_policy_enum, keys::multipolicy>())
 {
-}
-
-bool marker_layout_generator::next()
-{
-    if (state_)
-    {
-        state_ = false;
-        return true;
-    }
-    return false;
-}
-
-void marker_layout_generator::reset()
-{
-    state_ = true;
 }
 
 }// ns mapnik

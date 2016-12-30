@@ -40,13 +40,13 @@ public:
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
-        Geom const & geom)
+        Geom & geom)
     {
-        return grid_layout<GridVertexAdapter, SubLayout>::try_placement(layout_generator, detector, geom, dx_, dy_);
+        return grid_layout<GridVertexAdapter, SubLayout>::try_placement(
+            layout_generator, geom, dx_, dy_);
     }
 
 protected:

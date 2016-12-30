@@ -20,8 +20,6 @@
  *
  *****************************************************************************/
 
-// mapnik
-#include <mapnik/collision_cache.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/debug.hpp>
@@ -33,8 +31,6 @@
 #include <mapnik/util/math.hpp>
 
 namespace mapnik {
-
-using detector_type = keyed_collision_cache<label_collision_detector4>;
 
 marker_layout::marker_layout(params_type const & params)
     : params_(params),
@@ -50,49 +46,28 @@ marker_layout::marker_layout(params_type const & params)
 {
 }
 
-template <typename Detector>
 bool marker_layout::try_placement(
     marker_layout_generator & layout_generator,
-    Detector & detector,
     vertex_cache & path)
 {
     pixel_position const & pos = path.current_position();
     double angle = path.angle();
-    return push_to_detector(detector, pos, angle, layout_generator);
+    return push_to_detector(pos, angle, layout_generator);
 }
 
-template bool marker_layout::try_placement(
-    marker_layout_generator & layout_generator,
-    detector_type & detector,
-    vertex_cache & path);
-
-template <typename Detector>
 bool marker_layout::try_placement(
     marker_layout_generator & layout_generator,
-    Detector & detector,
     pixel_position const & pos)
 {
-    return push_to_detector(detector, pos, 0, layout_generator);
+    return push_to_detector(pos, 0, layout_generator);
 }
 
-template bool marker_layout::try_placement(
-    marker_layout_generator & layout_generator,
-    detector_type & detector,
-    pixel_position const & pos);
-
-template <typename Detector>
 bool marker_layout::try_placement(
     marker_layout_generator & layout_generator,
-    Detector & detector,
     point_position const & pos)
 {
-    return push_to_detector(detector, pos.coords, pos.angle, layout_generator);
+    return push_to_detector(pos.coords, pos.angle, layout_generator);
 }
-
-template bool marker_layout::try_placement(
-    marker_layout_generator & layout_generator,
-    detector_type & detector,
-    point_position const & pos);
 
 // Checks transformed box placement with collision detector.
 // returns false if the box:
@@ -100,9 +75,7 @@ template bool marker_layout::try_placement(
 //  - b) collides with something and allow_overlap == false
 // otherwise returns true, and if ignore_placement == false,
 //  also adds the box to collision detector
-template <typename Detector>
 bool marker_layout::push_to_detector(
-    Detector & detector,
     pixel_position const & pos,
     double angle,
     marker_layout_generator & lg)
@@ -113,6 +86,7 @@ bool marker_layout::push_to_detector(
     }
     auto tr = lg.tr_ * agg::trans_affine_rotation(angle).translate(pos.x, pos.y);
     box2d<double> box(lg.size_, tr);
+    detector_type & detector = lg.detector_;
     if (avoid_edges_ && !detector.extent().contains(box))
     {
         return false;
@@ -128,12 +102,6 @@ bool marker_layout::push_to_detector(
     lg.placements_.emplace_back(pos, angle, box);
     return true;
 }
-
-template bool marker_layout::push_to_detector(
-    detector_type & detector,
-    pixel_position const & pos,
-    double angle,
-    marker_layout_generator & lg);
 
 bool marker_layout::set_direction(double & angle) const
 {

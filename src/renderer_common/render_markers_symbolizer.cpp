@@ -37,24 +37,62 @@
 #include <mapnik/marker_line_layout.hpp>
 
 #include <mapnik/grid_vertex_adapter.hpp>
+#include <mapnik/label_placements/vertex_converter.hpp>
+#include <mapnik/label_placements/vertex_first_layout.hpp>
+#include <mapnik/label_placements/vertex_last_layout.hpp>
+#include <mapnik/label_placements/vertex_layout.hpp>
+#include <mapnik/label_placements/split_multi.hpp>
+#include <mapnik/label_placements/geom_iterator.hpp>
+#include <mapnik/label_placements/point_layout.hpp>
+#include <mapnik/label_placements/point_geometry_visitor.hpp>
+#include <mapnik/label_placements/interior_geometry_visitor.hpp>
 
 namespace mapnik {
 
+namespace label_placement {
+
 struct marker_symbolizer_traits
 {
-    using point = marker_layout;
-    using interior = marker_layout;
-    using vertex = marker_layout;
-    using grid = marker_grid_layout<geometry::grid_vertex_adapter, marker_layout>;
-    using alternating_grid = marker_grid_layout<geometry::alternating_grid_vertex_adapter, marker_layout>;
-    using line = marker_vertex_converter<
-        marker_line_layout<marker_layout>>;
-    using vertex_first = marker_layout;
-    using vertex_last = marker_layout;
+    using point = split_multi<
+        point_layout<point_geometry_visitor,
+            geom_iterator<
+                marker_layout>>>;
+    using interior = split_multi<
+        point_layout<interior_geometry_visitor,
+            geom_iterator<
+                marker_layout>>>;
+    using vertex = split_multi<
+        geom_iterator<
+            vertex_layout<
+                marker_layout>>>;
+    using grid = split_multi<
+        geom_iterator<
+            vertex_converter<
+                marker_grid_layout<geometry::grid_vertex_adapter,
+                    marker_layout>>>>;
+    using alternating_grid = split_multi<
+        geom_iterator<
+            vertex_converter<
+                marker_grid_layout<geometry::alternating_grid_vertex_adapter,
+                    marker_layout>>>>;
+    using line = split_multi<
+        geom_iterator<
+            vertex_converter<
+                marker_line_layout<marker_layout>>>>;
+    using vertex_first = split_multi<
+        geom_iterator<
+            vertex_converter<
+                vertex_first_layout<marker_layout>>>>;
+    using vertex_last = split_multi<
+        geom_iterator<
+            vertex_converter<
+                vertex_last_layout<marker_layout>>>>;
 
-    using placements_type = std::vector<marker_positions_type>;
+    using placements_type = marker_positions_type;
     using layout_generator_type = marker_layout_generator;
 };
+
+}
 
 namespace detail {
 
@@ -141,38 +179,35 @@ struct render_marker_symbolizer_visitor
             common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
         const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
 
-        using traits = marker_symbolizer_traits;
+        using traits = label_placement::marker_symbolizer_traits;
 
         const box2d<double> marker_box(marker_ptr->bounding_box());
         const coord2d marker_center(marker_box.center());
         const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
         const agg::trans_affine marker_trans = recenter * image_tr;
 
-        marker_layout_generator layout_generator(params, marker_box, marker_trans);
+        marker_layout_generator layout_generator(params,
+            *common_.detector_, marker_box, marker_trans);
 
-        typename traits::placements_type placements(
-            label_placement::finder<traits>::get(placement_method,
-                layout_generator, *common_.detector_, params));
+        label_placement::finder<traits>::apply(placement_method,
+            layout_generator, params);
 
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));
 
-        for (auto const & placements_part : placements)
+        for (auto const & placement : layout_generator.placements_)
         {
-            for (auto const & placement : placements_part)
+            agg::trans_affine matrix = marker_trans;
+            matrix.rotate(placement.angle);
+            matrix.translate(placement.pos.x, placement.pos.y);
+
+            const markers_dispatch_params p(box2d<double>(), marker_trans,
+                sym_, feature_, common_.vars_, common_.scale_factor_, snap_to_pixels);
+
+            renderer_context_.render_marker(marker_ptr, svg_path, r_attributes, p, matrix);
+            if (key)
             {
-                agg::trans_affine matrix = marker_trans;
-                matrix.rotate(placement.angle);
-                matrix.translate(placement.pos.x, placement.pos.y);
-
-                const markers_dispatch_params p(box2d<double>(), marker_trans,
-                    sym_, feature_, common_.vars_, common_.scale_factor_, snap_to_pixels);
-
-                renderer_context_.render_marker(marker_ptr, svg_path, r_attributes, p, matrix);
-                if (key)
-                {
-                    common_.symbol_cache_.insert(*key, placement.box);
-                }
+                common_.symbol_cache_.insert(*key, placement.box);
             }
         }
     }
@@ -199,39 +234,35 @@ struct render_marker_symbolizer_visitor
             common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
         const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
 
-        using traits = marker_symbolizer_traits;
+        using traits = label_placement::marker_symbolizer_traits;
 
         const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
         const agg::trans_affine marker_trans = recenter * image_tr;
 
-        marker_layout_generator layout_generator(params, marker_box, marker_trans);
+        marker_layout_generator layout_generator(params,
+            *common_.detector_, marker_box, marker_trans);
 
-        typename traits::placements_type placements(
-            label_placement::finder<traits>::get(placement_method,
-                layout_generator, *common_.detector_, params));
+        label_placement::finder<traits>::apply(placement_method,
+            layout_generator, params);
 
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));
 
-        for (auto const & placements_part : placements)
+        for (auto const & placement : layout_generator.placements_)
         {
-            for (auto const & placement : placements_part)
+            agg::trans_affine matrix = marker_trans;
+            matrix.rotate(placement.angle);
+            matrix.translate(placement.pos.x, placement.pos.y);
+
+            const markers_dispatch_params p(box2d<double>(), marker_trans,
+                sym_, feature_, common_.vars_, common_.scale_factor_, false);
+
+            renderer_context_.render_marker(marker, p, matrix);
+            if (key)
             {
-                agg::trans_affine matrix = marker_trans;
-                matrix.rotate(placement.angle);
-                matrix.translate(placement.pos.x, placement.pos.y);
-
-                const markers_dispatch_params p(box2d<double>(), marker_trans,
-                    sym_, feature_, common_.vars_, common_.scale_factor_, false);
-
-                renderer_context_.render_marker(marker, p, matrix);
-                if (key)
-                {
-                    common_.symbol_cache_.insert(*key, placement.box);
-                }
+                common_.symbol_cache_.insert(*key, placement.box);
             }
         }
-
     }
 
   private:

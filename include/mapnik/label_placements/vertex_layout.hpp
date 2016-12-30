@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
+#ifndef MAPNIK_LABEL_PLACEMENT_VERTEX_LAYOUT_HPP
+#define MAPNIK_LABEL_PLACEMENT_VERTEX_LAYOUT_HPP
 
-#ifndef MAPNIK_LABEL_PLACEMENT_VERTEX_HPP
-#define MAPNIK_LABEL_PLACEMENT_VERTEX_HPP
-
-#include <mapnik/geom_util.hpp>
-#include <mapnik/geometry_types.hpp>
+#include <mapnik/box2d.hpp>
+#include <mapnik/util/noncopyable.hpp>
+#include <mapnik/vertex_adapters.hpp>
 #include <mapnik/vertex_processor.hpp>
 
 namespace mapnik { namespace label_placement {
@@ -57,38 +57,45 @@ struct apply_vertex_placement
     proj_transform const& prj_trans_;
 };
 
-template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
-struct vertex
+template <typename SubLayout>
+class vertex_layout : util::noncopyable
 {
-    static Placements get(
-        LayoutGenerator & layout_generator,
-        Detector & detector,
-        placement_params const & params)
-    {
-        using geom_type = geometry::cref_geometry<double>::geometry_type;
-        std::list<geom_type> geoms;
-        apply_multi_policy(params.feature.get_geometry(), geoms,
-            layout_generator.multi_policy());
+public:
+    using box_type = box2d<double>;
+    using params_type = label_placement::placement_params;
 
+    vertex_layout(params_type const & params)
+        : sublayout_(params),
+          params_(params)
+    {
+    }
+
+    template <typename LayoutGenerator, typename Geom>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Geom & geom)
+    {
         using positions_type = std::list<pixel_position>;
         positions_type points;
+        using apply_vertex_placement = apply_vertex_placement<positions_type>;
+        apply_vertex_placement apply(points, params_.view_transform, params_.proj_transform);
+        util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
 
-        for (auto const & geom : geoms)
+        bool success = false;
+
+        for (auto const & point : points)
         {
-            using apply_vertex_placement = apply_vertex_placement<positions_type>;
-            apply_vertex_placement apply(points, params.view_transform, params.proj_transform);
-            util::apply_visitor(geometry::vertex_processor<apply_vertex_placement>(apply), geom);
+            success |= sublayout_.try_placement(layout_generator, point);
         }
 
-        Layout layout(params);
-        Placements placements;
-
-        layout_processor::process(points, layout, layout_generator, detector, placements);
-
-        return placements;
+        return success;
     }
+
+protected:
+    SubLayout sublayout_;
+    params_type const & params_;
 };
 
 } }
 
-#endif // MAPNIK_LABEL_PLACEMENT_VERTEX_HPP
+#endif // MAPNIK_LABEL_PLACEMENT_VERTEX_LAYOUT_HPP

@@ -19,38 +19,43 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
+#ifndef MAPNIK_LABEL_PLACEMENT_GEOM_ITERATOR_HPP
+#define MAPNIK_LABEL_PLACEMENT_GEOM_ITERATOR_HPP
 
-#ifndef MAPNIK_LABEL_PLACEMENT_GRID_HPP
-#define MAPNIK_LABEL_PLACEMENT_GRID_HPP
-
-#include <mapnik/geom_util.hpp>
-#include <mapnik/geometry_types.hpp>
-#include <mapnik/geometry_split_multi.hpp>
+#include <mapnik/util/noncopyable.hpp>
 
 namespace mapnik { namespace label_placement {
 
-template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
-struct grid
+template <typename SubLayout>
+class geom_iterator : util::noncopyable
 {
-    static Placements get(
-        LayoutGenerator & layout_generator,
-        Detector & detector,
-        placement_params const & params)
+public:
+    using params_type = label_placement::placement_params;
+
+    geom_iterator(params_type const & params)
+        : sublayout_(params)
     {
-        Layout layout(params);
-        Placements placements;
-
-        using geom_type = geometry::cref_geometry<double>::geometry_type;
-        std::vector<geom_type> geoms;
-        apply_multi_policy(params.feature.get_geometry(), geoms,
-            layout_generator.multi_policy());
-
-        layout_processor::process(geoms, layout, layout_generator, detector, placements);
-
-        return placements;
     }
+
+    template <typename LayoutGenerator, typename Geoms>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Geoms & geoms)
+    {
+        bool success = false;
+
+        for (auto & geom : geoms)
+        {
+            success |= sublayout_.try_placement(layout_generator, geom);
+        }
+
+        return success;
+    }
+
+private:
+    SubLayout sublayout_;
 };
 
 } }
 
-#endif // MAPNIK_LABEL_PLACEMENT_GRID_HPP
+#endif // MAPNIK_LABEL_PLACEMENT_GEOM_ITERATOR_HPP
