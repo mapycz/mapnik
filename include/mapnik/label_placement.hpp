@@ -24,13 +24,13 @@
 #define MAPNIK_LABEL_PLACEMENT_HPP
 
 #include <mapnik/label_placements/base.hpp>
-#include <mapnik/label_placements/point.hpp>
-#include <mapnik/label_placements/interior.hpp>
-#include <mapnik/label_placements/vertex.hpp>
-#include <mapnik/label_placements/grid.hpp>
-#include <mapnik/label_placements/line.hpp>
-#include <mapnik/label_placements/vertex_first.hpp>
-#include <mapnik/label_placements/vertex_last.hpp>
+//#include <mapnik/label_placements/point.hpp>
+//#include <mapnik/label_placements/interior.hpp>
+//#include <mapnik/label_placements/vertex.hpp>
+//#include <mapnik/label_placements/grid.hpp>
+//#include <mapnik/label_placements/line.hpp>
+//#include <mapnik/label_placements/vertex_first.hpp>
+//#include <mapnik/label_placements/vertex_last.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/collision_cache.hpp>
 
@@ -54,54 +54,55 @@ struct finder
             default:
             case POINT_PLACEMENT:
             case CENTROID_PLACEMENT:
-                return point<
-                    typename T::point,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::point layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
+            break;
             case INTERIOR_PLACEMENT:
-                return interior<
-                    typename T::interior,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::interior layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
+            break;
             case VERTEX_PLACEMENT:
-                return vertex<
-                    typename T::vertex,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::vertex layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
+            break;
             case GRID_PLACEMENT:
-                return grid<
-                    typename T::grid,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::grid layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
+            break;
             case ALTERNATING_GRID_PLACEMENT:
-                return grid<
-                    typename T::alternating_grid,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::alternating_grid layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
+            break;
             case LINE_PLACEMENT:
-                return line<
-                    typename T::line,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::line layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
+            break;
             case VERTEX_FIRST_PLACEMENT:
-                return vertex_first<
-                    typename T::vertex_first,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::vertex_first layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
+            break;
             case VERTEX_LAST_PLACEMENT:
-                return vertex_last<
-                    typename T::vertex_last,
-                    layout_generator_type,
-                    detector_type,
-                    placements_type>::get(layout_generator, detector, params);
+            {
+                typename T::vertex_last layout(params);
+                layout.try_placement(layout_generator, detector, params);
+            }
         }
+
+        return layout_generator.placements_;
     }
 };
 

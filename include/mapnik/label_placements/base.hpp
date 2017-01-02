@@ -116,23 +116,18 @@ void apply_multi_policy(
     }
 }
 
-template <typename GeomVisitor, typename Geom>
+/*
+template <typename GeomVisitor, typename Geoms>
 static std::list<pixel_position> get_pixel_positions(
-    Geom const & geom,
+    Geoms const & geoms,
     proj_transform const & prj_trans,
-    view_transform const & view_trans,
-    multi_policy_enum multi_policy)
+    view_transform const & view_trans)
 {
-    using geom_type = geometry::cref_geometry<double>::geometry_type;
-    std::vector<geom_type> split_geoms;
-    apply_multi_policy(geom, split_geoms, multi_policy);
-
     std::list<pixel_position> positions;
-
-    for (auto const & geom_ref : split_geoms)
+    for (auto const & geom : geoms)
     {
         const GeomVisitor visitor;
-        if (boost::optional<geometry::point<double>> point = util::apply_visitor(visitor, geom_ref))
+        if (boost::optional<geometry::point<double>> point = util::apply_visitor(visitor, geom))
         {
             geometry::point<double> & pt = *point;
             double z = 0;
@@ -143,7 +138,9 @@ static std::list<pixel_position> get_pixel_positions(
     }
     return positions;
 }
+*/
 
+/*
 struct layout_processor
 {
     template <
@@ -180,6 +177,7 @@ struct layout_processor
         }
     }
 };
+*/
 
 }
 

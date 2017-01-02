@@ -25,6 +25,7 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/vertex_adapters.hpp>
+#include <mapnik/vertex_processor.hpp>
 
 namespace mapnik { namespace label_placement {
 

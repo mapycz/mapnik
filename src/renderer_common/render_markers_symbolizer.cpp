@@ -41,26 +41,54 @@
 #include <mapnik/label_placements/vertex_first_layout.hpp>
 #include <mapnik/label_placements/vertex_last_layout.hpp>
 #include <mapnik/label_placements/vertex_layout.hpp>
+#include <mapnik/label_placements/split_multi.hpp>
+#include <mapnik/label_placements/geom_iterator.hpp>
+#include <mapnik/label_placements/point_layout.hpp>
+#include <mapnik/label_placements/point_geometry_visitor.hpp>
+#include <mapnik/label_placements/interior_geometry_visitor.hpp>
 
 namespace mapnik {
 
+namespace label_placement {
+
 struct marker_symbolizer_traits
 {
-    using point = marker_layout;
-    using interior = marker_layout;
-    using vertex = label_placement::vertex_layout<marker_layout>;
-    using grid = marker_grid_layout<geometry::grid_vertex_adapter, marker_layout>;
-    using alternating_grid = marker_grid_layout<geometry::alternating_grid_vertex_adapter, marker_layout>;
-    using line = marker_vertex_converter<
-        marker_line_layout<marker_layout>>;
-    using vertex_first = label_placement::vertex_converter<
-        label_placement::vertex_first_layout<marker_layout>>;
-    using vertex_last = label_placement::vertex_converter<
-        label_placement::vertex_last_layout<marker_layout>>;
+    using point = split_multi<
+        point_layout<point_geometry_visitor,
+            geom_iterator<
+                marker_layout>>>;
+    using interior = split_multi<
+        point_layout<interior_geometry_visitor,
+            geom_iterator<
+                marker_layout>>>;
+    using vertex = split_multi<
+        geom_iterator<
+            vertex_layout<
+                marker_layout>>>;
+    using grid = split_multi<
+        geom_iterator<
+            marker_grid_layout<geometry::grid_vertex_adapter, marker_layout>>>;
+    using alternating_grid = split_multi<
+        geom_iterator<
+            marker_grid_layout<geometry::alternating_grid_vertex_adapter, marker_layout>>>;
+    using line = split_multi<
+        geom_iterator<
+            marker_vertex_converter<
+                marker_line_layout<marker_layout>>>>;
+    using vertex_first = split_multi<
+        geom_iterator<
+            vertex_converter<
+                vertex_first_layout<marker_layout>>>>;
+    using vertex_last = split_multi<
+        geom_iterator<
+            vertex_converter<
+                vertex_last_layout<marker_layout>>>>;
 
     using placements_type = std::vector<marker_positions_type>;
     using layout_generator_type = marker_layout_generator;
 };
+
+}
 
 namespace detail {
 
@@ -147,7 +175,7 @@ struct render_marker_symbolizer_visitor
             common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
         const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
 
-        using traits = marker_symbolizer_traits;
+        using traits = label_placement::marker_symbolizer_traits;
 
         const box2d<double> marker_box(marker_ptr->bounding_box());
         const coord2d marker_center(marker_box.center());
@@ -205,7 +233,7 @@ struct render_marker_symbolizer_visitor
             common_.query_extent_, common_.scale_factor_, common_.symbol_cache_ };
         const auto placement_method = params.get<label_placement_enum, keys::label_placement>();
 
-        using traits = marker_symbolizer_traits;
+        using traits = label_placement::marker_symbolizer_traits;
 
         const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
         const agg::trans_affine marker_trans = recenter * image_tr;

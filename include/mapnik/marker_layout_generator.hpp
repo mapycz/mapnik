@@ -67,6 +67,7 @@ struct marker_layout_generator : util::noncopyable
     bool next();
     void reset();
 
+    /*
     inline bool has_placements() const
     {
         return !placements_.empty();
@@ -76,6 +77,7 @@ struct marker_layout_generator : util::noncopyable
     {
         return placements_;
     }
+    */
 
     inline multi_policy_enum multi_policy() const
     {

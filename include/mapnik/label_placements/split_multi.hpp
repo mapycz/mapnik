@@ -19,41 +19,45 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
+#ifndef MAPNIK_LABEL_PLACEMENT_SPLIT_MULTI_HPP
+#define MAPNIK_LABEL_PLACEMENT_SPLIT_MULTI_HPP
 
-#ifndef MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
-#define MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
-
-#include <mapnik/geom_util.hpp>
-#include <mapnik/geometry_type.hpp>
-#include <mapnik/geometry_centroid.hpp>
-#include <mapnik/vertex_processor.hpp>
-#include <mapnik/text/point_layout.hpp>
+#include <mapnik/util/noncopyable.hpp>
+#include <mapnik/geometry_split_multi.hpp>
 
 namespace mapnik { namespace label_placement {
 
-template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
-struct vertex_first
+// TODO: rename to apply_multi_policy?
+template <typename SubLayout>
+class split_multi : util::noncopyable
 {
-    static Placements get(
+public:
+    using params_type = label_placement::placement_params;
+
+    split_multi(params_type const & params)
+    : sublayout_(params),
+      params_(params)
+    {
+    }
+
+    template <typename LayoutGenerator, typename Detector, typename Geom>
+    bool try_placement(
         LayoutGenerator & layout_generator,
         Detector & detector,
-        placement_params const & params)
+        Geom & geom)
     {
-        Layout layout(params);
-        Placements placements;
-
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
-        apply_multi_policy(params.feature.get_geometry(), geoms,
+        apply_multi_policy(params_.feature.get_geometry(), geoms,
             layout_generator.multi_policy());
-
-        // TODO: Process geoms first
-        layout_processor::process(geoms, layout, layout_generator, detector, placements);
-
-        return placements;
+        return sublayout_.try_placement(layout_generator, detector, geoms);
     }
+
+private:
+    SubLayout sublayout_;
+    params_type const & params_;
 };
 
 } }
 
-#endif // MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
+#endif // MAPNIK_LABEL_PLACEMENT_SPLIT_MULTI_HPP

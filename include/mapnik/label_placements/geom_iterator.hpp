@@ -19,41 +19,44 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
+#ifndef MAPNIK_LABEL_PLACEMENT_GEOM_ITERATOR_HPP
+#define MAPNIK_LABEL_PLACEMENT_GEOM_ITERATOR_HPP
 
-#ifndef MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
-#define MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
-
-#include <mapnik/geom_util.hpp>
-#include <mapnik/geometry_type.hpp>
-#include <mapnik/geometry_centroid.hpp>
-#include <mapnik/vertex_processor.hpp>
-#include <mapnik/text/point_layout.hpp>
+#include <mapnik/util/noncopyable.hpp>
 
 namespace mapnik { namespace label_placement {
 
-template <typename Layout, typename LayoutGenerator, typename Detector, typename Placements>
-struct vertex_first
+template <typename SubLayout>
+class geom_iterator : util::noncopyable
 {
-    static Placements get(
-        LayoutGenerator & layout_generator,
-        Detector & detector,
-        placement_params const & params)
+public:
+    using params_type = label_placement::placement_params;
+
+    geom_iterator(params_type const & params)
+        : sublayout_(params)
     {
-        Layout layout(params);
-        Placements placements;
-
-        using geom_type = geometry::cref_geometry<double>::geometry_type;
-        std::list<geom_type> geoms;
-        apply_multi_policy(params.feature.get_geometry(), geoms,
-            layout_generator.multi_policy());
-
-        // TODO: Process geoms first
-        layout_processor::process(geoms, layout, layout_generator, detector, placements);
-
-        return placements;
     }
+
+    template <typename Detector, typename Geoms>
+    bool try_placement(
+        text_layout_generator & layout_generator,
+        Detector & detector,
+        Geoms & geoms)
+    {
+        bool success = false;
+
+        for (auto & geom : geoms)
+        {
+            success |= sublayout_.try_placement(layout_generator, detector, geom);
+        }
+
+        return success;
+    }
+
+private:
+    SubLayout sublayout_;
 };
 
 } }
 
-#endif // MAPNIK_LABEL_PLACEMENTS_VERTEX_FIRST_HPP
+#endif // MAPNIK_LABEL_PLACEMENT_GEOM_ITERATOR_HPP

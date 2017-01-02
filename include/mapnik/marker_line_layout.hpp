@@ -24,6 +24,7 @@
 
 #include <mapnik/text/line_layout.hpp>
 #include <mapnik/marker_line_policy.hpp>
+#include <mapnik/geom_util.hpp>
 
 namespace mapnik
 {

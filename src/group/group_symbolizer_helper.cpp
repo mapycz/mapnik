@@ -42,7 +42,6 @@ group_layout_generator::group_layout_generator(
     text_placement_info & info,
     std::list<box_element> const & box_elements)
     : font_manager_(font_manager),
-      info_(info),
       text_props_(evaluate_text_properties(info.properties, params.feature, params.vars)),
       state_(true),
       box_elements_(box_elements)
@@ -112,7 +111,7 @@ bool group_point_layout::try_placement(
         real_itr++;
     }
 
-    layout_generator.results_.push_back(pos);
+    layout_generator.placements_.push_back(pos);
 
     return true;
 }

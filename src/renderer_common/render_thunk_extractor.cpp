@@ -98,13 +98,13 @@ void render_thunk_extractor::operator()(markers_symbolizer const& sym) const
 
 void render_thunk_extractor::operator()(text_symbolizer const& sym) const
 {
-    using helper_type = text_symbolizer_helper<text_symbolizer_traits>;
+    using helper_type = text_symbolizer_helper<label_placement::text_symbolizer_traits>;
     extract_text_thunk<helper_type>(sym);
 }
 
 void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
 {
-    using helper_type = text_symbolizer_helper<shield_symbolizer_traits>;
+    using helper_type = text_symbolizer_helper<label_placement::shield_symbolizer_traits>;
     extract_text_thunk<helper_type>(sym);
 }
 

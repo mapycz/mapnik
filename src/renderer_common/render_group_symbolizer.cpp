@@ -194,7 +194,7 @@ void render_group_symbolizer(group_symbolizer const& sym,
         box2d<double>(0, 0, common.width_, common.height_), common.query_extent_,
         common.scale_factor_, common.symbol_cache_ };
 
-    using traits = group_symbolizer_traits;
+    using traits = label_placement::group_symbolizer_traits;
     text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
         sym, keys::text_placements_)->get_placement_info(common.scale_factor_,
             feature, vars, common.symbol_cache_);

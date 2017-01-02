@@ -73,6 +73,7 @@ struct text_layout_generator : util::noncopyable
     text_placement_info & info_;
     evaluated_text_properties_ptr text_props_;
     std::unique_ptr<layout_container> layouts_;
+    placements_list placements_;
 };
 
 }//ns mapnik
