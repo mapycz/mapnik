@@ -43,27 +43,9 @@ group_layout_generator::group_layout_generator(
     std::list<box_element> const & box_elements)
     : font_manager_(font_manager),
       text_props_(evaluate_text_properties(info.properties, params.feature, params.vars)),
-      state_(true),
       box_elements_(box_elements)
 {
 }
-
-bool group_layout_generator::next()
-{
-    if (state_)
-    {
-        state_ = false;
-        return true;
-    }
-    return false;
-}
-
-void group_layout_generator::reset()
-{
-    state_ = true;
-}
-
-
 
 using detector_type = renderer_common::detector_type;
 

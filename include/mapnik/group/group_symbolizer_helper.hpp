@@ -58,25 +58,10 @@ struct group_layout_generator : util::noncopyable
         text_placement_info & info,
         std::list<box_element> const & box_elements);
 
-    bool next();
-    void reset();
-
     inline evaluated_text_properties const & get_text_props() const
     {
         return *text_props_;
     }
-
-    /*
-    inline bool has_placements() const
-    {
-        return !results_.empty();
-    }
-
-    inline pixel_position_list & get_placements()
-    {
-        return results_;
-    }
-    */
 
     inline multi_policy_enum multi_policy() const
     {
@@ -85,7 +70,6 @@ struct group_layout_generator : util::noncopyable
 
     face_manager_freetype &font_manager_;
     evaluated_text_properties_ptr text_props_;
-    bool state_;
     pixel_position_list placements_;
     std::list<box_element> box_elements_;
 };

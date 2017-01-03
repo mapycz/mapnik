@@ -116,69 +116,6 @@ void apply_multi_policy(
     }
 }
 
-/*
-template <typename GeomVisitor, typename Geoms>
-static std::list<pixel_position> get_pixel_positions(
-    Geoms const & geoms,
-    proj_transform const & prj_trans,
-    view_transform const & view_trans)
-{
-    std::list<pixel_position> positions;
-    for (auto const & geom : geoms)
-    {
-        const GeomVisitor visitor;
-        if (boost::optional<geometry::point<double>> point = util::apply_visitor(visitor, geom))
-        {
-            geometry::point<double> & pt = *point;
-            double z = 0;
-            prj_trans.backward(pt.x, pt.y, z);
-            view_trans.forward(&pt.x, &pt.y);
-            positions.emplace_back(pt.x, pt.y);
-        }
-    }
-    return positions;
-}
-*/
-
-/*
-struct layout_processor
-{
-    template <
-        typename Geoms,
-        typename Layout,
-        typename LayoutGenerator,
-        typename Detector,
-        typename PlacementsType>
-    static void process(
-        Geoms & geoms,
-        Layout & layout,
-        LayoutGenerator & layout_generator,
-        Detector & detector,
-        PlacementsType & placements)
-    {
-        while (!geoms.empty() && layout_generator.next())
-        {
-            for (auto it = geoms.begin(); it != geoms.end(); )
-            {
-                if (layout.try_placement(layout_generator, detector, *it))
-                {
-                    it = geoms.erase(it);
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-
-            if (layout_generator.has_placements())
-            {
-                placements.emplace_back(std::move(layout_generator.get_placements()));
-            }
-        }
-    }
-};
-*/
-
 }
 
 struct point_position

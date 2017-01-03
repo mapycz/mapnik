@@ -24,13 +24,6 @@
 #define MAPNIK_LABEL_PLACEMENT_HPP
 
 #include <mapnik/label_placements/base.hpp>
-//#include <mapnik/label_placements/point.hpp>
-//#include <mapnik/label_placements/interior.hpp>
-//#include <mapnik/label_placements/vertex.hpp>
-//#include <mapnik/label_placements/grid.hpp>
-//#include <mapnik/label_placements/line.hpp>
-//#include <mapnik/label_placements/vertex_first.hpp>
-//#include <mapnik/label_placements/vertex_last.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/collision_cache.hpp>
 

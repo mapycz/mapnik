@@ -64,27 +64,11 @@ struct marker_layout_generator : util::noncopyable
         box2d<double> marker_box,
         agg::trans_affine const & marker_trans);
 
-    bool next();
-    void reset();
-
-    /*
-    inline bool has_placements() const
-    {
-        return !placements_.empty();
-    }
-
-    inline marker_positions_type & get_placements()
-    {
-        return placements_;
-    }
-    */
-
     inline multi_policy_enum multi_policy() const
     {
         return multi_policy_;
     }
 
-    bool state_;
     const box2d<double> size_;
     const agg::trans_affine tr_;
     const multi_policy_enum multi_policy_;
