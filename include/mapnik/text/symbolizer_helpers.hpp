@@ -166,7 +166,7 @@ struct group_symbolizer_traits
                 vertex_last_layout<
                     group_point_layout>>>>;
 
-    using placements_type = std::vector<pixel_position_list>;
+    using placements_type = pixel_position_list;
     using layout_generator_type = group_layout_generator;
 };
 

@@ -37,9 +37,9 @@ public:
     {
     }
 
-    template <typename Detector, typename Geoms>
+    template <typename LayoutGenerator, typename Detector, typename Geoms>
     bool try_placement(
-        text_layout_generator & layout_generator,
+        LayoutGenerator & layout_generator,
         Detector & detector,
         Geoms & geoms)
     {

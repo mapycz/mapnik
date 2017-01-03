@@ -111,13 +111,13 @@ void render_thunk_extractor::operator()(shield_symbolizer const& sym) const
 template <typename Helper>
 void render_thunk_extractor::extract_text_thunk(text_symbolizer const& sym) const
 {
-    auto placements = Helper::get(
+    auto placements(Helper::get(
         sym, feature_, vars_, prj_trans_,
         common_.width_, common_.height_,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
         clipping_extent_, agg::trans_affine::identity,
-        common_.symbol_cache_);
+        common_.symbol_cache_));
 
     double opacity = get<double>(sym, keys::opacity, feature_, common_.vars_, 1.0);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature_, common_.vars_, src_over);

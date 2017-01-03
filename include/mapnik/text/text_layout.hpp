@@ -35,6 +35,7 @@
 #include <mapnik/text/evaluated_format_properties_ptr.hpp>
 #include <mapnik/text/rotation.hpp>
 #include <mapnik/text/glyph_positions.hpp>
+#include <mapnik/util/noncopyable.hpp>
 
 //stl
 #include <vector>
@@ -185,7 +186,7 @@ private:
     child_format_ptrs format_ptrs_;
 };
 
-class layout_container
+class layout_container : util::noncopyable
 {
 public:
     layout_container(text_layout_ptr && layout)

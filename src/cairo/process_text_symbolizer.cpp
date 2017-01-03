@@ -44,12 +44,12 @@ void cairo_renderer<T>::process(shield_symbolizer const& sym,
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
     placements_list placements(text_symbolizer_helper<label_placement::shield_symbolizer_traits>::get(
-            sym, feature, common_.vars_, prj_trans,
-            common_.width_, common_.height_,
-            common_.scale_factor_,
-            common_.t_, common_.font_manager_, *common_.detector_,
-            common_.query_extent_, tr,
-            common_.symbol_cache_));
+        sym, feature, common_.vars_, prj_trans,
+        common_.width_, common_.height_,
+        common_.scale_factor_,
+        common_.t_, common_.font_manager_, *common_.detector_,
+        common_.query_extent_, tr,
+        common_.symbol_cache_));
 
     cairo_save_restore guard(context_);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
@@ -86,12 +86,12 @@ void cairo_renderer<T>::process(text_symbolizer const& sym,
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
     placements_list placements(text_symbolizer_helper<label_placement::text_symbolizer_traits>::get(
-            sym, feature, common_.vars_, prj_trans,
-            common_.width_, common_.height_,
-            common_.scale_factor_,
-            common_.t_, common_.font_manager_, *common_.detector_,
-            common_.query_extent_, tr,
-            common_.symbol_cache_));
+        sym, feature, common_.vars_, prj_trans,
+        common_.width_, common_.height_,
+        common_.scale_factor_,
+        common_.t_, common_.font_manager_, *common_.detector_,
+        common_.query_extent_, tr,
+        common_.symbol_cache_));
 
     cairo_save_restore guard(context_);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_,  src_over);

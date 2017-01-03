@@ -203,20 +203,17 @@ void render_group_symbolizer(group_symbolizer const& sym,
     const label_placement_enum placement_type =
         layout_generator.get_text_props().label_placement;
 
-    std::vector<pixel_position_list> positions(
+    pixel_position_list positions(
         label_placement::finder<traits>::get(placement_type, layout_generator,
             *common.detector_, params));
 
-    for (pixel_position_list const& pos_list : positions)
+    for (pixel_position const& pos : positions)
     {
-        for (pixel_position const& pos : pos_list)
+        for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
         {
-            for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
-            {
-                pixel_position const& offset = layout_manager.offset_at(layout_i);
-                pixel_position render_offset = pos + offset;
-                render_thunks.render_list(layout_thunks[layout_i], render_offset);
-            }
+            pixel_position const& offset = layout_manager.offset_at(layout_i);
+            pixel_position render_offset = pos + offset;
+            render_thunks.render_list(layout_thunks[layout_i], render_offset);
         }
     }
 }

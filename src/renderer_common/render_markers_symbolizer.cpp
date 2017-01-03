@@ -84,7 +84,7 @@ struct marker_symbolizer_traits
             vertex_converter<
                 vertex_last_layout<marker_layout>>>>;
 
-    using placements_type = std::vector<marker_positions_type>;
+    using placements_type = marker_positions_type;
     using layout_generator_type = marker_layout_generator;
 };
 
@@ -191,22 +191,19 @@ struct render_marker_symbolizer_visitor
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));
 
-        for (auto const & placements_part : placements)
+        for (auto const & placement : placements)
         {
-            for (auto const & placement : placements_part)
+            agg::trans_affine matrix = marker_trans;
+            matrix.rotate(placement.angle);
+            matrix.translate(placement.pos.x, placement.pos.y);
+
+            const markers_dispatch_params p(box2d<double>(), marker_trans,
+                sym_, feature_, common_.vars_, common_.scale_factor_, snap_to_pixels);
+
+            renderer_context_.render_marker(marker_ptr, svg_path, r_attributes, p, matrix);
+            if (key)
             {
-                agg::trans_affine matrix = marker_trans;
-                matrix.rotate(placement.angle);
-                matrix.translate(placement.pos.x, placement.pos.y);
-
-                const markers_dispatch_params p(box2d<double>(), marker_trans,
-                    sym_, feature_, common_.vars_, common_.scale_factor_, snap_to_pixels);
-
-                renderer_context_.render_marker(marker_ptr, svg_path, r_attributes, p, matrix);
-                if (key)
-                {
-                    common_.symbol_cache_.insert(*key, placement.box);
-                }
+                common_.symbol_cache_.insert(*key, placement.box);
             }
         }
     }
@@ -247,25 +244,21 @@ struct render_marker_symbolizer_visitor
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));
 
-        for (auto const & placements_part : placements)
+        for (auto const & placement : placements)
         {
-            for (auto const & placement : placements_part)
+            agg::trans_affine matrix = marker_trans;
+            matrix.rotate(placement.angle);
+            matrix.translate(placement.pos.x, placement.pos.y);
+
+            const markers_dispatch_params p(box2d<double>(), marker_trans,
+                sym_, feature_, common_.vars_, common_.scale_factor_, false);
+
+            renderer_context_.render_marker(marker, p, matrix);
+            if (key)
             {
-                agg::trans_affine matrix = marker_trans;
-                matrix.rotate(placement.angle);
-                matrix.translate(placement.pos.x, placement.pos.y);
-
-                const markers_dispatch_params p(box2d<double>(), marker_trans,
-                    sym_, feature_, common_.vars_, common_.scale_factor_, false);
-
-                renderer_context_.render_marker(marker, p, matrix);
-                if (key)
-                {
-                    common_.symbol_cache_.insert(*key, placement.box);
-                }
+                common_.symbol_cache_.insert(*key, placement.box);
             }
         }
-
     }
 
   private:

@@ -102,7 +102,9 @@ struct finder
             }
         }
 
-        return layout_generator.placements_;
+        placements_type placements(std::move(layout_generator.placements_));
+
+        return placements;
     }
 };
 

@@ -41,13 +41,13 @@ void  agg_renderer<T0,T1>::process(shield_symbolizer const& sym,
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
-    placements_list placements(text_symbolizer_helper<shield_symbolizer_traits>::get(
-            sym, feature, common_.vars_, prj_trans,
-            common_.width_, common_.height_,
-            common_.scale_factor_,
-            common_.t_, common_.font_manager_, *common_.detector_,
-            common_.query_extent_, tr,
-            common_.symbol_cache_));
+    placements_list placements(text_symbolizer_helper<label_placement::shield_symbolizer_traits>::get(
+        sym, feature, common_.vars_, prj_trans,
+        common_.width_, common_.height_,
+        common_.scale_factor_,
+        common_.t_, common_.font_manager_, *common_.detector_,
+        common_.query_extent_, tr,
+        common_.symbol_cache_));
 
     halo_rasterizer_enum halo_rasterizer = get<halo_rasterizer_enum>(sym, keys::halo_rasterizer, feature, common_.vars_, HALO_RASTERIZER_FULL);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
