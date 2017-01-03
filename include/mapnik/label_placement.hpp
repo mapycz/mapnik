@@ -32,31 +32,28 @@ namespace mapnik { namespace label_placement {
 template <typename T>
 struct finder
 {
-    using detector_type = keyed_collision_cache<label_collision_detector4>;
     using placements_type = typename T::placements_type;
     using layout_generator_type = typename T::layout_generator_type;
 
     struct dispatch
     {
         layout_generator_type & layout_generator;
-        detector_type & detector;
         placement_params const & params;
 
         template <typename Layout>
         bool apply()
         {
             Layout layout(params);
-            return layout.try_placement(layout_generator, detector, params);
+            return layout.try_placement(layout_generator, params);
         }
     };
 
     static bool apply(
         label_placement_enum placement_type,
         layout_generator_type & layout_generator,
-        detector_type & detector,
         placement_params const & params)
     {
-        dispatch dsp{ layout_generator, detector, params };
+        dispatch dsp{ layout_generator, params };
 
         switch (placement_type)
         {

@@ -41,19 +41,17 @@ class point_layout : util::noncopyable
 public:
     using box_type = box2d<double>;
     using params_type = label_placement::placement_params;
+    using layout_generator_type = text_layout_generator;
+    using detector_type = layout_generator_type::detector_type;
 
     point_layout(params_type const & params);
 
-    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
-        Detector & detector,
         pixel_position const& pos);
 
-    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
-        Detector & detector,
         point_position const& pos);
 
     inline double get_length(text_layout_generator const &) const
@@ -62,25 +60,22 @@ public:
     }
 
 protected:
-    template <typename Detector>
     bool try_placement(
         layout_container const & layouts,
-        Detector & detector,
+        detector_type & detector,
         evaluated_text_properties const & text_props,
         pixel_position const& pos,
         glyph_positions & glyphs,
         std::vector<box_type> & bboxes);
 
-    template <typename Detector>
     void process_bboxes(
-        Detector & detector,
+        detector_type & detector,
         layout_container & layouts,
         glyph_positions_ptr & glyphs,
         std::vector<box_type> const & bboxes);
 
-    template <typename Detector>
     bool collision(
-        Detector & detector,
+        detector_type & detector,
         evaluated_text_properties const & text_props,
         box_type const& box,
         const value_unicode_string &repeat_key) const;
@@ -95,22 +90,17 @@ class shield_layout : public point_layout
 public:
     shield_layout(params_type const & params);
 
-    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
-        Detector & detector,
         pixel_position const& pos);
 
-    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
-        Detector & detector,
         point_position const& pos);
 
 private:
-    template <typename Detector>
     bool add_marker(
-        Detector & detector,
+        detector_type & detector,
         layout_container const & layouts,
         evaluated_text_properties const & text_props,
         glyph_positions & glyphs,

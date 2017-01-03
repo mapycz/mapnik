@@ -27,9 +27,11 @@ namespace mapnik
 
 marker_layout_generator::marker_layout_generator(
     params_type const & params,
+    detector_type & detector,
     box2d<double> marker_box,
     agg::trans_affine const & marker_trans)
-    : size_(marker_box),
+    : detector_(detector),
+      size_(marker_box),
       tr_(marker_trans),
       multi_policy_(params.get<multi_policy_enum, keys::multipolicy>())
 {

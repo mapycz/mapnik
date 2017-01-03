@@ -40,17 +40,16 @@ public:
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom & geom)
     {
         using geom_type = geometry::cref_geometry<double>::geometry_type;
         std::list<geom_type> geoms;
         apply_multi_policy(params_.feature.get_geometry(), geoms,
             layout_generator.multi_policy());
-        return sublayout_.try_placement(layout_generator, detector, geoms);
+        return sublayout_.try_placement(layout_generator, geoms);
     }
 
 private:

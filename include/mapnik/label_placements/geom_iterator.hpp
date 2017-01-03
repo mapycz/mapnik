@@ -37,17 +37,16 @@ public:
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geoms>
+    template <typename LayoutGenerator, typename Geoms>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geoms & geoms)
     {
         bool success = false;
 
         for (auto & geom : geoms)
         {
-            success |= sublayout_.try_placement(layout_generator, detector, geom);
+            success |= sublayout_.try_placement(layout_generator, geom);
         }
 
         return success;

@@ -51,9 +51,11 @@ struct box_element
 struct group_layout_generator : util::noncopyable
 {
     using params_type = label_placement::placement_params;
+    using detector_type = keyed_collision_cache<label_collision_detector4>;
 
     group_layout_generator(
         params_type const & params,
+        detector_type & detector,
         face_manager_freetype & font_manager,
         text_placement_info & info,
         std::list<box_element> const & box_elements);
@@ -72,6 +74,7 @@ struct group_layout_generator : util::noncopyable
     evaluated_text_properties_ptr text_props_;
     pixel_position_list placements_;
     std::list<box_element> box_elements_;
+    detector_type & detector_;
 };
 
 struct group_line_policy : text_line_policy<group_layout_generator>
@@ -89,22 +92,23 @@ class group_line_layout : line_layout<SubLayout>
 {
 public:
     using params_type = label_placement::placement_params;
+    using layout_generator_type = group_layout_generator;
+    using detector_type = layout_generator_type::detector_type;
 
     group_line_layout(params_type const & params)
         : line_layout<SubLayout>(params)
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename Geom>
     bool try_placement(
-        LayoutGenerator & layout_generator,
-        Detector & detector,
+        group_layout_generator & layout_generator,
         Geom & geom)
     {
         vertex_cache path(geom);
         group_line_policy policy(path, layout_generator, 0, this->params_);
         return line_layout<SubLayout>::try_placement(
-            layout_generator, detector, path, policy);
+            layout_generator, path, policy);
     }
 };
 
@@ -113,19 +117,17 @@ class group_point_layout : util::noncopyable
 public:
     using box_type = box2d<double>;
     using params_type = label_placement::placement_params;
+    using layout_generator_type = group_layout_generator;
+    using detector_type = layout_generator_type::detector_type;
 
     group_point_layout(params_type const & params);
 
-    template <typename Detector>
     bool try_placement(
         group_layout_generator & layout_generator,
-        Detector & detector,
         pixel_position const& pos);
 
-    template <typename Detector>
     bool try_placement(
         group_layout_generator & layout_generator,
-        Detector & detector,
         point_position const& pos);
 
     inline double get_length(group_layout_generator const &) const
@@ -134,9 +136,8 @@ public:
     }
 
 protected:
-    template <typename Detector>
     bool collision(
-        Detector & detector,
+        detector_type & detector,
         evaluated_text_properties const & text_props,
         box_type const& box,
         const value_unicode_string &repeat_key) const;

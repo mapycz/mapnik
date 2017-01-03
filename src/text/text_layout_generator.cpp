@@ -31,9 +31,11 @@ namespace mapnik
 
 text_layout_generator::text_layout_generator(
     params_type const & params,
+    detector_type & detector,
     face_manager_freetype & font_manager,
     text_placement_info & info)
     : params_(params),
+      detector_(detector),
       font_manager_(font_manager),
       info_(info),
       text_props_(evaluate_text_properties(

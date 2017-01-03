@@ -41,10 +41,9 @@ public:
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Path>
+    template <typename LayoutGenerator, typename Path>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Path & path)
     {
         boost::optional<point_position> pos = get_first_vertext(path);
@@ -52,7 +51,7 @@ public:
         {
             return false;
         }
-        return sublayout_.try_placement(layout_generator, detector, *pos);
+        return sublayout_.try_placement(layout_generator, *pos);
     }
 
 protected:

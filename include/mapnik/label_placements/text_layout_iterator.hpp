@@ -38,17 +38,16 @@ public:
     {
     }
 
-    template <typename Detector, typename Geoms>
+    template <typename Geoms>
     bool try_placement(
         text_layout_generator & layout_generator,
-        Detector & detector,
         Geoms & geoms)
     {
         while (!geoms.empty() && layout_generator.next())
         {
             for (auto it = geoms.begin(); it != geoms.end(); )
             {
-                if (sublayout_.try_placement(layout_generator, detector, *it))
+                if (sublayout_.try_placement(layout_generator, *it))
                 {
                     it = geoms.erase(it);
                 }

@@ -29,6 +29,7 @@
 #include <mapnik/extend_converter.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/label_placements/base.hpp>
+#include <mapnik/collision_cache.hpp>
 
 namespace mapnik
 {
@@ -39,9 +40,11 @@ class text_placement_info;
 struct text_layout_generator : util::noncopyable
 {
     using params_type = label_placement::placement_params;
+    using detector_type = keyed_collision_cache<label_collision_detector4>;
 
     text_layout_generator(
         params_type const & params,
+        detector_type & detector,
         face_manager_freetype & font_manager,
         text_placement_info & info);
 
@@ -74,6 +77,7 @@ struct text_layout_generator : util::noncopyable
     evaluated_text_properties_ptr text_props_;
     std::unique_ptr<layout_container> layouts_;
     placements_list placements_;
+    detector_type & detector_;
 };
 
 }//ns mapnik

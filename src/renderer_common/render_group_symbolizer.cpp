@@ -198,13 +198,13 @@ void render_group_symbolizer(group_symbolizer const& sym,
     text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
         sym, keys::text_placements_)->get_placement_info(common.scale_factor_,
             feature, vars, common.symbol_cache_);
-    group_layout_generator layout_generator(params, common.font_manager_,
+    group_layout_generator layout_generator(params,
+        *common.detector_, common.font_manager_,
         *placement_info, box_elements);
     const label_placement_enum placement_type =
         layout_generator.get_text_props().label_placement;
 
-    label_placement::finder<traits>::apply(placement_type, layout_generator,
-        *common.detector_, params);
+    label_placement::finder<traits>::apply(placement_type, layout_generator, params);
 
     for (pixel_position const& pos : layout_generator.placements_)
     {

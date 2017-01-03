@@ -202,13 +202,13 @@ public:
         text_placement_info_ptr placement_info = mapnik::get<text_placements_ptr>(
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
-        layout_generator_type layout_generator(params, font_manager, *placement_info);
+        layout_generator_type layout_generator(
+            params, detector, font_manager, *placement_info);
 
         const label_placement_enum placement_type =
             layout_generator.get_text_props().label_placement;
 
-        label_placement::finder<Traits>::apply(placement_type, layout_generator,
-            detector, params);
+        label_placement::finder<Traits>::apply(placement_type, layout_generator, params);
 
         typename Traits::placements_type placements(std::move(layout_generator.placements_));
         return placements;

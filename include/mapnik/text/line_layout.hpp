@@ -82,10 +82,9 @@ public:
 
     text_extend_line_layout(params_type const & params);
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom & geom);
 
     inline double get_length(text_layout_generator const & layout_generator) const
@@ -107,10 +106,9 @@ text_extend_line_layout<SubLayout>::text_extend_line_layout(
 }
 
 template <typename SubLayout>
-template <typename LayoutGenerator, typename Detector, typename Geom>
+template <typename LayoutGenerator, typename Geom>
 bool text_extend_line_layout<SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
-    Detector & detector,
     Geom & geom)
 {
     layout_container & layouts = *layout_generator.layouts_;
@@ -121,10 +119,10 @@ bool text_extend_line_layout<SubLayout>::try_placement(
     if (halign == H_ADJUST)
     {
         extend_converter<Geom> ec(geom, halign_adjust_extend);
-        return sublayout_.try_placement(layout_generator, detector, ec);
+        return sublayout_.try_placement(layout_generator, ec);
     }
 
-    return sublayout_.try_placement(layout_generator, detector, geom);
+    return sublayout_.try_placement(layout_generator, geom);
 }
 
 template <typename SubLayout>
@@ -136,17 +134,15 @@ public:
 
     line_layout(params_type const & params);
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom & geom);
 
 protected:
-    template <typename LayoutGenerator, typename LineLayoutPolicy, typename Detector>
+    template <typename LayoutGenerator, typename LineLayoutPolicy>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         vertex_cache & path,
         LineLayoutPolicy & policy);
 
@@ -162,23 +158,21 @@ line_layout<SubLayout>::line_layout(params_type const & params)
 }
 
 template <typename SubLayout>
-template <typename LayoutGenerator, typename Detector, typename Geom>
+template <typename LayoutGenerator, typename Geom>
 bool line_layout<SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
-    Detector & detector,
     Geom & geom)
 {
     vertex_cache path(geom);
     double layout_width = sublayout_.get_length(layout_generator);
     text_line_policy<LayoutGenerator> policy(path, layout_generator, layout_width, params_);
-    return try_placement(layout_generator, detector, path, policy);
+    return try_placement(layout_generator, path, policy);
 }
 
 template <typename SubLayout>
-template <typename LayoutGenerator, typename LineLayoutPolicy, typename Detector>
+template <typename LayoutGenerator, typename LineLayoutPolicy>
 bool line_layout<SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
-    Detector & detector,
     vertex_cache & path,
     LineLayoutPolicy & policy)
 {
@@ -203,7 +197,7 @@ bool line_layout<SubLayout>::try_placement(
             {
                 vertex_cache::scoped_state state(path);
                 if (policy.move(tolerance_offset.get()) &&
-                    sublayout_.try_placement(layout_generator, detector,
+                    sublayout_.try_placement(layout_generator,
                         position_accessor<SubLayout>::get(path)))
                 {
                     success = true;
@@ -221,13 +215,13 @@ class single_line_layout : util::noncopyable
 public:
     using box_type = box2d<double>;
     using params_type = label_placement::placement_params;
+    using layout_generator_type = text_layout_generator;
+    using detector_type = layout_generator_type::detector_type;
 
     single_line_layout(params_type const & params);
 
-    template <typename Detector>
     bool try_placement(
         text_layout_generator & layout_generator,
-        Detector & detector,
         vertex_cache & path);
 
     inline double get_length(text_layout_generator const & layout_generator) const
@@ -236,26 +230,23 @@ public:
     }
 
 private:
-    template <typename Detector>
     bool try_placement(
         layout_container const & layouts,
-        Detector & detector,
+        detector_type & detector,
         evaluated_text_properties const & text_props,
         vertex_cache &pp,
         text_upright_e orientation,
         glyph_positions & glyphs,
         std::vector<box_type> & bboxes);
 
-    template <typename Detector>
     void process_bboxes(
-        Detector & detector,
+        detector_type & detector,
         layout_container & layouts,
         glyph_positions_ptr & glyphs,
         std::vector<box_type> const & bboxes);
 
-    template <typename Detector>
     bool collision(
-        Detector & detector,
+        detector_type & detector,
         evaluated_text_properties const & text_props,
         box_type const& box,
         const value_unicode_string &repeat_key) const;

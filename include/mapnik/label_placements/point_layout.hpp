@@ -39,10 +39,9 @@ public:
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geoms>
+    template <typename LayoutGenerator, typename Geoms>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geoms & geoms)
     {
         std::list<pixel_position> positions;
@@ -60,7 +59,7 @@ public:
             }
         }
 
-        return sublayout_.try_placement(layout_generator, detector, positions);
+        return sublayout_.try_placement(layout_generator, positions);
     }
 
 private:

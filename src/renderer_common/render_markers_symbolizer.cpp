@@ -182,10 +182,11 @@ struct render_marker_symbolizer_visitor
         const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
         const agg::trans_affine marker_trans = recenter * image_tr;
 
-        marker_layout_generator layout_generator(params, marker_box, marker_trans);
+        marker_layout_generator layout_generator(params,
+            *common_.detector_, marker_box, marker_trans);
 
         label_placement::finder<traits>::apply(placement_method,
-            layout_generator, *common_.detector_, params);
+            layout_generator, params);
 
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));
@@ -234,10 +235,11 @@ struct render_marker_symbolizer_visitor
         const agg::trans_affine_translation recenter(-marker_center.x, -marker_center.y);
         const agg::trans_affine marker_trans = recenter * image_tr;
 
-        marker_layout_generator layout_generator(params, marker_box, marker_trans);
+        marker_layout_generator layout_generator(params,
+            *common_.detector_, marker_box, marker_trans);
 
         label_placement::finder<traits>::apply(placement_method,
-            layout_generator, *common_.detector_, params);
+            layout_generator, params);
 
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));

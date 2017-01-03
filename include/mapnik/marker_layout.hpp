@@ -35,25 +35,21 @@ class marker_layout : util::noncopyable
 public:
     using box_type = box2d<double>;
     using params_type = label_placement::placement_params;
+    using layout_generator_type = marker_layout_generator;
+    using detector_type = layout_generator_type::detector_type;
 
     marker_layout(params_type const & params);
 
-    template <typename Detector>
     bool try_placement(
         marker_layout_generator & layout_generator,
-        Detector & detector,
         vertex_cache & path);
 
-    template <typename Detector>
     bool try_placement(
         marker_layout_generator & layout_generator,
-        Detector & detector,
         pixel_position const & pos);
 
-    template <typename Detector>
     bool try_placement(
         marker_layout_generator & layout_generator,
-        Detector & detector,
         point_position const & pos);
 
     inline double get_length(marker_layout_generator const & lg) const
@@ -65,9 +61,7 @@ public:
 protected:
     bool set_direction(double & angle) const;
 
-    template <typename Detector>
     bool push_to_detector(
-        Detector & detector,
         pixel_position const & pos,
         double angle,
         marker_layout_generator & layout_generator);

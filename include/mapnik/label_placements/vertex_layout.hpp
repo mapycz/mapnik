@@ -70,10 +70,9 @@ public:
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom & geom)
     {
         using positions_type = std::list<pixel_position>;
@@ -86,7 +85,7 @@ public:
 
         for (auto const & point : points)
         {
-            success |= sublayout_.try_placement(layout_generator, detector, point);
+            success |= sublayout_.try_placement(layout_generator, point);
         }
 
         return success;
