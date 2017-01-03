@@ -36,63 +36,55 @@ struct finder
     using placements_type = typename T::placements_type;
     using layout_generator_type = typename T::layout_generator_type;
 
+    struct dispatch
+    {
+        layout_generator_type & layout_generator;
+        detector_type & detector;
+        placement_params const & params;
+
+        template <typename Layout>
+        bool apply()
+        {
+            Layout layout(params);
+            return layout.try_placement(layout_generator, detector, params);
+        }
+    };
+
     static placements_type get(
         label_placement_enum placement_type,
         layout_generator_type & layout_generator,
         detector_type & detector,
         placement_params const & params)
     {
+        dispatch dsp{ layout_generator, detector, params };
+
         switch (placement_type)
         {
             default:
             case POINT_PLACEMENT:
             case CENTROID_PLACEMENT:
-            {
-                typename T::point layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
-            break;
+                dsp.template apply<typename T::point>();
+                break;
             case INTERIOR_PLACEMENT:
-            {
-                typename T::interior layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
-            break;
+                dsp.template apply<typename T::interior>();
+                break;
             case VERTEX_PLACEMENT:
-            {
-                typename T::vertex layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
-            break;
+                dsp.template apply<typename T::vertex>();
+                break;
             case GRID_PLACEMENT:
-            {
-                typename T::grid layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
-            break;
+                dsp.template apply<typename T::grid>();
+                break;
             case ALTERNATING_GRID_PLACEMENT:
-            {
-                typename T::alternating_grid layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
-            break;
+                dsp.template apply<typename T::alternating_grid>();
+                break;
             case LINE_PLACEMENT:
-            {
-                typename T::line layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
-            break;
+                dsp.template apply<typename T::line>();
+                break;
             case VERTEX_FIRST_PLACEMENT:
-            {
-                typename T::vertex_first layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
-            break;
+                dsp.template apply<typename T::vertex_first>();
+                break;
             case VERTEX_LAST_PLACEMENT:
-            {
-                typename T::vertex_last layout(params);
-                layout.try_placement(layout_generator, detector, params);
-            }
+                dsp.template apply<typename T::vertex_last>();
         }
 
         placements_type placements(std::move(layout_generator.placements_));
