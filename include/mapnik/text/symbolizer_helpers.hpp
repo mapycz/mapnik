@@ -207,8 +207,11 @@ public:
         const label_placement_enum placement_type =
             layout_generator.get_text_props().label_placement;
 
-        return label_placement::finder<Traits>::get(placement_type, layout_generator,
+        label_placement::finder<Traits>::apply(placement_type, layout_generator,
             detector, params);
+
+        typename Traits::placements_type placements(std::move(layout_generator.placements_));
+        return placements;
     }
 };
 

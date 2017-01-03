@@ -203,11 +203,10 @@ void render_group_symbolizer(group_symbolizer const& sym,
     const label_placement_enum placement_type =
         layout_generator.get_text_props().label_placement;
 
-    pixel_position_list positions(
-        label_placement::finder<traits>::get(placement_type, layout_generator,
-            *common.detector_, params));
+    label_placement::finder<traits>::apply(placement_type, layout_generator,
+        *common.detector_, params);
 
-    for (pixel_position const& pos : positions)
+    for (pixel_position const& pos : layout_generator.placements_)
     {
         for (size_t layout_i = 0; layout_i < layout_thunks.size(); ++layout_i)
         {

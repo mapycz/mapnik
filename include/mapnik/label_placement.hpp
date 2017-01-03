@@ -50,7 +50,7 @@ struct finder
         }
     };
 
-    static placements_type get(
+    static bool apply(
         label_placement_enum placement_type,
         layout_generator_type & layout_generator,
         detector_type & detector,
@@ -63,33 +63,23 @@ struct finder
             default:
             case POINT_PLACEMENT:
             case CENTROID_PLACEMENT:
-                dsp.template apply<typename T::point>();
-                break;
+                return dsp.template apply<typename T::point>();
             case INTERIOR_PLACEMENT:
-                dsp.template apply<typename T::interior>();
-                break;
+                return dsp.template apply<typename T::interior>();
             case VERTEX_PLACEMENT:
-                dsp.template apply<typename T::vertex>();
-                break;
+                return dsp.template apply<typename T::vertex>();
             case GRID_PLACEMENT:
-                dsp.template apply<typename T::grid>();
-                break;
+                return dsp.template apply<typename T::grid>();
             case ALTERNATING_GRID_PLACEMENT:
-                dsp.template apply<typename T::alternating_grid>();
-                break;
+                return dsp.template apply<typename T::alternating_grid>();
             case LINE_PLACEMENT:
-                dsp.template apply<typename T::line>();
-                break;
+                return dsp.template apply<typename T::line>();
             case VERTEX_FIRST_PLACEMENT:
-                dsp.template apply<typename T::vertex_first>();
-                break;
+                return dsp.template apply<typename T::vertex_first>();
             case VERTEX_LAST_PLACEMENT:
-                dsp.template apply<typename T::vertex_last>();
+                return dsp.template apply<typename T::vertex_last>();
         }
-
-        placements_type placements(std::move(layout_generator.placements_));
-
-        return placements;
+        return false;
     }
 };
 

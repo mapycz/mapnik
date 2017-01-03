@@ -184,14 +184,13 @@ struct render_marker_symbolizer_visitor
 
         marker_layout_generator layout_generator(params, marker_box, marker_trans);
 
-        typename traits::placements_type placements(
-            label_placement::finder<traits>::get(placement_method,
-                layout_generator, *common_.detector_, params));
+        label_placement::finder<traits>::apply(placement_method,
+            layout_generator, *common_.detector_, params);
 
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));
 
-        for (auto const & placement : placements)
+        for (auto const & placement : layout_generator.placements_)
         {
             agg::trans_affine matrix = marker_trans;
             matrix.rotate(placement.angle);
@@ -237,14 +236,13 @@ struct render_marker_symbolizer_visitor
 
         marker_layout_generator layout_generator(params, marker_box, marker_trans);
 
-        typename traits::placements_type placements(
-            label_placement::finder<traits>::get(placement_method,
-                layout_generator, *common_.detector_, params));
+        label_placement::finder<traits>::apply(placement_method,
+            layout_generator, *common_.detector_, params);
 
         boost::optional<std::string> key(get_optional<std::string>(
             sym_, keys::symbol_key, feature_, common_.vars_));
 
-        for (auto const & placement : placements)
+        for (auto const & placement : layout_generator.placements_)
         {
             agg::trans_affine matrix = marker_trans;
             matrix.rotate(placement.angle);
