@@ -124,7 +124,7 @@ bool point_layout::try_placement(
         bbox.re_center(layout_center.x, layout_center.y);
 
         /* For point placements it is faster to just check the bounding box. */
-        if (collision(detector, text_props, bbox, layouts.text(), false)) return false;
+        if (collision(detector, text_props, bbox, layouts.text())) return false;
 
         if (layout.glyphs_count()) bboxes.push_back(std::move(bbox));
 
@@ -213,20 +213,10 @@ bool point_layout::collision(
     Detector & detector,
     evaluated_text_properties const & text_props,
     const box2d<double> &box,
-    const value_unicode_string &repeat_key,
-    bool line_placement) const
+    const value_unicode_string &repeat_key) const
 {
-    double margin, repeat_distance;
-    if (line_placement)
-    {
-        margin = text_props.margin * params_.scale_factor;
-        repeat_distance = (text_props.repeat_distance != 0 ? text_props.repeat_distance : text_props.minimum_distance) * params_.scale_factor;
-    }
-    else
-    {
-        margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * params_.scale_factor;
-        repeat_distance = text_props.repeat_distance * params_.scale_factor;
-    }
+    double margin = (text_props.margin != 0 ? text_props.margin : text_props.minimum_distance) * params_.scale_factor;
+    double repeat_distance = text_props.repeat_distance * params_.scale_factor;
     return (text_props.avoid_edges && !params_.dims.contains(box))
         ||
         (text_props.minimum_padding > 0 &&
@@ -242,8 +232,7 @@ template bool point_layout::collision(
     detector_type & detector,
     evaluated_text_properties const & text_props,
     const box2d<double> &box,
-    const value_unicode_string &repeat_key,
-    bool line_placement) const;
+    const value_unicode_string &repeat_key) const;
 
 shield_layout::shield_layout(params_type const & params)
     : point_layout(params),
@@ -341,7 +330,7 @@ bool shield_layout::add_marker(
         glyphs.get_base_point()) + marker_displacement_;
     box2d<double> bbox = marker_box_;
     bbox.move(real_pos.x, real_pos.y);
-    if (collision(detector, text_props, bbox, layouts.text(), false)) return false;
+    if (collision(detector, text_props, bbox, layouts.text())) return false;
     detector.insert(bbox, this->collision_cache_insert_);
     bboxes.push_back(std::move(bbox));
     glyphs.set_marker(marker_, real_pos);

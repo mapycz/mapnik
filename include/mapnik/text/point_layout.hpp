@@ -83,8 +83,7 @@ protected:
         Detector & detector,
         evaluated_text_properties const & text_props,
         box_type const& box,
-        const value_unicode_string &repeat_key,
-        bool line_placement) const;
+        const value_unicode_string &repeat_key) const;
 
     params_type const & params_;
     const std::vector<std::string> collision_cache_insert_;
