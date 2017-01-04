@@ -129,12 +129,12 @@ struct grid_vertex_adapter
     {
     }
 
-    void rewind(unsigned) const
+    void rewind(unsigned)
     {
         si_.rewind();
     }
 
-    unsigned vertex(coord_type * x, coord_type * y) const
+    unsigned vertex(coord_type * x, coord_type * y)
     {
         int x_int, y_int;
         while (si_.vertex(&x_int, &y_int))
@@ -206,7 +206,7 @@ protected:
     const T dx_, dy_;
     image_gray8 img_;
     const view_transform vt_;
-    mutable spiral_iterator si_;
+    spiral_iterator si_;
 };
 
 template <typename PathType, typename T>
@@ -214,7 +214,7 @@ struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
 {
     using grid_vertex_adapter<PathType, T>::grid_vertex_adapter;
 
-    unsigned vertex(T * x, T * y) const
+    unsigned vertex(T * x, T * y)
     {
         int grid_x, grid_y;
         while (this->si_.vertex(&grid_x, &grid_y))
