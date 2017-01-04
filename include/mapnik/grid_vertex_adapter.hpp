@@ -141,7 +141,10 @@ struct grid_vertex_adapter
         {
             x_int *= dx_;
             y_int *= dy_;
-            if (get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
+            if (x_int >= 0 && y_int >= 0 &&
+                x_int < this->img_.width() &&
+                y_int < this->img_.height() &&
+                get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
             {
                 *x = x_int;
                 *y = y_int;
@@ -162,7 +165,7 @@ protected:
         : dx_(dx), dy_(dy),
         img_(create_bitmap(box)),
         vt_(img_.width(), img_.height(), box),
-        si_(box.width() / dx, box.height() / dy)
+        si_(std::ceil(box.width() / dx), std::ceil(box.height() / dy))
     {
         transform_path<PathType, coord_type, view_transform> tp(path, vt_);
         tp.rewind(0);
@@ -222,7 +225,10 @@ struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
             {
                 raster_x += this->dx_ / 2.0;
             }
-            if (get_pixel<image_gray8::pixel_type>(this->img_, raster_x, raster_y))
+            if (raster_x >= 0 && raster_y >= 0 &&
+                raster_x < this->img_.width() &&
+                raster_y < this->img_.height() &&
+                get_pixel<image_gray8::pixel_type>(this->img_, raster_x, raster_y))
             {
                 *x = raster_x;
                 *y = raster_y;
