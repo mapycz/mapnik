@@ -162,10 +162,11 @@ struct grid_vertex_adapter
 
 protected:
     grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
-        : dx_(dx), dy_(dy),
-        img_(create_bitmap(box)),
-        vt_(img_.width(), img_.height(), box),
-        si_(std::ceil(box.width() / dx), std::ceil(box.height() / dy))
+        : scale_(get_scale(box)),
+          dx_(dx * scale_), dy_(dy * scale_),
+          img_(create_bitmap(box)),
+          vt_(img_.width(), img_.height(), box),
+          si_(std::ceil(box.width() / dx), std::ceil(box.height() / dy))
     {
         transform_path<PathType, coord_type, view_transform> tp(path, vt_);
         tp.rewind(0);
@@ -183,26 +184,28 @@ protected:
         agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
-    image_gray8 create_bitmap(box2d<T> box)
+    image_gray8 create_bitmap(box2d<T> const & box) const
     {
         if (!box.valid())
         {
             return image_gray8(0, 0);
         }
 
-        try
-        {
-            return image_gray8(box.width(), box.height());
-        }
-        catch (std::runtime_error const & e)
-        {
-            // TODO: Scale down in this case.
-            MAPNIK_LOG_ERROR(grid_vertex_adapter) << "grid vertex adapter: Cannot allocate underlaying bitmap. Bbox: "
-                << box.to_string() << "; " << e.what();
-            return image_gray8(0, 0);
-        }
+        return image_gray8(box.width() * scale_, box.height() * scale_);
     }
 
+    double get_scale(box2d<T> const & box) const
+    {
+        T size = std::max(box.width(), box.height());
+        const int max_size = 32768;
+        if (size > max_size)
+        {
+            return max_size / size;
+        }
+        return 1;
+    }
+
+    const double scale_;
     const T dx_, dy_;
     image_gray8 img_;
     const view_transform vt_;
