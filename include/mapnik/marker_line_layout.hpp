@@ -42,10 +42,9 @@ public:
     {
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom & geom)
     {
         // TODO: Very dubious case needed by marker_line_placement_on_points.xml.
@@ -55,8 +54,7 @@ public:
             pixel_position pos;
             if (label::centroid(geom, pos.x, pos.y))
             {
-                return this->sublayout_.try_placement(
-                    layout_generator, detector, pos);
+                return this->sublayout_.try_placement(layout_generator, pos);
             }
             return false;
         }
@@ -66,7 +64,7 @@ public:
         marker_line_policy policy(path, layout_generator,
             layout_width, spacing_, position_tolerance_, this->params_);
         return line_layout<SubLayout>::try_placement(
-            layout_generator, detector, path, policy);
+            layout_generator, path, policy);
     }
 
 protected:
@@ -87,28 +85,25 @@ protected:
 template <typename SubLayout>
 class marker_vertex_converter : util::noncopyable
 {
-    template <typename Layout, typename LayoutGenerator, typename Detector>
+    template <typename Layout, typename LayoutGenerator>
     struct converter_adapter
     {
         converter_adapter(Layout & layout,
-            LayoutGenerator & layout_generator,
-            Detector & detector)
+            LayoutGenerator & layout_generator)
             : layout_(layout),
-              layout_generator_(layout_generator),
-              detector_(detector)
+              layout_generator_(layout_generator)
         {
         }
 
         template <typename PathT>
         void add_path(PathT & path) const
         {
-            status_ = layout_.try_placement(layout_generator_, detector_, path);
+            status_ = layout_.try_placement(layout_generator_, path);
         }
 
         bool status() const { return status_; }
         Layout & layout_;
         LayoutGenerator & layout_generator_;
-        Detector & detector_;
         mutable bool status_ = false;
     };
 
@@ -202,15 +197,14 @@ public:
         if (std::fabs(offset) > 0.0) converter_.template set<offset_transform_tag>();
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom & geom)
     {
-        using adapter_type = converter_adapter<SubLayout, LayoutGenerator, Detector>;
+        using adapter_type = converter_adapter<SubLayout, LayoutGenerator>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
-        adapter_type adapter(sublayout_, layout_generator, detector);
+        adapter_type adapter(sublayout_, layout_generator);
         visitor_type visitor(converter_, adapter, clip_);
         return util::apply_visitor(visitor, geom);
     }

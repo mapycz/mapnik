@@ -22,7 +22,6 @@
 #ifndef MAPNIK_TEXT_GRID_LAYOUT_HPP
 #define MAPNIK_TEXT_GRID_LAYOUT_HPP
 
-//mapnik
 #include <mapnik/box2d.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/text/text_layout.hpp>
@@ -47,17 +46,15 @@ public:
 
     grid_layout(params_type const & params);
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom const & geom);
 
 protected:
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom const & geom_ref,
         double dx, double dy);
 
@@ -128,23 +125,21 @@ grid_layout<GridVertexAdapter, SubLayout>::grid_layout(params_type const & param
 }
 
 template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
-template <typename LayoutGenerator, typename Detector, typename Geom>
+template <typename LayoutGenerator, typename Geom>
 bool grid_layout<GridVertexAdapter, SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
-    Detector & detector,
     Geom const & geom)
 {
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
     double dx = text_props.grid_cell_width * params_.scale_factor;
     double dy = text_props.grid_cell_height * params_.scale_factor;
-    return try_placement(layout_generator, detector, geom, dx, dy);
+    return try_placement(layout_generator, geom, dx, dy);
 }
 
 template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
-template <typename LayoutGenerator, typename Detector, typename Geom>
+template <typename LayoutGenerator, typename Geom>
 bool grid_layout<GridVertexAdapter, SubLayout>::try_placement(
     LayoutGenerator & layout_generator,
-    Detector & detector,
     Geom const & geom_ref,
     double dx, double dy)
 {
@@ -160,7 +155,7 @@ bool grid_layout<GridVertexAdapter, SubLayout>::try_placement(
 
     for (auto const & point : points)
     {
-        success |= sublayout_.try_placement(layout_generator, detector, point);
+        success |= sublayout_.try_placement(layout_generator, point);
     }
 
     return success;

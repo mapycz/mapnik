@@ -32,28 +32,25 @@ namespace mapnik { namespace label_placement {
 template <typename SubLayout>
 class vertex_converter : util::noncopyable
 {
-    template <typename Layout, typename LayoutGenerator, typename Detector>
+    template <typename Layout, typename LayoutGenerator>
     struct converter_adapter
     {
         converter_adapter(Layout & layout,
-            LayoutGenerator & layout_generator,
-            Detector & detector)
+            LayoutGenerator & layout_generator)
             : layout_(layout),
-              layout_generator_(layout_generator),
-              detector_(detector)
+              layout_generator_(layout_generator)
         {
         }
 
         template <typename PathT>
         void add_path(PathT & path) const
         {
-            status_ = layout_.try_placement(layout_generator_, detector_, path);
+            status_ = layout_.try_placement(layout_generator_, path);
         }
 
         bool status() const { return status_; }
         Layout & layout_;
         LayoutGenerator & layout_generator_;
-        Detector & detector_;
         mutable bool status_ = false;
     };
 
@@ -127,15 +124,14 @@ public:
         if (smooth > 0.0) converter_.template set<smooth_tag>();
     }
 
-    template <typename LayoutGenerator, typename Detector, typename Geom>
+    template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Detector & detector,
         Geom & geom)
     {
-        using adapter_type = converter_adapter<SubLayout, LayoutGenerator, Detector>;
+        using adapter_type = converter_adapter<SubLayout, LayoutGenerator>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
-        adapter_type adapter(sublayout_, layout_generator, detector);
+        adapter_type adapter(sublayout_, layout_generator);
         visitor_type visitor(converter_, adapter);
         return util::apply_visitor(visitor, geom);
     }
