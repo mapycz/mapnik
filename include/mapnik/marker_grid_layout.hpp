@@ -43,7 +43,7 @@ public:
     template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Geom const & geom)
+        Geom & geom)
     {
         return grid_layout<GridVertexAdapter, SubLayout>::try_placement(
             layout_generator, geom, dx_, dy_);

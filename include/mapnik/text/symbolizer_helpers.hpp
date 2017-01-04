@@ -69,10 +69,14 @@ struct text_symbolizer_traits
             vertex_layout<mapnik::point_layout>>>;
     using grid = split_multi<
         text_layout_iterator<
-            grid_layout<geometry::grid_vertex_adapter, mapnik::point_layout>>>;
+            vertex_converter<
+                grid_layout<geometry::grid_vertex_adapter,
+                    mapnik::point_layout>>>>;
     using alternating_grid = split_multi<
         text_layout_iterator<
-            grid_layout<geometry::alternating_grid_vertex_adapter, mapnik::point_layout>>>;
+            vertex_converter<
+                grid_layout<geometry::alternating_grid_vertex_adapter,
+                    mapnik::point_layout>>>>;
     using line = split_multi<
         text_layout_iterator<
             vertex_converter<
@@ -107,10 +111,14 @@ struct shield_symbolizer_traits
             vertex_layout<shield_layout>>>;
     using grid = split_multi<
         text_layout_iterator<
-            grid_layout<geometry::grid_vertex_adapter, shield_layout>>>;
+            vertex_converter<
+                grid_layout<geometry::grid_vertex_adapter,
+                    shield_layout>>>>;
     using alternating_grid = split_multi<
         text_layout_iterator<
-            grid_layout<geometry::alternating_grid_vertex_adapter, shield_layout>>>;
+            vertex_converter<
+                grid_layout<geometry::alternating_grid_vertex_adapter,
+                    shield_layout>>>>;
     using line = split_multi<
         text_layout_iterator<
             vertex_converter<
@@ -144,12 +152,14 @@ struct group_symbolizer_traits
                 group_point_layout>>>;
     using grid = split_multi<
         geom_iterator<
-            grid_layout<
-                geometry::grid_vertex_adapter, group_point_layout>>>;
+            vertex_converter<
+                grid_layout<geometry::grid_vertex_adapter,
+                    group_point_layout>>>>;
     using alternating_grid = split_multi<
         geom_iterator<
-            grid_layout<
-                geometry::alternating_grid_vertex_adapter, group_point_layout>>>;
+            vertex_converter<
+                grid_layout<geometry::alternating_grid_vertex_adapter,
+                    group_point_layout>>>>;
     using line = split_multi<
         geom_iterator<
             vertex_converter<

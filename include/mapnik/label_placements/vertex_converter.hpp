@@ -60,14 +60,22 @@ class vertex_converter : util::noncopyable
     public:
         line_placement_visitor(
             VC & converter,
-            Adapter const & adapter)
+            Adapter const & adapter,
+            value_bool clip)
             : converter_(converter),
-              adapter_(adapter)
+              adapter_(adapter),
+              clip_(clip)
         {
         }
 
         bool operator()(geometry::line_string<double> const & geo) const
         {
+            if (clip_)
+            {
+                converter_.template set<clip_line_tag>();
+            }
+            converter_.template unset<clip_poly_tag>();
+
             geometry::line_string_vertex_adapter<double> va(geo);
             converter_.apply(va, adapter_);
             return adapter_.status();
@@ -75,7 +83,20 @@ class vertex_converter : util::noncopyable
 
         bool operator()(geometry::polygon<double> const & geo) const
         {
+            converter_.template unset<clip_line_tag>();
+            if (clip_)
+            {
+                converter_.template set<clip_poly_tag>();
+            }
+
             geometry::polygon_vertex_adapter<double> va(geo);
+            converter_.apply(va, adapter_);
+            return adapter_.status();
+        }
+
+        bool operator()(geometry::point<double> const & geo) const
+        {
+            geometry::point_vertex_adapter<double> va(geo);
             converter_.apply(va, adapter_);
             return adapter_.status();
         }
@@ -89,6 +110,7 @@ class vertex_converter : util::noncopyable
     private:
         VC & converter_;
         Adapter const & adapter_;
+        const value_bool clip_;
     };
 
 public:
@@ -102,26 +124,28 @@ public:
         affine_transform_tag,
         extend_tag,
         simplify_tag,
-        smooth_tag>;
+        smooth_tag,
+        offset_transform_tag>;
 
     vertex_converter(params_type const & params)
     : sublayout_(params),
       converter_(params.query_extent, params.symbolizer,
         params.view_transform, params.proj_transform,
         params.affine_transform, params.feature, params.vars,
-        params.scale_factor)
+        params.scale_factor),
+      clip_(params.get<value_bool, keys::clip>())
     {
-        value_bool clip = params.get<value_bool, keys::clip>();
         value_double simplify_tolerance = params.get<value_double, keys::simplify_tolerance>();
         value_double smooth = params.get<value_double, keys::smooth>();
         value_double extend = params.get<value_double, keys::extend>();
+        value_double offset = params.get<value_double, keys::offset>();
 
-        if (clip) converter_.template set<clip_line_tag>();
         converter_.template set<transform_tag>();
         converter_.template set<affine_transform_tag>();
         if (extend > 0.0) converter_.template set<extend_tag>();
         if (simplify_tolerance > 0.0) converter_.template set<simplify_tag>();
         if (smooth > 0.0) converter_.template set<smooth_tag>();
+        if (std::fabs(offset) > 0.0) converter_.template set<offset_transform_tag>();
     }
 
     template <typename LayoutGenerator, typename Geom>
@@ -132,13 +156,14 @@ public:
         using adapter_type = converter_adapter<SubLayout, LayoutGenerator>;
         using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
         adapter_type adapter(sublayout_, layout_generator);
-        visitor_type visitor(converter_, adapter);
+        visitor_type visitor(converter_, adapter, clip_);
         return util::apply_visitor(visitor, geom);
     }
 
 private:
     SubLayout sublayout_;
     vertex_converter_type converter_;
+    const value_bool clip_;
 };
 
 } }
