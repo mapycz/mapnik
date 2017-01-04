@@ -77,7 +77,7 @@ struct marker_symbolizer_traits
                     marker_layout>>>>;
     using line = split_multi<
         geom_iterator<
-            marker_vertex_converter<
+            vertex_converter<
                 marker_line_layout<marker_layout>>>>;
     using vertex_first = split_multi<
         geom_iterator<
