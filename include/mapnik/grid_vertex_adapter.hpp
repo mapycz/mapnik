@@ -140,8 +140,8 @@ struct grid_vertex_adapter
         int x_int, y_int;
         while (si_.vertex(&x_int, &y_int))
         {
-            int pix_x = img_box_.center().x + center_offset_.x + static_cast<double>(x_int - si_.size_x / 2) * dx_;
-            int pix_y = img_box_.center().y - center_offset_.y + static_cast<double>(y_int - si_.size_y / 2) * dy_;
+            int pix_x = interior_.x + static_cast<double>(x_int - si_.size_x / 2) * dx_;
+            int pix_y = interior_.y + static_cast<double>(y_int - si_.size_y / 2) * dy_;
 
             if (img_box_.contains(pix_x, pix_y) &&
                 get_pixel<image_gray8::pixel_type>(img_, pix_x, pix_y))
@@ -164,13 +164,12 @@ protected:
     grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
         : scale_(get_scale(box)),
           dx_(dx * scale_), dy_(dy * scale_),
-          interior_(interior(path, box)),
           img_(create_bitmap(box)),
           img_box_(0, 0, img_.width(), img_.height()),
-          center_offset_((interior_ - box.center()) * scale_),
           vt_(img_.width(), img_.height(), box),
-          si_(std::ceil((box.width() + std::abs(box.center().x - interior_.x) * 2) / dx),
-              std::ceil((box.height() + std::abs(box.center().y - interior_.y) * 2) / dy))
+          interior_(interior(path, box)),
+          si_(std::ceil((img_box_.width() + std::abs(img_box_.center().x - interior_.x) * 2.0) / dx_),
+              std::ceil((img_box_.height() + std::abs(img_box_.center().y - interior_.y) * 2.0) / dy_))
     {
         transform_path<PathType, coord_type, view_transform> tp(path, vt_);
         tp.rewind(0);
@@ -188,16 +187,6 @@ protected:
         agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
-    image_gray8 create_bitmap(box2d<T> const & box) const
-    {
-        if (!box.valid())
-        {
-            return image_gray8(0, 0);
-        }
-
-        return image_gray8(box.width() * scale_, box.height() * scale_);
-    }
-
     double get_scale(box2d<T> const & box) const
     {
         T size = std::max(box.width(), box.height());
@@ -209,6 +198,16 @@ protected:
         return 1;
     }
 
+    image_gray8 create_bitmap(box2d<T> const & box) const
+    {
+        if (!box.valid())
+        {
+            return image_gray8(0, 0);
+        }
+
+        return image_gray8(box.width() * scale_, box.height() * scale_);
+    }
+
     coord2d_type interior(PathType & path, box2d<T> const & box) const
     {
         coord2d_type interior;
@@ -218,22 +217,17 @@ protected:
             return box.center();
         }
 
+        vt_.forward(&interior.x, &interior.y);
+
         return interior;
     }
 
-    /*coord2d_type rendering_center(box2d<T> const & box) const
-    {
-        coord2d_type interior_offset((interior_ - box.center()) * scale_),
-        return coord2d_type(img_box_.center().x + ;
-    }*/
-
     const double scale_;
     const T dx_, dy_;
-    const coord2d_type interior_;
     image_gray8 img_;
     box2d<int> img_box_;
-    const coord2d_type center_offset_;
     const view_transform vt_;
+    const coord2d_type interior_;
     spiral_iterator si_;
 };
 
