@@ -161,13 +161,13 @@ struct grid_vertex_adapter
     }
 
 protected:
-    grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
-        : scale_(get_scale(box)),
+    grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> envelope)
+        : scale_(get_scale(envelope)),
           dx_(dx * scale_), dy_(dy * scale_),
-          img_(create_bitmap(box)),
+          img_(create_bitmap(envelope)),
           img_box_(0, 0, img_.width(), img_.height()),
-          vt_(img_.width(), img_.height(), box),
-          interior_(interior(path, box)),
+          vt_(img_.width(), img_.height(), envelope),
+          interior_(interior(path, envelope)),
           si_(std::ceil((img_box_.width() + std::abs(img_box_.center().x - interior_.x) * 2.0) / dx_),
               std::ceil((img_box_.height() + std::abs(img_box_.center().y - interior_.y) * 2.0) / dy_))
     {
@@ -187,9 +187,9 @@ protected:
         agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
-    double get_scale(box2d<T> const & box) const
+    double get_scale(box2d<T> const & envelope) const
     {
-        T size = std::max(box.width(), box.height());
+        T size = std::max(envelope.width(), envelope.height());
         const int max_size = 32768;
         if (size > max_size)
         {
@@ -208,13 +208,13 @@ protected:
         return image_gray8(box.width() * scale_, box.height() * scale_);
     }
 
-    coord2d_type interior(PathType & path, box2d<T> const & box) const
+    coord2d_type interior(PathType & path, box2d<T> const & envelope) const
     {
         coord2d_type interior;
 
         if (!label::interior_position(path, interior.x, interior.y))
         {
-            return box.center();
+            interior = envelope.center();
         }
 
         vt_.forward(&interior.x, &interior.y);
