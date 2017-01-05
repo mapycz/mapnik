@@ -123,6 +123,7 @@ template <typename PathType, typename T>
 struct grid_vertex_adapter
 {
     using coord_type = T;
+    using coord2d_type = coord<coord_type, 2>;
 
     grid_vertex_adapter(PathType & path, T dx, T dy)
         : grid_vertex_adapter(path, dx, dy, mapnik::envelope(path))
@@ -139,15 +140,14 @@ struct grid_vertex_adapter
         int x_int, y_int;
         while (si_.vertex(&x_int, &y_int))
         {
-            x_int *= dx_;
-            y_int *= dy_;
-            if (x_int >= 0 && y_int >= 0 &&
-                x_int < this->img_.width() &&
-                y_int < this->img_.height() &&
-                get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
+            int pix_x = img_box_.center().x + center_offset_.x + static_cast<double>(x_int - si_.size_x / 2) * dx_;
+            int pix_y = img_box_.center().y - center_offset_.y + static_cast<double>(y_int - si_.size_y / 2) * dy_;
+
+            if (img_box_.contains(pix_x, pix_y) &&
+                get_pixel<image_gray8::pixel_type>(img_, pix_x, pix_y))
             {
-                *x = x_int;
-                *y = y_int;
+                *x = pix_x;
+                *y = pix_y;
                 vt_.backward(x, y);
                 return mapnik::SEG_MOVETO;
             }
@@ -164,9 +164,13 @@ protected:
     grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
         : scale_(get_scale(box)),
           dx_(dx * scale_), dy_(dy * scale_),
+          interior_(interior(path, box)),
           img_(create_bitmap(box)),
+          img_box_(0, 0, img_.width(), img_.height()),
+          center_offset_((interior_ - box.center()) * scale_),
           vt_(img_.width(), img_.height(), box),
-          si_(std::ceil(box.width() / dx), std::ceil(box.height() / dy))
+          si_(std::ceil((box.width() + std::abs(box.center().x - interior_.x) * 2) / dx),
+              std::ceil((box.height() + std::abs(box.center().y - interior_.y) * 2) / dy))
     {
         transform_path<PathType, coord_type, view_transform> tp(path, vt_);
         tp.rewind(0);
@@ -205,9 +209,30 @@ protected:
         return 1;
     }
 
+    coord2d_type interior(PathType & path, box2d<T> const & box) const
+    {
+        coord2d_type interior;
+
+        if (!label::interior_position(path, interior.x, interior.y))
+        {
+            return box.center();
+        }
+
+        return interior;
+    }
+
+    /*coord2d_type rendering_center(box2d<T> const & box) const
+    {
+        coord2d_type interior_offset((interior_ - box.center()) * scale_),
+        return coord2d_type(img_box_.center().x + ;
+    }*/
+
     const double scale_;
     const T dx_, dy_;
+    const coord2d_type interior_;
     image_gray8 img_;
+    box2d<int> img_box_;
+    const coord2d_type center_offset_;
     const view_transform vt_;
     spiral_iterator si_;
 };
@@ -228,9 +253,7 @@ struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
             {
                 raster_x += this->dx_ / 2.0;
             }
-            if (raster_x >= 0 && raster_y >= 0 &&
-                raster_x < this->img_.width() &&
-                raster_y < this->img_.height() &&
+            if (this->img_box_.contains(raster_x, raster_y) &&
                 get_pixel<image_gray8::pixel_type>(this->img_, raster_x, raster_y))
             {
                 *x = raster_x;
