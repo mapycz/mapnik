@@ -137,11 +137,11 @@ struct grid_vertex_adapter
 
     unsigned vertex(coord_type * x, coord_type * y)
     {
-        int x_int, y_int;
-        while (si_.vertex(&x_int, &y_int))
+        int pix_x, pix_y;
+        while (si_.vertex(&pix_x, &pix_y))
         {
-            int pix_x = interior_.x + static_cast<double>(x_int - si_.size_x / 2) * dx_;
-            int pix_y = interior_.y + static_cast<double>(y_int - si_.size_y / 2) * dy_;
+            pix_x = interior_.x + static_cast<double>(pix_x - si_.size_x / 2) * dx_;
+            pix_y = interior_.y + static_cast<double>(pix_y - si_.size_y / 2) * dy_;
 
             if (img_box_.contains(pix_x, pix_y) &&
                 get_pixel<image_gray8::pixel_type>(img_, pix_x, pix_y))
@@ -238,20 +238,25 @@ struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
 
     unsigned vertex(T * x, T * y)
     {
-        int grid_x, grid_y;
-        while (this->si_.vertex(&grid_x, &grid_y))
+        int pix_x, pix_y;
+        while (this->si_.vertex(&pix_x, &pix_y))
         {
-            int raster_x = grid_x * this->dx_;
-            int raster_y = grid_y * this->dy_;
-            if (grid_y % 2 == 0)
+            int recentered_x = pix_x - this->si_.size_x / 2;
+            int recentered_y = pix_y - this->si_.size_y / 2;
+
+            pix_x = this->interior_.x + static_cast<double>(recentered_x) * this->dx_;
+            pix_y = this->interior_.y + static_cast<double>(recentered_y) * this->dy_;
+
+            if (recentered_y % 2 != 0)
             {
-                raster_x += this->dx_ / 2.0;
+                pix_x += this->dx_ / 2.0;
             }
-            if (this->img_box_.contains(raster_x, raster_y) &&
-                get_pixel<image_gray8::pixel_type>(this->img_, raster_x, raster_y))
+
+            if (this->img_box_.contains(pix_x, pix_y) &&
+                get_pixel<image_gray8::pixel_type>(this->img_, pix_x, pix_y))
             {
-                *x = raster_x;
-                *y = raster_y;
+                *x = pix_x;
+                *y = pix_y;
                 this->vt_.backward(x, y);
                 return mapnik::SEG_MOVETO;
             }
