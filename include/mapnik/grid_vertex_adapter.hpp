@@ -123,6 +123,7 @@ template <typename PathType, typename T>
 struct grid_vertex_adapter
 {
     using coord_type = T;
+    using coord2d_type = coord<coord_type, 2>;
 
     grid_vertex_adapter(PathType & path, T dx, T dy)
         : grid_vertex_adapter(path, dx, dy, mapnik::envelope(path))
@@ -136,18 +137,17 @@ struct grid_vertex_adapter
 
     unsigned vertex(coord_type * x, coord_type * y)
     {
-        int x_int, y_int;
-        while (si_.vertex(&x_int, &y_int))
+        int pix_x, pix_y;
+        while (si_.vertex(&pix_x, &pix_y))
         {
-            x_int *= dx_;
-            y_int *= dy_;
-            if (x_int >= 0 && y_int >= 0 &&
-                x_int < this->img_.width() &&
-                y_int < this->img_.height() &&
-                get_pixel<image_gray8::pixel_type>(img_, x_int, y_int))
+            pix_x = interior_.x + static_cast<double>(pix_x - si_.size_x / 2) * dx_;
+            pix_y = interior_.y + static_cast<double>(pix_y - si_.size_y / 2) * dy_;
+
+            if (img_box_.contains(pix_x, pix_y) &&
+                get_pixel<image_gray8::pixel_type>(img_, pix_x, pix_y))
             {
-                *x = x_int;
-                *y = y_int;
+                *x = pix_x;
+                *y = pix_y;
                 vt_.backward(x, y);
                 return mapnik::SEG_MOVETO;
             }
@@ -161,12 +161,15 @@ struct grid_vertex_adapter
     }
 
 protected:
-    grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> box)
-        : scale_(get_scale(box)),
+    grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> envelope)
+        : scale_(get_scale(envelope)),
           dx_(dx * scale_), dy_(dy * scale_),
-          img_(create_bitmap(box)),
-          vt_(img_.width(), img_.height(), box),
-          si_(std::ceil(box.width() / dx), std::ceil(box.height() / dy))
+          img_(create_bitmap(envelope)),
+          img_box_(0, 0, img_.width(), img_.height()),
+          vt_(img_.width(), img_.height(), envelope),
+          interior_(interior(path, envelope)),
+          si_(std::ceil((img_box_.width() + std::abs(img_box_.center().x - interior_.x) * 2.0) / dx_),
+              std::ceil((img_box_.height() + std::abs(img_box_.center().y - interior_.y) * 2.0) / dy_))
     {
         transform_path<PathType, coord_type, view_transform> tp(path, vt_);
         tp.rewind(0);
@@ -184,6 +187,17 @@ protected:
         agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
+    double get_scale(box2d<T> const & envelope) const
+    {
+        T size = std::max(envelope.width(), envelope.height());
+        const int max_size = 32768;
+        if (size > max_size)
+        {
+            return max_size / size;
+        }
+        return 1;
+    }
+
     image_gray8 create_bitmap(box2d<T> const & box) const
     {
         if (!box.valid())
@@ -194,21 +208,26 @@ protected:
         return image_gray8(box.width() * scale_, box.height() * scale_);
     }
 
-    double get_scale(box2d<T> const & box) const
+    coord2d_type interior(PathType & path, box2d<T> const & envelope) const
     {
-        T size = std::max(box.width(), box.height());
-        const int max_size = 32768;
-        if (size > max_size)
+        coord2d_type interior;
+
+        if (!label::interior_position(path, interior.x, interior.y))
         {
-            return max_size / size;
+            interior = envelope.center();
         }
-        return 1;
+
+        vt_.forward(&interior.x, &interior.y);
+
+        return interior;
     }
 
     const double scale_;
     const T dx_, dy_;
     image_gray8 img_;
+    box2d<int> img_box_;
     const view_transform vt_;
+    const coord2d_type interior_;
     spiral_iterator si_;
 };
 
@@ -219,22 +238,25 @@ struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
 
     unsigned vertex(T * x, T * y)
     {
-        int grid_x, grid_y;
-        while (this->si_.vertex(&grid_x, &grid_y))
+        int pix_x, pix_y;
+        while (this->si_.vertex(&pix_x, &pix_y))
         {
-            int raster_x = grid_x * this->dx_;
-            int raster_y = grid_y * this->dy_;
-            if (grid_y % 2 == 0)
+            int recentered_x = pix_x - this->si_.size_x / 2;
+            int recentered_y = pix_y - this->si_.size_y / 2;
+
+            pix_x = this->interior_.x + static_cast<double>(recentered_x) * this->dx_;
+            pix_y = this->interior_.y + static_cast<double>(recentered_y) * this->dy_;
+
+            if (recentered_y % 2 != 0)
             {
-                raster_x += this->dx_ / 2.0;
+                pix_x += this->dx_ / 2.0;
             }
-            if (raster_x >= 0 && raster_y >= 0 &&
-                raster_x < this->img_.width() &&
-                raster_y < this->img_.height() &&
-                get_pixel<image_gray8::pixel_type>(this->img_, raster_x, raster_y))
+
+            if (this->img_box_.contains(pix_x, pix_y) &&
+                get_pixel<image_gray8::pixel_type>(this->img_, pix_x, pix_y))
             {
-                *x = raster_x;
-                *y = raster_y;
+                *x = pix_x;
+                *y = pix_y;
                 this->vt_.backward(x, y);
                 return mapnik::SEG_MOVETO;
             }
