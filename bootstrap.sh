@@ -11,7 +11,7 @@ todo
 - shrink icu data
 '
 
-MASON_VERSION="new-pkgs"
+MASON_VERSION="c01f6694c64fd93cd188f0a3f6e156b1e672702f"
 
 function setup_mason() {
     if [[ ! -d ./.mason ]]; then
@@ -19,7 +19,7 @@ function setup_mason() {
         (cd ./.mason && git checkout ${MASON_VERSION})
     else
         echo "Updating to latest mason"
-        (cd ./.mason && git fetch && git checkout ${MASON_VERSION} && git pull)
+        (cd ./.mason && git fetch && git checkout ${MASON_VERSION})
     fi
     export PATH=$(pwd)/.mason:$PATH
     export CXX=${CXX:-g++}
