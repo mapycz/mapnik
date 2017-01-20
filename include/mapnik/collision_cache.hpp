@@ -23,8 +23,8 @@
 #ifndef MAPNIK_LABEL_COLLISION_CACHE_HPP
 #define MAPNIK_LABEL_COLLISION_CACHE_HPP
 
-// mapnik
 #include <mapnik/label_collision_detector.hpp>
+#include <mapnik/debug.hpp>
 
 #include <map>
 
