@@ -143,7 +143,8 @@ struct grid_vertex_adapter
             pix_x = interior_.x + static_cast<double>(pix_x - si_.size_x / 2) * dx_;
             pix_y = interior_.y + static_cast<double>(pix_y - si_.size_y / 2) * dy_;
 
-            if (img_box_.contains(pix_x, pix_y) &&
+            if (pix_x >= 0 && pix_x < img_.width() &&
+                pix_y >= 0 && pix_y < img_.height() &&
                 get_pixel<image_gray8::pixel_type>(img_, pix_x, pix_y))
             {
                 *x = pix_x;
@@ -165,11 +166,10 @@ protected:
         : scale_(get_scale(envelope)),
           dx_(dx * scale_), dy_(dy * scale_),
           img_(create_bitmap(envelope)),
-          img_box_(0, 0, img_.width(), img_.height()),
           vt_(img_.width(), img_.height(), envelope),
           interior_(interior(path, envelope)),
-          si_(std::ceil((img_box_.width() + std::abs(img_box_.center().x - interior_.x) * 2.0) / dx_),
-              std::ceil((img_box_.height() + std::abs(img_box_.center().y - interior_.y) * 2.0) / dy_))
+          si_(std::ceil((img_.width() + std::abs((img_.width() / 2.0) - interior_.x) * 2.0) / dx_),
+              std::ceil((img_.height() + std::abs((img_.height() / 2.0) - interior_.y) * 2.0) / dy_))
     {
         transform_path<PathType, coord_type, view_transform> tp(path, vt_);
         tp.rewind(0);
@@ -225,7 +225,6 @@ protected:
     const double scale_;
     const T dx_, dy_;
     image_gray8 img_;
-    box2d<int> img_box_;
     const view_transform vt_;
     const coord2d_type interior_;
     spiral_iterator si_;
@@ -252,7 +251,8 @@ struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
                 pix_x += this->dx_ / 2.0;
             }
 
-            if (this->img_box_.contains(pix_x, pix_y) &&
+            if (pix_x >= 0 && pix_x < this->img_.width() &&
+                pix_y >= 0 && pix_y < this->img_.height() &&
                 get_pixel<image_gray8::pixel_type>(this->img_, pix_x, pix_y))
             {
                 *x = pix_x;
