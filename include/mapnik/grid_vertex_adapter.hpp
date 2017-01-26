@@ -23,13 +23,12 @@
 #ifndef MAPNIK_GRID_ADAPTERS_HPP
 #define MAPNIK_GRID_ADAPTERS_HPP
 
-// mapnik
 #include <mapnik/vertex.hpp>
 #include <mapnik/image.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/geom_util.hpp>
+#include <mapnik/view_transform.hpp>
 
-// agg
 #include "agg_rendering_buffer.h"
 #include "agg_pixfmt_gray.h"
 #include "agg_renderer_base.h"

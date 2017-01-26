@@ -32,7 +32,6 @@ namespace mapnik { namespace label_placement {
 template <typename T>
 struct finder
 {
-    using placements_type = typename T::placements_type;
     using layout_generator_type = typename T::layout_generator_type;
 
     struct dispatch

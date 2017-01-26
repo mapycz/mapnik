@@ -77,4 +77,5 @@ protected:
 };
 
 } //namespace
+
 #endif // MAPNIK_MARKER_LAYOUT_HPP

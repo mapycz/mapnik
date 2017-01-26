@@ -33,13 +33,10 @@ struct marker_line_policy
 
     marker_line_policy(
         vertex_cache & path,
-        marker_layout_generator const & lg,
         double layout_width,
         double spacing,
-        double position_tolerance,
-        params_type const & params)
+        double position_tolerance)
         : path_(path),
-          params_(params),
           layout_width_(layout_width),
           spacing_(spacing),
           position_tolerance_(position_tolerance)
@@ -73,7 +70,6 @@ struct marker_line_policy
     }
 
     vertex_cache & path_;
-    params_type const & params_;
     const double layout_width_;
     const double spacing_;
     const double position_tolerance_;

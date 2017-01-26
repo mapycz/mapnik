@@ -28,6 +28,7 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/geometry_split_multi.hpp>
 #include <mapnik/view_transform.hpp>
+#include <mapnik/pixel_position.hpp>
 
 #include <list>
 

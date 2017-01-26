@@ -61,8 +61,7 @@ public:
 
         double layout_width = this->sublayout_.get_length(layout_generator);
         vertex_cache path(geom);
-        marker_line_policy policy(path, layout_generator,
-            layout_width, spacing_, position_tolerance_, this->params_);
+        marker_line_policy policy(path, layout_width, spacing_, position_tolerance_);
         return line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);
     }

@@ -150,6 +150,7 @@ struct MAPNIK_DECL building_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL group_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL debug_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL dot_symbolizer : public symbolizer_base {};
+struct MAPNIK_DECL collision_symbolizer : public symbolizer_base {};
 
 // symbolizer
 using symbolizer = util::variant<point_symbolizer,
@@ -164,7 +165,8 @@ using symbolizer = util::variant<point_symbolizer,
                                  markers_symbolizer,
                                  group_symbolizer,
                                  debug_symbolizer,
-                                 dot_symbolizer>;
+                                 dot_symbolizer,
+                                 collision_symbolizer>;
 
 }
 

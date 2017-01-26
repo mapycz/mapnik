@@ -22,7 +22,6 @@
 #ifndef LINE_LAYOUT_HPP
 #define LINE_LAYOUT_HPP
 
-//mapnik
 #include <mapnik/box2d.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/text/text_layout.hpp>

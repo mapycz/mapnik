@@ -126,6 +126,12 @@ struct symbolizer_traits<dot_symbolizer>
     static char const* name() { return "DotSymbolizer";}
 };
 
+template<>
+struct symbolizer_traits<collision_symbolizer>
+{
+    static char const* name() { return "CollisionSymbolizer";}
+};
+
 // symbolizer name impl
 namespace detail {
 

@@ -268,6 +268,7 @@ source = Split(
     renderer_common/render_markers_symbolizer.cpp
     renderer_common/render_pattern.cpp
     renderer_common/render_thunk_extractor.cpp
+    renderer_common/process_collision_symbolizer.cpp
     math.cpp
     symbol_cache.cpp
     value.cpp
@@ -335,6 +336,7 @@ if env['HAS_CAIRO']:
     cairo/process_point_symbolizer.cpp
     cairo/process_raster_symbolizer.cpp
     cairo/process_building_symbolizer.cpp
+    cairo/process_collision_symbolizer.cpp
     """)
 
 for cpp in enabled_imaging_libraries:
@@ -357,6 +359,7 @@ source += Split(
     agg/process_markers_symbolizer.cpp
     agg/process_group_symbolizer.cpp
     agg/process_debug_symbolizer.cpp
+    agg/process_collision_symbolizer.cpp
     """
     )
 
@@ -385,6 +388,7 @@ if env['GRID_RENDERER']:
         grid/process_raster_symbolizer.cpp
         grid/process_shield_symbolizer.cpp
         grid/process_text_symbolizer.cpp
+        grid/process_collision_symbolizer.cpp
         """)
     lib_env.Append(CPPDEFINES = '-DGRID_RENDERER')
     libmapnik_defines.append('-DGRID_RENDERER')

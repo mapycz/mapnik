@@ -126,6 +126,7 @@ private:
     void parse_group_symbolizer(rule &rule, xml_node const& node);
     void parse_debug_symbolizer(rule & rule, xml_node const& node);
     void parse_dot_symbolizer(rule & rule, xml_node const& node);
+    void parse_collision_symbolizer(rule & rule, xml_node const& node);
     void parse_group_rule(group_symbolizer_properties &prop, xml_node const& node);
     void parse_simple_layout(group_symbolizer_properties &prop, xml_node const& node);
     void parse_pair_layout(group_symbolizer_properties &prop, xml_node const& node);
@@ -906,6 +907,10 @@ void map_parser::parse_symbolizers(rule & rule, xml_node const & node)
             parse_dot_symbolizer(rule, sym_node);
             sym_node.set_processed(true);
             break;
+        case name2int("CollisionSymbolizer"):
+            parse_collision_symbolizer(rule, sym_node);
+            sym_node.set_processed(true);
+            break;
 
         default:
             break;
@@ -983,6 +988,32 @@ void map_parser::parse_dot_symbolizer(rule & rule, xml_node const & node)
         set_symbolizer_property<symbolizer_base,double>(sym, keys::width, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::height, node);
         set_symbolizer_property<symbolizer_base,composite_mode_e>(sym, keys::comp_op, node);
+        rule.append(std::move(sym));
+    }
+    catch (config_error const& ex)
+    {
+        ex.append_context(node);
+        throw;
+    }
+}
+
+void map_parser::parse_collision_symbolizer(rule & rule, xml_node const & node)
+{
+    try
+    {
+        collision_symbolizer sym;
+        set_symbolizer_property<symbolizer_base, value_double>(sym, keys::width, node);
+        set_symbolizer_property<symbolizer_base, value_double>(sym, keys::height, node);
+        set_symbolizer_property<symbolizer_base, value_double>(sym, keys::spacing, node);
+        set_symbolizer_property<symbolizer_base, value_double>(sym, keys::grid_cell_width, node);
+        set_symbolizer_property<symbolizer_base, value_double>(sym, keys::grid_cell_height, node);
+        set_symbolizer_property<symbolizer_base, label_placement_enum>(sym, keys::label_placement, node);
+        set_symbolizer_property<symbolizer_base, multi_policy_enum>(sym, keys::multipolicy, node);
+        set_symbolizer_property<symbolizer_base, value_bool>(sym, keys::clip, node);
+        set_symbolizer_property<symbolizer_base, value_double>(sym, keys::offset, node);
+        set_symbolizer_property<symbolizer_base, value_bool>(sym, keys::allow_overlap, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_detect, node);
+        set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)

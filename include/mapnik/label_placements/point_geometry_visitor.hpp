@@ -23,6 +23,8 @@
 #define MAPNIK_LABEL_PLACEMENT_POINT_GEOMETRY_VISITOR_HPP
 
 #include <mapnik/geometry_centroid.hpp>
+#include <mapnik/vertex_adapters.hpp>
+#include <mapnik/geom_util.hpp>
 
 namespace mapnik { namespace label_placement {
 

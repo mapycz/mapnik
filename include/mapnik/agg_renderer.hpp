@@ -173,6 +173,9 @@ public:
     void process(dot_symbolizer const& sym,
                  mapnik::feature_impl & feature,
                  proj_transform const& prj_trans);
+    void process(collision_symbolizer const& sym,
+                 mapnik::feature_impl & feature,
+                 proj_transform const& prj_trans);
 
     inline bool process(rule::symbolizers const&,
                         mapnik::feature_impl&,
