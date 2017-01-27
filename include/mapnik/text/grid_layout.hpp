@@ -33,7 +33,7 @@
 namespace mapnik
 {
 
-template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
+template <typename GridVertexAdapter, typename SubLayout>
 class grid_layout : util::noncopyable
 {
 public:
@@ -64,7 +64,7 @@ protected:
         double dx, double dy)
     {
         bool success = false;
-        GridVertexAdapter<Path, double> gpa(path, dx, dy);
+        GridVertexAdapter gpa(path, dx, dy);
         pixel_position point;
 
         for (unsigned cmd; (cmd = gpa.vertex(&point.x, &point.y)) != SEG_END; )

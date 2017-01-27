@@ -68,12 +68,16 @@ struct marker_symbolizer_traits
     using grid = split_multi<
         geom_iterator<
             vertex_converter<
-                marker_grid_layout<geometry::grid_vertex_adapter,
+                marker_grid_layout<
+                    geometry::grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     marker_layout>>>>;
     using alternating_grid = split_multi<
         geom_iterator<
             vertex_converter<
-                marker_grid_layout<geometry::alternating_grid_vertex_adapter,
+                marker_grid_layout<
+                    geometry::alternating_grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     marker_layout>>>>;
     using line = split_multi<
         geom_iterator<

@@ -70,12 +70,16 @@ struct text_symbolizer_traits
     using grid = split_multi<
         text_layout_iterator<
             vertex_converter<
-                grid_layout<geometry::grid_vertex_adapter,
+                grid_layout<
+                    geometry::grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     mapnik::point_layout>>>>;
     using alternating_grid = split_multi<
         text_layout_iterator<
             vertex_converter<
-                grid_layout<geometry::alternating_grid_vertex_adapter,
+                grid_layout<
+                    geometry::alternating_grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     mapnik::point_layout>>>>;
     using line = split_multi<
         text_layout_iterator<
@@ -112,12 +116,16 @@ struct shield_symbolizer_traits
     using grid = split_multi<
         text_layout_iterator<
             vertex_converter<
-                grid_layout<geometry::grid_vertex_adapter,
+                grid_layout<
+                    geometry::grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     shield_layout>>>>;
     using alternating_grid = split_multi<
         text_layout_iterator<
             vertex_converter<
-                grid_layout<geometry::alternating_grid_vertex_adapter,
+                grid_layout<
+                    geometry::alternating_grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     shield_layout>>>>;
     using line = split_multi<
         text_layout_iterator<
@@ -153,12 +161,16 @@ struct group_symbolizer_traits
     using grid = split_multi<
         geom_iterator<
             vertex_converter<
-                grid_layout<geometry::grid_vertex_adapter,
+                grid_layout<
+                    geometry::grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     group_point_layout>>>>;
     using alternating_grid = split_multi<
         geom_iterator<
             vertex_converter<
-                grid_layout<geometry::alternating_grid_vertex_adapter,
+                grid_layout<
+                    geometry::alternating_grid_vertex_adapter<
+                        geometry::spiral_grid_iterator>,
                     group_point_layout>>>>;
     using line = split_multi<
         geom_iterator<

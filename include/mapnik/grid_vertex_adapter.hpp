@@ -89,10 +89,109 @@ private:
     int x_, y_;
 };
 
-template <typename PathType, typename T, typename TransformType>
+struct row_grid_iterator
+{
+    using coord_type = double;
+    using coord2d_type = coord<coord_type, 2>;
+
+    template <typename PathType>
+    row_grid_iterator(
+        PathType & path,
+        box2d<coord_type> const & envelope,
+        coord_type dx,
+        coord_type dy,
+        view_transform const & vt)
+      : center_(envelope.width() / 2.0, envelope.height() / 2.0),
+        size_x_(std::ceil(vt.width() / dx)),
+        size_y_(std::ceil(vt.height() / dy)),
+        x_(0), y_(0)
+    {
+    }
+
+    inline bool vertex(int * x, int * y)
+    {
+        for (; y_ < size_y_; ++y_, x_ = 0)
+        {
+            for (; x_ < size_x_; )
+            {
+                *x = x_;
+                *y = y_;
+                ++x_;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    inline void rewind()
+    {
+        x_ = 0;
+        y_ = 0;
+    }
+
+    const coord2d_type center_;
+    const int size_x_, size_y_;
+    int x_, y_;
+};
+
+struct spiral_grid_iterator
+{
+    using coord_type = double;
+    using coord2d_type = coord<coord_type, 2>;
+
+    template <typename PathType>
+    spiral_grid_iterator(
+        PathType & path,
+        box2d<coord_type> const & envelope,
+        coord_type dx,
+        coord_type dy,
+        view_transform const & vt)
+      : vt_(vt),
+        center_(interior(path, envelope)),
+        size_x_(std::ceil((vt.width() + std::abs((vt.width() / 2.0) - center_.x) * 2.0) / dx)),
+        size_y_(std::ceil((vt.height() + std::abs((vt.height() / 2.0) - center_.y) * 2.0) / dy)),
+        si_(size_x_, size_y_)
+    {
+    }
+
+    template <typename PathType>
+    coord2d_type interior(PathType & path, box2d<coord_type> const & envelope) const
+    {
+        coord2d_type interior;
+
+        if (!label::interior_position(path, interior.x, interior.y))
+        {
+            interior = envelope.center();
+        }
+
+        vt_.forward(&interior.x, &interior.y);
+
+        return interior;
+    }
+
+    inline bool vertex(int * x, int * y)
+    {
+        return si_.vertex(x, y);
+    }
+
+    inline void rewind()
+    {
+        si_.rewind();
+    }
+
+    view_transform const & vt_;
+    const coord2d_type center_;
+    const int size_x_, size_y_;
+    spiral_iterator si_;
+};
+
+template <typename PathType, typename TransformType>
 class transform_path
 {
 public:
+    using coord_type = double;
+
     transform_path(PathType & path, TransformType const & transform)
         : path_(path), transform_(transform)
     {
@@ -103,7 +202,7 @@ public:
         path_.rewind(0);
     }
 
-    unsigned vertex(T * x, T * y)
+    unsigned vertex(coord_type * x, coord_type * y)
     {
         unsigned command = path_.vertex(x, y);
         if (command != mapnik::SEG_END)
@@ -118,29 +217,30 @@ private:
     TransformType const & transform_;
 };
 
-template <typename PathType, typename T>
+template <typename GridIterator>
 struct grid_vertex_adapter
 {
-    using coord_type = T;
+    using coord_type = double;
     using coord2d_type = coord<coord_type, 2>;
 
-    grid_vertex_adapter(PathType & path, T dx, T dy)
+    template <typename PathType>
+    grid_vertex_adapter(PathType & path, coord_type dx, coord_type dy)
         : grid_vertex_adapter(path, dx, dy, mapnik::envelope(path))
     {
     }
 
     void rewind(unsigned)
     {
-        si_.rewind();
+        gi_.rewind();
     }
 
     unsigned vertex(coord_type * x, coord_type * y)
     {
         int pix_x, pix_y;
-        while (si_.vertex(&pix_x, &pix_y))
+        while (gi_.vertex(&pix_x, &pix_y))
         {
-            pix_x = interior_.x + static_cast<double>(pix_x - si_.size_x / 2) * dx_;
-            pix_y = interior_.y + static_cast<double>(pix_y - si_.size_y / 2) * dy_;
+            pix_x = gi_.center_.x + static_cast<double>(pix_x - gi_.size_x_ / 2) * dx_;
+            pix_y = gi_.center_.y + static_cast<double>(pix_y - gi_.size_y_ / 2) * dy_;
 
             if (pix_x >= 0 && pix_x < img_.width() &&
                 pix_y >= 0 && pix_y < img_.height() &&
@@ -161,16 +261,19 @@ struct grid_vertex_adapter
     }
 
 protected:
-    grid_vertex_adapter(PathType & path, T dx, T dy, box2d<T> envelope)
+    template <typename PathType>
+    grid_vertex_adapter(
+        PathType & path,
+        coord_type dx,
+        coord_type dy,
+        box2d<coord_type> envelope)
         : scale_(get_scale(envelope)),
           dx_(dx * scale_), dy_(dy * scale_),
           img_(create_bitmap(envelope)),
           vt_(img_.width(), img_.height(), envelope),
-          interior_(interior(path, envelope)),
-          si_(std::ceil((img_.width() + std::abs((img_.width() / 2.0) - interior_.x) * 2.0) / dx_),
-              std::ceil((img_.height() + std::abs((img_.height() / 2.0) - interior_.y) * 2.0) / dy_))
+          gi_(path, envelope, dx_, dy_, vt_)
     {
-        transform_path<PathType, coord_type, view_transform> tp(path, vt_);
+        transform_path<PathType, view_transform> tp(path, vt_);
         tp.rewind(0);
         agg::rasterizer_scanline_aa<> ras;
         ras.add_path(tp);
@@ -186,9 +289,9 @@ protected:
         agg::render_scanlines(ras, sl_bin, ren_bin);
     }
 
-    double get_scale(box2d<T> const & envelope) const
+    double get_scale(box2d<coord_type> const & envelope) const
     {
-        T size = std::max(envelope.width(), envelope.height());
+        coord_type size = std::max(envelope.width(), envelope.height());
         const int max_size = 32768;
         if (size > max_size)
         {
@@ -197,7 +300,7 @@ protected:
         return 1;
     }
 
-    image_gray8 create_bitmap(box2d<T> const & box) const
+    image_gray8 create_bitmap(box2d<coord_type> const & box) const
     {
         if (!box.valid())
         {
@@ -207,43 +310,34 @@ protected:
         return image_gray8(box.width() * scale_, box.height() * scale_);
     }
 
-    coord2d_type interior(PathType & path, box2d<T> const & envelope) const
-    {
-        coord2d_type interior;
-
-        if (!label::interior_position(path, interior.x, interior.y))
-        {
-            interior = envelope.center();
-        }
-
-        vt_.forward(&interior.x, &interior.y);
-
-        return interior;
-    }
-
     const double scale_;
-    const T dx_, dy_;
+    const coord_type dx_, dy_;
     image_gray8 img_;
     const view_transform vt_;
-    const coord2d_type interior_;
-    spiral_iterator si_;
+    GridIterator gi_;
 };
 
-template <typename PathType, typename T>
-struct alternating_grid_vertex_adapter : grid_vertex_adapter<PathType, T>
+template <typename GridIterator>
+struct alternating_grid_vertex_adapter : grid_vertex_adapter<GridIterator>
 {
-    using grid_vertex_adapter<PathType, T>::grid_vertex_adapter;
+    using coord_type = double;
 
-    unsigned vertex(T * x, T * y)
+    template <typename PathType>
+    alternating_grid_vertex_adapter(PathType & path, coord_type dx, coord_type dy)
+        : grid_vertex_adapter<GridIterator>(path, dx, dy)
+    {
+    }
+
+    unsigned vertex(coord_type * x, coord_type * y)
     {
         int pix_x, pix_y;
-        while (this->si_.vertex(&pix_x, &pix_y))
+        while (this->gi_.vertex(&pix_x, &pix_y))
         {
-            int recentered_x = pix_x - this->si_.size_x / 2;
-            int recentered_y = pix_y - this->si_.size_y / 2;
+            int recentered_x = pix_x - this->gi_.size_x_ / 2;
+            int recentered_y = pix_y - this->gi_.size_y_ / 2;
 
-            pix_x = this->interior_.x + static_cast<double>(recentered_x) * this->dx_;
-            pix_y = this->interior_.y + static_cast<double>(recentered_y) * this->dy_;
+            pix_x = this->gi_.center_.x + static_cast<double>(recentered_x) * this->dx_;
+            pix_y = this->gi_.center_.y + static_cast<double>(recentered_y) * this->dy_;
 
             if (recentered_y % 2 != 0)
             {

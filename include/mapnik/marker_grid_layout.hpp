@@ -27,7 +27,7 @@
 namespace mapnik
 {
 
-template <template <typename, typename> class GridVertexAdapter, typename SubLayout>
+template <typename GridVertexAdapter, typename SubLayout>
 class marker_grid_layout : grid_layout<GridVertexAdapter, SubLayout>
 {
 public:
