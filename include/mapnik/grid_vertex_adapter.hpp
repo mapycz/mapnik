@@ -158,16 +158,16 @@ struct spiral_grid_iterator
     template <typename PathType>
     coord2d_type interior(PathType & path, box2d<coord_type> const & envelope) const
     {
-        coord2d_type interior;
+        coord2d_type pos;
 
-        if (!label::interior_position(path, interior.x, interior.y))
+        if (!label::interior_position(path, pos.x, pos.y))
         {
-            interior = envelope.center();
+            pos = envelope.center();
         }
 
-        vt_.forward(&interior.x, &interior.y);
+        vt_.forward(&pos.x, &pos.y);
 
-        return interior;
+        return pos;
     }
 
     inline bool vertex(int * x, int * y)
