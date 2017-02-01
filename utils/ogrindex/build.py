@@ -39,8 +39,8 @@ program_env['LIBS'] = [env['PLUGINS']['ogr']['lib']]
 # Link Library to Dependencies
 program_env['LIBS'].append(env['MAPNIK_NAME'])
 program_env['LIBS'].append(env['ICU_LIB_NAME'])
-program_env['LIBS'].append('boost_system%s' % env['BOOST_APPEND'])
-program_env['LIBS'].append('boost_program_options%s' % env['BOOST_APPEND'])
+program_env['LIBS'].append(env['BOOST_LIB_PATHS']['system'])
+program_env['LIBS'].append(env['BOOST_LIB_PATHS']['program_options'])
 
 if env['RUNTIME_LINK'] == 'static':
     cmd = 'gdal-config --dep-libs'

@@ -1848,6 +1848,16 @@ if not preconfigured:
 # autogenerate help on default/current SCons options
 Help(opts.GenerateHelpText(env))
 
+boost_lib_paths = {}
+for boost_lib in ['system', 'filesystem', 'regex', 'program_options']:
+    boost_lib_paths[boost_lib] = File(os.path.join(
+        env['BOOST_LIBS'], '{}boost_{}{}'.format(
+            env['LIBPREFIX'],
+            boost_lib,
+            env['LIBSUFFIX'])))
+
+env['BOOST_LIB_PATHS'] = boost_lib_paths
+
 #### Builds ####
 if not HELP_REQUESTED:
 

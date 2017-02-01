@@ -37,9 +37,9 @@ source = Split(
 
 headers = ['#plugins/input/shape'] + env['CPPPATH']
 
-boost_program_options = 'boost_program_options%s' % env['BOOST_APPEND']
-boost_system = 'boost_system%s' % env['BOOST_APPEND']
-libraries =  [env['MAPNIK_NAME'], boost_program_options, boost_system]
+libraries =  [env['MAPNIK_NAME']]
+libraries.append(env['BOOST_LIB_PATHS']['system'])
+libraries.append(env['BOOST_LIB_PATHS']['program_options'])
 libraries.append(env['ICU_LIB_NAME'])
 if env['RUNTIME_LINK'] == 'static':
     libraries.extend(copy(env['LIBMAPNIK_LIBS']))
