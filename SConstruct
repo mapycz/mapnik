@@ -329,6 +329,7 @@ opts.AddVariables(
     ('BOOST_TOOLKIT','Specify boost toolkit, e.g., gcc41.','',False),
     ('BOOST_ABI', 'Specify boost ABI, e.g., d.','',False),
     ('BOOST_VERSION','Specify boost version, e.g., 1_35.','',False),
+    ('BOOST_STATIC','Link with boost libs statically','', False),
 
     # Variables for required dependencies
     ('FREETYPE_CONFIG', 'The path to the freetype-config executable.', 'freetype-config'),
@@ -1849,12 +1850,17 @@ if not preconfigured:
 Help(opts.GenerateHelpText(env))
 
 boost_lib_paths = {}
+
 for boost_lib in ['system', 'filesystem', 'regex', 'program_options']:
-    boost_lib_paths[boost_lib] = File(os.path.join(
-        env['BOOST_LIBS'], '{}boost_{}{}'.format(
-            env['LIBPREFIX'],
-            boost_lib,
-            env['LIBSUFFIX'])))
+    if env['BOOST_STATIC']:
+        boost_lib_path = File(os.path.join(
+            env['BOOST_LIBS'], '{}boost_{}{}'.format(
+                env['LIBPREFIX'],
+                boost_lib,
+                env['LIBSUFFIX'])))
+    else:
+        boost_lib_path = 'boost_{}'.format(boost_lib)
+    boost_lib_paths[boost_lib] = boost_lib_path
 
 env['BOOST_LIB_PATHS'] = boost_lib_paths
 
