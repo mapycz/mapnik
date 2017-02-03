@@ -732,6 +732,12 @@ def FindBoost(context, prefixes, thread_flag):
 
     msg = str()
 
+    # TODO: Revisit boost setup code
+    if not env['BOOST_LIBS']:
+        boost_system_path = call('ld -o /dev/null -lboost_system --verbose 2>/dev/null | grep succeeded | grep -o "/[^ ]*"', silent=True)
+        if boost_system_path:
+            env['BOOST_LIBS'] = os.path.dirname(boost_system_path)
+
     if BOOST_LIB_DIR:
         msg += '\nFound boost libs: %s' % BOOST_LIB_DIR
         env['BOOST_LIBS'] = BOOST_LIB_DIR
