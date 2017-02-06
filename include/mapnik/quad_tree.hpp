@@ -27,6 +27,7 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/make_unique.hpp>
+#include <mapnik/debug.hpp>
 // stl
 #include <algorithm>
 #include <vector>
@@ -109,10 +110,17 @@ public:
         : max_depth_(max_depth),
           ratio_(ratio),
           query_result_(),
-          nodes_()
+          nodes_(),
+          query_count_(0)
     {
         nodes_.push_back(std::make_unique<node>(ext));
         root_ = nodes_[0].get();
+    }
+
+    ~quad_tree()
+    {
+        std::clog << "collision cache: nodes count: " << nodes_.size() << std::endl;
+        std::clog << "collision cache: query count: " << query_count_ << std::endl;
     }
 
     void insert(value_type data, bbox_type const& box)
@@ -123,6 +131,8 @@ public:
 
     query_iterator query_in_box(bbox_type const& box)
     {
+        ++query_count_;
+
         query_result_.clear();
         query_node(box, query_result_, root_);
         return query_result_.begin();
@@ -350,6 +360,7 @@ private:
     result_type query_result_;
     nodes_type nodes_;
     node * root_;
+    unsigned long query_count_;
 
 };
 }
