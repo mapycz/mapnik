@@ -45,6 +45,7 @@
 #include <mapnik/util/featureset_buffer.hpp>
 #include <mapnik/util/variant.hpp>
 #include <mapnik/symbolizer_dispatch.hpp>
+#include <mapnik/timer.hpp>
 
 // stl
 #include <vector>
@@ -459,6 +460,7 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
     {
         if (!mat.active_styles_.empty())
         {
+            mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
             p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
             render_material(mat, p);
