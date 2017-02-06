@@ -350,7 +350,6 @@ private:
     result_type query_result_;
     nodes_type nodes_;
     node * root_;
-
 };
 }
 

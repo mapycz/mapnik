@@ -119,6 +119,18 @@ public:
     {
     }
 
+#ifdef MAPNIK_STATS
+    ~keyed_collision_cache()
+    {
+        for (auto const & pair : cache_)
+        {
+            Detector const & detector = pair.second;
+            std::clog << "collision cache: nodes count: " << detector.count_items() << std::endl;
+            std::clog << "collision cache: query count: " << detector.query_count_ << std::endl;
+        }
+    }
+#endif
+
     template <typename Keys>
     bool has_placement(
         box2d<double> const & box,
