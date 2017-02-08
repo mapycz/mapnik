@@ -76,7 +76,7 @@ void build_ellipse(symbolizer_base const& sym, mapnik::feature_impl & feature, a
 bool push_explicit_style(svg_attribute_type const& src,
                          svg_attribute_type & dst,
                          symbolizer_base const& sym,
-                         feature_impl & feature,
+                         feature_impl const & feature,
                          attributes const& vars)
 {
     auto fill_color = get_optional<color>(sym, keys::fill, feature, vars);

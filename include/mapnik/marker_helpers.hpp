@@ -55,7 +55,7 @@ void build_ellipse(symbolizer_base const& sym, mapnik::feature_impl & feature, a
 bool push_explicit_style(svg_attribute_type const& src,
                          svg_attribute_type & dst,
                          symbolizer_base const& sym,
-                         feature_impl & feature,
+                         feature_impl const & feature,
                          attributes const& vars);
 
 void setup_transform_scaling(agg::trans_affine & tr,

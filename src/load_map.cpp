@@ -1173,6 +1173,13 @@ void map_parser::parse_polygon_pattern_symbolizer(rule & rule,
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
         set_symbolizer_property<symbolizer_base,pattern_alignment_enum>(sym, keys::alignment, node);
         set_symbolizer_property<symbolizer_base,gamma_method_enum>(sym, keys::gamma_method, node);
+
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::fill_opacity, node);
+        set_symbolizer_property<symbolizer_base,color>(sym, keys::fill, node);
+        set_symbolizer_property<symbolizer_base,color>(sym, keys::stroke, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_width, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_opacity, node);
+
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
