@@ -132,6 +132,7 @@ private:
     void parse_pair_layout(group_symbolizer_properties &prop, xml_node const& node);
     bool parse_raster_colorizer(raster_colorizer_ptr const& rc, xml_node const& node);
     void parse_stroke(symbolizer_base & symbol, xml_node const& node);
+    void parse_svg_attributes(symbolizer_base & symbol, xml_node const& node);
     void ensure_font_face(std::string const& face_name);
     void find_unused_nodes(xml_node const& root);
     void find_unused_nodes_recursive(xml_node const& node, std::string & error_text);
@@ -1131,6 +1132,7 @@ void map_parser::parse_line_pattern_symbolizer(rule & rule, xml_node const & nod
         set_symbolizer_property<symbolizer_base,double>(sym, keys::opacity, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::offset, node);
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
+        parse_svg_attributes(sym, node);
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
@@ -1173,13 +1175,7 @@ void map_parser::parse_polygon_pattern_symbolizer(rule & rule,
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
         set_symbolizer_property<symbolizer_base,pattern_alignment_enum>(sym, keys::alignment, node);
         set_symbolizer_property<symbolizer_base,gamma_method_enum>(sym, keys::gamma_method, node);
-
-        set_symbolizer_property<symbolizer_base,double>(sym, keys::fill_opacity, node);
-        set_symbolizer_property<symbolizer_base,color>(sym, keys::fill, node);
-        set_symbolizer_property<symbolizer_base,color>(sym, keys::stroke, node);
-        set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_width, node);
-        set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_opacity, node);
-
+        parse_svg_attributes(sym, node);
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
@@ -1311,6 +1307,15 @@ void map_parser::parse_stroke(symbolizer_base & sym, xml_node const & node)
     set_symbolizer_property<symbolizer_base,line_cap_enum>(sym, keys::stroke_linecap, node);
     set_symbolizer_property<symbolizer_base,gamma_method_enum>(sym, keys::stroke_gamma_method, node);
     set_symbolizer_property<symbolizer_base,dash_array>(sym, keys::stroke_dasharray, node);
+}
+
+void map_parser::parse_svg_attributes(symbolizer_base & sym, xml_node const & node)
+{
+    set_symbolizer_property<symbolizer_base,double>(sym, keys::fill_opacity, node);
+    set_symbolizer_property<symbolizer_base,color>(sym, keys::fill, node);
+    set_symbolizer_property<symbolizer_base,color>(sym, keys::stroke, node);
+    set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_width, node);
+    set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_opacity, node);
 }
 
 void map_parser::parse_line_symbolizer(rule & rule, xml_node const & node)
