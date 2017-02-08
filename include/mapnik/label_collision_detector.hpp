@@ -148,10 +148,19 @@ public:
     using query_iterator = tree_t::query_iterator;
 
     explicit label_collision_detector4(box2d<double> const& _extent)
-        : tree_(_extent) {}
+        : tree_(_extent)
+#ifdef MAPNIK_STATS
+          , query_count_(0)
+#endif
+    {
+    }
 
     bool has_placement(box2d<double> const& box)
     {
+#ifdef MAPNIK_STATS
+        ++query_count_;
+#endif
+
         tree_t::query_iterator tree_itr = tree_.query_in_box(box);
         tree_t::query_iterator tree_end = tree_.query_end();
 
@@ -165,6 +174,10 @@ public:
 
     bool has_placement(box2d<double> const& box, double margin)
     {
+#ifdef MAPNIK_STATS
+        ++query_count_;
+#endif
+
         box2d<double> const& margin_box = (margin > 0
                                                ? box2d<double>(box.minx() - margin, box.miny() - margin,
                                                                box.maxx() + margin, box.maxy() + margin)
@@ -185,6 +198,10 @@ public:
 
     bool has_placement(box2d<double> const& box, double margin, mapnik::value_unicode_string const& text, double repeat_distance)
     {
+#ifdef MAPNIK_STATS
+        ++query_count_;
+#endif
+
         // Don't bother with any of the repeat checking unless the repeat distance is greater than the margin
         if (repeat_distance <= margin) {
             return has_placement(box, margin);
@@ -240,6 +257,15 @@ public:
 
     query_iterator begin() { return tree_.query_in_box(extent()); }
     query_iterator end() { return tree_.query_end(); }
+#ifdef MAPNIK_STATS
+public:
+    unsigned long query_count_;
+
+    int count_items() const
+    {
+        return tree_.count_items();
+    }
+#endif
 };
 
 }
