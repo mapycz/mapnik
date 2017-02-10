@@ -30,6 +30,10 @@ namespace mapnik { namespace label_placement {
 
 struct point_geometry_visitor
 {
+    point_geometry_visitor()
+    {
+    }
+
     using return_type = boost::optional<geometry::point<double>>;
 
     return_type operator()(geometry::point<double> const & point) const
