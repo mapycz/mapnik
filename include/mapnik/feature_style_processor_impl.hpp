@@ -460,7 +460,7 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
     {
         if (!mat.active_styles_.empty())
         {
-#ifdef MAPNIK_STATS
+#ifdef MAPNIK_STATS_RENDER
             mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
 #endif
             p.start_layer_processing(mat.lay_, mat.layer_ext2_);

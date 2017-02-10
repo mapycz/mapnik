@@ -149,7 +149,7 @@ public:
 
     explicit label_collision_detector4(box2d<double> const& _extent)
         : tree_(_extent)
-#ifdef MAPNIK_STATS
+#ifdef MAPNIK_STATS_RENDER
           , query_count_(0)
 #endif
     {
@@ -157,7 +157,7 @@ public:
 
     bool has_placement(box2d<double> const& box)
     {
-#ifdef MAPNIK_STATS
+#ifdef MAPNIK_STATS_RENDER
         ++query_count_;
 #endif
 
@@ -174,7 +174,7 @@ public:
 
     bool has_placement(box2d<double> const& box, double margin)
     {
-#ifdef MAPNIK_STATS
+#ifdef MAPNIK_STATS_RENDER
         ++query_count_;
 #endif
 
@@ -198,7 +198,7 @@ public:
 
     bool has_placement(box2d<double> const& box, double margin, mapnik::value_unicode_string const& text, double repeat_distance)
     {
-#ifdef MAPNIK_STATS
+#ifdef MAPNIK_STATS_RENDER
         ++query_count_;
 #endif
 
@@ -257,7 +257,7 @@ public:
 
     query_iterator begin() { return tree_.query_in_box(extent()); }
     query_iterator end() { return tree_.query_end(); }
-#ifdef MAPNIK_STATS
+#ifdef MAPNIK_STATS_RENDER
 public:
     unsigned long query_count_;
 

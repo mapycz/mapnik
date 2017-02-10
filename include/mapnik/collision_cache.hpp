@@ -119,7 +119,7 @@ public:
     {
     }
 
-#ifdef MAPNIK_STATS
+#ifdef MAPNIK_STATS_RENDER
     ~keyed_collision_cache()
     {
         for (auto const & pair : cache_)
