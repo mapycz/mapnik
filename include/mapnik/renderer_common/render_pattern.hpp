@@ -54,10 +54,6 @@ struct trans_affine;
 
 namespace mapnik {
 
-// fwd decl
-struct rasterizer;
-struct feature_impl;
-
 template <typename Symbolizer, typename Rasterizer>
 struct common_pattern_process_visitor
 {
