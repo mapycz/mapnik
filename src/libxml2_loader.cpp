@@ -56,6 +56,23 @@ namespace mapnik
 {
 class libxml2_loader : util::noncopyable
 {
+    struct xml_error : public config_error
+    {
+        xml_error(xmlError const & error)
+            : config_error(formatMessage(error), error.line, error.file)
+        {
+        }
+
+        std::string formatMessage(xmlError const & error) const
+        {
+            std::string msg("XML document not well formed: ");
+            msg += error.message;
+            // remove CR
+            msg = msg.substr(0, msg.size() - 1);
+            return msg;
+        }
+    };
+
 public:
     libxml2_loader(const char *encoding = nullptr, int options = DEFAULT_OPTIONS, const char *url = nullptr) :
         ctx_(0),
@@ -89,41 +106,12 @@ public:
 
         xmlDocPtr doc = xmlCtxtReadFile(ctx_, filename.c_str(), encoding_, options_);
 
-        if (!doc)
-        {
-            xmlError * error = xmlCtxtGetLastError(ctx_);
-            if (error)
-            {
-                std::string msg("XML document not well formed:\n");
-                msg += error->message;
-                // remove CR
-                msg = msg.substr(0, msg.size() - 1);
-                throw config_error(msg, error->line, error->file);
-            }
-        }
-
-        xmlDocPtr res = preprocess(doc);
-
-        if (res)
-        {
-            xmlFreeDoc(doc);
-            doc = res;
-        }
-
         load(doc, node);
     }
 
     void load(const int fd, xml_node &node)
     {
         xmlDocPtr doc = xmlCtxtReadFd(ctx_, fd, url_, encoding_, options_);
-
-        xmlDocPtr res = preprocess(doc);
-
-        if (res)
-        {
-            xmlFreeDoc(doc);
-            doc = res;
-        }
 
         load(doc, node);
     }
@@ -139,14 +127,6 @@ public:
         }
         // NOTE: base_path here helps libxml2 resolve entities correctly: https://github.com/mapnik/mapnik/issues/440
         xmlDocPtr doc = xmlCtxtReadMemory(ctx_, buffer.data(), buffer.length(), base_path.c_str(), encoding_, options_);
-
-        xmlDocPtr res = preprocess(doc);
-
-        if (res)
-        {
-            xmlFreeDoc(doc);
-            doc = res;
-        }
 
         load(doc, node);
     }
@@ -173,23 +153,20 @@ public:
         return NULL;
     }
 
-    void load(const xmlDocPtr doc, xml_node &node)
+private:
+    void load(xmlDocPtr doc, xml_node &node)
     {
-        if (!doc)
+        check_error(doc);
+
+        xmlDocPtr res = preprocess(doc);
+
+        if (res)
         {
-            std::string msg("XML document not well formed");
-            xmlError * error = xmlCtxtGetLastError( ctx_ );
-            if (error)
-            {
-                msg += ":\n";
-                msg += error->message;
-                throw config_error(msg, error->line, error->file);
-            }
-            else
-            {
-                throw config_error(msg);
-            }
+            xmlFreeDoc(doc);
+            doc = res;
         }
+
+        check_error(doc);
 
         int iXIncludeReturn = xmlXIncludeProcessFlags(doc, options_);
 
@@ -209,7 +186,6 @@ public:
         xmlFreeDoc(doc);
     }
 
-private:
     void inline append_attributes(xmlAttr *attributes, xml_node & node)
     {
         for (; attributes; attributes = attributes->next )
@@ -245,6 +221,21 @@ private:
             default:
                 break;
 
+            }
+        }
+    }
+
+    void check_error(xmlDocPtr const & doc) const
+    {
+        if (!doc)
+        {
+            if (xmlError * error = xmlCtxtGetLastError(ctx_))
+            {
+                throw xml_error(*error);
+            }
+            else
+            {
+                throw config_error("XML document not well formed");
             }
         }
     }
