@@ -38,7 +38,6 @@ void grid_renderer<T>::process(text_symbolizer const& sym,
                                mapnik::feature_impl & feature,
                                proj_transform const& prj_trans)
 {
-    box2d<double> clip_box = clipping_extent(common_);
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
