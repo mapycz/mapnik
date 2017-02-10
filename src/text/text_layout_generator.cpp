@@ -35,11 +35,11 @@ text_layout_generator::text_layout_generator(
     face_manager_freetype & font_manager,
     text_placement_info & info)
     : params_(params),
-      detector_(detector),
       font_manager_(font_manager),
       info_(info),
       text_props_(evaluate_text_properties(
-        info.properties, params.feature, params.vars))
+        info.properties, params.feature, params.vars)),
+      detector_(detector)
 {
 }
 

@@ -196,10 +196,10 @@ bool point_layout::collision(
 
 shield_layout::shield_layout(params_type const & params)
     : point_layout(params),
+      marker_unlocked_(mapnik::get<value_bool, keys::unlock_image>(params.symbolizer, params.feature, params.vars)),
       marker_displacement_(pixel_position(
         mapnik::get<value_double, keys::shield_dx>(params.symbolizer, params.feature, params.vars),
-        mapnik::get<value_double, keys::shield_dy>(params.symbolizer, params.feature, params.vars)) * params.scale_factor),
-      marker_unlocked_(mapnik::get<value_bool, keys::unlock_image>(params.symbolizer, params.feature, params.vars))
+        mapnik::get<value_double, keys::shield_dy>(params.symbolizer, params.feature, params.vars)) * params.scale_factor)
 {
     std::string filename = mapnik::get<std::string,keys::file>(params.symbolizer, params.feature, params.vars);
     if (filename.empty()) return;

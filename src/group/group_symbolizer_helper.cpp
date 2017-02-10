@@ -42,10 +42,10 @@ group_layout_generator::group_layout_generator(
     face_manager_freetype & font_manager,
     text_placement_info & info,
     std::list<box_element> const & box_elements)
-    : detector_(detector),
-      font_manager_(font_manager),
+    : font_manager_(font_manager),
       text_props_(evaluate_text_properties(info.properties, params.feature, params.vars)),
-      box_elements_(box_elements)
+      box_elements_(box_elements),
+      detector_(detector)
 {
 }
 
