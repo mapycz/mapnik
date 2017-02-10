@@ -242,8 +242,8 @@ struct grid_vertex_adapter
             pix_x = gi_.center_.x + static_cast<double>(pix_x - gi_.size_x_ / 2) * dx_;
             pix_y = gi_.center_.y + static_cast<double>(pix_y - gi_.size_y_ / 2) * dy_;
 
-            if (pix_x >= 0 && pix_x < img_.width() &&
-                pix_y >= 0 && pix_y < img_.height() &&
+            if (pix_x >= 0 && static_cast<std::size_t>(pix_x) < img_.width() &&
+                pix_y >= 0 && static_cast<std::size_t>(pix_y) < img_.height() &&
                 get_pixel<image_gray8::pixel_type>(img_, pix_x, pix_y))
             {
                 *x = pix_x;
@@ -344,8 +344,8 @@ struct alternating_grid_vertex_adapter : grid_vertex_adapter<GridIterator>
                 pix_x += this->dx_ / 2.0;
             }
 
-            if (pix_x >= 0 && pix_x < this->img_.width() &&
-                pix_y >= 0 && pix_y < this->img_.height() &&
+            if (pix_x >= 0 && static_cast<std::size_t>(pix_x) < this->img_.width() &&
+                pix_y >= 0 && static_cast<std::size_t>(pix_y) < this->img_.height() &&
                 get_pixel<image_gray8::pixel_type>(this->img_, pix_x, pix_y))
             {
                 *x = pix_x;
