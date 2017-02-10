@@ -47,7 +47,7 @@
 #include <stdexcept>
 #include <iostream>
 
-#define DEFAULT_OPTIONS (XML_PARSE_NOWARNING | XML_PARSE_NOENT | XML_PARSE_NOBLANKS | XML_PARSE_DTDLOAD | XML_PARSE_NOCDATA)
+#define DEFAULT_OPTIONS (XML_PARSE_NOENT | XML_PARSE_NOBLANKS | XML_PARSE_DTDLOAD | XML_PARSE_NOCDATA)
 
 #define isnbsp(s)       ((s)[0] == '\xC2' && (s)[1] == '\xA0')
 
