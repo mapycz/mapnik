@@ -79,6 +79,9 @@ template <typename Processor>
 feature_style_processor<Processor>::feature_style_processor(Map const& m, double scale_factor)
     : m_(m)
 {
+#ifdef MAPNIK_STATS_RENDER
+    std::clog << "EXTENT: " << m.get_current_extent() << std::endl;
+#endif
     // https://github.com/mapnik/mapnik/issues/1100
     if (scale_factor <= 0)
     {
