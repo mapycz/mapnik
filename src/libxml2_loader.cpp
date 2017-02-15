@@ -45,7 +45,6 @@
 
 // stl
 #include <stdexcept>
-#include <iostream>
 
 #define DEFAULT_OPTIONS (XML_PARSE_NOENT | XML_PARSE_NOBLANKS | XML_PARSE_DTDLOAD | XML_PARSE_NOCDATA)
 

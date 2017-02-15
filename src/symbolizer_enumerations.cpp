@@ -80,6 +80,14 @@ static const char * pattern_alignment_strings[] = {
 
 IMPLEMENT_ENUM( pattern_alignment_e, pattern_alignment_strings )
 
+static const char * pattern_lacing_mode_strings[] = {
+    "grid",
+    "alternating-grid",
+    ""
+};
+
+IMPLEMENT_ENUM( pattern_lacing_mode_e, pattern_lacing_mode_strings )
+
 
 // text
 static const char * halo_rasterizer_strings[] = {

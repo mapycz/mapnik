@@ -101,6 +101,7 @@ enum class keys : std::uint8_t
     collision_cache,
     collision_cache_insert,
     collision_cache_detect,
+    lacing,
     MAX_SYMBOLIZER_KEY
 };
 

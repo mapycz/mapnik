@@ -1175,6 +1175,8 @@ void map_parser::parse_polygon_pattern_symbolizer(rule & rule,
         set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
         set_symbolizer_property<symbolizer_base,pattern_alignment_enum>(sym, keys::alignment, node);
         set_symbolizer_property<symbolizer_base,gamma_method_enum>(sym, keys::gamma_method, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::spacing, node);
+        set_symbolizer_property<symbolizer_base,pattern_lacing_mode_enum>(sym, keys::lacing, node);
         parse_svg_attributes(sym, node);
         rule.append(std::move(sym));
     }

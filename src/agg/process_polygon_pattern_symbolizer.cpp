@@ -58,6 +58,110 @@
 
 namespace mapnik {
 
+class wrap_mode_alternating
+{
+public:
+    wrap_mode_alternating(unsigned width, unsigned height) :
+        m_width(width),
+        m_height(height),
+        m_width2(width / 2),
+        m_value_x(0),
+        m_value_y(0),
+        m_odd(true)
+    {
+    }
+
+    inline unsigned x(int v)
+    {
+        m_value_x = unsigned(v) % m_width;
+        if (m_odd)
+        {
+            return m_value_x;
+        }
+        return m_value_x + ((m_value_x >= m_width2) ? (-1) : 1) * m_width2;
+    }
+
+    inline unsigned inc_x()
+    {
+        ++m_value_x;
+        if(m_value_x > m_width) m_value_x = 0;
+        if (m_odd)
+        {
+            if(m_value_x >= m_width) m_value_x = 0;
+            return m_value_x;
+        }
+        return m_value_x + ((m_value_x >= m_width2) ? (-1) : 1) * m_width2;
+    }
+
+    inline unsigned y(int v)
+    {
+        m_odd = ((v / m_height) % 2) == 1;
+        return m_value_y = unsigned(v) % m_height;
+    }
+
+    inline unsigned inc_y()
+    {
+        ++m_value_y;
+        if(m_value_y >= m_height) m_value_y = 0;
+        return m_value_y;
+    }
+
+private:
+    unsigned m_width;
+    unsigned m_height;
+    unsigned m_width2;
+    unsigned m_value_x;
+    unsigned m_value_y;
+    bool m_odd;
+};
+
+template<class PixFmt, class Wrap> class image_accessor_wrap
+{
+public:
+    typedef PixFmt   pixfmt_type;
+    typedef typename pixfmt_type::color_type color_type;
+    typedef typename pixfmt_type::order_type order_type;
+    typedef typename pixfmt_type::value_type value_type;
+    enum pix_width_e { pix_width = pixfmt_type::pix_width };
+
+    image_accessor_wrap() {}
+    explicit image_accessor_wrap(const pixfmt_type& pixf) :
+        m_pixf(&pixf),
+        m_wrap(pixf.width(), pixf.height())
+    {}
+
+    void attach(const pixfmt_type& pixf)
+    {
+        m_pixf = &pixf;
+    }
+
+    inline const agg::int8u* span(int x, int y, unsigned)
+    {
+        m_x = x;
+        m_row_ptr = m_pixf->row_ptr(m_wrap.y(y));
+        return m_row_ptr + m_wrap.x(x) * pix_width;
+    }
+
+    inline const agg::int8u* next_x()
+    {
+        int x = m_wrap.inc_x();
+        return m_row_ptr + x * pix_width;
+    }
+
+    inline const agg::int8u* next_y()
+    {
+        m_row_ptr = m_pixf->row_ptr(m_wrap.inc_y());
+        return m_row_ptr + m_wrap.x(m_x) * pix_width;
+    }
+
+private:
+    const pixfmt_type* m_pixf;
+    const agg::int8u*       m_row_ptr;
+    int                m_x;
+    Wrap               m_wrap;
+};
+
+
 template <typename T0, typename T1>
 void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
                                   mapnik::feature_impl & feature,
@@ -95,6 +199,8 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     using img_source_type = agg::image_accessor_wrap<agg::pixfmt_rgba32_pre,
                                                      wrap_x_type,
                                                      wrap_y_type>;
+    //using img_source_type = image_accessor_wrap<agg::pixfmt_rgba32_pre,
+                                                     //wrap_mode_alternating>;
 
     using span_gen_type = agg::span_pattern_rgba<img_source_type>;
     using ren_base = agg::renderer_base<pixfmt_type>;

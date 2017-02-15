@@ -47,11 +47,6 @@
 #include "agg_rasterizer_scanline_aa.h"
 #pragma GCC diagnostic pop
 
-// fwd decl
-namespace agg {
-struct trans_affine;
-}
-
 namespace mapnik {
 
 template <typename Symbolizer, typename Rasterizer>
@@ -66,7 +61,9 @@ struct common_pattern_process_visitor
         : ras_(ras),
           common_(common),
           sym_(sym),
-          feature_(feature)
+          feature_(feature),
+          spacing_(get<value_double>(sym_, keys::spacing)),
+          lacing_(get<pattern_lacing_mode_enum>(sym_, keys::lacing))
     {
     }
 
@@ -80,6 +77,16 @@ struct common_pattern_process_visitor
     {
         box2d<double> bbox(marker.bounding_box());
         agg::trans_affine tr(transform(bbox));
+
+        if (bbox.width() < 1.0 || bbox.height() < 1.0)
+        {
+            throw std::runtime_error("Pattern image smaller than one pixel");
+        }
+
+        if (lacing_ == PATTERN_LACING_MODE_ALTERNATING_GRID)
+        {
+            return render_pattern_alternating(ras_, marker, bbox, tr);
+        }
         return render_pattern(ras_, marker, bbox, tr);
     }
 
@@ -100,14 +107,14 @@ private:
     image_rgba8 render_pattern(rasterizer & ras,
                                marker_svg const & marker,
                                box2d<double> const & bbox,
-                               agg::trans_affine const & tr) const
+                               agg::trans_affine tr) const
     {
         using pixfmt = agg::pixfmt_rgba32_pre;
         using renderer_base = agg::renderer_base<pixfmt>;
         using renderer_solid = agg::renderer_scanline_aa_solid<renderer_base>;
         agg::scanline_u8 sl;
 
-        image_rgba8 image(bbox.width(), bbox.height());
+        image_rgba8 image(bbox.width() + spacing_, bbox.height() + spacing_);
         agg::rendering_buffer buf(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf(buf);
         renderer_base renb(pixf);
@@ -126,6 +133,7 @@ private:
             agg::pod_bvector<svg::path_attributes>, renderer_solid, pixfmt>;
         renderer_type svg_renderer(svg_path, used_attributes);
 
+        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
         return image;
     }
@@ -133,13 +141,13 @@ private:
     image_rgba8 render_pattern(rasterizer & ras,
                                marker_rgba8 const& marker,
                                box2d<double> const & bbox,
-                               agg::trans_affine const& tr) const
+                               agg::trans_affine tr) const
     {
         using pixfmt = agg::pixfmt_rgba32_pre;
         using renderer_base = agg::renderer_base<pixfmt>;
         using renderer = agg::renderer_scanline_aa_solid<renderer_base>;
 
-        image_rgba8 image(bbox.width(), bbox.height());
+        image_rgba8 image(bbox.width() + spacing_, bbox.height() + spacing_);
         agg::rendering_buffer buf_out(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf_out(buf_out);
         renderer_base rb(pixf_out);
@@ -152,11 +160,11 @@ private:
         const_rendering_buffer buf_in(src);
         pixfmt_in pixf(buf_in);
 
-        agg::trans_affine final_tr(tr);
-        final_tr.invert();
+        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
+        tr.invert();
 
         using interpolator_type = agg::span_interpolator_linear<>;
-        interpolator_type interpolator(final_tr);
+        interpolator_type interpolator(tr);
 
         agg::span_allocator<agg::rgba8> sa;
 
@@ -179,10 +187,109 @@ private:
         return image;
     }
 
+    image_rgba8 render_pattern_alternating(rasterizer & ras,
+                               marker_svg const & marker,
+                               box2d<double> const & bbox,
+                               agg::trans_affine tr) const
+    {
+        using pixfmt = agg::pixfmt_rgba32_pre;
+        using renderer_base = agg::renderer_base<pixfmt>;
+        using renderer_solid = agg::renderer_scanline_aa_solid<renderer_base>;
+        agg::scanline_u8 sl;
+
+        image_rgba8 image(bbox.width() + spacing_, (bbox.height() + spacing_) * 2.0);
+        agg::rendering_buffer buf(image.bytes(), image.width(), image.height(), image.row_size());
+        pixfmt pixf(buf);
+        renderer_base renb(pixf);
+
+        svg_storage_type & svg = *marker.get_data();
+        svg_attribute_type const & svg_attributes = svg.attributes();
+        svg_attribute_type custom_attributes;
+        bool use_custom_attributes = push_explicit_style(
+            svg_attributes, custom_attributes, sym_, feature_, common_.vars_);
+        svg_attribute_type const & used_attributes = use_custom_attributes ?
+            custom_attributes : svg_attributes;
+
+        svg::vertex_stl_adapter<svg::svg_path_storage> stl_storage(svg.source());
+        svg::svg_path_adapter svg_path(stl_storage);
+        using renderer_type = svg::svg_renderer_agg<svg::svg_path_adapter,
+            agg::pod_bvector<svg::path_attributes>, renderer_solid, pixfmt>;
+        renderer_type svg_renderer(svg_path, used_attributes);
+
+        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
+        svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
+        tr.translate(-(bbox.width() / 2.0 + spacing_ / 2.0), bbox.height() + spacing_);
+        svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
+        tr.translate(bbox.width() + spacing_, 0);
+        svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
+        return image;
+    }
+
+    image_rgba8 render_pattern_alternating(rasterizer & ras,
+                               marker_rgba8 const& marker,
+                               box2d<double> const & bbox,
+                               agg::trans_affine tr) const
+    {
+        using pixfmt = agg::pixfmt_rgba32_pre;
+        using renderer_base = agg::renderer_base<pixfmt>;
+        using renderer = agg::renderer_scanline_aa_solid<renderer_base>;
+
+        image_rgba8 image(bbox.width() + spacing_, (bbox.height() + spacing_) * 2.0);
+        agg::rendering_buffer buf_out(image.bytes(), image.width(), image.height(), image.row_size());
+        pixfmt pixf_out(buf_out);
+        renderer_base rb(pixf_out);
+        renderer r(rb);
+
+        using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
+        using pixfmt_in = agg::pixfmt_alpha_blend_rgba<agg::blender_rgba32_pre, const_rendering_buffer, agg::pixel32_type>;
+
+        image_rgba8 const& src = marker.get_data();
+        const_rendering_buffer buf_in(src);
+        pixfmt_in pixf(buf_in);
+
+        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
+        tr.invert();
+
+        using interpolator_type = agg::span_interpolator_linear<>;
+        interpolator_type interpolator(tr);
+
+        agg::span_allocator<agg::rgba8> sa;
+
+        agg::image_filter_lut filter;
+        filter.calculate(agg::image_filter_bilinear(), true);
+
+        using img_accessor_type = agg::image_accessor_clone<pixfmt_in>;
+        using span_gen_type = agg::span_image_resample_rgba_affine<img_accessor_type>;
+        img_accessor_type ia(pixf);
+        span_gen_type sg(ia, interpolator, filter);
+
+        agg::scanline_u8 sl;
+        ras.move_to_d(0, 0);
+        ras.line_to_d(image.width(), 0);
+        ras.line_to_d(image.width(), image.height());
+        ras.line_to_d(0, image.height());
+
+        agg::render_scanlines_aa(ras, sl, rb, sa, sg);
+
+        tr.invert();
+        tr.translate(-(bbox.width() / 2.0 + spacing_ / 2.0), bbox.height() + spacing_);
+        tr.invert();
+        agg::render_scanlines_aa(ras, sl, rb, sa, sg);
+
+        tr.invert();
+        tr.translate(bbox.width() + spacing_, 0);
+        tr.invert();
+        agg::render_scanlines_aa(ras, sl, rb, sa, sg);
+
+        return image;
+    }
+
     Rasterizer & ras_;
     renderer_common const & common_;
     Symbolizer const & sym_;
     feature_impl const & feature_;
+    const value_double spacing_;
+    const pattern_lacing_mode_enum lacing_;
 };
 
 } // namespace mapnik

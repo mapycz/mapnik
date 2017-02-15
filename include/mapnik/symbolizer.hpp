@@ -90,7 +90,8 @@ enum class property_types : std::uint8_t
     target_vertical_alignment,
     target_upright,
     target_direction,
-    target_font_feature_settings
+    target_font_feature_settings,
+    target_lacing
 };
 
 template <typename T>
@@ -183,6 +184,7 @@ ENUM_FROM_STRING( text_transform_enum )
 ENUM_FROM_STRING( text_upright_enum )
 ENUM_FROM_STRING( direction_enum )
 ENUM_FROM_STRING( gamma_method_enum )
+ENUM_FROM_STRING( pattern_lacing_mode_enum )
 
 // enum
 template <typename T, bool is_enum = true>

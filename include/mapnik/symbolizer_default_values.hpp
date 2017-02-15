@@ -67,6 +67,13 @@ struct symbolizer_default<pattern_alignment_enum, keys::alignment>
     static pattern_alignment_enum value() { return GLOBAL_ALIGNMENT; }
 };
 
+// lacing
+template <>
+struct symbolizer_default<pattern_lacing_mode_e, keys::lacing>
+{
+    static pattern_lacing_mode_e value() { return PATTERN_LACING_MODE_GRID; }
+};
+
 // offset
 template <>
 struct symbolizer_default<value_double, keys::offset>

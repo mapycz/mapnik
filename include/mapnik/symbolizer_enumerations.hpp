@@ -76,6 +76,15 @@ enum pattern_alignment_enum : std::uint8_t
 
 DEFINE_ENUM( pattern_alignment_e, pattern_alignment_enum );
 
+enum pattern_lacing_mode_enum : std::uint8_t
+{
+    PATTERN_LACING_MODE_GRID,
+    PATTERN_LACING_MODE_ALTERNATING_GRID,
+    pattern_lacing_mode_enum_MAX
+};
+
+DEFINE_ENUM(pattern_lacing_mode_e, pattern_lacing_mode_enum );
+
 enum debug_symbolizer_mode_enum : std::uint8_t
 {
     DEBUG_SYM_MODE_COLLISION,

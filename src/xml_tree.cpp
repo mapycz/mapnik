@@ -435,6 +435,7 @@ compile_get_opt_attr(direction_e);
 compile_get_opt_attr(halo_rasterizer_e);
 compile_get_opt_attr(expression_ptr);
 compile_get_opt_attr(font_feature_settings);
+compile_get_opt_attr(pattern_lacing_mode_e);
 compile_get_attr(std::string);
 compile_get_attr(filter_mode_e);
 compile_get_attr(debug_symbolizer_mode_e);
