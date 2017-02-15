@@ -271,6 +271,7 @@ source = Split(
     marker_layout_generator.cpp
     marker_layout.cpp
     collision_cache.cpp
+    version.cpp
     """
     )
 

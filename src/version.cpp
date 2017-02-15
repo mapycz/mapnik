@@ -20,30 +20,21 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_VERSION_HPP
-#define MAPNIK_VERSION_HPP
-
-#include <mapnik/stringify_macro.hpp>
-#include <mapnik/config.hpp>
-
-#include <string>
-
-#define MAPNIK_MAJOR_VERSION 3
-#define MAPNIK_MINOR_VERSION 7
-#define MAPNIK_PATCH_VERSION 1
-
-#define MAPNIK_VERSION (MAPNIK_MAJOR_VERSION*100000) + (MAPNIK_MINOR_VERSION*100) + (MAPNIK_PATCH_VERSION)
-
-#define MAPNIK_VERSION_STRING   MAPNIK_STRINGIFY(MAPNIK_MAJOR_VERSION) "." \
-                                MAPNIK_STRINGIFY(MAPNIK_MINOR_VERSION) "." \
-                                MAPNIK_STRINGIFY(MAPNIK_PATCH_VERSION)
+#include <mapnik/version.hpp>
 
 namespace mapnik
 {
 
-MAPNIK_DECL unsigned version_number();
-MAPNIK_DECL std::string version_string();
+unsigned version_number()
+{
+    return MAPNIK_VERSION;
+}
+
+std::string version_string()
+{
+    return MAPNIK_VERSION_STRING;
+}
 
 }
 
-#endif // MAPNIK_VERSION_HPP
+
