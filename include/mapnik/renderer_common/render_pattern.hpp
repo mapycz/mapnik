@@ -80,7 +80,7 @@ struct common_pattern_process_visitor
 
         if (bbox.width() < 1.0 || bbox.height() < 1.0)
         {
-            throw std::runtime_error("Pattern image smaller than one pixel");
+            MAPNIK_LOG_ERROR(common_pattern_process_visitor) << "Pattern image smaller than one pixel";
         }
 
         if (lacing_ == PATTERN_LACING_MODE_ALTERNATING_GRID)
