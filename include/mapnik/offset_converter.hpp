@@ -349,7 +349,7 @@ private:
                 }
             }
 
-            #ifdef MAPNIK_LOG
+            #if 0 && MAPNIK_LOG
             if (bulge_steps == 0)
             {
                 // inside turn (sharp/obtuse angle)
