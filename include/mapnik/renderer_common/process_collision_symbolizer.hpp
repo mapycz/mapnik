@@ -161,6 +161,7 @@ struct collision_symbolizer_traits
     using grid = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 marker_grid_layout<
                     geometry::grid_vertex_adapter<
                         geometry::row_grid_iterator>,
@@ -168,6 +169,7 @@ struct collision_symbolizer_traits
     using alternating_grid = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 marker_grid_layout<
                     geometry::alternating_grid_vertex_adapter<
                         geometry::row_grid_iterator>,
@@ -175,16 +177,19 @@ struct collision_symbolizer_traits
     using line = split_multi<
         geom_iterator<
             vertex_converter<
+                set_line_clip_geometry_visitor,
                 collision::line_layout<
                     collision::point_layout>>>>;
     using vertex_first = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_first_layout<
                     collision::point_layout>>>>;
     using vertex_last = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_last_layout<
                     collision::point_layout>>>>;
 

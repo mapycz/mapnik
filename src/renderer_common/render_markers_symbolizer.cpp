@@ -68,6 +68,7 @@ struct marker_symbolizer_traits
     using grid = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 marker_grid_layout<
                     geometry::grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -75,6 +76,7 @@ struct marker_symbolizer_traits
     using alternating_grid = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 marker_grid_layout<
                     geometry::alternating_grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -82,14 +84,17 @@ struct marker_symbolizer_traits
     using line = split_multi<
         geom_iterator<
             vertex_converter<
+                set_line_clip_geometry_visitor,
                 marker_line_layout<marker_layout>>>>;
     using vertex_first = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_first_layout<marker_layout>>>>;
     using vertex_last = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_last_layout<marker_layout>>>>;
 
     using placements_type = marker_positions_type;

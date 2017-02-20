@@ -29,7 +29,75 @@
 
 namespace mapnik { namespace label_placement {
 
-template <typename SubLayout>
+template <typename VertexConverter>
+class set_clip_geometry_visitor
+{
+public:
+    set_clip_geometry_visitor(
+        VertexConverter & converter,
+        value_bool clip)
+        : converter_(converter),
+          clip_(clip)
+    {
+    }
+
+    void operator()(geometry::line_string<double> const & geo) const
+    {
+        converter_.template set<clip_line_tag>();
+        converter_.template unset<clip_poly_tag>();
+    }
+
+    void operator()(geometry::polygon<double> const & geo) const
+    {
+        converter_.template set<clip_poly_tag>();
+        converter_.template unset<clip_line_tag>();
+    }
+
+    template <typename T>
+    void operator()(T const&) const
+    {
+    }
+
+private:
+    VertexConverter & converter_;
+    const value_bool clip_;
+};
+
+template <typename VertexConverter>
+class set_line_clip_geometry_visitor
+{
+public:
+    set_line_clip_geometry_visitor(
+        VertexConverter & converter,
+        value_bool clip)
+        : converter_(converter),
+          clip_(clip)
+    {
+    }
+
+    void operator()(geometry::line_string<double> const & geo) const
+    {
+        converter_.template set<clip_line_tag>();
+        converter_.template unset<clip_poly_tag>();
+    }
+
+    void operator()(geometry::polygon<double> const & geo) const
+    {
+        converter_.template set<clip_line_tag>();
+        converter_.template unset<clip_poly_tag>();
+    }
+
+    template <typename T>
+    void operator()(T const&) const
+    {
+    }
+
+private:
+    VertexConverter & converter_;
+    const value_bool clip_;
+};
+
+template <template <class> class SetClip, typename SubLayout>
 class vertex_converter : util::noncopyable
 {
     template <typename Layout, typename LayoutGenerator>
@@ -54,28 +122,20 @@ class vertex_converter : util::noncopyable
         mutable bool status_ = false;
     };
 
-    template <typename Adapter, typename VC>
-    class line_placement_visitor
+    template <typename Adapter, typename VertexConverter>
+    class geometry_visitor
     {
     public:
-        line_placement_visitor(
-            VC & converter,
-            Adapter const & adapter,
-            value_bool clip)
+        geometry_visitor(
+            VertexConverter & converter,
+            Adapter const & adapter)
             : converter_(converter),
-              adapter_(adapter),
-              clip_(clip)
+              adapter_(adapter)
         {
         }
 
         bool operator()(geometry::line_string<double> const & geo) const
         {
-            if (clip_)
-            {
-                converter_.template set<clip_line_tag>();
-            }
-            converter_.template unset<clip_poly_tag>();
-
             geometry::line_string_vertex_adapter<double> va(geo);
             converter_.apply(va, adapter_);
             return adapter_.status();
@@ -83,12 +143,6 @@ class vertex_converter : util::noncopyable
 
         bool operator()(geometry::polygon<double> const & geo) const
         {
-            converter_.template unset<clip_line_tag>();
-            if (clip_)
-            {
-                converter_.template set<clip_poly_tag>();
-            }
-
             geometry::polygon_vertex_adapter<double> va(geo);
             converter_.apply(va, adapter_);
             return adapter_.status();
@@ -108,9 +162,8 @@ class vertex_converter : util::noncopyable
         }
 
     private:
-        VC & converter_;
+        VertexConverter & converter_;
         Adapter const & adapter_;
-        const value_bool clip_;
     };
 
 public:
@@ -153,10 +206,17 @@ public:
         LayoutGenerator & layout_generator,
         Geom & geom)
     {
+        if (clip_)
+        {
+            using set_clip_visitor_type = SetClip<vertex_converter_type>;
+            set_clip_visitor_type set_clip_visitor(converter_, clip_);
+            util::apply_visitor(set_clip_visitor, geom);
+        }
+
         using adapter_type = converter_adapter<SubLayout, LayoutGenerator>;
-        using visitor_type = line_placement_visitor<adapter_type, vertex_converter_type>;
+        using visitor_type = geometry_visitor<adapter_type, vertex_converter_type>;
         adapter_type adapter(sublayout_, layout_generator);
-        visitor_type visitor(converter_, adapter, clip_);
+        visitor_type visitor(converter_, adapter);
         return util::apply_visitor(visitor, geom);
     }
 

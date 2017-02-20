@@ -70,6 +70,7 @@ struct text_symbolizer_traits
     using grid = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 grid_layout<
                     geometry::grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -77,6 +78,7 @@ struct text_symbolizer_traits
     using alternating_grid = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 grid_layout<
                     geometry::alternating_grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -84,16 +86,19 @@ struct text_symbolizer_traits
     using line = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_line_clip_geometry_visitor,
                 text_extend_line_layout<
                     line_layout<
                         single_line_layout>>>>>;
     using vertex_first = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_first_layout<mapnik::point_layout>>>>;
     using vertex_last = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_last_layout<mapnik::point_layout>>>>;
 
     using placements_type = placements_list;
@@ -116,6 +121,7 @@ struct shield_symbolizer_traits
     using grid = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 grid_layout<
                     geometry::grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -123,6 +129,7 @@ struct shield_symbolizer_traits
     using alternating_grid = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 grid_layout<
                     geometry::alternating_grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -130,14 +137,17 @@ struct shield_symbolizer_traits
     using line = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_line_clip_geometry_visitor,
                 line_layout<shield_layout>>>>;
     using vertex_first = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_first_layout<shield_layout>>>>;
     using vertex_last = split_multi<
         text_layout_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_last_layout<shield_layout>>>>;
 
     using placements_type = placements_list;
@@ -161,6 +171,7 @@ struct group_symbolizer_traits
     using grid = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 grid_layout<
                     geometry::grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -168,6 +179,7 @@ struct group_symbolizer_traits
     using alternating_grid = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 grid_layout<
                     geometry::alternating_grid_vertex_adapter<
                         geometry::spiral_grid_iterator>,
@@ -175,16 +187,19 @@ struct group_symbolizer_traits
     using line = split_multi<
         geom_iterator<
             vertex_converter<
+                set_line_clip_geometry_visitor,
                 group_line_layout<
                     group_point_layout>>>>;
     using vertex_first = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_first_layout<
                     group_point_layout>>>>;
     using vertex_last = split_multi<
         geom_iterator<
             vertex_converter<
+                set_clip_geometry_visitor,
                 vertex_last_layout<
                     group_point_layout>>>>;
 
