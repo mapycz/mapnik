@@ -16,7 +16,7 @@ Both `LinePatternSymbolizer` and `PolygonPatternSymbolizer` can customize SVG pa
 
 ![polygon-pattern-2](https://raw.githubusercontent.com/mapycz/test-data-visual/master/images/polygon-pattern-2-256-256-1.0-agg-reference.png)
 
-## `spacing`
+## Parameter `spacing`
 
 Parameter `spacing` of `PolygonPatternSymbolizer` sets spacing between individual images of given pattern.
 
@@ -26,7 +26,7 @@ Parameter `spacing` of `PolygonPatternSymbolizer` sets spacing between individua
 
 ![polygon-pattern-6](https://raw.githubusercontent.com/mapycz/test-data-visual/master/images/polygon-pattern-6-256-256-1.0-agg-reference.png)
 
-## `lacing`
+## Parameter `lacing`
 
 Parameter `lacing` of `PolygonPatternSymbolizer` set to `alternating-grid` will render pattern resembling bricks in a wall. Value `grid` is the default when parameter is unset.
 
