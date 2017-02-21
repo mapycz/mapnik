@@ -32,8 +32,8 @@ Parameter `lacing` of `PolygonPatternSymbolizer` set to `alternating-grid` will 
 
 ### An example
 
-[polygon-pattern-4.xml](https://github.com/mapycz/test-data-visual/blob/master/styles/polygon-pattern-4.xml)
+[polygon-pattern-3.xml](https://github.com/mapycz/test-data-visual/blob/master/styles/polygon-pattern-3.xml)
 
-![polygon-pattern-4](https://raw.githubusercontent.com/mapycz/test-data-visual/master/images/polygon-pattern-4-256-256-1.0-agg-reference.png)
+![polygon-pattern-3](https://raw.githubusercontent.com/mapycz/test-data-visual/master/images/polygon-pattern-3-256-256-1.0-agg-reference.png)
 
 
