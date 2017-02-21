@@ -1,7 +1,7 @@
 
 # Text on extended geometry
 
-Allows to render text along line when length of the text exceeds length of the line. Beginning and ending segments of the underlaying line are extended by number of pixes given by parameter `extend`.
+Allows to render text along line when length of the text exceeds length of the line. Beginning and ending segments of the underlaying line are extended by number of points given by parameter `extend`.
 
 ## An example
 
