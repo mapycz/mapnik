@@ -1,6 +1,6 @@
 # Keyed collision caches
 
-All symbolizers working with collision detector have parameters `collision-cache-detect` and `collision-cache-insert`. These parameters set names of collision detectors. Multiple names delimited by comma are supported. If one of these parameters is not defined, collision detector with name `default` is used instead. The `default` collision cache can be referenced explicitly.
+All symbolizers working with collision detector have parameters `collision-cache-detect` and `collision-cache-insert`. These parameters set names of collision detectors. Multiple names delimited by comma are supported. If one of these parameters is not defined, collision detector with name `default` is used instead. The `default` collision detector can be referenced explicitly.
 
 An example of inserting objects only into collision detector called `water`:
 

@@ -1,6 +1,6 @@
 # `CollisionSymbolizer`
 
-It's sometimes convinient to "render" some invisible labels and insert them into collision detector in order to protect their places agains other objects. This can be done by `TextSymbolizer` or `MarkersSymbolizer` with `opacity="0"` but it comes with unnecessary performance overhead of text or marker rendering and seems like hackish solution in general.  The new `CollisionSymbolizer` solves that.
+It's sometimes convinient to "render" some invisible labels and insert them into collision detector in order to protect their places agains other objects. This can be done by `TextSymbolizer` or `MarkersSymbolizer` with `opacity="0"` but it comes with unnecessary performance overhead of text or marker rendering and seems like hackish solution in general.  The `CollisionSymbolizer` solves that.
 
 ## An example
 
