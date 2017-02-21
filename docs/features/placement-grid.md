@@ -5,16 +5,16 @@ Allows placing repeated labels on area of a polygon. All possible placements cre
 
 `alternating-grid` creates pattern similar to bricks in a wall.
 
-Very important is order in which grid is iterated and individual placements placed. The first point is polygon's interior. Subsequent placements goes around interior in a spiral.
-Only CollisionSymbolizer does not work this way, but rather iterates the grid in left-right top-down order.
+Very important is order in which grid is iterated and individual placements placed. The first point is polygon's interior. Subsequent placements go around interior in a spiral.
+Only `CollisionSymbolizer` does not work this way, but rather iterates the grid in left-right top-down order.
 
 These are basic use cases:
 
 * Labeling areas in given density.
-* Trying various position around interior.
+* Trying various positions around interior.
 * Adding areas into collision detector by `CollisionSymbolizer`.
 
-Grid density can be controlled by `grid-cell-width` and `grid-cell-height` properties of text symbolizer.
+Grid density can be controlled by `grid-cell-width` and `grid-cell-height` properties of the symbolizer.
 
 ## An example
 

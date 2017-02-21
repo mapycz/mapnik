@@ -4,7 +4,7 @@ This repository contains a fork of [github.com/mapnik/mapnik](https://github.com
 
 * [Tree-like layer structure](docs/features/layer-structure.md)
 * [Layer level compositing](docs/features/layer-level-compositing.md)
-* [Placement code unified](docs/features/placement-code-unified.md)
+* [Unification of placement code](docs/features/placement-code-unified.md)
 * [Placement `grid` and `alternating-grid`](docs/features/placement-grid.md)
 * [CollisionSymbolizer](docs/features/collision-symbolizer.md)
 * [Keyed collision caches](docs/features/keyed-collision-caches.md)
