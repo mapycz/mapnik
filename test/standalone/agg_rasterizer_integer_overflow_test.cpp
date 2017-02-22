@@ -56,7 +56,8 @@ SECTION("coordinates_do_not_overflow_and_polygon_is_rendered") {
   mapnik::image_rgba8 im(256, 256);
   {
     mapnik::agg_renderer<mapnik::image_rgba8> ren(m, im);
-    ren.apply();
+    mapnik::feature_style_processor processor(m);
+    processor.apply(ren);
   }
 
   REQUIRE(im(128,128) == expected_color.rgba());

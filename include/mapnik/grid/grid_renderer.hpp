@@ -58,8 +58,7 @@ namespace mapnik {
 namespace mapnik {
 
 template <typename T>
-class MAPNIK_DECL grid_renderer : public feature_style_processor<grid_renderer<T> >,
-                                  private util::noncopyable
+class MAPNIK_DECL grid_renderer : private util::noncopyable
 {
 
 public:

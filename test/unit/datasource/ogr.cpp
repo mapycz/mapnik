@@ -44,7 +44,8 @@ TEST_CASE("ogr") {
             m.zoom_all();
             mapnik::image_rgba8 im(256,256);
             mapnik::agg_renderer<mapnik::image_rgba8> ren(m, im);
-            ren.apply();
+            mapnik::feature_style_processor processor(m);
+            processor.apply(ren);
             std::string filename("./test/data/images/point_json.png");
             if (std::getenv("UPDATE") != nullptr) {
                 mapnik::save_to_file(im, filename);

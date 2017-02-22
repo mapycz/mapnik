@@ -70,8 +70,7 @@ namespace mapnik
 
 template <typename T0, typename T1>
 agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, double scale_factor, unsigned offset_x, unsigned offset_y)
-    : feature_style_processor<agg_renderer>(m, scale_factor),
-      buffers_(),
+    : buffers_(),
       internal_buffers_(m.width(), m.height()),
       inflated_buffer_(),
       ras_ptr(new rasterizer),
@@ -84,8 +83,7 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, double scale_factor
 
 template <typename T0, typename T1>
 agg_renderer<T0,T1>::agg_renderer(Map const& m, request const& req, attributes const& vars, T0 & pixmap, double scale_factor, unsigned offset_x, unsigned offset_y)
-    : feature_style_processor<agg_renderer>(m, scale_factor),
-      buffers_(),
+    : buffers_(),
       internal_buffers_(req.width(), req.height()),
       inflated_buffer_(),
       ras_ptr(new rasterizer),
@@ -99,8 +97,7 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, request const& req, attributes c
 template <typename T0, typename T1>
 agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, std::shared_ptr<T1> detector,
                               double scale_factor, unsigned offset_x, unsigned offset_y)
-    : feature_style_processor<agg_renderer>(m, scale_factor),
-      buffers_(),
+    : buffers_(),
       internal_buffers_(m.width(), m.height()),
       inflated_buffer_(),
       ras_ptr(new rasterizer),

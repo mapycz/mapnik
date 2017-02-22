@@ -54,9 +54,15 @@ public:
         } else {
             m.zoom_all();
         }
+
+        using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
+
         mapnik::image_rgba8 im(m.width(),m.height());
-        mapnik::agg_renderer<mapnik::image_rgba8> ren(m,im,scale_factor_);
-        ren.apply();
+        renderer_type ren(m,im,scale_factor_);
+        mapnik::feature_style_processor processor(m, scale_factor_);
+
+        processor.apply(ren);
+
         if (!preview_.empty()) {
             std::clog << "preview available at " << preview_ << "\n";
             mapnik::save_to_file(im,preview_);
@@ -77,9 +83,13 @@ public:
         }
         for (unsigned i=0;i<iterations_;++i)
         {
+            using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
+
             mapnik::image_rgba8 im(m.width(),m.height());
-            mapnik::agg_renderer<mapnik::image_rgba8> ren(m,im,scale_factor_);
-            ren.apply();
+            renderer_type ren(m,im,scale_factor_);
+            mapnik::feature_style_processor processor(m, scale_factor_);
+
+            processor.apply(ren);
         }
         return true;
     }

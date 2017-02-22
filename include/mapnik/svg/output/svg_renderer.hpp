@@ -63,8 +63,7 @@ namespace mapnik
 // output iterators add more flexibility than streams, because iterators
 // can target many other output destinations besides streams.
 template <typename OutputIterator>
-class MAPNIK_DECL svg_renderer : public feature_style_processor<svg_renderer<OutputIterator> >,
-                                 private util::noncopyable
+class MAPNIK_DECL svg_renderer : private util::noncopyable
 {
 public:
     using processor_impl_type = svg_renderer<OutputIterator>;

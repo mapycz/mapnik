@@ -136,7 +136,8 @@ int main (int argc,char** argv)
             }
         }
         mapnik::agg_renderer<mapnik::image_rgba8> ren(map,req,vars,im,scale_factor,0,0);
-        ren.apply();
+        mapnik::feature_style_processor processor(map);
+        processor.apply(ren);
         mapnik::save_to_file(im,img_file);
         if (auto_open)
         {

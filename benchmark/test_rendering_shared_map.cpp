@@ -12,11 +12,14 @@
 #include <mapnik/datasource_cache.hpp>
 #include <stdexcept>
 
-template <typename Renderer> void process_layers(Renderer & ren,
-                                            mapnik::request const& m_req,
-                                            mapnik::projection const& map_proj,
-                                            std::vector<mapnik::layer> const& layers,
-                                            double scale_denom)
+template <typename Renderer, typename Processor>
+void process_layers(
+    Processor & p,
+    Renderer & ren,
+    mapnik::request const& m_req,
+    mapnik::projection const& map_proj,
+    std::vector<mapnik::layer> const& layers,
+    double scale_denom)
 {
     unsigned layers_size = layers.size();
     for (unsigned i=0; i < layers_size; ++i)
@@ -26,16 +29,17 @@ template <typename Renderer> void process_layers(Renderer & ren,
         {
             std::set<std::string> names;
             mapnik::layer l(lyr);
-            ren.apply_to_layer(l,
-                               ren,
-                               map_proj,
-                               m_req.scale(),
-                               scale_denom,
-                               m_req.width(),
-                               m_req.height(),
-                               m_req.extent(),
-                               m_req.buffer_size(),
-                               names);
+            p.apply_to_layer(
+                l,
+                ren,
+                map_proj,
+                m_req.scale(),
+                scale_denom,
+                m_req.width(),
+                m_req.height(),
+                m_req.extent(),
+                m_req.buffer_size(),
+                names);
         }
     }
 }
@@ -95,8 +99,9 @@ public:
         scale_denom *= scale_factor_;
         mapnik::agg_renderer<mapnik::image_rgba8> ren(*m_,m_req,variables,im_,scale_factor_);
         ren.start_map_processing(*m_);
+        mapnik::feature_style_processor processor(*m_, scale_factor_);
         std::vector<mapnik::layer> const& layers = m_->layers();
-        process_layers(ren,m_req,map_proj,layers,scale_denom);
+        process_layers(processor,ren,m_req,map_proj,layers,scale_denom);
         ren.end_map_processing(*m_);
         if (!preview_.empty()) {
             std::clog << "preview available at " << preview_ << "\n";
@@ -121,8 +126,9 @@ public:
             scale_denom *= scale_factor_;
             mapnik::agg_renderer<mapnik::image_rgba8> ren(*m_,m_req,variables,im,scale_factor_);
             ren.start_map_processing(*m_);
+            mapnik::feature_style_processor processor(*m_, scale_factor_);
             std::vector<mapnik::layer> const& layers = m_->layers();
-            process_layers(ren,m_req,map_proj,layers,scale_denom);
+            process_layers(processor,ren,m_req,map_proj,layers,scale_denom);
             ren.end_map_processing(*m_);
             bool diff = false;
             mapnik::image_rgba8 const& dest = im;

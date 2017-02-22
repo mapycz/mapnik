@@ -42,9 +42,11 @@ public:
         m.zoom_to_box(mapnik::box2d<double>(-1,-1,0,0));
         for (unsigned i=0;i<iterations_;++i)
         {
+            using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
             mapnik::image_rgba8 im(256,256);
-            mapnik::agg_renderer<mapnik::image_rgba8> ren(m,im);
-            ren.apply();
+            renderer_type ren(m,im);
+            mapnik::feature_style_processor processor(m);
+            processor.apply(ren);
         }
         return true;
     }

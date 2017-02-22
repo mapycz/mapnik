@@ -65,8 +65,7 @@ struct cairo_save_restore
 };
 
 template <typename T>
-class MAPNIK_DECL cairo_renderer : public feature_style_processor<cairo_renderer<T> >,
-                                   private util::noncopyable
+class MAPNIK_DECL cairo_renderer : private util::noncopyable
 {
 public:
     using processor_impl_type = cairo_renderer<T>;

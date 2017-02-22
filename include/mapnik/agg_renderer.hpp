@@ -107,8 +107,7 @@ private:
 };
 
 template <typename T0, typename T1=renderer_common::detector_type>
-class MAPNIK_DECL agg_renderer : public feature_style_processor<agg_renderer<T0> >,
-                                 private util::noncopyable
+class MAPNIK_DECL agg_renderer : private util::noncopyable
 {
 
 public:

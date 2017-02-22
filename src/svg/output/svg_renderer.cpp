@@ -38,7 +38,6 @@ namespace mapnik
 
 template <typename T>
 svg_renderer<T>::svg_renderer(Map const& m, T & output_iterator, double scale_factor, unsigned offset_x, unsigned offset_y) :
-    feature_style_processor<svg_renderer>(m, scale_factor),
     output_iterator_(output_iterator),
     generator_(output_iterator),
     painted_(false),
@@ -47,7 +46,6 @@ svg_renderer<T>::svg_renderer(Map const& m, T & output_iterator, double scale_fa
 
 template <typename T>
 svg_renderer<T>::svg_renderer(Map const& m, request const& req,  attributes const& vars, T & output_iterator, double scale_factor, unsigned offset_x, unsigned offset_y) :
-    feature_style_processor<svg_renderer>(m, scale_factor),
     output_iterator_(output_iterator),
     generator_(output_iterator),
     painted_(false),

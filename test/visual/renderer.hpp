@@ -127,7 +127,8 @@ struct agg_renderer : raster_renderer_base<mapnik::image_rgba8>
     {
         image_type image(map.width(), map.height());
         mapnik::agg_renderer<image_type> ren(map, image, scale_factor);
-        ren.apply();
+        mapnik::feature_style_processor processor(map);
+        processor.apply(ren);
         return image;
     }
 };
@@ -144,7 +145,8 @@ struct cairo_renderer : raster_renderer_base<mapnik::image_rgba8>
             mapnik::cairo_surface_closer());
         mapnik::cairo_ptr image_context(mapnik::create_context(image_surface));
         mapnik::cairo_renderer<mapnik::cairo_ptr> ren(map, image_context, scale_factor);
-        ren.apply();
+        mapnik::feature_style_processor processor(map);
+        processor.apply(ren);
         image_type image(map.width(), map.height());
         mapnik::cairo_image_to_rgba8(image, image_surface);
         return image;
@@ -173,7 +175,8 @@ struct cairo_vector_renderer : vector_renderer_base
             mapnik::cairo_surface_closer());
         mapnik::cairo_ptr image_context(mapnik::create_context(image_surface));
         mapnik::cairo_renderer<mapnik::cairo_ptr> ren(map, image_context, scale_factor);
-        ren.apply();
+        mapnik::feature_style_processor processor(map);
+        processor.apply(ren);
         cairo_surface_finish(&*image_surface);
         return ss.str();
     }
@@ -215,7 +218,8 @@ struct svg_renderer : vector_renderer_base
         std::stringstream ss;
         std::ostream_iterator<char> output_stream_iterator(ss);
         mapnik::svg_renderer<std::ostream_iterator<char>> ren(map, output_stream_iterator, scale_factor);
-        ren.apply();
+        mapnik::feature_style_processor processor(map);
+        processor.apply(ren);
         return ss.str();
     }
 };
@@ -262,7 +266,8 @@ struct grid_renderer : raster_renderer_base<mapnik::image_rgba8>
     {
         mapnik::grid grid(map.width(), map.height(), "__id__");
         mapnik::grid_renderer<mapnik::grid> ren(map, grid, scale_factor);
-        ren.apply();
+        mapnik::feature_style_processor processor(map);
+        processor.apply(ren);
         image_type image(map.width(), map.height());
         convert(grid.data(), image);
         return image;

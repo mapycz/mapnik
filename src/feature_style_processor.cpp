@@ -26,35 +26,7 @@
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/image_any.hpp>
 
-#if defined(GRID_RENDERER)
-#include <mapnik/grid/grid_renderer.hpp>
-#include <mapnik/grid/grid.hpp>
-#endif
-
-#if defined(HAVE_CAIRO)
-#include <cairo.h>
-#include <mapnik/cairo/cairo_renderer.hpp>
-#endif
-
-#if defined(SVG_RENDERER)
-#include <mapnik/svg/output/svg_renderer.hpp>
-#endif
-
 namespace mapnik
 {
-
-#if defined(HAVE_CAIRO)
-template class MAPNIK_DECL feature_style_processor<cairo_renderer<cairo_ptr> >;
-#endif
-
-#if defined(SVG_RENDERER)
-template class MAPNIK_DECL feature_style_processor<svg_renderer<std::ostream_iterator<char> > >;
-#endif
-
-#if defined(GRID_RENDERER)
-template class MAPNIK_DECL feature_style_processor<grid_renderer<grid> >;
-#endif
-
-template class MAPNIK_DECL feature_style_processor<agg_renderer<image_rgba8> >;
 
 }

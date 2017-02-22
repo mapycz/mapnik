@@ -58,7 +58,8 @@ SECTION("painting") {
 
             image_rgba8 image(m.width(), m.height());
             agg_renderer<image_rgba8> ren(m, image);
-            ren.apply();
+            mapnik::feature_style_processor processor(m);
+            processor.apply(ren);
 
             REQUIRE(image.painted() == true);
         }
