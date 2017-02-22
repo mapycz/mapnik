@@ -158,6 +158,9 @@ private:
     renderer_common common_;
     void setup(Map const& m);
 };
+
+extern template class MAPNIK_DECL grid_renderer<grid>;
+
 }
 
 #endif //GRID_RENDERER_HPP
