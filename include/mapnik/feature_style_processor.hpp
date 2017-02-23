@@ -105,7 +105,7 @@ private:
      */
     void prepare_layer(layer_rendering_material & mat,
                        feature_style_context_map & ctx_map,
-                       Processor & p,
+                       Processor const & p,
                        double scale,
                        double scale_denom,
                        unsigned width,
