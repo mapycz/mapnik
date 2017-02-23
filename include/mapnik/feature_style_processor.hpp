@@ -99,7 +99,7 @@ public:
     template <typename Renderer>
     void apply(
         Renderer & p,
-        Renderer::buffer_type & buffer,
+        typename Renderer::buffer_type & buffer,
         double scale_denom_override=0.0);
 
     /*!
@@ -108,7 +108,7 @@ public:
     template <typename Renderer>
     void apply(
         Renderer & p,
-        Renderer::buffer_type & buffer,
+        typename Renderer::buffer_type & buffer,
         mapnik::layer const& lyr,
         std::set<std::string>& names,
         double scale_denom_override=0.0);
@@ -117,27 +117,31 @@ public:
      * \brief render a layer given a projection and scale.
      */
     template <typename Renderer>
-    void apply_to_layer(layer const& lay,
-                        Renderer & p,
-                        projection const& proj0,
-                        double scale,
-                        double scale_denom,
-                        unsigned width,
-                        unsigned height,
-                        box2d<double> const& extent,
-                        int buffer_size,
-                        std::set<std::string>& names);
+    void apply_to_layer(
+        layer const& lay,
+        Renderer & p,
+        typename Renderer::buffer_type & buffer,
+        projection const& proj0,
+        double scale,
+        double scale_denom,
+        unsigned width,
+        unsigned height,
+        box2d<double> const& extent,
+        int buffer_size,
+        std::set<std::string>& names);
 
 private:
     /*!
      * \brief renders a featureset with the given styles.
      */
     template <typename Renderer>
-    void render_style(Renderer & p,
-                      feature_type_style const* style,
-                      rule_cache const& rules,
-                      featureset_ptr features,
-                      proj_transform const& prj_trans);
+    void render_style(
+        Renderer & p,
+        typename Renderer::buffer_type & parent_buffer,
+        feature_type_style const* style,
+        rule_cache const& rules,
+        featureset_ptr features,
+        proj_transform const& prj_trans);
 
     template <typename Renderer>
     void prepare_layers(layer_rendering_material & parent_mat,
@@ -165,10 +169,16 @@ private:
      * \brief render features list queued when they are available.
      */
     template <typename Renderer>
-    void render_material(layer_rendering_material const & mat, Renderer & p );
+    void render_material(
+        layer_rendering_material const & mat,
+        Renderer & p,
+        typename Renderer::buffer_type & parent_buffer);
 
     template <typename Renderer>
-    void render_submaterials(layer_rendering_material const & mat, Renderer & p);
+    void render_submaterials(
+        layer_rendering_material const & mat,
+        Renderer & p,
+        typename Renderer::buffer_type & parent_buffer);
 
     Map const& m_;
 };
@@ -176,7 +186,7 @@ private:
 template <typename Renderer>
 void feature_style_processor::apply(
     Renderer & p,
-    Renderer::buffer_type & buffer,
+    typename Renderer::buffer_type & buffer,
     double scale_denom)
 {
     p.start_map_processing(m_, buffer);
@@ -210,7 +220,7 @@ void feature_style_processor::apply(
 template <typename Renderer>
 void feature_style_processor::apply(
     Renderer & p,
-    Renderer::buffer_type & buffer,
+    typename Renderer::buffer_type & buffer,
     mapnik::layer const& lyr,
     std::set<std::string>& names,
     double scale_denom)
@@ -223,16 +233,18 @@ void feature_style_processor::apply(
 
     if (lyr.visible(scale_denom))
     {
-        apply_to_layer(lyr,
-                       p,
-                       proj,
-                       m_.scale(),
-                       scale_denom,
-                       m_.width(),
-                       m_.height(),
-                       m_.get_current_extent(),
-                       m_.buffer_size(),
-                       names);
+        apply_to_layer(
+            lyr,
+            p,
+            buffer,
+            proj,
+            m_.scale(),
+            scale_denom,
+            m_.width(),
+            m_.height(),
+            m_.get_current_extent(),
+            m_.buffer_size(),
+            names);
     }
     p.end_map_processing(m_, buffer);
 }
@@ -244,7 +256,7 @@ template <typename Renderer>
 void feature_style_processor::apply_to_layer(
     layer const& lay,
     Renderer & p,
-    Renderer::buffer_type & buffer,
+    typename Renderer::buffer_type & buffer,
     projection const& proj0,
     double scale,
     double scale_denom,
@@ -551,7 +563,7 @@ template <typename Renderer>
 void feature_style_processor::render_submaterials(
     layer_rendering_material const & parent_mat,
     Renderer & p,
-    Renderer::buffer_type & parent_buffer)
+    typename Renderer::buffer_type & parent_buffer)
 {
     for (layer_rendering_material const & mat : parent_mat.materials_)
     {
@@ -560,7 +572,7 @@ void feature_style_processor::render_submaterials(
 #ifdef MAPNIK_STATS_RENDER
             mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
 #endif
-            std::unique_ptr<Renderer::buffer_type> layer_buffer(
+            std::unique_ptr<typename Renderer::buffer_type> layer_buffer(
                 p.start_layer_processing(mat.lay_, mat.layer_ext2_));
             auto & current_buffer = layer_buffer ? *layer_buffer : parent_buffer;
 
@@ -576,7 +588,7 @@ template <typename Renderer>
 void feature_style_processor::render_material(
     layer_rendering_material const & mat,
     Renderer & p,
-    Renderer::buffer_type & parent_buffer)
+    typename Renderer::buffer_type & parent_buffer)
 {
     std::vector<feature_type_style const*> const & active_styles = mat.active_styles_;
     std::vector<featureset_ptr> const & featureset_ptr_list = mat.featureset_ptr_list_;
@@ -586,7 +598,7 @@ void feature_style_processor::render_material(
         // but we have to apply compositing operations on styles
         for (feature_type_style const* style : active_styles)
         {
-            std::unique_ptr<Renderer::buffer_type> style_buffer(
+            std::unique_ptr<typename Renderer::buffer_type> style_buffer(
                 p.start_style_processing(*style));
             auto & current_buffer = style_buffer ? *style_buffer : parent_buffer;
             p.end_style_processing(*style, current_buffer, parent_buffer);
@@ -626,7 +638,7 @@ void feature_style_processor::render_material(
                     {
 
                         cache->prepare();
-                        render_style(p, style,
+                        render_style(p, parent_buffer, style,
                                      rule_caches[i],
                                      cache,
                                      prj_trans);
@@ -642,7 +654,7 @@ void feature_style_processor::render_material(
             for (feature_type_style const* style : active_styles)
             {
                 cache->prepare();
-                render_style(p, style, rule_caches[i], cache, prj_trans);
+                render_style(p, parent_buffer, style, rule_caches[i], cache, prj_trans);
                 ++i;
             }
             cache->clear();
@@ -666,7 +678,7 @@ void feature_style_processor::render_material(
         for (feature_type_style const* style : active_styles)
         {
             cache->prepare();
-            render_style(p, style,
+            render_style(p, parent_buffer, style,
                          rule_caches[i],
                          cache, prj_trans);
             ++i;
@@ -680,7 +692,7 @@ void feature_style_processor::render_material(
         for (feature_type_style const* style : active_styles)
         {
             featureset_ptr features = *featuresets++;
-            render_style(p, style,
+            render_style(p, parent_buffer, style,
                          rule_caches[i],
                          features,
                          prj_trans);
@@ -692,13 +704,13 @@ void feature_style_processor::render_material(
 template <typename Renderer>
 void feature_style_processor::render_style(
     Renderer & p,
-    Renderer::buffer_type & parent_buffer,
+    typename Renderer::buffer_type & parent_buffer,
     feature_type_style const* style,
     rule_cache const& rc,
     featureset_ptr features,
     proj_transform const& prj_trans)
 {
-    std::unique_ptr<Renderer::buffer_type> style_buffer(
+    std::unique_ptr<typename Renderer::buffer_type> style_buffer(
         p.start_style_processing(*style));
     auto & current_buffer = style_buffer ? *style_buffer : parent_buffer;
     if (!features)
