@@ -115,10 +115,10 @@ void save_to_cairo_file(mapnik::Map const& map,
           }
         */
 
-        using renderer_type = mapnik::cairo_renderer<cairo_ptr>;
-        renderer_type ren(map, create_context(surface), scale_factor);
+        cairo_context context(create_context(surface));
+        cairo_renderer ren(map, scale_factor);
         feature_style_processor processor(map, scale_factor);
-        processor.apply(ren, scale_denominator);
+        processor.apply(ren, context, scale_denominator);
 
         if (type == "ARGB32" || type == "RGB24")
         {

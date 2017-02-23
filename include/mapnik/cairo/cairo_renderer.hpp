@@ -64,37 +64,35 @@ struct cairo_save_restore
     cairo_context & context_;
 };
 
-template <typename T>
 class MAPNIK_DECL cairo_renderer : private util::noncopyable
 {
 public:
-    using processor_impl_type = cairo_renderer<T>;
+    using buffer_type = cairo_context;
+    //using processor_impl_type = cairo_renderer<T>;
+    cairo_renderer(
+        Map const& m,
+        double scale_factor=1.0,
+        unsigned offset_x=0,
+        unsigned offset_y=0);
+    cairo_renderer(
+        Map const& m,
+        request const& req,
+        attributes const& vars,
+        double scale_factor=1.0,
+        unsigned offset_x=0,
+        unsigned offset_y=0);
     cairo_renderer(Map const& m,
-                   T const& obj,
-                   double scale_factor=1.0,
-                   unsigned offset_x=0,
-                   unsigned offset_y=0);
-    cairo_renderer(Map const& m,
-                   request const& req,
-                   attributes const& vars,
-                   T const& obj,
-                   double scale_factor=1.0,
-                   unsigned offset_x=0,
-                   unsigned offset_y=0);
-    cairo_renderer(Map const& m,
-                   T const& obj,
-                   std::shared_ptr<renderer_common::detector_type> detector,
-                   double scale_factor=1.0,
-                   unsigned offset_x=0,
-                   unsigned offset_y=0);
+        std::shared_ptr<renderer_common::detector_type> detector,
+        double scale_factor=1.0,
+        unsigned offset_x=0,
+        unsigned offset_y=0);
 
-    ~cairo_renderer();
-    void start_map_processing(Map const& map);
-    void end_map_processing(Map const& map);
+    void start_map_processing(Map const& map, cairo_context & context);
+    void end_map_processing(Map const& map, cairo_context & context);
     void start_layer_processing(layer const& lay, box2d<double> const& query_extent);
-    void end_layer_processing(layer const& lay);
+    void end_layer_processing(layer const& lay, cairo_context & context);
     void start_style_processing(feature_type_style const& st);
-    void end_style_processing(feature_type_style const& st);
+    void end_style_processing(feature_type_style const& st, cairo_context & context);
     void process(point_symbolizer const& sym,
                  mapnik::feature_impl & feature,
                  proj_transform const& prj_trans);
@@ -148,16 +146,6 @@ public:
         mapnik::feature_impl & feature,
         proj_transform const& prj_trans);
 
-    bool painted()
-    {
-        return true;
-    }
-
-    void painted(bool /*painted*/)
-    {
-        // nothing to do
-    }
-
     inline eAttributeCollectionPolicy attribute_collection_policy() const
     {
         return DEFAULT;
@@ -181,15 +169,12 @@ public:
     void render_box(box2d<double> const& b);
 protected:
     Map const& m_;
-    cairo_context context_;
     renderer_common common_;
     cairo_face_manager face_manager_;
     bool style_level_compositing_;
-    void setup(Map const& m);
+    void setup(Map const& m, cairo_context & context);
 
 };
-
-extern template class MAPNIK_DECL cairo_renderer<cairo_ptr>;
 
 }
 

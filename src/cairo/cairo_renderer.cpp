@@ -49,58 +49,46 @@ namespace mapnik
 
 class feature_type_style;
 
-template <typename T>
-cairo_renderer<T>::cairo_renderer(Map const& m,
-                                  T const& cairo,
-                                  double scale_factor,
-                                  unsigned offset_x,
-                                  unsigned offset_y)
+cairo_renderer::cairo_renderer(
+    Map const& m,
+    double scale_factor,
+    unsigned offset_x,
+    unsigned offset_y)
     : m_(m),
-      context_(cairo),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor),
       face_manager_(common_.shared_font_library_),
       style_level_compositing_(false)
 {
-    setup(m);
 }
 
-template <typename T>
-cairo_renderer<T>::cairo_renderer(Map const& m,
-                                  request const& req,
-                                  attributes const& vars,
-                                  T const& cairo,
-                                  double scale_factor,
-                                  unsigned offset_x,
-                                  unsigned offset_y)
+cairo_renderer::cairo_renderer(
+    Map const& m,
+    request const& req,
+    attributes const& vars,
+    double scale_factor,
+    unsigned offset_x,
+    unsigned offset_y)
     : m_(m),
-      context_(cairo),
       common_(m, req, vars, offset_x, offset_y, req.width(), req.height(), scale_factor),
       face_manager_(common_.shared_font_library_),
       style_level_compositing_(false)
 
 {
-    setup(m);
 }
 
-template <typename T>
-cairo_renderer<T>::cairo_renderer(Map const& m,
-                                 T const& cairo,
-                                 std::shared_ptr<renderer_common::detector_type> detector,
-                                 double scale_factor,
-                                 unsigned offset_x,
-                                 unsigned offset_y)
+cairo_renderer::cairo_renderer(
+    Map const& m,
+    std::shared_ptr<renderer_common::detector_type> detector,
+    double scale_factor,
+    unsigned offset_x,
+    unsigned offset_y)
     : m_(m),
-      context_(cairo),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor, detector),
       face_manager_(common_.shared_font_library_),
       style_level_compositing_(false)
 
 {
-    setup(m);
 }
-
-template <typename T>
-cairo_renderer<T>::~cairo_renderer() {}
 
 struct setup_marker_visitor
 {
@@ -125,8 +113,7 @@ struct setup_marker_visitor
                 for (std::size_t y=0;y<y_steps;++y)
                 {
                     agg::trans_affine matrix = agg::trans_affine_translation(
-                                                   x*w,
-                                                   y*h);
+                        x * w, y * h);
                     context_.add_image(matrix, bg_image, 1.0f);
                 }
             }
@@ -138,43 +125,43 @@ struct setup_marker_visitor
     renderer_common const& common_;
 };
 
-template <typename T>
-void cairo_renderer<T>::setup(Map const& map)
+void cairo_renderer::setup(Map const& map, cairo_context & context)
 {
     boost::optional<color> bg = m_.background();
     if (bg)
     {
-        cairo_save_restore guard(context_);
-        context_.set_color(*bg);
-        context_.paint();
+        cairo_save_restore guard(context);
+        context.set_color(*bg);
+        context.paint();
     }
     boost::optional<std::string> const& image_filename = map.background_image();
     if (image_filename)
     {
         // NOTE: marker_cache returns premultiplied image, if needed
         std::shared_ptr<mapnik::marker const> bg_marker = mapnik::marker_cache::instance().find(*image_filename,true);
-        util::apply_visitor(setup_marker_visitor(context_, common_), *bg_marker);
+        util::apply_visitor(setup_marker_visitor(context, common_), *bg_marker);
     }
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: Scale=" << map.scale();
 }
 
-template <typename T>
-void cairo_renderer<T>::start_map_processing(Map const& map)
+void cairo_renderer::start_map_processing(Map const& map, cairo_context & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: Start map processing bbox=" << map.get_current_extent();
+    setup(m, context);
     box2d<double> bounds = common_.t_.forward(common_.t_.extent());
-    context_.rectangle(bounds.minx(), bounds.miny(), bounds.maxx(), bounds.maxy());
-    context_.clip();
+    context.rectangle(bounds.minx(), bounds.miny(), bounds.maxx(), bounds.maxy());
+    context.clip();
 }
 
-template <typename T>
-void cairo_renderer<T>::end_map_processing(Map const&)
+void cairo_renderer::end_map_processing(Map const&)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: End map processing";
 }
 
-template <typename T>
-void cairo_renderer<T>::start_layer_processing(layer const& lay, box2d<double> const& query_extent)
+void cairo_renderer::start_layer_processing(
+    layer const& lay,
+    box2d<double> const& query_extent,
+    cairo_context & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: Start processing layer=" << lay.name() ;
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: -- datasource=" << lay.datasource().get();
@@ -188,26 +175,28 @@ void cairo_renderer<T>::start_layer_processing(layer const& lay, box2d<double> c
 
     if (lay.comp_op() || lay.get_opacity() < 1.0)
     {
-        context_.push_group();
+        context.push_group();
     }
 }
 
-template <typename T>
-void cairo_renderer<T>::end_layer_processing(layer const& lay)
+void cairo_renderer::end_layer_processing(
+    layer const& lay,
+    cairo_context & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: End layer processing";
 
     if (lay.comp_op() || lay.get_opacity() < 1.0)
     {
-        context_.pop_group();
+        context.pop_group();
         composite_mode_e comp_op = lay.comp_op() ? *lay.comp_op() : src_over;
-        context_.set_operator(comp_op);
-        context_.paint(lay.get_opacity());
+        context.set_operator(comp_op);
+        context.paint(lay.get_opacity());
     }
 }
 
-template <typename T>
-void cairo_renderer<T>::start_style_processing(feature_type_style const & st)
+void cairo_renderer::start_style_processing(
+    feature_type_style const & st,
+    cairo_context & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer:start style processing";
 
@@ -215,21 +204,22 @@ void cairo_renderer<T>::start_style_processing(feature_type_style const & st)
 
     if (style_level_compositing_)
     {
-        context_.push_group();
+        context.push_group();
     }
 }
 
-template <typename T>
-void cairo_renderer<T>::end_style_processing(feature_type_style const & st)
+void cairo_renderer::end_style_processing(
+    feature_type_style const & st,
+    cairo_context & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer:end style processing";
 
     if (style_level_compositing_)
     {
-        context_.pop_group();
+        context.pop_group();
         composite_mode_e comp_op = st.comp_op() ? *st.comp_op() : src_over;
-        context_.set_operator(comp_op);
-        context_.paint(st.get_opacity());
+        context.set_operator(comp_op);
+        context.paint(st.get_opacity());
     }
 }
 
@@ -295,25 +285,23 @@ struct cairo_render_marker_visitor
     bool recenter_;
 };
 
-template <typename T>
-void cairo_renderer<T>::render_marker(pixel_position const& pos,
-                                        marker const& marker,
-                                        agg::trans_affine const& tr,
-                                        double opacity,
-                                        bool recenter)
-
+void cairo_renderer::render_marker(
+    pixel_position const& pos,
+    marker const& marker,
+    agg::trans_affine const& tr,
+    double opacity,
+    bool recenter, cairo_context & context)
 {
-    cairo_save_restore guard(context_);
-    cairo_render_marker_visitor visitor(context_,
-                                        common_,
-                                        pos,
-                                        tr,
-                                        opacity,
-                                        recenter);
+    cairo_save_restore guard(context);
+    cairo_render_marker_visitor visitor(
+        context,
+        common_,
+        pos,
+        tr,
+        opacity,
+        recenter);
     util::apply_visitor(visitor, marker);
 }
-
-template class cairo_renderer<cairo_ptr>;
 
 }
 
