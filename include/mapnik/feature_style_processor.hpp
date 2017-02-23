@@ -96,17 +96,17 @@ public:
     /*!
      * \brief apply renderer to all map layers.
      */
-    template <typename Processor>
+    template <typename Renderer>
     void apply(
-        Processor & p,
+        Renderer & p,
         double scale_denom_override=0.0);
 
     /*!
      * \brief apply renderer to a single layer, providing pre-populated set of query attribute names.
      */
-    template <typename Processor>
+    template <typename Renderer>
     void apply(
-        Processor & p,
+        Renderer & p,
         mapnik::layer const& lyr,
         std::set<std::string>& names,
         double scale_denom_override=0.0);
@@ -114,9 +114,9 @@ public:
     /*!
      * \brief render a layer given a projection and scale.
      */
-    template <typename Processor>
+    template <typename Renderer>
     void apply_to_layer(layer const& lay,
-                        Processor & p,
+                        Renderer & p,
                         projection const& proj0,
                         double scale,
                         double scale_denom,
@@ -130,27 +130,27 @@ private:
     /*!
      * \brief renders a featureset with the given styles.
      */
-    template <typename Processor>
-    void render_style(Processor & p,
+    template <typename Renderer>
+    void render_style(Renderer & p,
                       feature_type_style const* style,
                       rule_cache const& rules,
                       featureset_ptr features,
                       proj_transform const& prj_trans);
 
-    template <typename Processor>
+    template <typename Renderer>
     void prepare_layers(layer_rendering_material & parent_mat,
                         std::vector<layer> const & layers,
                         feature_style_context_map & ctx_map,
-                        Processor & p,
+                        Renderer & p,
                         double scale_denom);
 
     /*!
      * \brief prepare features for rendering asynchronously.
      */
-    template <typename Processor>
+    template <typename Renderer>
     void prepare_layer(layer_rendering_material & mat,
                        feature_style_context_map & ctx_map,
-                       Processor & p,
+                       Renderer & p,
                        double scale,
                        double scale_denom,
                        unsigned width,
@@ -162,87 +162,18 @@ private:
     /*!
      * \brief render features list queued when they are available.
      */
-    template <typename Processor>
-    void render_material(layer_rendering_material const & mat, Processor & p );
+    template <typename Renderer>
+    void render_material(layer_rendering_material const & mat, Renderer & p );
 
-    template <typename Processor>
-    void render_submaterials(layer_rendering_material const & mat, Processor & p);
+    template <typename Renderer>
+    void render_submaterials(layer_rendering_material const & mat, Renderer & p);
 
     Map const& m_;
 };
 
-template <typename Processor>
-void feature_style_processor::prepare_layers(
-    layer_rendering_material & parent_mat,
-    std::vector<layer> const & layers,
-    feature_style_context_map & ctx_map,
-    Processor & p,
-    double scale_denom)
-{
-    for (layer const& lyr : layers)
-    {
-        if (lyr.visible(scale_denom))
-        {
-            std::set<std::string> names;
-            layer_rendering_material mat(lyr, parent_mat.proj0_);
-
-            prepare_layer(mat,
-                          ctx_map,
-                          p,
-                          m_.scale(),
-                          scale_denom,
-                          m_.width(),
-                          m_.height(),
-                          m_.get_current_extent(),
-                          m_.buffer_size(),
-                          names);
-
-            // store active material
-            if (!mat.active_styles_.empty())
-            {
-                prepare_layers(mat, lyr.layers(), ctx_map, p, scale_denom);
-                parent_mat.materials_.emplace_back(std::move(mat));
-            }
-        }
-    }
-}
-
-template <typename Processor>
+template <typename Renderer>
 void feature_style_processor::apply(
-    Processor & p,
-    double scale_denom)
-{
-    p.start_map_processing(m_);
-
-    projection proj(m_.srs(),true);
-    if (scale_denom <= 0.0)
-        scale_denom = mapnik::scale_denominator(m_.scale(),proj.is_geographic());
-    scale_denom *= p.scale_factor(); // fixme - we might want to comment this out
-
-    // asynchronous query supports:
-    // this is a two steps process,
-    // first we setup all queries at layer level
-    // in a second time, we fetch the results and
-    // do the actual rendering
-
-    // define processing context map used by datasources
-    // implementing asynchronous queries
-    feature_style_context_map ctx_map;
-
-    if (!m_.layers().empty())
-    {
-        layer_rendering_material root_mat(m_.layers().front(), proj);
-        prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
-
-        render_submaterials(root_mat, p);
-    }
-
-    p.end_map_processing(m_);
-}
-
-template <typename Processor>
-void feature_style_processor::apply(
-    Processor & p,
+    Renderer & p,
     mapnik::layer const& lyr,
     std::set<std::string>& names,
     double scale_denom)
@@ -272,10 +203,10 @@ void feature_style_processor::apply(
 /*!
  * \brief render a layer given a projection and scale.
  */
-template <typename Processor>
+template <typename Renderer>
 void feature_style_processor::apply_to_layer(
     layer const& lay,
-    Processor & p,
+    Renderer & p,
     projection const& proj0,
     double scale,
     double scale_denom,
@@ -308,11 +239,80 @@ void feature_style_processor::apply_to_layer(
     }
 }
 
-template <typename Processor>
+template <typename Renderer>
+void feature_style_processor::prepare_layers(
+    layer_rendering_material & parent_mat,
+    std::vector<layer> const & layers,
+    feature_style_context_map & ctx_map,
+    Renderer & p,
+    double scale_denom)
+{
+    for (layer const& lyr : layers)
+    {
+        if (lyr.visible(scale_denom))
+        {
+            std::set<std::string> names;
+            layer_rendering_material mat(lyr, parent_mat.proj0_);
+
+            prepare_layer(mat,
+                          ctx_map,
+                          p,
+                          m_.scale(),
+                          scale_denom,
+                          m_.width(),
+                          m_.height(),
+                          m_.get_current_extent(),
+                          m_.buffer_size(),
+                          names);
+
+            // store active material
+            if (!mat.active_styles_.empty())
+            {
+                prepare_layers(mat, lyr.layers(), ctx_map, p, scale_denom);
+                parent_mat.materials_.emplace_back(std::move(mat));
+            }
+        }
+    }
+}
+
+template <typename Renderer>
+void feature_style_processor::apply(
+    Renderer & p,
+    double scale_denom)
+{
+    p.start_map_processing(m_);
+
+    projection proj(m_.srs(),true);
+    if (scale_denom <= 0.0)
+        scale_denom = mapnik::scale_denominator(m_.scale(),proj.is_geographic());
+    scale_denom *= p.scale_factor(); // fixme - we might want to comment this out
+
+    // asynchronous query supports:
+    // this is a two steps process,
+    // first we setup all queries at layer level
+    // in a second time, we fetch the results and
+    // do the actual rendering
+
+    // define processing context map used by datasources
+    // implementing asynchronous queries
+    feature_style_context_map ctx_map;
+
+    if (!m_.layers().empty())
+    {
+        layer_rendering_material root_mat(m_.layers().front(), proj);
+        prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
+
+        render_submaterials(root_mat, p);
+    }
+
+    p.end_map_processing(m_);
+}
+
+template <typename Renderer>
 void feature_style_processor::prepare_layer(
     layer_rendering_material & mat,
     feature_style_context_map & ctx_map,
-    Processor & p,
+    Renderer & p,
     double scale,
     double scale_denom,
     unsigned width,
@@ -542,10 +542,10 @@ void feature_style_processor::prepare_layer(
     }
 }
 
-template <typename Processor>
+template <typename Renderer>
 void feature_style_processor::render_submaterials(
     layer_rendering_material const & parent_mat,
-    Processor & p)
+    Renderer & p)
 {
     for (layer_rendering_material const & mat : parent_mat.materials_)
     {
@@ -564,10 +564,10 @@ void feature_style_processor::render_submaterials(
     }
 }
 
-template <typename Processor>
+template <typename Renderer>
 void feature_style_processor::render_material(
     layer_rendering_material const & mat,
-    Processor & p)
+    Renderer & p)
 {
     std::vector<feature_type_style const*> const & active_styles = mat.active_styles_;
     std::vector<featureset_ptr> const & featureset_ptr_list = mat.featureset_ptr_list_;
@@ -678,9 +678,9 @@ void feature_style_processor::render_material(
     }
 }
 
-template <typename Processor>
+template <typename Renderer>
 void feature_style_processor::render_style(
-    Processor & p,
+    Renderer & p,
     feature_type_style const* style,
     rule_cache const& rc,
     featureset_ptr features,
@@ -713,7 +713,7 @@ void feature_style_processor::render_style(
                 {
                     for (symbolizer const& sym : symbols)
                     {
-                        util::apply_visitor(symbolizer_dispatch<Processor>(p,*feature,prj_trans),sym);
+                        util::apply_visitor(symbolizer_dispatch<Renderer>(p,*feature,prj_trans),sym);
                     }
                 }
                 if (style->get_filter_mode() == FILTER_FIRST)
@@ -734,7 +734,7 @@ void feature_style_processor::render_style(
                 {
                     for (symbolizer const& sym : symbols)
                     {
-                        util::apply_visitor(symbolizer_dispatch<Processor>(p,*feature,prj_trans),sym);
+                        util::apply_visitor(symbolizer_dispatch<Renderer>(p,*feature,prj_trans),sym);
                     }
                 }
             }
@@ -749,7 +749,7 @@ void feature_style_processor::render_style(
                 {
                     for (symbolizer const& sym : symbols)
                     {
-                        util::apply_visitor(symbolizer_dispatch<Processor>(p,*feature,prj_trans),sym);
+                        util::apply_visitor(symbolizer_dispatch<Renderer>(p,*feature,prj_trans),sym);
                     }
                 }
             }
