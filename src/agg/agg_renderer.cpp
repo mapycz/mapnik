@@ -68,44 +68,46 @@
 namespace mapnik
 {
 
-template <typename T0, typename T1>
-agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, double scale_factor, unsigned offset_x, unsigned offset_y)
-    : buffers_(),
-      internal_buffers_(m.width(), m.height()),
-      inflated_buffer_(),
-      ras_ptr(new rasterizer),
+template <typename Buffer, typename Detector>
+agg_renderer<Buffer,Detector>::agg_renderer(
+    Map const& m,
+    double scale_factor,
+    unsigned offset_x,
+    unsigned offset_y)
+    : ras_ptr(new rasterizer),
       gamma_method_(GAMMA_POWER),
       gamma_(1.0),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor)
 {
-    setup(m, pixmap);
 }
 
-template <typename T0, typename T1>
-agg_renderer<T0,T1>::agg_renderer(Map const& m, request const& req, attributes const& vars, T0 & pixmap, double scale_factor, unsigned offset_x, unsigned offset_y)
-    : buffers_(),
-      internal_buffers_(req.width(), req.height()),
-      inflated_buffer_(),
-      ras_ptr(new rasterizer),
+template <typename Buffer, typename Detector>
+agg_renderer<Buffer,Detector>::agg_renderer(
+    Map const& m,
+    request const& req,
+    attributes const& vars,
+    double scale_factor,
+    unsigned offset_x,
+    unsigned offset_y)
+    : ras_ptr(new rasterizer),
       gamma_method_(GAMMA_POWER),
       gamma_(1.0),
       common_(m, req, vars, offset_x, offset_y, req.width(), req.height(), scale_factor)
 {
-    setup(m, pixmap);
 }
 
-template <typename T0, typename T1>
-agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, std::shared_ptr<T1> detector,
-                              double scale_factor, unsigned offset_x, unsigned offset_y)
-    : buffers_(),
-      internal_buffers_(m.width(), m.height()),
-      inflated_buffer_(),
-      ras_ptr(new rasterizer),
+template <typename Buffer, typename Detector>
+agg_renderer<Buffer,Detector>::agg_renderer(
+    Map const& m,
+    std::shared_ptr<Detector> detector,
+    double scale_factor,
+    unsigned offset_x,
+    unsigned offset_y)
+    : ras_ptr(new rasterizer),
       gamma_method_(GAMMA_POWER),
       gamma_(1.0),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor, detector)
 {
-    setup(m, pixmap);
 }
 
 template <typename buffer_type>
@@ -150,12 +152,10 @@ struct setup_agg_bg_visitor
     double opacity_;
 };
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::setup(Map const &m, buffer_type & pixmap)
 {
-    buffers_.emplace(pixmap);
-
-    mapnik::set_premultiplied_alpha(pixmap, true);
+    set_premultiplied_alpha(pixmap, true);
     boost::optional<color> const& bg = m.background();
     if (bg)
     {
@@ -187,25 +187,30 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Scale=" << m.scale();
 }
 
-template <typename T0, typename T1>
-agg_renderer<T0,T1>::~agg_renderer() {}
+template <typename Buffer, typename Detector>
+agg_renderer<Buffer,Detector>::~agg_renderer() {}
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::start_map_processing(Map const& map)
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::start_map_processing(Map const& map, Buffer & pixmap)
 {
+    setup(map, pixmap);
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start map processing bbox=" << map.get_current_extent();
     ras_ptr->clip_box(0,0,common_.width_,common_.height_);
 }
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::end_map_processing(Map const& map)
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::end_map_processing(
+    Map const& map,
+    Buffer & pixmap)
 {
-    mapnik::demultiply_alpha(buffers_.top().get());
+    mapnik::demultiply_alpha(pixmap);
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End map processing";
 }
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::start_layer_processing(layer const& lay, box2d<double> const& query_extent)
+template <typename Buffer, typename Detector>
+std::unique_ptr<Buffer> agg_renderer<Buffer,Detector>::start_layer_processing(
+    layer const& lay,
+    box2d<double> const& query_extent)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start processing layer=" << lay.name();
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: -- datasource=" << lay.datasource().get();
@@ -225,42 +230,42 @@ void agg_renderer<T0,T1>::start_layer_processing(layer const& lay, box2d<double>
 
     if (lay.comp_op() || lay.get_opacity() < 1.0)
     {
-        buffers_.emplace(internal_buffers_.push());
-        set_premultiplied_alpha(buffers_.top().get(), true);
+        std::unique_ptr<Buffer> buffer = std::make_unique<Buffer>(
+            common_.width_, common_.height_);
+        set_premultiplied_alpha(*buffer, true);
+        return buffer;
     }
-    else
-    {
-        buffers_.emplace(buffers_.top().get());
-    }
+    return std::unique_ptr<Buffer>();
 }
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::end_layer_processing(layer const& lyr)
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::end_layer_processing(
+    layer const& lyr,
+    Buffer & current_buffer,
+    Buffer & parent_buffer)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End layer processing";
 
-    buffer_type & current_buffer = buffers_.top().get();
-    buffers_.pop();
-    buffer_type & previous_buffer = buffers_.top().get();
-
-    if (&current_buffer != &previous_buffer)
+    if (&current_buffer != &parent_buffer)
     {
         composite_mode_e comp_op = lyr.comp_op() ? *lyr.comp_op() : src_over;
-        composite(previous_buffer, current_buffer,
-                  comp_op, lyr.get_opacity(),
-                  -common_.t_.offset(),
-                  -common_.t_.offset());
-        internal_buffers_.pop();
+        composite(
+            parent_buffer, current_buffer,
+            comp_op, lyr.get_opacity(),
+            -common_.t_.offset(),
+            -common_.t_.offset());
     }
 }
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::start_style_processing(feature_type_style const& st)
+template <typename Buffer, typename Detector>
+std::unique_ptr<Buffer> agg_renderer<Buffer,Detector>::start_style_processing(
+    feature_type_style const& st)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start processing style";
 
     if (st.comp_op() || st.image_filters().size() > 0 || st.get_opacity() < 1)
     {
+        std::unique_ptr<Buffer> buffer;
         if (st.image_filters_inflate())
         {
             int radius = 0;
@@ -278,47 +283,39 @@ void agg_renderer<T0,T1>::start_style_processing(feature_type_style const& st)
             unsigned target_width = common_.width_ + (offset * 2);
             unsigned target_height = common_.height_ + (offset * 2);
             ras_ptr->clip_box(-int(offset*2),-int(offset*2),target_width,target_height);
-            if (!inflated_buffer_ ||
-                (inflated_buffer_->width() < target_width ||
-                 inflated_buffer_->height() < target_height))
-            {
-                inflated_buffer_ = std::make_unique<buffer_type>(target_width, target_height);
-            }
-            else
-            {
-                mapnik::fill(*inflated_buffer_, 0); // fill with transparent colour
-            }
-            buffers_.emplace(*inflated_buffer_);
+            buffer = std::make_unique<Buffer>(target_width, target_height);
+            mapnik::fill(*buffer, 0); // fill with transparent colour
         }
         else
         {
-            buffers_.emplace(internal_buffers_.push());
+            buffer = std::make_unique<Buffer>(common_.width_, common_.height_);
             common_.t_.set_offset(0);
-            ras_ptr->clip_box(0,0,common_.width_,common_.height_);
+            ras_ptr->clip_box(0, 0, common_.width_, common_.height_);
         }
-        set_premultiplied_alpha(buffers_.top().get(), true);
+        set_premultiplied_alpha(*buffer, true);
     }
     else
     {
         common_.t_.set_offset(0);
-        ras_ptr->clip_box(0,0,common_.width_,common_.height_);
-        buffers_.emplace(buffers_.top().get());
+        ras_ptr->clip_box(0, 0, common_.width_, common_.height_);
     }
+    return std::unique_ptr<Buffer>();
 }
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::end_style_processing(
+    feature_type_style const& st,
+    Buffer & current_buffer,
+    Buffer & parent_buffer)
 {
-    buffer_type & current_buffer = buffers_.top().get();
-    buffers_.pop();
-    buffer_type & previous_buffer = buffers_.top().get();
-    if (&current_buffer != &previous_buffer)
+    if (&current_buffer != &parent_buffer)
     {
         bool blend_from = false;
         if (st.image_filters().size() > 0)
         {
             blend_from = true;
-            mapnik::filter::filter_visitor<buffer_type> visitor(current_buffer, common_.scale_factor_);
+            mapnik::filter::filter_visitor<buffer_type> visitor(
+                current_buffer, common_.scale_factor_);
             for (mapnik::filter::filter_type const& filter_tag : st.image_filters())
             {
                 util::apply_visitor(visitor, filter_tag);
@@ -327,33 +324,31 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
         }
         if (st.comp_op())
         {
-            composite(previous_buffer, current_buffer,
-                      *st.comp_op(), st.get_opacity(),
-                      -common_.t_.offset(),
-                      -common_.t_.offset());
+            composite(
+                parent_buffer, current_buffer,
+                *st.comp_op(), st.get_opacity(),
+                -common_.t_.offset(),
+                -common_.t_.offset());
         }
         else if (blend_from || st.get_opacity() < 1.0)
         {
-            composite(previous_buffer, current_buffer,
-                      src_over, st.get_opacity(),
-                      -common_.t_.offset(),
-                      -common_.t_.offset());
-        }
-        if (&current_buffer == &internal_buffers_.top())
-        {
-            internal_buffers_.pop();
+            composite(
+                parent_buffer, current_buffer,
+                src_over, st.get_opacity(),
+                -common_.t_.offset(),
+                -common_.t_.offset());
         }
     }
 
     if (st.direct_image_filters().size() > 0)
     {
         // apply any 'direct' image filters
-        mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer, common_.scale_factor_);
+        filter::filter_visitor<buffer_type> visitor(parent_buffer, common_.scale_factor_);
         for (mapnik::filter::filter_type const& filter_tag : st.direct_image_filters())
         {
             util::apply_visitor(visitor, filter_tag);
         }
-        mapnik::premultiply_alpha(previous_buffer);
+        mapnik::premultiply_alpha(parent_buffer);
     }
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End processing style";
 }
@@ -542,52 +537,48 @@ struct agg_render_marker_visitor
 
 };
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::render_marker(pixel_position const& pos,
-                                    marker const& marker,
-                                    agg::trans_affine const& tr,
-                                    double opacity,
-                                    composite_mode_e comp_op)
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::render_marker(
+    Buffer & buffer,
+    pixel_position const& pos,
+    marker const& marker,
+    agg::trans_affine const& tr,
+    double opacity,
+    composite_mode_e comp_op)
 {
-    agg_render_marker_visitor<buffer_type> visitor(common_,
-                                                   buffers_.top().get(),
-                                                   ras_ptr,
-                                                   gamma_method_,
-                                                   gamma_,
-                                                   pos,
-                                                   tr,
-                                                   opacity,
-                                                   comp_op);
+    agg_render_marker_visitor<buffer_type> visitor(
+        common_,
+        buffer,
+        ras_ptr,
+        gamma_method_,
+        gamma_,
+        pos,
+        tr,
+        opacity,
+        comp_op);
     util::apply_visitor(visitor, marker);
 }
 
-template <typename T0, typename T1>
-bool agg_renderer<T0,T1>::painted()
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::debug_draw_box(
+    Buffer & buffer,
+    box2d<double> const& box,
+    double x,
+    double y,
+    double angle)
 {
-    return buffers_.top().get().painted();
-}
-
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::painted(bool painted)
-{
-    buffers_.top().get().painted(painted);
-}
-
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::debug_draw_box(box2d<double> const& box,
-                                     double x, double y, double angle)
-{
-    buffer_type & current_buffer = buffers_.top().get();
-    agg::rendering_buffer buf(current_buffer.bytes(),
-                              current_buffer.width(),
-                              current_buffer.height(),
-                              current_buffer.row_size());
+    agg::rendering_buffer buf(buffer.bytes(), buffer.width(),
+        buffer.height(), buffer.row_size());
     debug_draw_box(buf, box, x, y, angle);
 }
 
-template <typename T0, typename T1> template <typename R>
-void agg_renderer<T0,T1>::debug_draw_box(R& buf, box2d<double> const& box,
-                                     double x, double y, double angle)
+template <typename Buffer, typename Detector> template <typename R>
+void agg_renderer<Buffer,Detector>::debug_draw_box(
+    R& buf,
+    box2d<double> const& box,
+    double x,
+    double y,
+    double angle)
 {
     using pixfmt = agg::pixfmt_rgba32_pre;
     using renderer_base = agg::renderer_base<pixfmt>;
@@ -623,8 +614,11 @@ void agg_renderer<T0,T1>::debug_draw_box(R& buf, box2d<double> const& box,
     agg::render_scanlines(*ras_ptr, sl_line, ren);
 }
 
-template <typename T0, typename T1>
-void agg_renderer<T0,T1>::draw_geo_extent(box2d<double> const& extent, mapnik::color const& color)
+template <typename Buffer, typename Detector>
+void agg_renderer<Buffer,Detector>::draw_geo_extent(
+    Buffer & buffer,
+    box2d<double> const& extent,
+    mapnik::color const& color)
 {
     box2d<double> box = common_.t_.forward(extent);
     double x0 = box.minx();
@@ -634,19 +628,20 @@ void agg_renderer<T0,T1>::draw_geo_extent(box2d<double> const& extent, mapnik::c
     unsigned rgba = color.rgba();
     for (double x=x0; x<x1; x++)
     {
-        mapnik::set_pixel(buffers_.top().get(), x, y0, rgba);
-        mapnik::set_pixel(buffers_.top().get(), x, y1, rgba);
+        mapnik::set_pixel(buffer, x, y0, rgba);
+        mapnik::set_pixel(buffer, x, y1, rgba);
     }
     for (double y=y0; y<y1; y++)
     {
-        mapnik::set_pixel(buffers_.top().get(), x0, y, rgba);
-        mapnik::set_pixel(buffers_.top().get(), x1, y, rgba);
+        mapnik::set_pixel(buffer, x0, y, rgba);
+        mapnik::set_pixel(buffer, x1, y, rgba);
     }
 }
 
 template class agg_renderer<image_rgba8>;
 template void agg_renderer<image_rgba8>::debug_draw_box<agg::rendering_buffer>(
-                agg::rendering_buffer& buf,
-                box2d<double> const& box,
-                double x, double y, double angle);
+    Buffer & buffer,
+    agg::rendering_buffer& buf,
+    box2d<double> const& box,
+    double x, double y, double angle);
 } // end ns

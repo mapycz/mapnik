@@ -99,6 +99,7 @@ public:
     template <typename Renderer>
     void apply(
         Renderer & p,
+        Renderer::buffer_type & buffer,
         double scale_denom_override=0.0);
 
     /*!
@@ -107,6 +108,7 @@ public:
     template <typename Renderer>
     void apply(
         Renderer & p,
+        Renderer::buffer_type & buffer,
         mapnik::layer const& lyr,
         std::set<std::string>& names,
         double scale_denom_override=0.0);
@@ -174,11 +176,46 @@ private:
 template <typename Renderer>
 void feature_style_processor::apply(
     Renderer & p,
+    Renderer::buffer_type & buffer,
+    double scale_denom)
+{
+    p.start_map_processing(m_, buffer);
+
+    projection proj(m_.srs(),true);
+    if (scale_denom <= 0.0)
+        scale_denom = mapnik::scale_denominator(m_.scale(),proj.is_geographic());
+    scale_denom *= p.scale_factor(); // fixme - we might want to comment this out
+
+    // asynchronous query supports:
+    // this is a two steps process,
+    // first we setup all queries at layer level
+    // in a second time, we fetch the results and
+    // do the actual rendering
+
+    // define processing context map used by datasources
+    // implementing asynchronous queries
+    feature_style_context_map ctx_map;
+
+    if (!m_.layers().empty())
+    {
+        layer_rendering_material root_mat(m_.layers().front(), proj);
+        prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
+
+        render_submaterials(root_mat, p, buffer);
+    }
+
+    p.end_map_processing(m_, buffer);
+}
+
+template <typename Renderer>
+void feature_style_processor::apply(
+    Renderer & p,
+    Renderer::buffer_type & buffer,
     mapnik::layer const& lyr,
     std::set<std::string>& names,
     double scale_denom)
 {
-    p.start_map_processing(m_);
+    p.start_map_processing(m_, buffer);
     projection proj(m_.srs(),true);
     if (scale_denom <= 0.0)
         scale_denom = mapnik::scale_denominator(m_.scale(),proj.is_geographic());
@@ -197,7 +234,7 @@ void feature_style_processor::apply(
                        m_.buffer_size(),
                        names);
     }
-    p.end_map_processing(m_);
+    p.end_map_processing(m_, buffer);
 }
 
 /*!
@@ -207,6 +244,7 @@ template <typename Renderer>
 void feature_style_processor::apply_to_layer(
     layer const& lay,
     Renderer & p,
+    Renderer::buffer_type & buffer,
     projection const& proj0,
     double scale,
     double scale_denom,
@@ -217,7 +255,7 @@ void feature_style_processor::apply_to_layer(
     std::set<std::string>& names)
 {
     feature_style_context_map ctx_map;
-    layer_rendering_material  mat(lay, proj0);
+    layer_rendering_material mat(lay, proj0);
 
     prepare_layer(mat,
                   ctx_map,
@@ -235,7 +273,7 @@ void feature_style_processor::apply_to_layer(
     if (!mat.active_styles_.empty())
     {
         render_material(mat,p);
-        render_submaterials(mat, p);
+        render_submaterials(mat, p, buffer);
     }
 }
 
@@ -273,39 +311,6 @@ void feature_style_processor::prepare_layers(
             }
         }
     }
-}
-
-template <typename Renderer>
-void feature_style_processor::apply(
-    Renderer & p,
-    double scale_denom)
-{
-    p.start_map_processing(m_);
-
-    projection proj(m_.srs(),true);
-    if (scale_denom <= 0.0)
-        scale_denom = mapnik::scale_denominator(m_.scale(),proj.is_geographic());
-    scale_denom *= p.scale_factor(); // fixme - we might want to comment this out
-
-    // asynchronous query supports:
-    // this is a two steps process,
-    // first we setup all queries at layer level
-    // in a second time, we fetch the results and
-    // do the actual rendering
-
-    // define processing context map used by datasources
-    // implementing asynchronous queries
-    feature_style_context_map ctx_map;
-
-    if (!m_.layers().empty())
-    {
-        layer_rendering_material root_mat(m_.layers().front(), proj);
-        prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
-
-        render_submaterials(root_mat, p);
-    }
-
-    p.end_map_processing(m_);
 }
 
 template <typename Renderer>
@@ -545,21 +550,24 @@ void feature_style_processor::prepare_layer(
 template <typename Renderer>
 void feature_style_processor::render_submaterials(
     layer_rendering_material const & parent_mat,
-    Renderer & p)
+    Renderer & p,
+    Renderer::buffer_type & parent_buffer)
 {
     for (layer_rendering_material const & mat : parent_mat.materials_)
     {
         if (!mat.active_styles_.empty())
         {
-#ifdef mapnik_stats_render
+#ifdef MAPNIK_STATS_RENDER
             mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
 #endif
-            p.start_layer_processing(mat.lay_, mat.layer_ext2_);
+            std::unique_ptr<Renderer::buffer_type> layer_buffer(
+                p.start_layer_processing(mat.lay_, mat.layer_ext2_));
+            auto & current_buffer = layer_buffer ? *layer_buffer : parent_buffer;
 
-            render_material(mat, p);
-            render_submaterials(mat, p);
+            render_material(mat, p, current_buffer);
+            render_submaterials(mat, p, current_buffer);
 
-            p.end_layer_processing(mat.lay_);
+            p.end_layer_processing(mat.lay_, current_buffer, parent_buffer);
         }
     }
 }
@@ -567,7 +575,8 @@ void feature_style_processor::render_submaterials(
 template <typename Renderer>
 void feature_style_processor::render_material(
     layer_rendering_material const & mat,
-    Renderer & p)
+    Renderer & p,
+    Renderer::buffer_type & parent_buffer)
 {
     std::vector<feature_type_style const*> const & active_styles = mat.active_styles_;
     std::vector<featureset_ptr> const & featureset_ptr_list = mat.featureset_ptr_list_;
@@ -577,8 +586,10 @@ void feature_style_processor::render_material(
         // but we have to apply compositing operations on styles
         for (feature_type_style const* style : active_styles)
         {
-            p.start_style_processing(*style);
-            p.end_style_processing(*style);
+            std::unique_ptr<Renderer::buffer_type> style_buffer(
+                p.start_style_processing(*style));
+            auto & current_buffer = style_buffer ? *style_buffer : parent_buffer;
+            p.end_style_processing(*style, current_buffer, parent_buffer);
         }
         return;
     }
@@ -681,15 +692,18 @@ void feature_style_processor::render_material(
 template <typename Renderer>
 void feature_style_processor::render_style(
     Renderer & p,
+    Renderer::buffer_type & parent_buffer,
     feature_type_style const* style,
     rule_cache const& rc,
     featureset_ptr features,
     proj_transform const& prj_trans)
 {
-    p.start_style_processing(*style);
+    std::unique_ptr<Renderer::buffer_type> style_buffer(
+        p.start_style_processing(*style));
+    auto & current_buffer = style_buffer ? *style_buffer : parent_buffer;
     if (!features)
     {
-        p.end_style_processing(*style);
+        p.end_style_processing(*style, current_buffer, parent_buffer);
         return;
     }
     mapnik::attributes vars = p.variables();
@@ -702,7 +716,8 @@ void feature_style_processor::render_style(
         for (rule const* r : rc.get_if_rules() )
         {
             expression_ptr const& expr = r->get_filter();
-            value_type result = util::apply_visitor(evaluate<feature_impl,value_type,attributes>(*feature,vars),*expr);
+            value_type result = util::apply_visitor(
+                evaluate<feature_impl,value_type,attributes>(*feature,vars),*expr);
             if (result.to_bool())
             {
                 was_painted = true;
@@ -713,7 +728,8 @@ void feature_style_processor::render_style(
                 {
                     for (symbolizer const& sym : symbols)
                     {
-                        util::apply_visitor(symbolizer_dispatch<Renderer>(p,*feature,prj_trans),sym);
+                        util::apply_visitor(symbolizer_dispatch<Renderer>(
+                            p,*feature,prj_trans),sym);
                     }
                 }
                 if (style->get_filter_mode() == FILTER_FIRST)
@@ -734,7 +750,8 @@ void feature_style_processor::render_style(
                 {
                     for (symbolizer const& sym : symbols)
                     {
-                        util::apply_visitor(symbolizer_dispatch<Renderer>(p,*feature,prj_trans),sym);
+                        util::apply_visitor(symbolizer_dispatch<Renderer>(
+                            p,*feature,prj_trans),sym);
                     }
                 }
             }
@@ -749,14 +766,15 @@ void feature_style_processor::render_style(
                 {
                     for (symbolizer const& sym : symbols)
                     {
-                        util::apply_visitor(symbolizer_dispatch<Renderer>(p,*feature,prj_trans),sym);
+                        util::apply_visitor(symbolizer_dispatch<Renderer>(
+                            p,*feature,prj_trans),sym);
                     }
                 }
             }
         }
     }
     p.painted(p.painted() | was_painted);
-    p.end_style_processing(*style);
+    p.end_style_processing(*style, current_buffer, parent_buffer);
 }
 
 }
