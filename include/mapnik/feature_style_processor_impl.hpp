@@ -67,14 +67,13 @@ struct layer_rendering_material
     std::vector<feature_type_style const*> active_styles_;
     std::vector<featureset_ptr> featureset_ptr_list_;
     std::vector<rule_cache> rule_caches_;
-    std::vector<layer_rendering_material> materials_;
+    std::deque<layer_rendering_material> materials_;
     feature_style_context_map ctx_map_;
     std::set<std::string> names_;
 
     layer_rendering_material(
         layer const& lay,
-        projection const& dest)
-        :
+        projection const& dest) :
         lay_(lay),
         proj0_(dest),
         proj1_(lay.srs(),true)
@@ -82,9 +81,7 @@ struct layer_rendering_material
     }
 
     template <typename Processor>
-    layer_rendering_material(
-        layer const& lay,
-        projection const& dest,
+    void prepare(
         Processor const & p,
         Map const & map,
         double scale,
@@ -92,19 +89,14 @@ struct layer_rendering_material
         unsigned width,
         unsigned height,
         box2d<double> extent,
-        int buffer_size        )
-        :
-        lay_(lay),
-        proj0_(dest),
-        proj1_(lay.srs(),true)
+        int buffer_size)
     {
-        std::launch launch(std::launch::async);
         future = std::async(
-            launch,
+            std::launch::async,
             &layer_rendering_material::prepare_layer,
             this,
-            std::ref(p.variables()),
-            std::ref(map),
+            std::cref(p.variables()),
+            std::cref(map),
             p.attribute_collection_policy(),
             scale,
             scale_denom,
@@ -114,7 +106,16 @@ struct layer_rendering_material
             buffer_size);
     }
 
-    layer_rendering_material(layer_rendering_material && rhs) = default;
+    void wait()
+    {
+        if (future.valid())
+        {
+            future.wait();
+        }
+    }
+
+    layer_rendering_material(layer_rendering_material && rhs) = delete;
+    layer_rendering_material(layer_rendering_material const & rhs) = delete;
 
 private:
     void prepare_layer(
@@ -128,23 +129,21 @@ private:
         box2d<double> extent,
         int buffer_size)
     {
-        layer const& lay = lay_;
-
-        std::vector<std::string> const& style_names = lay.styles();
+        std::vector<std::string> const& style_names = lay_.styles();
 
         std::size_t num_styles = style_names.size();
         if (num_styles == 0)
         {
             MAPNIK_LOG_DEBUG(feature_style_processor)
-                << "feature_style_processor: No style for layer=" << lay.name();
+                << "feature_style_processor: No style for layer=" << lay_.name();
             return;
         }
 
-        mapnik::datasource_ptr ds = lay.datasource();
+        mapnik::datasource_ptr ds = lay_.datasource();
         if (!ds)
         {
             MAPNIK_LOG_DEBUG(feature_style_processor)
-                << "feature_style_processor: No datasource for layer=" << lay.name();
+                << "feature_style_processor: No datasource for layer=" << lay_.name();
             return;
         }
 
@@ -155,7 +154,7 @@ private:
         box2d<double> buffered_query_ext(query_ext);  // buffered
 
         double buffer_padding = 2.0 * scale;
-        boost::optional<int> layer_buffer_size = lay.buffer_size();
+        boost::optional<int> layer_buffer_size = lay_.buffer_size();
         if (layer_buffer_size) // if layer overrides buffer size, use this value to compute buffered extent
         {
             buffer_padding *= *layer_buffer_size;
@@ -174,7 +173,7 @@ private:
             buffered_query_ext.clip(*maximum_extent);
         }
 
-        box2d<double> layer_ext = lay.envelope();
+        box2d<double> layer_ext = lay_.envelope();
         const box2d<double> buffered_query_ext_map_srs = buffered_query_ext;
         bool fw_success = false;
         bool early_return = false;
@@ -198,7 +197,7 @@ private:
             if (! prj_trans.forward(layer_ext, PROJ_ENVELOPE_POINTS))
             {
                 MAPNIK_LOG_ERROR(feature_style_processor)
-                    << "feature_style_processor: Layer=" << lay.name()
+                    << "feature_style_processor: Layer=" << lay_.name()
                     << " extent=" << layer_ext << " in map projection "
                     << " did not reproject properly back to layer projection";
             }
@@ -208,8 +207,6 @@ private:
             // if no intersection then nothing to do for layer
             early_return = true;
         }
-
-        std::vector<feature_type_style const*> & active_styles = active_styles_;
 
         if (early_return)
         {
@@ -228,7 +225,7 @@ private:
                     if (style->active(scale_denom))
                     {
                         // we'll have to handle compositing ops
-                        active_styles.push_back(&(*style));
+                        active_styles_.push_back(&(*style));
                     }
                 }
             }
@@ -242,22 +239,20 @@ private:
             query_ext.clip(*maximum_extent);
         }
 
-        box2d<double> & layer_ext2 = layer_ext2_;
-
-        layer_ext2 = lay.envelope();
+        layer_ext2_ = lay_.envelope();
         if (fw_success)
         {
             if (prj_trans.forward(query_ext, PROJ_ENVELOPE_POINTS))
             {
-                layer_ext2.clip(query_ext);
+                layer_ext2_.clip(query_ext);
             }
         }
         else
         {
-            if (prj_trans.backward(layer_ext2, PROJ_ENVELOPE_POINTS))
+            if (prj_trans.backward(layer_ext2_, PROJ_ENVELOPE_POINTS))
             {
-                layer_ext2.clip(query_ext);
-                prj_trans.forward(layer_ext2, PROJ_ENVELOPE_POINTS);
+                layer_ext2_.clip(query_ext);
+                prj_trans.forward(layer_ext2_, PROJ_ENVELOPE_POINTS);
             }
         }
 
@@ -272,7 +267,7 @@ private:
             {
                 MAPNIK_LOG_ERROR(feature_style_processor)
                     << "feature_style_processor: Style='" << style_name
-                    << "' required for layer='" << lay.name() << "' does not exist.";
+                    << "' required for layer='" << lay_.name() << "' does not exist.";
                 continue;
             }
 
@@ -291,12 +286,12 @@ private:
             if (active_rules)
             {
                 rule_caches.push_back(std::move(rc));
-                active_styles.push_back(&(*style));
+                active_styles_.push_back(&(*style));
             }
         }
 
         // Don't even try to do more work if there are no active styles.
-        if (active_styles.empty())
+        if (active_styles_.empty())
         {
             return;
         }
@@ -327,24 +322,23 @@ private:
         q.set_filter_factor(collector.get_filter_factor());
 
         // Also query the group by attribute
-        std::string const& group_by = lay.group_by();
+        std::string const& group_by = lay_.group_by();
         if (!group_by.empty())
         {
             q.add_property_name(group_by);
         }
 
-        bool cache_features = lay.cache_features() && active_styles.size() > 1;
+        bool cache_features = lay_.cache_features() && active_styles_.size() > 1;
 
-        std::vector<featureset_ptr> & featureset_ptr_list = featureset_ptr_list_;
         if (!group_by.empty() || cache_features)
         {
-            featureset_ptr_list.push_back(ds->features_with_context(q,current_ctx));
+            featureset_ptr_list_.push_back(ds->features_with_context(q,current_ctx));
         }
         else
         {
-            for(std::size_t i = 0; i < active_styles.size(); ++i)
+            for(std::size_t i = 0; i < active_styles_.size(); ++i)
             {
-                featureset_ptr_list.push_back(ds->features_with_context(q,current_ctx));
+                featureset_ptr_list_.push_back(ds->features_with_context(q,current_ctx));
             }
         }
     }
@@ -375,10 +369,10 @@ void feature_style_processor<Processor>::prepare_layers(layer_rendering_material
     {
         if (lyr.visible(scale_denom))
         {
-            std::set<std::string> names;
-            parent_mat.materials_.emplace_back(
-                lyr,
-                parent_mat.proj0_,
+            parent_mat.materials_.emplace_back(lyr, parent_mat.proj0_);
+            layer_rendering_material & mat = parent_mat.materials_.back();
+
+            mat.prepare(
                 p,
                 m_,
                 m_.scale(),
@@ -388,7 +382,7 @@ void feature_style_processor<Processor>::prepare_layers(layer_rendering_material
                 m_.get_current_extent(),
                 m_.buffer_size());
 
-            prepare_layers(parent_mat.materials_.back(), lyr.layers(), ctx_map, p, scale_denom);
+            prepare_layers(mat, lyr.layers(), ctx_map, p, scale_denom);
         }
     }
 }
@@ -469,9 +463,9 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
                                                         std::set<std::string>& names)
 {
     feature_style_context_map ctx_map;
-    layer_rendering_material mat(
-        lay,
-        proj0,
+    layer_rendering_material mat(lay, proj0);
+
+    mat.prepare(
         p,
         m_,
         scale,
@@ -483,7 +477,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
 
     prepare_layers(mat, lay.layers(), ctx_map, p, scale_denom);
 
-    mat.future.get();
+    mat.wait();
 
     if (!mat.active_styles_.empty())
     {
@@ -499,7 +493,7 @@ void feature_style_processor<Processor>::render_submaterials(
 {
     for (layer_rendering_material & mat : parent_mat.materials_)
     {
-        mat.future.get();
+        mat.wait();
 
         if (!mat.active_styles_.empty())
         {
