@@ -127,6 +127,10 @@ void feature_style_processor<Processor>::prepare_layers(layer_rendering_material
 template <typename Processor>
 void feature_style_processor<Processor>::apply(double scale_denom)
 {
+#ifdef MAPNIK_STATS_RENDER
+            mapnik::progress_timer __stats__(std::clog, "map");
+#endif
+
     Processor & p = static_cast<Processor&>(*this);
     p.start_map_processing(m_);
 
