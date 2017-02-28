@@ -111,6 +111,8 @@ public:
     using const_fontset_iterator = std::map<std::string,font_set>::const_iterator;
     using fontset_iterator = std::map<std::string,font_set>::iterator;
 
+    struct copy_styles_only {};
+
     /*! \brief Default constructor.
      *
      *  Creates a map with these parameters:
@@ -132,6 +134,7 @@ public:
      *  @param rhs Map to copy from.
      */
     Map(Map const& rhs);
+    Map(Map const& rhs, copy_styles_only);
 
     // move ctor
     Map(Map && other);

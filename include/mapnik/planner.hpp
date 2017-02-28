@@ -26,42 +26,46 @@
 namespace mapnik
 {
 
-class planner
+struct planner
 {
     struct uses_collision_detector_visitor
     {
-        bool operator() (text_symbolizer const & sym)
+        uses_collision_detector_visitor()
+        {
+        }
+
+        bool operator() (text_symbolizer const & sym) const
         {
             return true;
         }
 
-        bool operator() (shield_symbolizer const & sym)
+        bool operator() (shield_symbolizer const & sym) const
         {
             return true;
         }
 
-        bool operator() (point_symbolizer const & sym)
+        bool operator() (point_symbolizer const & sym) const
         {
             return true;
         }
 
-        bool operator() (markers_symbolizer const & sym)
+        bool operator() (markers_symbolizer const & sym) const
         {
             return true;
         }
 
-        bool operator() (group_symbolizer const & sym)
+        bool operator() (group_symbolizer const & sym) const
         {
             return true;
         }
 
-        bool operator() (collision_symbolizer const & sym)
+        bool operator() (collision_symbolizer const & sym) const
         {
             return true;
         }
 
         template <typename Symbolizer>
-        bool operator() (Symbolizer const & sym)
+        bool operator() (Symbolizer const & sym) const
         {
             return false;
         }
@@ -70,9 +74,9 @@ class planner
     bool uses_collision_detector(rule const & r)
     {
         const uses_collision_detector_visitor visitor;
-        for (auto const & symbolizer : t.get_symbolizers())
+        for (auto const & sym : r.get_symbolizers())
         {
-            if (util::apply_visitor(visitor, symbolizer))
+            if (util::apply_visitor(visitor, sym))
             {
                 return true;
             }
@@ -87,7 +91,7 @@ class planner
             boost::optional<feature_type_style const&> style = map.find_style(style_name);
             if (!style)
             {
-                throw std::config_error("Style '" + style_name + "' does not exist.");
+                throw config_error("Style '" + style_name + "' does not exist.");
             }
             for (auto const & rule : style->get_rules())
             {
@@ -109,9 +113,25 @@ class planner
         return false;
     }
 
-    planner(Map & map)
+    planner(Map & map) :
+        background_(map, Map::copy_styles_only()),
+        foreground_(map, Map::copy_styles_only())
     {
+        bool collision_detector_used = false;
+
+        for (auto & lyr : map.layers())
+        {
+            if (!collision_detector_used)
+            {
+                collision_detector_used = uses_collision_detector(map, lyr);
+            }
+            Map & current_map = collision_detector_used ? foreground_ : background_;
+            current_map.add_layer(std::move(lyr));
+        }
     }
+
+    Map background_;
+    Map foreground_;
 };
 
 }

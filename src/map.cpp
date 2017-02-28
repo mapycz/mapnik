@@ -41,6 +41,7 @@
 #include <mapnik/text/font_library.hpp>
 #include <mapnik/util/file_io.hpp>
 #include <mapnik/font_engine_freetype.hpp>
+#include <mapnik/planner.hpp>
 
 // stl
 #include <stdexcept>
@@ -89,6 +90,27 @@ Map::Map(int width,int height, std::string const& srs)
       extra_params_(),
       font_directory_(),
       font_file_mapping_(),
+      font_memory_cache_() {}
+
+Map::Map(Map const& rhs, Map::copy_styles_only)
+    : width_(rhs.width_),
+      height_(rhs.height_),
+      srs_(rhs.srs_),
+      buffer_size_(rhs.buffer_size_),
+      background_(rhs.background_),
+      background_image_(rhs.background_image_),
+      background_image_comp_op_(rhs.background_image_comp_op_),
+      background_image_opacity_(rhs.background_image_opacity_),
+      styles_(rhs.styles_),
+      fontsets_(rhs.fontsets_),
+      aspectFixMode_(rhs.aspectFixMode_),
+      current_extent_(rhs.current_extent_),
+      maximum_extent_(rhs.maximum_extent_),
+      base_path_(rhs.base_path_),
+      extra_params_(rhs.extra_params_),
+      font_directory_(rhs.font_directory_),
+      font_file_mapping_(rhs.font_file_mapping_),
+      // on copy discard memory cache
       font_memory_cache_() {}
 
 Map::Map(Map const& rhs)
