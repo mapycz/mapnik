@@ -91,7 +91,7 @@ struct planner
             boost::optional<feature_type_style const&> style = map.find_style(style_name);
             if (!style)
             {
-                throw config_error("Style '" + style_name + "' does not exist.");
+                throw std::runtime_error("Style '" + style_name + "' does not exist.");
             }
             for (auto const & rule : style->get_rules())
             {
