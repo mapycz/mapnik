@@ -30,6 +30,7 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/value_types.hpp>
+#include <mapnik/pixel_position.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -55,8 +56,13 @@ struct glyph_t
 {
     FT_Glyph image;
     evaluated_format_properties const& properties;
-    glyph_t(FT_Glyph image_, evaluated_format_properties const& properties_)
-        : image(image_), properties(properties_) {}
+    pixel_position pos;
+    double size;
+    glyph_t(FT_Glyph image_, evaluated_format_properties const& properties_, pixel_position const& pos_, double size_)
+        : image(image_),
+          properties(properties_),
+          pos(pos_),
+          size(size_) {}
 };
 
 class text_renderer : private util::noncopyable
