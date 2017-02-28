@@ -493,13 +493,13 @@ void feature_style_processor<Processor>::render_submaterials(
 {
     for (layer_rendering_material & mat : parent_mat.materials_)
     {
+#ifdef MAPNIK_STATS_RENDER
+            mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
+#endif
         mat.wait();
 
         if (!mat.active_styles_.empty())
         {
-#ifdef MAPNIK_STATS_RENDER
-            mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
-#endif
             p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
             render_material(mat, p);
@@ -609,6 +609,7 @@ void feature_style_processor<Processor>::render_material(layer_rendering_materia
     // We only have a single style and no grouping.
     else
     {
+        assert(featureset_ptr_list.size() == active_styles.size());
         std::size_t i = 0;
         std::vector<featureset_ptr>::const_iterator featuresets = featureset_ptr_list.cbegin();
         for (feature_type_style const* style : active_styles)
