@@ -72,6 +72,8 @@ public:
 
     bool glyph_dimensions(glyph_info &glyph) const;
 
+    inline bool is_color() const { return color_font_;}
+
     ~font_face();
 
 private:
@@ -79,6 +81,7 @@ private:
 
     FT_Face face_;
     const double unscaled_ascender_;
+    bool color_font_ = false;
 };
 using face_ptr = std::shared_ptr<font_face>;
 
