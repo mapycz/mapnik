@@ -48,23 +48,12 @@ struct planner
 
         bool operator() (point_symbolizer const & sym) const
         {
-            return true;
+            return !get_ignore_placement(sym);
         }
 
         bool operator() (markers_symbolizer const & sym) const
         {
-            using const_iterator = symbolizer_base::cont_type::const_iterator;
-            const_iterator itr = sym.properties.find(keys::ignore_placement);
-            if (itr != sym.properties.end())
-            {
-                if (is_expression(itr->second))
-                {
-                    return true;
-                }
-                return !util::apply_visitor(extract_raw_value<value_bool>(), itr->second);
-            }
-
-            return !mapnik::symbolizer_default<value_bool, keys::ignore_placement>::value();
+            return !get_ignore_placement(sym);
         }
 
         bool operator() (group_symbolizer const & sym) const
@@ -81,6 +70,24 @@ struct planner
         bool operator() (Symbolizer const & sym) const
         {
             return false;
+        }
+
+        template <typename Symbolizer>
+        bool get_ignore_placement(Symbolizer const & sym) const
+        {
+            using const_iterator = symbolizer_base::cont_type::const_iterator;
+            using value_type = value_bool;
+            constexpr keys key = keys::ignore_placement;
+            const_iterator itr = sym.properties.find(key);
+            if (itr != sym.properties.end())
+            {
+                if (is_expression(itr->second))
+                {
+                    return false;
+                }
+                return util::apply_visitor(extract_raw_value<value_type>(), itr->second);
+            }
+            return mapnik::symbolizer_default<value_type, key>::value();
         }
     };
 
