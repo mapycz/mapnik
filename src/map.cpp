@@ -464,6 +464,11 @@ void Map::set_background(color const& c)
     background_ = c;
 }
 
+void Map::reset_background()
+{
+    background_ = boost::none;
+}
+
 boost::optional<std::string> const& Map::background_image() const
 {
     return background_image_;
@@ -472,6 +477,11 @@ boost::optional<std::string> const& Map::background_image() const
 void Map::set_background_image(std::string const& image_filename)
 {
     background_image_ = image_filename;
+}
+
+void Map::reset_background_image()
+{
+    background_image_ = boost::none;
 }
 
 composite_mode_e Map::background_image_comp_op() const

@@ -327,11 +327,13 @@ public:
      *  object
      */
     boost::optional<color> const& background() const;
+    void reset_background();
 
     /*! \brief Set the map background image filename.
      *  @param image_filename Background image filename.
      */
     void set_background_image(std::string const& image_filename);
+    void reset_background_image();
 
     /*! \brief Get the map background image
      *  @return Background image path as std::string

@@ -117,6 +117,9 @@ struct planner
         background_(map, Map::copy_styles_only()),
         foreground_(map, Map::copy_styles_only())
     {
+        foreground_.reset_background();
+        foreground_.reset_background_image();
+
         bool collision_detector_used = false;
 
         for (auto & lyr : map.layers())
