@@ -91,7 +91,7 @@ struct planner
         }
     };
 
-    bool uses_collision_detector(rule const & r)
+    bool uses_collision_detector(rule const & r) const
     {
         const uses_collision_detector_visitor visitor;
         for (auto const & sym : r.get_symbolizers())
@@ -104,7 +104,7 @@ struct planner
         return false;
     }
 
-    bool uses_collision_detector(Map const & map, layer const & lyr)
+    bool uses_collision_detector(Map const & map, layer const & lyr) const
     {
         for (auto const & style_name : lyr.styles())
         {
@@ -131,6 +131,11 @@ struct planner
         }
 
         return false;
+    }
+
+    bool nontrivial_composition(Map const & map, layer const & lyr) const
+    {
+        //composite_mode_e comp_op = lyr.comp_op() ? *lyr.comp_op() : src_over;
     }
 
     planner(Map & map) :
