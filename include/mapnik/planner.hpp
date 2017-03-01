@@ -61,10 +61,10 @@ struct planner
                 {
                     return true;
                 }
-                return util::apply_visitor(extract_raw_value<value_bool>(), itr->second);
+                return !util::apply_visitor(extract_raw_value<value_bool>(), itr->second);
             }
 
-            return mapnik::symbolizer_default<value_bool, keys::ignore_placement>::value();
+            return !mapnik::symbolizer_default<value_bool, keys::ignore_placement>::value();
         }
 
         bool operator() (group_symbolizer const & sym) const
@@ -134,15 +134,18 @@ struct planner
         foreground_.reset_background_image();
 
         bool collision_detector_used = false;
+        auto count = map.layers().size();
+        unsigned i = 0;
 
         for (auto & lyr : map.layers())
         {
             if (!collision_detector_used)
             {
-                collision_detector_used = uses_collision_detector(map, lyr);
+                collision_detector_used = uses_collision_detector(map, lyr) || (i > count / 2);
             }
             Map & current_map = collision_detector_used ? foreground_ : background_;
             current_map.add_layer(std::move(lyr));
+            i++;
         }
     }
 
