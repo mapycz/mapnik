@@ -64,10 +64,21 @@ struct cairo_save_restore
     cairo_context & context_;
 };
 
+struct cairo_renderer_context
+{
+    cairo_renderer_context(cairo_context & context) :
+        context(context)
+    {
+    }
+
+    cairo_context & context;
+};
+
 class MAPNIK_DECL cairo_renderer : private util::noncopyable
 {
 public:
     using buffer_type = cairo_context;
+    using context_type = cairo_renderer_context;
     //using processor_impl_type = cairo_renderer<T>;
     cairo_renderer(
         Map const& m,
@@ -87,12 +98,12 @@ public:
         unsigned offset_x=0,
         unsigned offset_y=0);
 
-    void start_map_processing(Map const& map, cairo_context & context);
-    void end_map_processing(Map const& map, cairo_context & context);
-    void start_layer_processing(layer const& lay, box2d<double> const& query_extent);
-    void end_layer_processing(layer const& lay, cairo_context & context);
-    void start_style_processing(feature_type_style const& st);
-    void end_style_processing(feature_type_style const& st, cairo_context & context);
+    void start_map_processing(Map const& map, context_type & context);
+    void end_map_processing(Map const& map, context_type & context);
+    context_type start_layer_processing(layer const& lay, box2d<double> const& query_extent, context_type & context);
+    void end_layer_processing(layer const& lay, context_type & context);
+    context_type start_style_processing(feature_type_style const& st, context_type & context);
+    void end_style_processing(feature_type_style const& st, context_type & context);
     void process(point_symbolizer const& sym,
                  mapnik::feature_impl & feature,
                  proj_transform const& prj_trans);

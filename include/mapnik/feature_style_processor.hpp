@@ -137,7 +137,7 @@ private:
     template <typename Renderer>
     void render_style(
         Renderer & p,
-        typename Renderer::buffer_type & parent_buffer,
+        typename Renderer::context_type & parent_context,
         feature_type_style const* style,
         rule_cache const& rules,
         featureset_ptr features,
@@ -172,13 +172,13 @@ private:
     void render_material(
         layer_rendering_material const & mat,
         Renderer & p,
-        typename Renderer::buffer_type & parent_buffer);
+        typename Renderer::context_type & parent_context);
 
     template <typename Renderer>
     void render_submaterials(
         layer_rendering_material const & mat,
         Renderer & p,
-        typename Renderer::buffer_type & parent_buffer);
+        typename Renderer::context_type & parent_context);
 
     Map const& m_;
 };
@@ -189,7 +189,8 @@ void feature_style_processor::apply(
     typename Renderer::buffer_type & buffer,
     double scale_denom)
 {
-    p.start_map_processing(m_, buffer);
+    typename Renderer::context_type context(buffer);
+    p.start_map_processing(m_, context);
 
     projection proj(m_.srs(),true);
     if (scale_denom <= 0.0)
@@ -211,10 +212,10 @@ void feature_style_processor::apply(
         layer_rendering_material root_mat(m_.layers().front(), proj);
         prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
 
-        render_submaterials(root_mat, p, buffer);
+        render_submaterials(root_mat, p, context);
     }
 
-    p.end_map_processing(m_, buffer);
+    p.end_map_processing(m_, context);
 }
 
 template <typename Renderer>
@@ -230,6 +231,7 @@ void feature_style_processor::apply(
     if (scale_denom <= 0.0)
         scale_denom = mapnik::scale_denominator(m_.scale(),proj.is_geographic());
     scale_denom *= p.scale_factor();
+    typename Renderer::context_type context(buffer);
 
     if (lyr.visible(scale_denom))
     {
@@ -246,7 +248,7 @@ void feature_style_processor::apply(
             m_.buffer_size(),
             names);
     }
-    p.end_map_processing(m_, buffer);
+    p.end_map_processing(m_, context);
 }
 
 /*!
@@ -284,8 +286,9 @@ void feature_style_processor::apply_to_layer(
 
     if (!mat.active_styles_.empty())
     {
-        render_material(mat,p);
-        render_submaterials(mat, p, buffer);
+        typename Renderer::context_type context(buffer);
+        render_material(mat, p, context);
+        render_submaterials(mat, p, context);
     }
 }
 
@@ -563,7 +566,7 @@ template <typename Renderer>
 void feature_style_processor::render_submaterials(
     layer_rendering_material const & parent_mat,
     Renderer & p,
-    typename Renderer::buffer_type & parent_buffer)
+    typename Renderer::context_type & parent_context)
 {
     for (layer_rendering_material const & mat : parent_mat.materials_)
     {
@@ -572,14 +575,13 @@ void feature_style_processor::render_submaterials(
 #ifdef MAPNIK_STATS_RENDER
             mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
 #endif
-            std::unique_ptr<typename Renderer::buffer_type> layer_buffer(
-                p.start_layer_processing(mat.lay_, mat.layer_ext2_));
-            auto & current_buffer = layer_buffer ? *layer_buffer : parent_buffer;
+            typename Renderer::context_type context(p.start_layer_processing(
+                mat.lay_, mat.layer_ext2_, parent_context));
 
-            render_material(mat, p, current_buffer);
-            render_submaterials(mat, p, current_buffer);
+            render_material(mat, p, context);
+            render_submaterials(mat, p, context);
 
-            p.end_layer_processing(mat.lay_, current_buffer, parent_buffer);
+            p.end_layer_processing(mat.lay_, context);
         }
     }
 }
@@ -588,7 +590,7 @@ template <typename Renderer>
 void feature_style_processor::render_material(
     layer_rendering_material const & mat,
     Renderer & p,
-    typename Renderer::buffer_type & parent_buffer)
+    typename Renderer::context_type & parent_context)
 {
     std::vector<feature_type_style const*> const & active_styles = mat.active_styles_;
     std::vector<featureset_ptr> const & featureset_ptr_list = mat.featureset_ptr_list_;
@@ -598,10 +600,9 @@ void feature_style_processor::render_material(
         // but we have to apply compositing operations on styles
         for (feature_type_style const* style : active_styles)
         {
-            std::unique_ptr<typename Renderer::buffer_type> style_buffer(
-                p.start_style_processing(*style));
-            auto & current_buffer = style_buffer ? *style_buffer : parent_buffer;
-            p.end_style_processing(*style, current_buffer, parent_buffer);
+            typename Renderer::context_type context(
+                p.start_style_processing(*style, parent_context));
+            p.end_style_processing(*style, context);
         }
         return;
     }
@@ -638,7 +639,7 @@ void feature_style_processor::render_material(
                     {
 
                         cache->prepare();
-                        render_style(p, parent_buffer, style,
+                        render_style(p, parent_context, style,
                                      rule_caches[i],
                                      cache,
                                      prj_trans);
@@ -654,7 +655,7 @@ void feature_style_processor::render_material(
             for (feature_type_style const* style : active_styles)
             {
                 cache->prepare();
-                render_style(p, parent_buffer, style, rule_caches[i], cache, prj_trans);
+                render_style(p, parent_context, style, rule_caches[i], cache, prj_trans);
                 ++i;
             }
             cache->clear();
@@ -678,7 +679,7 @@ void feature_style_processor::render_material(
         for (feature_type_style const* style : active_styles)
         {
             cache->prepare();
-            render_style(p, parent_buffer, style,
+            render_style(p, parent_context, style,
                          rule_caches[i],
                          cache, prj_trans);
             ++i;
@@ -692,7 +693,7 @@ void feature_style_processor::render_material(
         for (feature_type_style const* style : active_styles)
         {
             featureset_ptr features = *featuresets++;
-            render_style(p, parent_buffer, style,
+            render_style(p, parent_context, style,
                          rule_caches[i],
                          features,
                          prj_trans);
@@ -704,18 +705,17 @@ void feature_style_processor::render_material(
 template <typename Renderer>
 void feature_style_processor::render_style(
     Renderer & p,
-    typename Renderer::buffer_type & parent_buffer,
+    typename Renderer::context_type & parent_context,
     feature_type_style const* style,
     rule_cache const& rc,
     featureset_ptr features,
     proj_transform const& prj_trans)
 {
-    std::unique_ptr<typename Renderer::buffer_type> style_buffer(
-        p.start_style_processing(*style));
-    auto & current_buffer = style_buffer ? *style_buffer : parent_buffer;
+    typename Renderer::context_type context(
+        p.start_style_processing(*style, parent_context));
     if (!features)
     {
-        p.end_style_processing(*style, current_buffer, parent_buffer);
+        p.end_style_processing(*style, context);
         return;
     }
     mapnik::attributes vars = p.variables();
@@ -786,7 +786,7 @@ void feature_style_processor::render_style(
         }
     }
     p.painted(p.painted() | was_painted);
-    p.end_style_processing(*style, current_buffer, parent_buffer);
+    p.end_style_processing(*style, context);
 }
 
 }

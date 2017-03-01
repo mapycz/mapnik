@@ -144,13 +144,15 @@ void cairo_renderer::setup(Map const& map, cairo_context & context)
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: Scale=" << map.scale();
 }
 
-void cairo_renderer::start_map_processing(Map const& map, cairo_context & context)
+void cairo_renderer::start_map_processing(
+    Map const& map,
+    context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: Start map processing bbox=" << map.get_current_extent();
-    setup(m, context);
+    setup(m, context.context);
     box2d<double> bounds = common_.t_.forward(common_.t_.extent());
-    context.rectangle(bounds.minx(), bounds.miny(), bounds.maxx(), bounds.maxy());
-    context.clip();
+    context.context.rectangle(bounds.minx(), bounds.miny(), bounds.maxx(), bounds.maxy());
+    context.context.clip();
 }
 
 void cairo_renderer::end_map_processing(Map const&)
@@ -158,10 +160,10 @@ void cairo_renderer::end_map_processing(Map const&)
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: End map processing";
 }
 
-void cairo_renderer::start_layer_processing(
+context_type cairo_renderer::start_layer_processing(
     layer const& lay,
     box2d<double> const& query_extent,
-    cairo_context & context)
+    context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: Start processing layer=" << lay.name() ;
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: -- datasource=" << lay.datasource().get();
@@ -175,28 +177,29 @@ void cairo_renderer::start_layer_processing(
 
     if (lay.comp_op() || lay.get_opacity() < 1.0)
     {
-        context.push_group();
+        context.context.push_group();
     }
+    return context;
 }
 
 void cairo_renderer::end_layer_processing(
     layer const& lay,
-    cairo_context & context)
+    context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: End layer processing";
 
     if (lay.comp_op() || lay.get_opacity() < 1.0)
     {
-        context.pop_group();
+        context.context.pop_group();
         composite_mode_e comp_op = lay.comp_op() ? *lay.comp_op() : src_over;
-        context.set_operator(comp_op);
-        context.paint(lay.get_opacity());
+        context.context.set_operator(comp_op);
+        context.context.paint(lay.get_opacity());
     }
 }
 
-void cairo_renderer::start_style_processing(
+context_type cairo_renderer::start_style_processing(
     feature_type_style const & st,
-    cairo_context & context)
+    context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer:start style processing";
 
@@ -204,22 +207,23 @@ void cairo_renderer::start_style_processing(
 
     if (style_level_compositing_)
     {
-        context.push_group();
+        context.context.push_group();
     }
+    return context;
 }
 
 void cairo_renderer::end_style_processing(
     feature_type_style const & st,
-    cairo_context & context)
+    context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer:end style processing";
 
     if (style_level_compositing_)
     {
-        context.pop_group();
+        context.context.pop_group();
         composite_mode_e comp_op = st.comp_op() ? *st.comp_op() : src_over;
-        context.set_operator(comp_op);
-        context.paint(st.get_opacity());
+        context.context.set_operator(comp_op);
+        context.context.paint(st.get_opacity());
     }
 }
 

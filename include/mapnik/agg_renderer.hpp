@@ -59,12 +59,40 @@ namespace mapnik {
 
 namespace mapnik {
 
+template <typename Buffer>
+struct agg_renderer_context : util::noncopyable, util::movable
+{
+    agg_renderer_context(Buffer & parent_buffer) :
+        parent_buffer(parent_buffer),
+        current_buffer()
+    {
+    }
+
+    agg_renderer_context(
+        Buffer & parent_buffer,
+        unsigned width,
+        unsigned height) :
+        parent_buffer(parent_buffer),
+        current_buffer(new Buffer(width, height))
+    {
+    }
+
+    Buffer & active_buffer()
+    {
+        return current_buffer ? *current_buffer : parent_buffer;
+    }
+
+    Buffer & parent_buffer;
+    std::unique_ptr<Buffer> current_buffer;
+};
+
 template <typename Buffer, typename Detector=renderer_common::detector_type>
 class MAPNIK_DECL agg_renderer : private util::noncopyable
 {
 
 public:
     using buffer_type = Buffer;
+    using context_type = agg_renderer_context<buffer_type>;
     using processor_impl_type = agg_renderer<Buffer>;
     using detector_type = Detector;
     // create with default, empty placement detector
@@ -75,13 +103,13 @@ public:
     // pass in mapnik::request object to provide the mutable things per render
     agg_renderer(Map const& m, request const& req, attributes const& vars, buffer_type & pixmap, double scale_factor=1.0, unsigned offset_x=0, unsigned offset_y=0);
     ~agg_renderer();
-    void start_map_processing(Map const& map);
-    void end_map_processing(Map const& map);
-    void start_layer_processing(layer const& lay, box2d<double> const& query_extent);
-    void end_layer_processing(layer const& lay);
+    void start_map_processing(Map const& map, context_type & context);
+    void end_map_processing(Map const& map, context_type & context);
+    context_type start_layer_processing(layer const& lay, box2d<double> const& query_extent, context_type & context);
+    void end_layer_processing(layer const& lay, context_type & context);
 
-    void start_style_processing(feature_type_style const& st);
-    void end_style_processing(feature_type_style const& st);
+    context_type start_style_processing(feature_type_style const& st, context_type & context);
+    void end_style_processing(feature_type_style const& st, context_type & context);
 
     void render_marker(pixel_position const& pos, marker const& marker, agg::trans_affine const& tr,
                        double opacity, composite_mode_e comp_op);

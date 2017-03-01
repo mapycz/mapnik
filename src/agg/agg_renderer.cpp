@@ -191,26 +191,29 @@ template <typename Buffer, typename Detector>
 agg_renderer<Buffer,Detector>::~agg_renderer() {}
 
 template <typename Buffer, typename Detector>
-void agg_renderer<Buffer,Detector>::start_map_processing(Map const& map, Buffer & pixmap)
+void agg_renderer<Buffer,Detector>::start_map_processing(
+    Map const& map,
+    context_type & context)
 {
-    setup(map, pixmap);
+    setup(map, context.active_buffer());
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start map processing bbox=" << map.get_current_extent();
-    ras_ptr->clip_box(0,0,common_.width_,common_.height_);
+    ras_ptr->clip_box(0, 0, common_.width_, common_.height_);
 }
 
 template <typename Buffer, typename Detector>
 void agg_renderer<Buffer,Detector>::end_map_processing(
     Map const& map,
-    Buffer & pixmap)
+    context_type & context)
 {
-    mapnik::demultiply_alpha(pixmap);
+    mapnik::demultiply_alpha(context.active_buffer());
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End map processing";
 }
 
 template <typename Buffer, typename Detector>
-std::unique_ptr<Buffer> agg_renderer<Buffer,Detector>::start_layer_processing(
+context_type agg_renderer<Buffer,Detector>::start_layer_processing(
     layer const& lay,
-    box2d<double> const& query_extent)
+    box2d<double> const& query_extent,
+    context_type & parent_context)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start processing layer=" << lay.name();
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: -- datasource=" << lay.datasource().get();
@@ -230,27 +233,26 @@ std::unique_ptr<Buffer> agg_renderer<Buffer,Detector>::start_layer_processing(
 
     if (lay.comp_op() || lay.get_opacity() < 1.0)
     {
-        std::unique_ptr<Buffer> buffer = std::make_unique<Buffer>(
+        context_type context(parent_context.active_buffer(),
             common_.width_, common_.height_);
-        set_premultiplied_alpha(*buffer, true);
-        return buffer;
+        set_premultiplied_alpha(context.active_buffer(), true);
+        return context;
     }
-    return std::unique_ptr<Buffer>();
+    return context_type(parent_context.active_buffer());
 }
 
 template <typename Buffer, typename Detector>
 void agg_renderer<Buffer,Detector>::end_layer_processing(
     layer const& lyr,
-    Buffer & current_buffer,
-    Buffer & parent_buffer)
+    context_type & context)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End layer processing";
 
-    if (&current_buffer != &parent_buffer)
+    if (context.current_buffer)
     {
         composite_mode_e comp_op = lyr.comp_op() ? *lyr.comp_op() : src_over;
         composite(
-            parent_buffer, current_buffer,
+            context.parent_buffer, *context.current_buffer,
             comp_op, lyr.get_opacity(),
             -common_.t_.offset(),
             -common_.t_.offset());
@@ -258,14 +260,14 @@ void agg_renderer<Buffer,Detector>::end_layer_processing(
 }
 
 template <typename Buffer, typename Detector>
-std::unique_ptr<Buffer> agg_renderer<Buffer,Detector>::start_style_processing(
-    feature_type_style const& st)
+context_type agg_renderer<Buffer,Detector>::start_style_processing(
+    feature_type_style const& st,
+    context_type & parent_context)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start processing style";
 
     if (st.comp_op() || st.image_filters().size() > 0 || st.get_opacity() < 1)
     {
-        std::unique_ptr<Buffer> buffer;
         if (st.image_filters_inflate())
         {
             int radius = 0;
@@ -283,49 +285,51 @@ std::unique_ptr<Buffer> agg_renderer<Buffer,Detector>::start_style_processing(
             unsigned target_width = common_.width_ + (offset * 2);
             unsigned target_height = common_.height_ + (offset * 2);
             ras_ptr->clip_box(-int(offset*2),-int(offset*2),target_width,target_height);
-            buffer = std::make_unique<Buffer>(target_width, target_height);
-            mapnik::fill(*buffer, 0); // fill with transparent colour
+            context_type context(parent_context.active_buffer(), target_width, target_height);
+            mapnik::fill(*context.current_buffer, 0); // fill with transparent colour
+            set_premultiplied_alpha(*context.current_buffer, true);
+            return context;
         }
         else
         {
-            buffer = std::make_unique<Buffer>(common_.width_, common_.height_);
+            context_type context(parent_context.active_buffer(),
+                common_.width_, common_.height_);
+            set_premultiplied_alpha(*context.current_buffer, true);
             common_.t_.set_offset(0);
             ras_ptr->clip_box(0, 0, common_.width_, common_.height_);
+            return context;
         }
-        set_premultiplied_alpha(*buffer, true);
     }
-    else
-    {
-        common_.t_.set_offset(0);
-        ras_ptr->clip_box(0, 0, common_.width_, common_.height_);
-    }
-    return std::unique_ptr<Buffer>();
+
+    common_.t_.set_offset(0);
+    ras_ptr->clip_box(0, 0, common_.width_, common_.height_);
+
+    return context_type(parent_context.active_buffer());
 }
 
 template <typename Buffer, typename Detector>
 void agg_renderer<Buffer,Detector>::end_style_processing(
     feature_type_style const& st,
-    Buffer & current_buffer,
-    Buffer & parent_buffer)
+    context_type & context)
 {
-    if (&current_buffer != &parent_buffer)
+    if (context.current_buffer)
     {
         bool blend_from = false;
         if (st.image_filters().size() > 0)
         {
             blend_from = true;
             mapnik::filter::filter_visitor<buffer_type> visitor(
-                current_buffer, common_.scale_factor_);
+                context.current_buffer, common_.scale_factor_);
             for (mapnik::filter::filter_type const& filter_tag : st.image_filters())
             {
                 util::apply_visitor(visitor, filter_tag);
             }
-            mapnik::premultiply_alpha(current_buffer);
+            mapnik::premultiply_alpha(context.current_buffer);
         }
         if (st.comp_op())
         {
             composite(
-                parent_buffer, current_buffer,
+                context.parent_buffer, context.current_buffer,
                 *st.comp_op(), st.get_opacity(),
                 -common_.t_.offset(),
                 -common_.t_.offset());
@@ -333,7 +337,7 @@ void agg_renderer<Buffer,Detector>::end_style_processing(
         else if (blend_from || st.get_opacity() < 1.0)
         {
             composite(
-                parent_buffer, current_buffer,
+                context.parent_buffer, context.current_buffer,
                 src_over, st.get_opacity(),
                 -common_.t_.offset(),
                 -common_.t_.offset());
@@ -343,12 +347,12 @@ void agg_renderer<Buffer,Detector>::end_style_processing(
     if (st.direct_image_filters().size() > 0)
     {
         // apply any 'direct' image filters
-        filter::filter_visitor<buffer_type> visitor(parent_buffer, common_.scale_factor_);
+        filter::filter_visitor<buffer_type> visitor(context.parent_buffer, common_.scale_factor_);
         for (mapnik::filter::filter_type const& filter_tag : st.direct_image_filters())
         {
             util::apply_visitor(visitor, filter_tag);
         }
-        mapnik::premultiply_alpha(parent_buffer);
+        mapnik::premultiply_alpha(context.parent_buffer);
     }
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: End processing style";
 }
