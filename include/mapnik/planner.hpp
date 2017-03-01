@@ -23,6 +23,8 @@
 #ifndef MAPNIK_PLANNER_HPP
 #define MAPNIK_PLANNER_HPP
 
+#include <mapnik/symbolizer.hpp>
+
 namespace mapnik
 {
 
@@ -51,7 +53,18 @@ struct planner
 
         bool operator() (markers_symbolizer const & sym) const
         {
-            return true;
+            using const_iterator = symbolizer_base::cont_type::const_iterator;
+            const_iterator itr = sym.properties.find(keys::ignore_placement);
+            if (itr != sym.properties.end())
+            {
+                if (is_expression(itr->second))
+                {
+                    return true;
+                }
+                return util::apply_visitor(extract_raw_value<value_bool>(), itr->second);
+            }
+
+            return mapnik::symbolizer_default<value_bool, keys::ignore_placement>::value();
         }
 
         bool operator() (group_symbolizer const & sym) const
