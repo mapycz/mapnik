@@ -149,18 +149,20 @@ void cairo_renderer::start_map_processing(
     context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: Start map processing bbox=" << map.get_current_extent();
-    setup(m, context.context);
+    setup(map, context.context);
     box2d<double> bounds = common_.t_.forward(common_.t_.extent());
     context.context.rectangle(bounds.minx(), bounds.miny(), bounds.maxx(), bounds.maxy());
     context.context.clip();
 }
 
-void cairo_renderer::end_map_processing(Map const&)
+void cairo_renderer::end_map_processing(
+    Map const&,
+    context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer: End map processing";
 }
 
-context_type cairo_renderer::start_layer_processing(
+cairo_renderer::context_type cairo_renderer::start_layer_processing(
     layer const& lay,
     box2d<double> const& query_extent,
     context_type & context)
@@ -197,9 +199,9 @@ void cairo_renderer::end_layer_processing(
     }
 }
 
-context_type cairo_renderer::start_style_processing(
+cairo_renderer::context_type cairo_renderer::start_style_processing(
     feature_type_style const & st,
-    context_type & context)
+    cairo_renderer::context_type & context)
 {
     MAPNIK_LOG_DEBUG(cairo_renderer) << "cairo_renderer:start style processing";
 
@@ -293,8 +295,9 @@ void cairo_renderer::render_marker(
     pixel_position const& pos,
     marker const& marker,
     agg::trans_affine const& tr,
+    cairo_context & context,
     double opacity,
-    bool recenter, cairo_context & context)
+    bool recenter)
 {
     cairo_save_restore guard(context);
     cairo_render_marker_visitor visitor(

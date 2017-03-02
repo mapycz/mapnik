@@ -87,9 +87,11 @@ struct render_dot_symbolizer : util::noncopyable
 } // ns detail
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(dot_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void agg_renderer<T0, T1>::process(
+    dot_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     double width = 0.0;
     double height = 0.0;
@@ -119,7 +121,7 @@ void agg_renderer<T0,T1>::process(dot_symbolizer const& sym,
         gamma_method_ = GAMMA_POWER;
         gamma_ = 1.0;
     }
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     agg::rendering_buffer buf(current_buffer.bytes(), current_buffer.width(), current_buffer.height(), current_buffer.row_size());
     using blender_type = agg::comp_op_adaptor_rgba_pre<agg::rgba8, agg::order_rgba>;
     using pixfmt_comp_type = agg::pixfmt_custom_blend_rgba<blender_type, agg::rendering_buffer>;
@@ -136,8 +138,10 @@ void agg_renderer<T0,T1>::process(dot_symbolizer const& sym,
     mapnik::util::apply_visitor(geometry::vertex_processor<render_dot_symbolizer_type>(apply), feature.get_geometry());
 }
 
-template void agg_renderer<image_rgba8>::process(dot_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    dot_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }

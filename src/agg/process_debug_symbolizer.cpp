@@ -209,9 +209,11 @@ struct render_ring_visitor
 } // anonymous namespace
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(debug_symbolizer const& sym,
-                              mapnik::feature_impl & feature,
-                              proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    debug_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
 
     debug_symbolizer_mode_enum mode = get<debug_symbolizer_mode_enum>(sym, keys::mode, feature, common_.vars_, DEBUG_SYM_MODE_COLLISION);
@@ -224,9 +226,11 @@ void agg_renderer<T0,T1>::process(debug_symbolizer const& sym,
         gamma_ = 1.0;
     }
 
+    buffer_type & current_buffer = context.active_buffer();
+
     if (mode == DEBUG_SYM_MODE_RINGS)
     {
-        RingRenderer<buffer_type> renderer(*ras_ptr, buffers_.top().get(), common_.t_, prj_trans);
+        RingRenderer<buffer_type> renderer(*ras_ptr, current_buffer, common_.t_, prj_trans);
         render_ring_visitor<buffer_type> apply(renderer);
         mapnik::util::apply_visitor(apply,feature.get_geometry());
     }
@@ -247,19 +251,21 @@ void agg_renderer<T0,T1>::process(debug_symbolizer const& sym,
         {
             for (auto & n : common_.detector_->detector(key))
             {
-                draw_rect(buffers_.top().get(), n.get().box);
+                draw_rect(current_buffer, n.get().box);
             }
         }
     }
     else if (mode == DEBUG_SYM_MODE_VERTEX)
     {
         using apply_vertex_mode = apply_vertex_mode<buffer_type>;
-        apply_vertex_mode apply(buffers_.top().get(), common_.t_, prj_trans);
+        apply_vertex_mode apply(current_buffer, common_.t_, prj_trans);
         util::apply_visitor(geometry::vertex_processor<apply_vertex_mode>(apply), feature.get_geometry());
     }
 }
 
-template void agg_renderer<image_rgba8>::process(debug_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    debug_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 }

@@ -97,7 +97,7 @@ public:
      * \brief apply renderer to all map layers.
      */
     template <typename Renderer>
-    void apply(
+    bool apply(
         Renderer & p,
         typename Renderer::buffer_type & buffer,
         double scale_denom_override=0.0);
@@ -106,7 +106,7 @@ public:
      * \brief apply renderer to a single layer, providing pre-populated set of query attribute names.
      */
     template <typename Renderer>
-    void apply(
+    bool apply(
         Renderer & p,
         typename Renderer::buffer_type & buffer,
         mapnik::layer const& lyr,
@@ -117,7 +117,7 @@ public:
      * \brief render a layer given a projection and scale.
      */
     template <typename Renderer>
-    void apply_to_layer(
+    bool apply_to_layer(
         layer const& lay,
         Renderer & p,
         typename Renderer::buffer_type & buffer,
@@ -135,7 +135,7 @@ private:
      * \brief renders a featureset with the given styles.
      */
     template <typename Renderer>
-    void render_style(
+    bool render_style(
         Renderer & p,
         typename Renderer::context_type & parent_context,
         feature_type_style const* style,
@@ -169,13 +169,13 @@ private:
      * \brief render features list queued when they are available.
      */
     template <typename Renderer>
-    void render_material(
+    bool render_material(
         layer_rendering_material const & mat,
         Renderer & p,
         typename Renderer::context_type & parent_context);
 
     template <typename Renderer>
-    void render_submaterials(
+    bool render_submaterials(
         layer_rendering_material const & mat,
         Renderer & p,
         typename Renderer::context_type & parent_context);
@@ -184,7 +184,7 @@ private:
 };
 
 template <typename Renderer>
-void feature_style_processor::apply(
+bool feature_style_processor::apply(
     Renderer & p,
     typename Renderer::buffer_type & buffer,
     double scale_denom)
@@ -206,20 +206,22 @@ void feature_style_processor::apply(
     // define processing context map used by datasources
     // implementing asynchronous queries
     feature_style_context_map ctx_map;
+    bool was_painted = false;
 
     if (!m_.layers().empty())
     {
         layer_rendering_material root_mat(m_.layers().front(), proj);
         prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
 
-        render_submaterials(root_mat, p, context);
+        was_painted = render_submaterials(root_mat, p, context);
     }
 
     p.end_map_processing(m_, context);
+    return was_painted;
 }
 
 template <typename Renderer>
-void feature_style_processor::apply(
+bool feature_style_processor::apply(
     Renderer & p,
     typename Renderer::buffer_type & buffer,
     mapnik::layer const& lyr,
@@ -232,10 +234,11 @@ void feature_style_processor::apply(
         scale_denom = mapnik::scale_denominator(m_.scale(),proj.is_geographic());
     scale_denom *= p.scale_factor();
     typename Renderer::context_type context(buffer);
+    bool was_painted = false;
 
     if (lyr.visible(scale_denom))
     {
-        apply_to_layer(
+        was_painted = apply_to_layer(
             lyr,
             p,
             buffer,
@@ -249,13 +252,14 @@ void feature_style_processor::apply(
             names);
     }
     p.end_map_processing(m_, context);
+    return was_painted;
 }
 
 /*!
  * \brief render a layer given a projection and scale.
  */
 template <typename Renderer>
-void feature_style_processor::apply_to_layer(
+bool feature_style_processor::apply_to_layer(
     layer const& lay,
     Renderer & p,
     typename Renderer::buffer_type & buffer,
@@ -284,12 +288,15 @@ void feature_style_processor::apply_to_layer(
 
     prepare_layers(mat, lay.layers(), ctx_map, p, scale_denom);
 
+    bool was_painted = false;
+
     if (!mat.active_styles_.empty())
     {
         typename Renderer::context_type context(buffer);
-        render_material(mat, p, context);
-        render_submaterials(mat, p, context);
+        was_painted = render_material(mat, p, context);
+        was_painted |= render_submaterials(mat, p, context);
     }
+    return was_painted;
 }
 
 template <typename Renderer>
@@ -563,11 +570,12 @@ void feature_style_processor::prepare_layer(
 }
 
 template <typename Renderer>
-void feature_style_processor::render_submaterials(
+bool feature_style_processor::render_submaterials(
     layer_rendering_material const & parent_mat,
     Renderer & p,
     typename Renderer::context_type & parent_context)
 {
+    bool was_painted = false;
     for (layer_rendering_material const & mat : parent_mat.materials_)
     {
         if (!mat.active_styles_.empty())
@@ -578,20 +586,22 @@ void feature_style_processor::render_submaterials(
             typename Renderer::context_type context(p.start_layer_processing(
                 mat.lay_, mat.layer_ext2_, parent_context));
 
-            render_material(mat, p, context);
-            render_submaterials(mat, p, context);
+            was_painted |= render_material(mat, p, context);
+            was_painted |= render_submaterials(mat, p, context);
 
             p.end_layer_processing(mat.lay_, context);
         }
     }
+    return was_painted;
 }
 
 template <typename Renderer>
-void feature_style_processor::render_material(
+bool feature_style_processor::render_material(
     layer_rendering_material const & mat,
     Renderer & p,
     typename Renderer::context_type & parent_context)
 {
+    bool was_painted = false;
     std::vector<feature_type_style const*> const & active_styles = mat.active_styles_;
     std::vector<featureset_ptr> const & featureset_ptr_list = mat.featureset_ptr_list_;
     if (featureset_ptr_list.empty())
@@ -604,7 +614,7 @@ void feature_style_processor::render_material(
                 p.start_style_processing(*style, parent_context));
             p.end_style_processing(*style, context);
         }
-        return;
+        return was_painted;
     }
 
     layer const& lay = mat.lay_;
@@ -639,10 +649,9 @@ void feature_style_processor::render_material(
                     {
 
                         cache->prepare();
-                        render_style(p, parent_context, style,
-                                     rule_caches[i],
-                                     cache,
-                                     prj_trans);
+                        was_painted |= render_style(
+                            p, parent_context, style,
+                            rule_caches[i], cache, prj_trans);
                         ++i;
                     }
                     cache->clear();
@@ -655,7 +664,8 @@ void feature_style_processor::render_material(
             for (feature_type_style const* style : active_styles)
             {
                 cache->prepare();
-                render_style(p, parent_context, style, rule_caches[i], cache, prj_trans);
+                was_painted |= render_style(p, parent_context, style,
+                    rule_caches[i], cache, prj_trans);
                 ++i;
             }
             cache->clear();
@@ -671,7 +681,6 @@ void feature_style_processor::render_material(
             feature_ptr feature;
             while ((feature = features->next()))
             {
-
                 cache->push(feature);
             }
         }
@@ -679,9 +688,8 @@ void feature_style_processor::render_material(
         for (feature_type_style const* style : active_styles)
         {
             cache->prepare();
-            render_style(p, parent_context, style,
-                         rule_caches[i],
-                         cache, prj_trans);
+            was_painted |= render_style(p, parent_context, style,
+                 rule_caches[i], cache, prj_trans);
             ++i;
         }
     }
@@ -693,17 +701,16 @@ void feature_style_processor::render_material(
         for (feature_type_style const* style : active_styles)
         {
             featureset_ptr features = *featuresets++;
-            render_style(p, parent_context, style,
-                         rule_caches[i],
-                         features,
-                         prj_trans);
+            was_painted |= render_style(p, parent_context, style,
+                 rule_caches[i], features, prj_trans);
             ++i;
         }
     }
+    return was_painted;
 }
 
 template <typename Renderer>
-void feature_style_processor::render_style(
+bool feature_style_processor::render_style(
     Renderer & p,
     typename Renderer::context_type & parent_context,
     feature_type_style const* style,
@@ -711,16 +718,16 @@ void feature_style_processor::render_style(
     featureset_ptr features,
     proj_transform const& prj_trans)
 {
+    bool was_painted = false;
     typename Renderer::context_type context(
         p.start_style_processing(*style, parent_context));
     if (!features)
     {
         p.end_style_processing(*style, context);
-        return;
+        return was_painted;
     }
     mapnik::attributes vars = p.variables();
     feature_ptr feature;
-    bool was_painted = false;
     while ((feature = features->next()))
     {
         bool do_else = true;
@@ -736,12 +743,12 @@ void feature_style_processor::render_style(
                 do_else=false;
                 do_also=true;
                 rule::symbolizers const& symbols = r->get_symbolizers();
-                if(!p.process(symbols,*feature,prj_trans))
+                if(!p.process(symbols, *feature, prj_trans, context))
                 {
                     for (symbolizer const& sym : symbols)
                     {
                         util::apply_visitor(symbolizer_dispatch<Renderer>(
-                            p,*feature,prj_trans),sym);
+                            p, *feature, prj_trans, context), sym);
                     }
                 }
                 if (style->get_filter_mode() == FILTER_FIRST)
@@ -758,12 +765,12 @@ void feature_style_processor::render_style(
             {
                 was_painted = true;
                 rule::symbolizers const& symbols = r->get_symbolizers();
-                if(!p.process(symbols,*feature,prj_trans))
+                if(!p.process(symbols, *feature, prj_trans, context))
                 {
                     for (symbolizer const& sym : symbols)
                     {
                         util::apply_visitor(symbolizer_dispatch<Renderer>(
-                            p,*feature,prj_trans),sym);
+                            p, *feature, prj_trans, context), sym);
                     }
                 }
             }
@@ -774,19 +781,19 @@ void feature_style_processor::render_style(
             {
                 was_painted = true;
                 rule::symbolizers const& symbols = r->get_symbolizers();
-                if(!p.process(symbols,*feature,prj_trans))
+                if(!p.process(symbols, *feature, prj_trans, context))
                 {
                     for (symbolizer const& sym : symbols)
                     {
                         util::apply_visitor(symbolizer_dispatch<Renderer>(
-                            p,*feature,prj_trans),sym);
+                            p, *feature, prj_trans, context), sym);
                     }
                 }
             }
         }
     }
-    p.painted(p.painted() | was_painted);
     p.end_style_processing(*style, context);
+    return was_painted;
 }
 
 }

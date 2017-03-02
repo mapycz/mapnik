@@ -210,7 +210,7 @@ void agg_renderer<Buffer,Detector>::end_map_processing(
 }
 
 template <typename Buffer, typename Detector>
-context_type agg_renderer<Buffer,Detector>::start_layer_processing(
+typename agg_renderer<Buffer,Detector>::context_type agg_renderer<Buffer,Detector>::start_layer_processing(
     layer const& lay,
     box2d<double> const& query_extent,
     context_type & parent_context)
@@ -260,7 +260,7 @@ void agg_renderer<Buffer,Detector>::end_layer_processing(
 }
 
 template <typename Buffer, typename Detector>
-context_type agg_renderer<Buffer,Detector>::start_style_processing(
+typename agg_renderer<Buffer,Detector>::context_type agg_renderer<Buffer,Detector>::start_style_processing(
     feature_type_style const& st,
     context_type & parent_context)
 {
@@ -319,17 +319,17 @@ void agg_renderer<Buffer,Detector>::end_style_processing(
         {
             blend_from = true;
             mapnik::filter::filter_visitor<buffer_type> visitor(
-                context.current_buffer, common_.scale_factor_);
+                *context.current_buffer, common_.scale_factor_);
             for (mapnik::filter::filter_type const& filter_tag : st.image_filters())
             {
                 util::apply_visitor(visitor, filter_tag);
             }
-            mapnik::premultiply_alpha(context.current_buffer);
+            mapnik::premultiply_alpha(*context.current_buffer);
         }
         if (st.comp_op())
         {
             composite(
-                context.parent_buffer, context.current_buffer,
+                context.parent_buffer, *context.current_buffer,
                 *st.comp_op(), st.get_opacity(),
                 -common_.t_.offset(),
                 -common_.t_.offset());
@@ -337,7 +337,7 @@ void agg_renderer<Buffer,Detector>::end_style_processing(
         else if (blend_from || st.get_opacity() < 1.0)
         {
             composite(
-                context.parent_buffer, context.current_buffer,
+                context.parent_buffer, *context.current_buffer,
                 src_over, st.get_opacity(),
                 -common_.t_.offset(),
                 -common_.t_.offset());
@@ -644,7 +644,6 @@ void agg_renderer<Buffer,Detector>::draw_geo_extent(
 
 template class agg_renderer<image_rgba8>;
 template void agg_renderer<image_rgba8>::debug_draw_box<agg::rendering_buffer>(
-    Buffer & buffer,
     agg::rendering_buffer& buf,
     box2d<double> const& box,
     double x, double y, double angle);

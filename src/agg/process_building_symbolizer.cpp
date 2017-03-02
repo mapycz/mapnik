@@ -53,14 +53,16 @@ namespace mapnik
 {
 
 template <typename T0,typename T1>
-void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    building_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     using ren_base = agg::renderer_base<agg::pixfmt_rgba32_pre>;
     using renderer = agg::renderer_scanline_aa_solid<ren_base>;
 
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     agg::rendering_buffer buf(current_buffer.bytes(), current_buffer.width(), current_buffer.height(), current_buffer.row_size());
     agg::pixfmt_rgba32_pre pixf(buf);
     ren_base renb(pixf);
@@ -129,7 +131,9 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
         });
 }
 
-template void agg_renderer<image_rgba8>::process(building_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    building_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 }

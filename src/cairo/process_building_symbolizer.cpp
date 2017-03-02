@@ -37,12 +37,14 @@
 namespace mapnik
 {
 
-template <typename T>
-void cairo_renderer<T>::process(building_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process(
+    building_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    cairo_save_restore guard(context_);
+    cairo_context & cntxt = context.context;
+    cairo_save_restore guard(cntxt);
     composite_mode_e comp_op = get<composite_mode_e, keys::comp_op>(sym, feature, common_.vars_);
     mapnik::color fill = get<color, keys::fill>(sym, feature, common_.vars_);
     value_double opacity = get<value_double, keys::fill_opacity>(sym, feature, common_.vars_);
@@ -51,48 +53,44 @@ void cairo_renderer<T>::process(building_symbolizer const& sym,
     value_double shadow_length = get<value_double, keys::shadow_length>(sym, feature, common_.vars_) * common_.scale_factor_;
     value_double shadow_opacity = get<value_double, keys::shadow_opacity>(sym, feature, common_.vars_);
 
-    context_.set_operator(comp_op);
+    cntxt.set_operator(comp_op);
 
     render_building_symbolizer::apply(
         feature, prj_trans, common_.t_, height, shadow_angle, shadow_length,
         [&](path_type const& faces)
         {
             vertex_adapter va(faces);
-            context_.set_color(fill.red()  * 0.8 / 255.0, fill.green() * 0.8 / 255.0,
+            cntxt.set_color(fill.red()  * 0.8 / 255.0, fill.green() * 0.8 / 255.0,
                                fill.blue() * 0.8 / 255.0, fill.alpha() * opacity / 255.0);
-            context_.add_path(va);
-            context_.fill();
+            cntxt.add_path(va);
+            cntxt.fill();
         },
         [&](path_type const& frame)
         {
             vertex_adapter va(frame);
-            context_.set_color(fill.red()  * 0.8 / 255.0, fill.green() * 0.8/255.0,
+            cntxt.set_color(fill.red()  * 0.8 / 255.0, fill.green() * 0.8/255.0,
                               fill.blue() * 0.8 / 255.0, fill.alpha() * opacity / 255.0);
-            context_.set_line_width(common_.scale_factor_);
-            context_.add_path(va);
-            context_.stroke();
+            cntxt.set_line_width(common_.scale_factor_);
+            cntxt.add_path(va);
+            cntxt.stroke();
         },
         [&](path_type const& roof)
         {
             vertex_adapter va(roof);
-            context_.set_color(fill, opacity);
-            context_.add_path(va);
-            context_.fill();
+            cntxt.set_color(fill, opacity);
+            cntxt.add_path(va);
+            cntxt.fill();
         },
         [&](path_type const& shadow)
         {
             vertex_adapter va(shadow);
             agg::conv_contour<vertex_adapter> contour(va);
             contour.width(0.5 * shadow_opacity * shadow_opacity);
-            context_.set_color(0, 0, 0, shadow_opacity);
-            context_.add_path(contour);
-            context_.fill();
+            cntxt.set_color(0, 0, 0, shadow_opacity);
+            cntxt.add_path(contour);
+            cntxt.fill();
         });
 }
-
-template void cairo_renderer<cairo_ptr>::process(building_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
 
 }
 

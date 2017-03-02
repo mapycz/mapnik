@@ -100,52 +100,70 @@ public:
 
     void start_map_processing(Map const& map, context_type & context);
     void end_map_processing(Map const& map, context_type & context);
-    context_type start_layer_processing(layer const& lay, box2d<double> const& query_extent, context_type & context);
+    context_type start_layer_processing(
+        layer const& lay,
+        box2d<double> const& query_extent,
+        context_type & context);
     void end_layer_processing(layer const& lay, context_type & context);
     context_type start_style_processing(feature_type_style const& st, context_type & context);
     void end_style_processing(feature_type_style const& st, context_type & context);
     void process(point_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(line_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(line_pattern_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(polygon_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(polygon_pattern_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(raster_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(shield_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(text_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(building_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(markers_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(group_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(collision_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(debug_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
-    inline bool process(rule::symbolizers const& /*syms*/,
-                        mapnik::feature_impl & /*feature*/,
-                        proj_transform const& /*prj_trans*/)
+                 proj_transform const& prj_trans,
+                 context_type & context);
+    inline bool process(
+        rule::symbolizers const& /*syms*/,
+        mapnik::feature_impl & /*feature*/,
+        proj_transform const& /*prj_trans*/,
+        context_type & /*context*/)
     {
         // cairo renderer doesn't support processing of multiple symbolizers.
         return false;
@@ -155,7 +173,8 @@ public:
     void process_marker(
         Sym const& sym,
         mapnik::feature_impl & feature,
-        proj_transform const& prj_trans);
+        proj_transform const& prj_trans,
+        context_type & context);
 
     inline eAttributeCollectionPolicy attribute_collection_policy() const
     {
@@ -172,11 +191,14 @@ public:
         return common_.vars_;
     }
 
-    void render_marker(pixel_position const& pos,
-                       marker const& marker,
-                       agg::trans_affine const& mtx,
-                       double opacity=1.0,
-                       bool recenter=true);
+    void render_marker(
+        pixel_position const& pos,
+        marker const& marker,
+        agg::trans_affine const& mtx,
+        cairo_context & context,
+        double opacity=1.0,
+        bool recenter=true);
+
     void render_box(box2d<double> const& b);
 protected:
     Map const& m_;

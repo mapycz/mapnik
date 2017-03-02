@@ -87,21 +87,23 @@ struct apply_vertex_mode
 
 } // anonymous namespace
 
-template <typename T>
-void cairo_renderer<T>::process(debug_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process(
+    debug_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    cairo_save_restore guard(context_);
+    cairo_context & cntxt = context.context;
+    cairo_save_restore guard(cntxt);
 
     debug_symbolizer_mode_enum mode = get<debug_symbolizer_mode_enum>(sym, keys::mode, feature, common_.vars_, DEBUG_SYM_MODE_COLLISION);
 
-    context_.set_operator(src_over);
-    context_.set_color(mapnik::color(255, 0, 0), 1.0);
-    context_.set_line_join(MITER_JOIN);
-    context_.set_line_cap(BUTT_CAP);
-    context_.set_miter_limit(4.0);
-    context_.set_line_width(1.0);
+    cntxt.set_operator(src_over);
+    cntxt.set_color(mapnik::color(255, 0, 0), 1.0);
+    cntxt.set_line_join(MITER_JOIN);
+    cntxt.set_line_cap(BUTT_CAP);
+    cntxt.set_miter_limit(4.0);
+    cntxt.set_line_width(1.0);
 
     if (mode == DEBUG_SYM_MODE_COLLISION)
     {
@@ -120,21 +122,17 @@ void cairo_renderer<T>::process(debug_symbolizer const& sym,
         {
             for (auto & n : common_.detector_->detector(key))
             {
-                render_debug_box(context_, n.get().box);
+                render_debug_box(cntxt, n.get().box);
             }
         }
     }
     else if (mode == DEBUG_SYM_MODE_VERTEX)
     {
         using apply_vertex_mode = apply_vertex_mode<cairo_context>;
-        apply_vertex_mode apply(context_, common_.t_, prj_trans);
+        apply_vertex_mode apply(cntxt, common_.t_, prj_trans);
         util::apply_visitor(geometry::vertex_processor<apply_vertex_mode>(apply), feature.get_geometry());
     }
 }
-
-template void cairo_renderer<cairo_ptr>::process(debug_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
 
 }
 

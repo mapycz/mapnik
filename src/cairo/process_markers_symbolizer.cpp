@@ -66,44 +66,46 @@ private:
 
 } // namespace detail
 
-template <typename T>
-void cairo_renderer<T>::process(markers_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process(
+    markers_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    process_marker(sym, feature, prj_trans);
+    process_marker(sym, feature, prj_trans, context);
 }
 
-template <typename T>
 template <typename Sym>
-void cairo_renderer<T>::process_marker(Sym const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process_marker(
+    Sym const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    cairo_save_restore guard(context_);
+    cairo_save_restore guard(context.context);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
-    context_.set_operator(comp_op);
+    context.context.set_operator(comp_op);
     box2d<double> clip_box = common_.query_extent_;
 
     using context_type = detail::cairo_markers_renderer_context;
-    context_type renderer_context(context_);
+    context_type renderer_context(context.context);
 
     render_markers_symbolizer(
         sym, feature, prj_trans, common_, clip_box,
         renderer_context);
 }
 
-template void cairo_renderer<cairo_ptr>::process(markers_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
+template void cairo_renderer::process_marker(
+    markers_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
-template void cairo_renderer<cairo_ptr>::process_marker(markers_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
-
-template void cairo_renderer<cairo_ptr>::process_marker(point_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
+template void cairo_renderer::process_marker(
+    point_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 } // namespace mapnik
 

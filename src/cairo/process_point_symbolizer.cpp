@@ -38,18 +38,14 @@ namespace mapnik
 class feature_impl;
 class proj_transform;
 
-template <typename T>
-void cairo_renderer<T>::process(
+void cairo_renderer::process(
     point_symbolizer const& sym,
     mapnik::feature_impl & feature,
-    proj_transform const& prj_trans)
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    process_marker(sym, feature, prj_trans);
+    process_marker(sym, feature, prj_trans, context);
 }
-
-template void cairo_renderer<cairo_ptr>::process(point_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
 
 }
 
