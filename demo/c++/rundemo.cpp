@@ -306,9 +306,9 @@ int main ( int, char** )
         m.zoom_to_box(box2d<double>(-8024477.28459,5445190.38849,-7381388.20071,5662941.44855));
 
         image_rgba8 buf(m.width(),m.height());
-        agg_renderer<image_rgba8> ren(m,buf);
+        agg_renderer<image_rgba8> ren(m);
         feature_style_processor processor(m);
-        processor.apply(ren);
+        processor.apply(ren, buf);
         std::string msg("These maps have been rendered using AGG in the current directory:\n");
 #ifdef HAVE_JPEG
         save_to_file(buf,"demo.jpg","jpeg");
@@ -347,9 +347,9 @@ int main ( int, char** )
             cairo_image_surface_create(CAIRO_FORMAT_ARGB32,m.width(),m.height()),
             cairo_surface_closer());
         double scale_factor = 1.0;
-        cairo_ptr image_context(create_context(image_surface));
-        mapnik::cairo_renderer<cairo_ptr> png_render(m,image_context,scale_factor);
-        processor.apply(png_render);
+        cairo_context image_context(create_context(image_surface));
+        mapnik::cairo_renderer png_render(m, scale_factor);
+        processor.apply(png_render, image_context);
         // we can now write to png with cairo functionality
         cairo_surface_write_to_png(&*image_surface, "cairo-demo.png");
         // but we can also benefit from quantization by converting

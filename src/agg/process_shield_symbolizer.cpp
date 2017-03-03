@@ -33,9 +33,11 @@
 namespace mapnik {
 
 template <typename T0, typename T1>
-void  agg_renderer<T0,T1>::process(shield_symbolizer const& sym,
-                                   mapnik::feature_impl & feature,
-                                   proj_transform const& prj_trans)
+void  agg_renderer<T0,T1>::process(
+    shield_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
@@ -48,10 +50,11 @@ void  agg_renderer<T0,T1>::process(shield_symbolizer const& sym,
         common_.query_extent_, tr,
         common_.symbol_cache_));
 
+    buffer_type & current_buffer = context.active_buffer();
     halo_rasterizer_enum halo_rasterizer = get<halo_rasterizer_enum>(sym, keys::halo_rasterizer, feature, common_.vars_, HALO_RASTERIZER_FULL);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_, src_over);
-    agg_text_renderer<T0> ren(buffers_.top().get(),
+    agg_text_renderer<T0> ren(current_buffer,
                               halo_rasterizer,
                               comp_op,
                               halo_comp_op,
@@ -67,10 +70,12 @@ void  agg_renderer<T0,T1>::process(shield_symbolizer const& sym,
             marker_info_ptr mark = glyphs->get_marker();
             if (mark)
             {
-                render_marker(glyphs->marker_pos(),
-                              *mark->marker_,
-                              mark->transform_,
-                              opacity, comp_op);
+                render_marker(
+                    current_buffer,
+                    glyphs->marker_pos(),
+                    *mark->marker_,
+                    mark->transform_,
+                    opacity, comp_op);
             }
             ren.render(*glyphs);
         }
@@ -78,8 +83,10 @@ void  agg_renderer<T0,T1>::process(shield_symbolizer const& sym,
 }
 
 
-template void agg_renderer<image_rgba8>::process(shield_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    shield_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }

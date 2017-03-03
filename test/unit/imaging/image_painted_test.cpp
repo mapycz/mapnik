@@ -57,9 +57,9 @@ SECTION("painting") {
             m.zoom_all();
 
             image_rgba8 image(m.width(), m.height());
-            agg_renderer<image_rgba8> ren(m, image);
+            agg_renderer<image_rgba8> ren(m);
             mapnik::feature_style_processor processor(m);
-            processor.apply(ren);
+            processor.apply(ren, image);
 
             REQUIRE(image.painted() == true);
         }

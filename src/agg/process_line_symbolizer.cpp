@@ -90,9 +90,11 @@ void set_join_caps_aa(Symbolizer const& sym, Rasterizer & ras, Feature & feature
 }
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(line_symbolizer const& sym,
-                              mapnik::feature_impl & feature,
-                              proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    line_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 
 {
     color const& col = get<color, keys::stroke>(sym, feature, common_.vars_);
@@ -112,7 +114,7 @@ void agg_renderer<T0,T1>::process(line_symbolizer const& sym,
         gamma_ = gamma;
     }
 
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     agg::rendering_buffer buf(current_buffer.bytes(), current_buffer.width(), current_buffer.height(), current_buffer.row_size());
 
     using color_type = agg::rgba8;
@@ -233,8 +235,10 @@ void agg_renderer<T0,T1>::process(line_symbolizer const& sym,
 }
 
 
-template void agg_renderer<image_rgba8>::process(line_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    line_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }

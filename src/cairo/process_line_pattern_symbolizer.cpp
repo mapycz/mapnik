@@ -37,10 +37,11 @@
 namespace mapnik
 {
 
-template <typename T>
-void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process(
+    line_pattern_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     composite_mode_e comp_op = get<composite_mode_e, keys::comp_op>(sym, feature, common_.vars_);
@@ -58,8 +59,9 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
 
     if (marker->is<mapnik::marker_null>()) return;
 
-    cairo_save_restore guard(context_);
-    context_.set_operator(comp_op);
+    cairo_context & cntxt = context.context;
+    cairo_save_restore guard(cntxt);
+    cntxt.set_operator(comp_op);
 
     mapnik::rasterizer ra;
     common_pattern_process_visitor<line_pattern_symbolizer, mapnik::rasterizer> visitor(ra, common_, sym, feature);
@@ -68,7 +70,7 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
     double opacity = get<value_double, keys::opacity>(sym, feature, common_.vars_);
     cairo_pattern pattern(image, opacity);
 
-    context_.set_line_width(image.height());
+    cntxt.set_line_width(image.height());
 
     pattern.set_extend(CAIRO_EXTEND_REPEAT);
     pattern.set_filter(CAIRO_FILTER_BILINEAR);
@@ -91,7 +93,7 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
     }
 
     using rasterizer_type = line_pattern_rasterizer<cairo_context>;
-    rasterizer_type ras(context_, pattern, image.width(), image.height());
+    rasterizer_type ras(cntxt, pattern, image.width(), image.height());
     using vertex_converter_type = vertex_converter<clip_line_tag, transform_tag,
                                                    affine_transform_tag,
                                                    simplify_tag, smooth_tag,
@@ -111,10 +113,6 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
     apply_vertex_converter_type apply(converter, ras);
     mapnik::util::apply_visitor(vertex_processor_type(apply), feature.get_geometry());
 }
-
-template void cairo_renderer<cairo_ptr>::process(line_pattern_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
 
 }
 

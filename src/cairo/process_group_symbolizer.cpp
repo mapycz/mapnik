@@ -45,10 +45,9 @@ namespace {
 // extract_bboxes. We should now have a new offset at which
 // to render it, and the boxes themselves should already be
 // in the detector from the placement_finder.
-template <typename T>
 struct thunk_renderer : render_thunk_list_dispatch
 {
-    using renderer_type = cairo_renderer<T>;
+    using renderer_type = cairo_renderer;
 
     thunk_renderer(renderer_type & ren,
                    cairo_context & context,
@@ -103,6 +102,7 @@ struct thunk_renderer : render_thunk_list_dispatch
                     ren_.render_marker(glyphs->marker_pos(),
                                        *mark->marker_,
                                        mark->transform_,
+                                       context_,
                                        thunk.opacity_, thunk.comp_op_);
                 }
                 context_.add_text(*glyphs, face_manager_, src_over, src_over, common_.scale_factor_);
@@ -124,21 +124,19 @@ private:
 
 } // anonymous namespace
 
-template <typename T>
-void cairo_renderer<T>::process(group_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process(
+    group_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    thunk_renderer<T> ren(*this, context_, face_manager_, common_);
+    cairo_context & cntxt = context.context;
+    thunk_renderer ren(*this, cntxt, face_manager_, common_);
 
     render_group_symbolizer(
         sym, feature, common_.vars_, prj_trans, common_.query_extent_, common_,
         ren);
 }
-
-template void cairo_renderer<cairo_ptr>::process(group_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
 
 }
 

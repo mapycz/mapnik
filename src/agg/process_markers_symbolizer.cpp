@@ -105,18 +105,22 @@ private:
 } // namespace detail
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(markers_symbolizer const& sym,
-                              feature_impl & feature,
-                              proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    markers_symbolizer const& sym,
+    feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    process_marker(sym, feature, prj_trans);
+    process_marker(sym, feature, prj_trans, context);
 }
 
 template <typename T0, typename T1>
 template <typename Sym>
-void agg_renderer<T0,T1>::process_marker(Sym const& sym,
-                              feature_impl & feature,
-                              proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process_marker(
+    Sym const& sym,
+    feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     using namespace mapnik::svg;
     using color_type = agg::rgba8;
@@ -143,7 +147,7 @@ void agg_renderer<T0,T1>::process_marker(Sym const& sym,
         gamma_ = gamma;
     }
 
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     buf_type render_buffer(current_buffer.bytes(), current_buffer.width(), current_buffer.height(), current_buffer.row_size());
     box2d<double> clip_box = clipping_extent(common_);
 
@@ -156,15 +160,22 @@ void agg_renderer<T0,T1>::process_marker(Sym const& sym,
         sym, feature, prj_trans, common_, clip_box, renderer_context);
 }
 
-template void agg_renderer<image_rgba8>::process(markers_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    markers_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
-template void agg_renderer<image_rgba8>::process_marker(point_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process_marker(
+    point_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
-template void agg_renderer<image_rgba8>::process_marker(markers_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process_marker(
+    markers_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
+
 } // namespace mapnik

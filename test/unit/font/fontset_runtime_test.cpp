@@ -63,9 +63,9 @@ SECTION("error") {
         m.zoom_to_box(mapnik::box2d<double>(-256,-256,
                                             256,256));
         mapnik::image_rgba8 buf(m.width(),m.height());
-        mapnik::agg_renderer<mapnik::image_rgba8> ren(m,buf);
+        mapnik::agg_renderer<mapnik::image_rgba8> ren(m);
         mapnik::feature_style_processor processor(m);
-        processor.apply(ren);
+        processor.apply(ren, buf);
     } catch (std::exception const& ex) {
         REQUIRE(std::string(ex.what()) == std::string("Unable to find specified font face 'DejaVu Sans Book' in font set: 'fontset'"));
     }

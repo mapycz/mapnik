@@ -34,10 +34,11 @@
 namespace mapnik
 {
 
-template <typename T>
-void cairo_renderer<T>::process(line_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process(
+    line_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     composite_mode_e comp_op = get<composite_mode_e, keys::comp_op>(sym, feature, common_.vars_);
     value_bool clip = get<value_bool, keys::clip>(sym, feature, common_.vars_);
@@ -54,16 +55,17 @@ void cairo_renderer<T>::process(line_symbolizer const& sym,
 
     auto dash = get_optional<dash_array>(sym, keys::stroke_dasharray, feature, common_.vars_);
 
-    cairo_save_restore guard(context_);
-    context_.set_operator(comp_op);
-    context_.set_color(stroke, stroke_opacity);
-    context_.set_line_join(stroke_join);
-    context_.set_line_cap(stroke_cap);
-    context_.set_miter_limit(miterlimit);
-    context_.set_line_width(width * common_.scale_factor_);
+    cairo_context & cntxt = context.context;
+    cairo_save_restore guard(cntxt);
+    cntxt.set_operator(comp_op);
+    cntxt.set_color(stroke, stroke_opacity);
+    cntxt.set_line_join(stroke_join);
+    cntxt.set_line_cap(stroke_cap);
+    cntxt.set_miter_limit(miterlimit);
+    cntxt.set_line_width(width * common_.scale_factor_);
     if (dash)
     {
-        context_.set_dash(*dash, common_.scale_factor_);
+        cntxt.set_dash(*dash, common_.scale_factor_);
     }
 
     agg::trans_affine tr;
@@ -106,16 +108,12 @@ void cairo_renderer<T>::process(line_symbolizer const& sym,
     if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
     using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type, cairo_context>;
     using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
-    apply_vertex_converter_type apply(converter, context_);
+    apply_vertex_converter_type apply(converter, cntxt);
     mapnik::util::apply_visitor(vertex_processor_type(apply),feature.get_geometry());
     // stroke
-    context_.set_fill_rule(CAIRO_FILL_RULE_WINDING);
-    context_.stroke();
+    cntxt.set_fill_rule(CAIRO_FILL_RULE_WINDING);
+    cntxt.stroke();
 }
-
-template void cairo_renderer<cairo_ptr>::process(line_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
 
 }
 

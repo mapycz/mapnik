@@ -58,10 +58,10 @@ public:
         using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
 
         mapnik::image_rgba8 im(m.width(),m.height());
-        renderer_type ren(m,im,scale_factor_);
+        renderer_type ren(m, scale_factor_);
         mapnik::feature_style_processor processor(m, scale_factor_);
 
-        processor.apply(ren);
+        processor.apply(ren, im);
 
         if (!preview_.empty()) {
             std::clog << "preview available at " << preview_ << "\n";
@@ -86,10 +86,10 @@ public:
             using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
 
             mapnik::image_rgba8 im(m.width(),m.height());
-            renderer_type ren(m,im,scale_factor_);
+            renderer_type ren(m, scale_factor_);
             mapnik::feature_style_processor processor(m, scale_factor_);
 
-            processor.apply(ren);
+            processor.apply(ren, im);
         }
         return true;
     }

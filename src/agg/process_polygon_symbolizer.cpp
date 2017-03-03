@@ -20,9 +20,6 @@
  *
  *****************************************************************************/
 
-// boost
-
-
 // mapnik
 #include <mapnik/feature.hpp>
 #include <mapnik/agg_renderer.hpp>
@@ -47,9 +44,11 @@
 namespace mapnik {
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(polygon_symbolizer const& sym,
-                              mapnik::feature_impl & feature,
-                              proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    polygon_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     using vertex_converter_type = vertex_converter<clip_poly_tag,transform_tag,affine_transform_tag,simplify_tag,smooth_tag>;
 
@@ -63,7 +62,7 @@ void agg_renderer<T0,T1>::process(polygon_symbolizer const& sym,
         gamma_ = gamma;
     }
 
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     agg::rendering_buffer buf(current_buffer.bytes(), current_buffer.width(), current_buffer.height(), current_buffer.row_size());
 
     box2d<double> clip_box = clipping_extent(common_);
@@ -91,8 +90,10 @@ void agg_renderer<T0,T1>::process(polygon_symbolizer const& sym,
         });
 }
 
-template void agg_renderer<image_rgba8>::process(polygon_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    polygon_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }

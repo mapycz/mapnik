@@ -126,10 +126,12 @@ struct thunk_renderer<image_rgba8> : render_thunk_list_dispatch
 
                 if (auto const& mark = glyphs->get_marker())
                 {
-                    ren_.render_marker(glyphs->marker_pos(),
-                                       *mark->marker_,
-                                       mark->transform_,
-                                       thunk.opacity_, thunk.comp_op_);
+                    ren_.render_marker(
+                        buf_,
+                        glyphs->marker_pos(),
+                        *mark->marker_,
+                        mark->transform_,
+                        thunk.opacity_, thunk.comp_op_);
                 }
                 tex_.render(*glyphs);
             }
@@ -145,11 +147,13 @@ private:
 };
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(group_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    group_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     thunk_renderer<buffer_type> ren(*this, ras_ptr, current_buffer, common_);
 
     render_group_symbolizer(
@@ -157,8 +161,10 @@ void agg_renderer<T0,T1>::process(group_symbolizer const& sym,
         ren);
 }
 
-template void agg_renderer<image_rgba8>::process(group_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    group_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }

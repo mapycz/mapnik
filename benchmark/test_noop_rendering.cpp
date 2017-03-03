@@ -11,7 +11,7 @@
 #include <mapnik/feature_type_style.hpp>
 
 #include <memory>
-    
+
 class test : public benchmark::test_case
 {
 public:
@@ -44,9 +44,9 @@ public:
         {
             using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
             mapnik::image_rgba8 im(256,256);
-            renderer_type ren(m,im);
+            renderer_type ren(m);
             mapnik::feature_style_processor processor(m);
-            processor.apply(ren);
+            processor.apply(ren, im);
         }
         return true;
     }

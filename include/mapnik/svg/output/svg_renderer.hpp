@@ -59,6 +59,17 @@ namespace mapnik {
 
 namespace mapnik
 {
+
+struct svg_renderer_context
+{
+    svg_renderer_context(cairo_context & context) :
+        context(context)
+    {
+    }
+
+    cairo_context & context;
+};
+
 // parameterized with the type of output iterator it will use for output.
 // output iterators add more flexibility than streams, because iterators
 // can target many other output destinations besides streams.
@@ -66,9 +77,10 @@ template <typename OutputIterator>
 class MAPNIK_DECL svg_renderer : private util::noncopyable
 {
 public:
-    using processor_impl_type = svg_renderer<OutputIterator>;
-    svg_renderer(Map const& m, OutputIterator& output_iterator, double scale_factor=1.0, unsigned offset_x=0, unsigned offset_y=0);
-    svg_renderer(Map const& m, request const& req, attributes const& vars, OutputIterator& output_iterator, double scale_factor=1.0, unsigned offset_x=0, unsigned offset_y=0);
+    using buffer_type = OutputIterator;
+    using context_type = svg_renderer_context;
+    svg_renderer(Map const& m, double scale_factor=1.0, unsigned offset_x=0, unsigned offset_y=0);
+    svg_renderer(Map const& m, request const& req, attributes const& vars, double scale_factor=1.0, unsigned offset_x=0, unsigned offset_y=0);
     ~svg_renderer();
 
     void start_map_processing(Map const& map);
@@ -83,47 +95,60 @@ public:
      */
     void process(line_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     void process(polygon_symbolizer const& sym,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
     // unimplemented
     void process(point_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(line_pattern_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(polygon_pattern_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(raster_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(shield_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(text_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(building_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(markers_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(debug_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
     void process(group_symbolizer const&,
                  mapnik::feature_impl &,
-                 proj_transform const&) {}
+                 proj_transform const&,
+                 context_type & context) {}
 
     // Overload that process the whole set of symbolizers of a rule.
     // return true, meaning that this renderer can process multiple symbolizers.
     bool process(rule::symbolizers const& syms,
                  mapnik::feature_impl & feature,
-                 proj_transform const& prj_trans);
+                 proj_transform const& prj_trans,
+                 context_type & context);
 
     bool painted() const
     {

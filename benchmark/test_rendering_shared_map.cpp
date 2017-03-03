@@ -12,10 +12,11 @@
 #include <mapnik/datasource_cache.hpp>
 #include <stdexcept>
 
-template <typename Renderer, typename Processor>
+template <typename Renderer, typename Processor, typename Buffer>
 void process_layers(
     Processor & p,
     Renderer & ren,
+    Buffer & buf,
     mapnik::request const& m_req,
     mapnik::projection const& map_proj,
     std::vector<mapnik::layer> const& layers,
@@ -32,6 +33,7 @@ void process_layers(
             p.apply_to_layer(
                 l,
                 ren,
+                buf,
                 map_proj,
                 m_req.scale(),
                 scale_denom,
@@ -97,12 +99,14 @@ public:
         mapnik::projection map_proj(m_->srs(),true);
         double scale_denom = mapnik::scale_denominator(m_req.scale(),map_proj.is_geographic());
         scale_denom *= scale_factor_;
-        mapnik::agg_renderer<mapnik::image_rgba8> ren(*m_,m_req,variables,im_,scale_factor_);
-        ren.start_map_processing(*m_);
+        using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
+        renderer_type ren(*m_,m_req,variables,scale_factor_);
+        renderer_type::context_type context(im_);
+        ren.start_map_processing(*m_, context);
         mapnik::feature_style_processor processor(*m_, scale_factor_);
         std::vector<mapnik::layer> const& layers = m_->layers();
-        process_layers(processor,ren,m_req,map_proj,layers,scale_denom);
-        ren.end_map_processing(*m_);
+        process_layers(processor, ren, im_, m_req, map_proj, layers, scale_denom);
+        ren.end_map_processing(*m_, context);
         if (!preview_.empty()) {
             std::clog << "preview available at " << preview_ << "\n";
             mapnik::save_to_file(im_,preview_);
@@ -124,12 +128,14 @@ public:
             mapnik::projection map_proj(m_->srs(),true);
             double scale_denom = mapnik::scale_denominator(m_req.scale(),map_proj.is_geographic());
             scale_denom *= scale_factor_;
-            mapnik::agg_renderer<mapnik::image_rgba8> ren(*m_,m_req,variables,im,scale_factor_);
-            ren.start_map_processing(*m_);
+            using renderer_type = mapnik::agg_renderer<mapnik::image_rgba8>;
+            renderer_type ren(*m_,m_req,variables,scale_factor_);
+            renderer_type::context_type context(im);
+            ren.start_map_processing(*m_, context);
             mapnik::feature_style_processor processor(*m_, scale_factor_);
             std::vector<mapnik::layer> const& layers = m_->layers();
-            process_layers(processor,ren,m_req,map_proj,layers,scale_denom);
-            ren.end_map_processing(*m_);
+            process_layers(processor, ren, im, m_req, map_proj, layers, scale_denom);
+            ren.end_map_processing(*m_, context);
             bool diff = false;
             mapnik::image_rgba8 const& dest = im;
             mapnik::image_rgba8 const& src = im_;

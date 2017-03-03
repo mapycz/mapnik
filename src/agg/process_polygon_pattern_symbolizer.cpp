@@ -163,15 +163,17 @@ private:
 
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    polygon_pattern_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     if (filename.empty()) return;
     std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
 
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     agg::rendering_buffer buf(current_buffer.bytes(), current_buffer.width(),
                               current_buffer.height(), current_buffer.row_size());
     ras_ptr->reset();
@@ -255,8 +257,10 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     agg::render_scanlines(*ras_ptr, sl, rp);
 }
 
-template void agg_renderer<image_rgba8>::process(polygon_pattern_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    polygon_pattern_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }

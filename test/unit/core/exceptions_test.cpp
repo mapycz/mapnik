@@ -74,12 +74,12 @@ SECTION("handling") {
             m.add_layer(l);
             m.zoom_all();
             mapnik::image_rgba8 im(m.width(),m.height());
-            mapnik::agg_renderer<mapnik::image_rgba8> ren(m,im);
+            mapnik::agg_renderer<mapnik::image_rgba8> ren(m);
             mapnik::feature_style_processor processor(m);
             //std::clog << mapnik::save_map_to_string(m) << "\n";
             REQUIRE(true);
             // should throw here with "CSV Plugin: no attribute 'foo'. Valid attributes are: x,y."
-            processor.apply(ren);
+            processor.apply(ren, im);
             REQUIRE(false);
         } catch (...) {
             REQUIRE(true);

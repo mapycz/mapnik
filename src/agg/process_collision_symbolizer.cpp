@@ -26,9 +26,11 @@
 namespace mapnik {
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(collision_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    collision_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     process_collision_symbolizer(sym, feature, prj_trans, common_);
 }
@@ -36,6 +38,7 @@ void agg_renderer<T0,T1>::process(collision_symbolizer const& sym,
 template void agg_renderer<image_rgba8>::process(
     collision_symbolizer const&,
     mapnik::feature_impl &,
-    proj_transform const&);
+    proj_transform const&,
+    context_type & context);
 
 }

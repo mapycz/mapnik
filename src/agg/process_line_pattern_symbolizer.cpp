@@ -58,12 +58,12 @@
 namespace mapnik {
 
 template <typename T0, typename T1>
-void  agg_renderer<T0,T1>::process(line_pattern_symbolizer const& sym,
-                               mapnik::feature_impl & feature,
-                               proj_transform const& prj_trans)
+void  agg_renderer<T0,T1>::process(
+    line_pattern_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
-
-
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     if (filename.empty()) return;
     ras_ptr->reset();
@@ -90,7 +90,7 @@ void  agg_renderer<T0,T1>::process(line_pattern_symbolizer const& sym,
     value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym, feature, common_.vars_);
     value_double smooth = get<value_double, keys::smooth>(sym, feature, common_.vars_);
 
-    buffer_type & current_buffer = buffers_.top().get();
+    buffer_type & current_buffer = context.active_buffer();
     agg::rendering_buffer buf(current_buffer.bytes(), current_buffer.width(),
                               current_buffer.height(), current_buffer.row_size());
     pixfmt_type pixf(buf);
@@ -146,8 +146,10 @@ void  agg_renderer<T0,T1>::process(line_pattern_symbolizer const& sym,
     mapnik::util::apply_visitor(vertex_processor_type(apply), feature.get_geometry());
 }
 
-template void agg_renderer<image_rgba8>::process(line_pattern_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    line_pattern_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }

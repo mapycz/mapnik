@@ -40,10 +40,11 @@
 namespace mapnik
 {
 
-template <typename T>
-void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void cairo_renderer::process(
+    polygon_pattern_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     composite_mode_e comp_op = get<composite_mode_e, keys::comp_op>(sym, feature, common_.vars_);
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
@@ -52,8 +53,9 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     value_double smooth = get<value_double, keys::smooth>(sym, feature, common_.vars_);
     value_double opacity = get<value_double, keys::opacity>(sym, feature, common_.vars_);
 
-    cairo_save_restore guard(context_);
-    context_.set_operator(comp_op);
+    cairo_context & cntxt = context.context;
+    cairo_save_restore guard(cntxt);
+    cntxt.set_operator(comp_op);
 
     std::shared_ptr<mapnik::marker const> marker = mapnik::marker_cache::instance().find(filename,true);
     if (marker->is<mapnik::marker_null>()) return;
@@ -66,7 +68,7 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     box2d<double> clip_box = clipping_extent(common_);
     coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));
     pattern.set_origin(offset.x, offset.y);
-    context_.set_pattern(pattern);
+    cntxt.set_pattern(pattern);
 
     agg::trans_affine tr;
     auto geom_transform = get_optional<transform_type>(sym, keys::geometry_transform);
@@ -86,16 +88,12 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
 
     using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type, cairo_context>;
     using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
-    apply_vertex_converter_type apply(converter, context_);
+    apply_vertex_converter_type apply(converter, cntxt);
     mapnik::util::apply_visitor(vertex_processor_type(apply),feature.get_geometry());
     // fill polygon
-    context_.set_fill_rule(CAIRO_FILL_RULE_EVEN_ODD);
-    context_.fill();
+    cntxt.set_fill_rule(CAIRO_FILL_RULE_EVEN_ODD);
+    cntxt.fill();
 }
-
-template void cairo_renderer<cairo_ptr>::process(polygon_pattern_symbolizer const&,
-                                                 mapnik::feature_impl &,
-                                                 proj_transform const&);
 
 }
 

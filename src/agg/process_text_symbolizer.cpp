@@ -33,9 +33,11 @@
 namespace mapnik {
 
 template <typename T0, typename T1>
-void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
-                                  mapnik::feature_impl & feature,
-                                  proj_transform const& prj_trans)
+void agg_renderer<T0,T1>::process(
+    text_symbolizer const& sym,
+    mapnik::feature_impl & feature,
+    proj_transform const& prj_trans,
+    context_type & context)
 {
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
@@ -51,7 +53,7 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
     halo_rasterizer_enum halo_rasterizer = get<halo_rasterizer_enum>(sym, keys::halo_rasterizer,feature, common_.vars_, HALO_RASTERIZER_FULL);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_, src_over);
-    agg_text_renderer<T0> ren(buffers_.top().get(),
+    agg_text_renderer<T0> ren(context.active_buffer(),
                               halo_rasterizer,
                               comp_op,
                               halo_comp_op,
@@ -75,8 +77,10 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
     }
 }
 
-template void agg_renderer<image_rgba8>::process(text_symbolizer const&,
-                                              mapnik::feature_impl &,
-                                              proj_transform const&);
+template void agg_renderer<image_rgba8>::process(
+    text_symbolizer const&,
+    mapnik::feature_impl &,
+    proj_transform const&,
+    context_type & context);
 
 }
