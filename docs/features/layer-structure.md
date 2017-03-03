@@ -19,6 +19,10 @@ If one of these conditions holds, all sub-layers are ignored.
 
 If the `srs` of a layer is not defined explicitly, it is inherited from parent layer or from map in case of top-level layer.
 
+## Purely compositional and organizational layers
+
+Let's call a layer with no `Datasource`, `comp-op` and `opacity` purely organizational layer. Such a layer can group another layers with no effect on rendering result. Only way how purely organizational layer can influence rendering is by `status="off"`. If `comp-op` or `opacity` is used, layer will have its own rendering buffer.
+
 ## An example
 
 ```xml
