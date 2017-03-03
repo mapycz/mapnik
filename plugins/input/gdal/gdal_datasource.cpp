@@ -54,6 +54,29 @@ extern "C" MAPNIK_EXP void on_plugin_load()
     });
 }
 
+namespace {
+// an error handler for GDAL which translates the error into
+// the equivalent mapnik one. this is useful for when you want
+// to silence all or some levels of error at the mapnik level,
+// as you do not know whether or not the GDAL libraries are
+// loaded to do it manually.
+void mapnik_gdal_error_handler(CPLErr err_class, int err_no, const char *msg) {
+  switch (err_class) {
+  case CE_None:
+  case CE_Debug:
+    MAPNIK_LOG_DEBUG(gdal) << "gdal_datasource: ERROR " << err_no << ": " << msg;
+    break;
+
+  case CE_Warning:
+    MAPNIK_LOG_WARN(gdal) << "gdal_datasource: ERROR " << err_no << ": " << msg;
+    break;
+
+  default:
+    MAPNIK_LOG_ERROR(gdal) << "gdal_datasource: ERROR " << err_no << ": " << msg;
+  }
+}
+} // anonymous namespace
+
 gdal_datasource::gdal_datasource(parameters const& params)
     : datasource(params),
       dataset_(nullptr, &GDALClose),
@@ -66,6 +89,11 @@ gdal_datasource::gdal_datasource(parameters const& params)
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "gdal_datasource::init");
 #endif
+
+    GDALAllRegister();
+
+    // wrap GDAL error reporting in mapnik's own
+    CPLSetErrorHandler(&mapnik_gdal_error_handler);
 
     boost::optional<std::string> file = params.get<std::string>("file");
     if (! file) throw datasource_exception("missing <file> parameter");
