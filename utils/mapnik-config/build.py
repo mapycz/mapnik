@@ -24,6 +24,7 @@ import os
 import sys
 from copy import copy
 from subprocess import Popen, PIPE
+from SCons.Node.FS import File
 
 Import('env')
 
@@ -102,7 +103,13 @@ if config_env['HAS_CAIRO']:
 ldflags = ''.join([' -L%s' % i for i in config_env['LIBPATH'] if not i.startswith('#')])
 ldflags += config_env['LIBMAPNIK_LINKFLAGS']
 
-dep_libs = ''.join([' -l%s' % i for i in env['LIBMAPNIK_LIBS']])
+dep_libs = []
+for lib in env['LIBMAPNIK_LIBS']:
+    if isinstance(lib, File):
+        dep_libs.append(str(lib))
+    else:
+        dep_libs.append('-l{}'.format(lib))
+dep_libs = ' '.join(dep_libs)
 
 # remove local agg from public linking
 dep_libs = dep_libs.replace('-lagg','')
