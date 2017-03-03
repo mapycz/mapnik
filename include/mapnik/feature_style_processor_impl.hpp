@@ -72,6 +72,11 @@ struct layer_rendering_material
         proj0_(dest),
         proj1_(lay.srs(),true) {}
 
+    inline bool empty() const
+    {
+        return active_styles_.empty() && lay_.datasource();
+    }
+
     layer_rendering_material(layer_rendering_material && rhs) = default;
 };
 
@@ -115,7 +120,7 @@ void feature_style_processor<Processor>::prepare_layers(layer_rendering_material
                           names);
 
             // Store active material
-            if (!mat.active_styles_.empty())
+            if (!mat.empty())
             {
                 prepare_layers(mat, lyr.layers(), ctx_map, p, scale_denom);
                 parent_mat.materials_.emplace_back(std::move(mat));
@@ -219,7 +224,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
 
     prepare_layers(mat, lay.layers(), ctx_map, p, scale_denom);
 
-    if (!mat.active_styles_.empty())
+    if (!mat.empty())
     {
         render_material(mat,p);
         render_submaterials(mat, p);
@@ -240,6 +245,13 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
 {
     layer const& lay = mat.lay_;
 
+    datasource_ptr ds = lay.datasource();
+    if (!ds)
+    {
+        // No datasource means pure compositional or organizational layer.
+        return;
+    }
+
     std::vector<std::string> const& style_names = lay.styles();
 
     std::size_t num_styles = style_names.size();
@@ -247,14 +259,6 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
     {
         MAPNIK_LOG_DEBUG(feature_style_processor)
             << "feature_style_processor: No style for layer=" << lay.name();
-        return;
-    }
-
-    mapnik::datasource_ptr ds = lay.datasource();
-    if (!ds)
-    {
-        MAPNIK_LOG_DEBUG(feature_style_processor)
-            << "feature_style_processor: No datasource for layer=" << lay.name();
         return;
     }
 
@@ -465,7 +469,7 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
 {
     for (layer_rendering_material const & mat : parent_mat.materials_)
     {
-        if (!mat.active_styles_.empty())
+        if (!mat.empty())
         {
 #ifdef MAPNIK_STATS_RENDER
             mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
@@ -484,6 +488,14 @@ template <typename Processor>
 void feature_style_processor<Processor>::render_material(layer_rendering_material const & mat,
                                                          Processor & p)
 {
+    layer const& lay = mat.lay_;
+    datasource_ptr ds = lay.datasource();
+
+    if (!ds)
+    {
+        return;
+    }
+
     std::vector<feature_type_style const*> const & active_styles = mat.active_styles_;
     std::vector<featureset_ptr> const & featureset_ptr_list = mat.featureset_ptr_list_;
     if (featureset_ptr_list.empty())
@@ -498,15 +510,9 @@ void feature_style_processor<Processor>::render_material(layer_rendering_materia
         return;
     }
 
-    layer const& lay = mat.lay_;
-
     std::vector<rule_cache> const & rule_caches = mat.rule_caches_;
-
     proj_transform prj_trans(mat.proj0_,mat.proj1_);
-
     bool cache_features = lay.cache_features() && active_styles.size() > 1;
-
-    datasource_ptr ds = lay.datasource();
     std::string group_by = lay.group_by();
 
     // Render incrementally when the column that we group by changes value.
