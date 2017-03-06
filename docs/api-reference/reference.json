@@ -1,5 +1,122 @@
 {
     "version": "3.0.6",
+    "map": {
+        "background-color": {
+            "css": "background-color",
+            "default-value": "none",
+            "default-meaning": "Will be rendered transparent.",
+            "type": "color",
+            "doc": "Map Background color."
+        },
+        "background-image": {
+            "css": "background-image",
+            "type": "uri",
+            "default-value": "",
+            "default-meaning": "No background image will be used.",
+            "doc": "An image that is repeated below all features on a map as a background. Accepted formats: svg, jpg, png, tiff, and webp."
+        },
+        "background-image-comp-op": {
+            "css": "background-image-comp-op",
+            "doc": "Set the compositing operation used to blend the image into the background.",
+            "default-value": "src-over",
+            "default-meaning": "The background-image will be blended with the background normally (placed on top of any existing background-color).",
+            "type": [
+                "clear",
+                "src",
+                "dst",
+                "src-over",
+                "dst-over",
+                "src-in",
+                "dst-in",
+                "src-out",
+                "dst-out",
+                "src-atop",
+                "dst-atop",
+                "xor",
+                "plus",
+                "minus",
+                "multiply",
+                "divide",
+                "screen",
+                "overlay",
+                "darken",
+                "lighten",
+                "color-dodge",
+                "color-burn",
+                "linear-dodge",
+                "linear-burn",
+                "hard-light",
+                "soft-light",
+                "difference",
+                "exclusion",
+                "contrast",
+                "invert",
+                "invert-rgb",
+                "grain-merge",
+                "grain-extract",
+                "hue",
+                "saturation",
+                "color",
+                "value"
+            ]
+        },
+        "background-image-opacity": {
+            "css": "background-image-opacity",
+            "type": "float",
+            "doc": "Set the opacity of the image.",
+            "default-value": 1.0,
+            "default-meaning": "The image opacity will not be changed when applied to the map background."
+        },
+        "srs": {
+            "css": "srs",
+            "type": "string",
+            "default-value": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+            "default-meaning": "The proj4 literal of EPSG:4326 is assumed to be the Map's spatial reference and all data from layers within this map will be plotted using this coordinate system. If any layers do not declare an srs value then they will be assumed to be in the same srs as the Map and not transformations will be needed to plot them in the Map's coordinate space.",
+            "doc": "Map spatial reference (proj4 string)."
+        },
+        "buffer-size": {
+            "css": "buffer-size",
+            "default-value": 0,
+            "type":"float",
+            "default-meaning": "No buffer will be used.",
+            "doc": "Extra tolerance around the map (in pixels) used to ensure labels crossing tile boundaries are equally rendered in each tile (e.g. cut in each tile). Not intended to be used in combination with \"avoid-edges\"."
+        },
+        "maximum-extent": {
+            "css": "maximum-extent",
+            "default-value": "-20037508.34,-20037508.34,20037508.34,20037508.34",
+            "type":"string",
+            "default-meaning": "All data will be clipped to global mercator extent (default is applied in Carto.js).",
+            "doc": "An extent to be used to limit the bounds used to query all layers during rendering. Should be minx, miny, maxx, maxy in the coordinates of the Map."
+        },
+        "base": {
+            "css": "base",
+            "default-value": "",
+            "default-meaning": "This base path defaults to an empty string meaning that any relative paths to files referenced in styles or layers will be interpreted relative to the application process.",
+            "type": "string",
+            "doc": "Any relative paths used to reference files will be understood as relative to this directory path if the map is loaded from an in memory object rather than from the filesystem. If the map is loaded from the filesystem and this option is not provided it will be set to the directory of the stylesheet."
+        },
+        "paths-from-xml": {
+            "css": "",
+            "default-value": true,
+            "default-meaning": "Paths read from XML will be interpreted from the location of the XML.",
+            "type": "boolean",
+            "doc": "Value to control whether paths in the XML will be interpreted from the location of the XML or from the working directory of the program that calls load_map()."
+        },
+        "minimum-version": {
+            "css": "",
+            "default-value": "none",
+            "default-meaning": "Mapnik version will not be detected and no error will be thrown about compatibility.",
+            "type": "string",
+            "doc": "The minumum Mapnik version (e.g. 0.7.2) needed to use certain functionality in the stylesheet."
+        },
+        "font-directory": {
+            "css": "font-directory",
+            "type": "uri",
+            "default-value": "none",
+            "default-meaning": "No map-specific fonts will be registered.",
+            "doc": "Path to a directory which holds fonts which should be registered when the Map is loaded (in addition to any fonts that may be automatically registered)."
+        }
+    },
     "style": {
         "filter-mode": {
             "type": [
@@ -293,123 +410,6 @@
                 "doc": "An alpha value for the style (which means an alpha applied to all features in separate buffer and then composited back to main buffer).",
                 "default-value": 1.0,
                 "default-meaning": "No separate buffer will be used and no alpha will be applied to the style after rendering."
-            }
-        },
-        "map": {
-            "background-color": {
-                "css": "background-color",
-                "default-value": "none",
-                "default-meaning": "Will be rendered transparent.",
-                "type": "color",
-                "doc": "Map Background color."
-            },
-            "background-image": {
-                "css": "background-image",
-                "type": "uri",
-                "default-value": "",
-                "default-meaning": "No background image will be used.",
-                "doc": "An image that is repeated below all features on a map as a background. Accepted formats: svg, jpg, png, tiff, and webp."
-            },
-            "background-image-comp-op": {
-                "css": "background-image-comp-op",
-                "doc": "Set the compositing operation used to blend the image into the background.",
-                "default-value": "src-over",
-                "default-meaning": "The background-image will be blended with the background normally (placed on top of any existing background-color).",
-                "type": [
-                    "clear",
-                    "src",
-                    "dst",
-                    "src-over",
-                    "dst-over",
-                    "src-in",
-                    "dst-in",
-                    "src-out",
-                    "dst-out",
-                    "src-atop",
-                    "dst-atop",
-                    "xor",
-                    "plus",
-                    "minus",
-                    "multiply",
-                    "divide",
-                    "screen",
-                    "overlay",
-                    "darken",
-                    "lighten",
-                    "color-dodge",
-                    "color-burn",
-                    "linear-dodge",
-                    "linear-burn",
-                    "hard-light",
-                    "soft-light",
-                    "difference",
-                    "exclusion",
-                    "contrast",
-                    "invert",
-                    "invert-rgb",
-                    "grain-merge",
-                    "grain-extract",
-                    "hue",
-                    "saturation",
-                    "color",
-                    "value"
-                ]
-            },
-            "background-image-opacity": {
-                "css": "background-image-opacity",
-                "type": "float",
-                "doc": "Set the opacity of the image.",
-                "default-value": 1.0,
-                "default-meaning": "The image opacity will not be changed when applied to the map background."
-            },
-            "srs": {
-                "css": "srs",
-                "type": "string",
-                "default-value": "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
-                "default-meaning": "The proj4 literal of EPSG:4326 is assumed to be the Map's spatial reference and all data from layers within this map will be plotted using this coordinate system. If any layers do not declare an srs value then they will be assumed to be in the same srs as the Map and not transformations will be needed to plot them in the Map's coordinate space.",
-                "doc": "Map spatial reference (proj4 string)."
-            },
-            "buffer-size": {
-                "css": "buffer-size",
-                "default-value": 0,
-                "type":"float",
-                "default-meaning": "No buffer will be used.",
-                "doc": "Extra tolerance around the map (in pixels) used to ensure labels crossing tile boundaries are equally rendered in each tile (e.g. cut in each tile). Not intended to be used in combination with \"avoid-edges\"."
-            },
-            "maximum-extent": {
-                "css": "maximum-extent",
-                "default-value": "-20037508.34,-20037508.34,20037508.34,20037508.34",
-                "type":"string",
-                "default-meaning": "All data will be clipped to global mercator extent (default is applied in Carto.js).",
-                "doc": "An extent to be used to limit the bounds used to query all layers during rendering. Should be minx, miny, maxx, maxy in the coordinates of the Map."
-            },
-            "base": {
-                "css": "base",
-                "default-value": "",
-                "default-meaning": "This base path defaults to an empty string meaning that any relative paths to files referenced in styles or layers will be interpreted relative to the application process.",
-                "type": "string",
-                "doc": "Any relative paths used to reference files will be understood as relative to this directory path if the map is loaded from an in memory object rather than from the filesystem. If the map is loaded from the filesystem and this option is not provided it will be set to the directory of the stylesheet."
-            },
-            "paths-from-xml": {
-                "css": "",
-                "default-value": true,
-                "default-meaning": "Paths read from XML will be interpreted from the location of the XML.",
-                "type": "boolean",
-                "doc": "Value to control whether paths in the XML will be interpreted from the location of the XML or from the working directory of the program that calls load_map()."
-            },
-            "minimum-version": {
-                "css": "",
-                "default-value": "none",
-                "default-meaning": "Mapnik version will not be detected and no error will be thrown about compatibility.",
-                "type": "string",
-                "doc": "The minumum Mapnik version (e.g. 0.7.2) needed to use certain functionality in the stylesheet."
-            },
-            "font-directory": {
-                "css": "font-directory",
-                "type": "uri",
-                "default-value": "none",
-                "default-meaning": "No map-specific fonts will be registered.",
-                "doc": "Path to a directory which holds fonts which should be registered when the Map is loaded (in addition to any fonts that may be automatically registered)."
             }
         },
         "polygon": {
