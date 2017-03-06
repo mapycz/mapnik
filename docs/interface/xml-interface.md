@@ -8,6 +8,10 @@ Comments can be placed in the configuration file using the default xml `<!-- -->
 
 ## Structure
 
+The basic Mapnik object is the `Map`. Mapnik users typically deal with map Layers, Filters, Rules, and Symbolizers. Whereas Filters and Rules serve as predicates that determine _when_ geometric features are displayed, Mapnik Symbolizers take input data and turn them into graphical form, whether as Points, Lines, Polygons, Raster Images, or Textual Labels.
+
+A mapnik Map object may have multiple Layers, where each Layer should have a reference to a Datasource. A typical Datasource (for example, a Shapefile Datasource, an in-memory Datasource, or a Raster Datasource) has multiple features.
+
 ### `Map`
 The Map object defines the master object of a mapnik configuration XML. It defines map wide parameters and serves as the envelope for Style and Layer definitions.
 
