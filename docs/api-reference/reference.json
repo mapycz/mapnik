@@ -2689,6 +2689,104 @@
                     "value"
                 ]
             }
+        },
+        "collision": {
+            "width": {
+                "default-value": 1.0,
+                "doc": "The width of the collision box in pixels.",
+                "type": "float",
+                "expression": true,
+                "default-meaning": "The collision box width is 1 pixel."
+            },
+            "height": {
+                "default-value": 1.0,
+                "doc": "The height of the collision box in pixels.",
+                "type": "float",
+                "expression": true,
+                "default-meaning": "The collision box height is 1 pixels."
+            },
+            "spacing": {
+                "doc": "Space between repeated collision boxes on line in pixels. If the spacing is less than the collision box size or larger than the line length then no collision box will be placed. Any value less than 1 will be ignored and the default will be used instead.",
+                "default-value": 100.0,
+                "type": "float",
+                "expression": true,
+                "default-meaning": "In the case of placement=line then places a collision box every 100 pixels along a line."
+            },
+            "grid-cell-width": {
+                "doc": "Horizontal spacing between grid placements.",
+                "default-value": 10.0,
+                "type": "float",
+                "expression": true
+            },
+            "grid-cell-height": {
+                "doc": "Vertical spacing between grid placements.",
+                "default-value": 10.0,
+                "type": "float",
+                "expression": true
+            },
+            "placement": {
+                "type": [
+                    "point",
+                    "centroid",
+                    "interior",
+                    "line",
+                    "vertex",
+                    "vertex-first",
+                    "vertex-last",
+                    "grid",
+                    "alternating-grid"
+                ],
+                "expression": true,
+                "default-value": "point",
+                "default-meaning": "Place collision box at the center point (centroid) of the geometry.",
+                "doc": "Attempt to place collision ob on a point, in the center of a polygon, or if placement=line, then multiple times along a line. `interior` placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The `vertex-first` and `vertex-last` options can be used to place collision box at the first or last vertex of lines or polygons."
+            },
+            "multi-policy": {
+                "type": [
+                    "each",
+                    "whole",
+                    "largest"
+                ],
+                "expression": true,
+                "default-value": "each",
+                "default-meaning": "If a feature contains multiple geometries all of them will get a placement.",
+                "doc": "A special setting to allow the user to control rendering behavior for 'multi-geometries' (when a feature contains multiple geometries). The 'each' policy is default and means all geometries will get a placement. The 'whole' policy means that the aggregate position between all geometries will be used. The 'largest' policy means that only the largest (by bounding box areas) feature will get a placement."
+            },
+            "clip": {
+                "type": "boolean",
+                "expression": true,
+                "default-value": false,
+                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
+                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+            },
+            "offset": {
+                "type": "float",
+                "expression": true,
+                "default-value": 0.0,
+                "default-meaning": "Will not be offset.",
+                "doc": "Offsets a position from a line a number of pixels parallel to its actual path. Positive values move the position left, negative values move it right (relative to the directionality of the line)."
+            },
+            "allow-overlap": {
+                "type": "boolean",
+                "expression": true,
+                "default-value": false,
+                "doc": "Control whether overlapping placement is used.",
+                "default-meaning": "Do not allow placement to overlap with each other - overlapping placement will be discarded."
+            },
+            "collision-cache-insert": {
+                "type": "string",
+                "expression": true,
+                "default-value": "default",
+                "doc": "A comma-separated list of names of collision detectors used for storing collision boxes.",
+                "default-meaning": "Collision boxes will be placed only to the collision detector called `default`."
+            },
+            "collision-cache-detect": {
+                "type": "string",
+                "expression": true,
+                "default-value": "default",
+                "doc": "A comma-separated list of names of collision detectors used to collision detection.",
+                "default-meaning": "Collisions will be detected against collision detector called `default`."
+            }
         }
     },
     "colors": {
