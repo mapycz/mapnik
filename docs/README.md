@@ -38,6 +38,7 @@
 - [Faster label rendering](mapping/faster-labeling.md)
 - [Grouped rendering](mapping/grouped-rendering.md)
 - [Image input/output](mapping/image-io.md)
+- [Renderers](mapping/renderers.md)
 
 ## Development
 
