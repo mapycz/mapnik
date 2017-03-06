@@ -7,7 +7,7 @@ Mapnik is a free toolkit for developing mapping applications. It is written in m
 
 ## Bindings and interfaces
 
-- [XML](interface/xml-interface.md)
+- [XML](../interface/xml-interface.md)
 - Python - [github.com/mapnik/python-mapnik](https://github.com/mapnik/python-mapnik)
 - Node.js - [github.com/mapnik/node-mapnik](https://github.com/mapnik/node-mapnik)
 - Ruby - [github.com/mapnik/Ruby-Mapnik](https://github.com/mapnik/Ruby-Mapnik)
