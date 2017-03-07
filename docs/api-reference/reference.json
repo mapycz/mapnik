@@ -44,6 +44,13 @@
                 "color",
                 "value"
             ]
+        },
+        "opacity": {
+            "type": "float",
+            "expression": true,
+            "doc": "A value from 0 (fully transparent) to 1 (fully opaque) to control the opacity during compositing.",
+            "default-value": 1.0,
+            "default-meaning": "The current compositing layer will be fully opaque."
         }
     },
     "map": {
@@ -66,10 +73,7 @@
             "see-also": "comp-op"
         },
         "background-image-opacity": {
-            "type": "float",
-            "doc": "Set the opacity of the image.",
-            "default-value": 1.0,
-            "default-meaning": "The image opacity will not be changed when applied to the map background."
+            "see-also": "opacity"
         },
         "srs": {
             "type": "string",
@@ -182,10 +186,7 @@
             "see-also": "comp-op"
         },
         "opacity": {
-            "type": "float",
-            "doc": "An alpha value for the style (which means an alpha applied to all features in separate buffer and then composited back to main buffer).",
-            "default-value": 1.0,
-            "default-meaning": "No separate buffer will be used and no alpha will be applied to the style after rendering."
+            "see-also": "opacity"
         },
         "image-filters": {
             "default-value": "none",
@@ -303,17 +304,15 @@
             "type":"bbox",
             "default-meaning": "No clipping extent will be used",
             "doc": "An extent to be used to limit the bounds used to query this specific layer data during rendering. Should be minx, miny, maxx, maxy in the coordinates of the Layer."
+        },
+        "comp-op": {
+            "see-also": "comp-op"
+        },
+        "opacity": {
+            "see-also": "opacity"
         }
     },
     "symbolizers" : {
-        "*": {
-            "opacity": {
-                "type": "float",
-                "doc": "An alpha value for the style (which means an alpha applied to all features in separate buffer and then composited back to main buffer).",
-                "default-value": 1.0,
-                "default-meaning": "No separate buffer will be used and no alpha will be applied to the style after rendering."
-            }
-        },
         "polygon": {
             "fill": {
                 "type": "color",
@@ -323,11 +322,8 @@
                 "doc": "Fill color to assign to a polygon."
             },
             "fill-opacity": {
-                "type": "float",
-                "expression":true,
                 "doc": "The opacity of the polygon.",
-                "default-value": 1.0,
-                "default-meaning": "Color is fully opaque."
+                "see-also": "opacity"
             },
             "gamma": {
                 "type": "float",
@@ -398,6 +394,9 @@
             },
             "comp-op": {
                 "see-also": "comp-op"
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "line": {
@@ -416,11 +415,8 @@
                 "default-meaning": "The line will be rendered 1 pixel wide."
             },
             "stroke-opacity": {
-                "default-value": 1.0,
-                "type": "float",
-                "expression":true,
-                "default-meaning": "Color is fully opaque.",
-                "doc": "The opacity of a line."
+                "doc": "The opacity of a line.",
+                "see-also": "opacity"
             },
             "stroke-linejoin": {
                 "default-value": "miter",
@@ -553,6 +549,9 @@
             },
             "comp-op": {
                 "see-also": "comp-op"
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "markers": {
@@ -563,19 +562,9 @@
                 "type": "uri",
                 "expression":true
             },
-            "opacity": {
-                "doc": "The overall opacity of the marker, if set, overrides both the opacity of the fill and the opacity of the stroke.",
-                "default-value": 1.0,
-                "default-meaning": "The stroke-opacity and fill-opacity of the marker.",
-                "type": "float",
-                "expression":true
-            },
             "fill-opacity": {
                 "doc": "The fill opacity of the marker. This property will also set the `fill-opacity` of elements in an SVG loaded from a file.",
-                "default-value": 1.0,
-                "expression":true,
-                "default-meaning": "Color is fully opaque.",
-                "type": "float"
+                "see-also": "opacity"
             },
             "stroke": {
                 "doc": "The color of the stroke around the marker. This property will also set the `stroke` of elements in an SVG loaded from a file.",
@@ -592,11 +581,8 @@
                 "default-meaning": "The marker will be drawn with an outline of .5 pixels wide."
             },
             "stroke-opacity": {
-                "default-value": 1.0,
                 "default-meaning": "Color is fully opaque. This property will also set the `stroke-opacity` of elements in an SVG loaded from a file.",
-                "doc": "The opacity of a line.",
-                "type": "float",
-                "expression":true
+                "see-also": "opacity"
             },
             "placement": {
                 "type": [
@@ -775,6 +761,9 @@
                 "expression": true,
                 "default-meaning": "Markers are oriented to the right in the line direction.",
                 "doc": "How markers should be placed along lines. With the \"auto\" setting when marker is upside down the marker is automatically rotated by 180 degrees to keep it upright. The \"auto-down\" value places marker in the opposite orientation to \"auto\". The \"left\" or \"right\" settings can be used to force marker to always be placed along a line in a given direction and therefore disables rotating if marker appears upside down. The \"left-only\" or \"right-only\" properties also force a given direction but will discard upside down markers rather than trying to flip it. The \"up\" and \"down\" settings don't adjust marker's orientation to the line direction."
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "shield": {
@@ -956,11 +945,7 @@
                 "see-also": "comp-op"
             },
             "halo-opacity": {
-                "doc": "A number from 0 to 1 specifying the opacity for the text halo.",
-                "default-value": 1.0,
-                "type": "float",
-                "expression":true,
-                "default-meaning": "Fully opaque."
+                "see-also": "opacity"
             },
             "character-spacing": {
                 "type": "unsigned",
@@ -1005,19 +990,12 @@
                 "default-value": 0.0
             },
             "opacity": {
-                "type": "float",
-                "expression":true,
                 "doc": "The opacity of the image used for the shield.",
-                "default-meaning": "Color is fully opaque.",
-                "default-value": 1.0
+                "see-also": "opacity"
             },
             "text-opacity": {
-                "type": "float",
-                "expression":true,
                 "doc": "The opacity of the text placed on top of the shield.",
-                "default-meaning": "Color is fully opaque.",
-                "default-value": 1.0
-
+                "see-also": "opacity"
             },
             "horizontal-alignment": {
                 "type": [
@@ -1152,13 +1130,6 @@
                 "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
                 "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
             },
-            "opacity": {
-                "type": "float",
-                "expression":true,
-                "doc": "Apply an opacity level to the image used for the pattern.",
-                "default-value": 1.0,
-                "default-meaning": "The image is rendered without modifications."
-            },
             "simplify": {
                 "type": "float",
                 "expression":true,
@@ -1221,6 +1192,9 @@
             },
             "comp-op": {
                 "see-also": "comp-op"
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "polygon-pattern": {
@@ -1249,13 +1223,6 @@
                 "default-meaning": "Fully antialiased.",
                 "range": "0-1",
                 "doc": "Level of antialiasing of polygon pattern edges."
-            },
-            "opacity": {
-                "type": "float",
-                "expression":true,
-                "doc": "Apply an opacity level to the image used for the pattern.",
-                "default-value": 1.0,
-                "default-meaning": "The image is rendered without modifications."
             },
             "clip": {
                 "type": "boolean",
@@ -1319,15 +1286,12 @@
             },
             "comp-op": {
                 "see-also": "comp-op"
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "raster": {
-            "opacity": {
-                "default-value": 1.0,
-                "default-meaning": "Color is fully opaque.",
-                "type": "float",
-                "doc": "The opacity of the raster symbolizer on top of other symbolizers."
-            },
             "filter-factor": {
                 "default-value": -1.0,
                 "default-meaning": "Allow the datasource to choose appropriate downscaling.",
@@ -1397,6 +1361,9 @@
                 "doc": "Assigns raster data values to colors. Stops must be listed in ascending order, and contain at a minimum the value and the associated color. You can also include the color-mode as a third argument, like `stop(100,#fff,exact)`.",
                 "default-value": "",
                 "default-meaning": "No colorization will happen without supplying stops."
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "point": {
@@ -1421,13 +1388,6 @@
                 "default-value": false,
                 "default-meaning": "do not store the bbox of this geometry in the collision detector cache.",
                 "doc": "Control whether the placement of the feature will prevent the placement of other features."
-            },
-            "opacity": {
-                "type": "float",
-                "expression":true,
-                "default-value": 1.0,
-                "default-meaning": "Fully opaque.",
-                "doc": "A value from 0 to 1 to control the opacity of the point."
             },
             "placement": {
                 "type": [
@@ -1455,6 +1415,9 @@
             },
             "comp-op": {
                 "see-also": "comp-op"
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "text": {
@@ -1561,20 +1524,8 @@
                 "default-value": "black",
                 "default-meaning": "The text will be rendered black."
             },
-            "opacity": {
-                "doc": "A number from 0 to 1 specifying the opacity for the text.",
-                "default-value": 1.0,
-                "default-meaning": "Fully opaque",
-                "expression":true,
-                "default-meaning": "Fully opaque.",
-                "type": "float"
-            },
             "halo-opacity": {
-                "doc": "A number from 0 to 1 specifying the opacity for the text halo.",
-                "default-value": 1.0,
-                "type": "float",
-                "expression":true,
-                "default-meaning": "Fully opaque."
+                "see-also": "opacity"
             },
             "halo-fill": {
                 "type": "color",
@@ -1837,6 +1788,9 @@
                 "default-meaning": "For multipolygons only polygon with largest bbox area is labeled (does not apply to other geometries).",
                 "doc": "Controls default labeling behavior on multipolygons. The default is true and means that only the polygon with largest bbox is labeled.",
                 "status": "experimental"
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "building": {
@@ -1848,11 +1802,8 @@
                 "doc": "The color of the buildings fill. Note: 0.8 will be used to multiply each color component to auto-generate a darkened wall color."
             },
             "fill-opacity": {
-                "type": "float",
-                "expression":true,
                 "doc": "The opacity of the building as a whole, including all walls.",
-                "default-value": 1.0,
-                "default-meaning": "Color is fully opaque."
+                "see-also": "opacity"
             },
             "height": {
                 "doc": "The height of the building in pixels.",
@@ -1882,13 +1833,6 @@
                 "expression":true,
                 "default-meaning": "The dot fill color is gray."
             },
-            "opacity": {
-                "doc": "The overall opacity of the dot.",
-                "default-value": 1.0,
-                "default-meaning": "The opacity of the dot.",
-                "type": "float",
-                "expression":true
-            },
             "width": {
                 "default-value": 1.0,
                 "doc": "The width of the dot in pixels.",
@@ -1905,6 +1849,9 @@
             },
             "comp-op": {
                 "see-also": "comp-op"
+            },
+            "opacity": {
+                "see-also": "opacity"
             }
         },
         "collision": {
