@@ -51,6 +51,20 @@
             "doc": "A value from 0 (fully transparent) to 1 (fully opaque) to control the opacity during compositing.",
             "default-value": 1.0,
             "default-meaning": "The current compositing layer will be fully opaque."
+        },
+        "collision-cache-insert": {
+            "type": "string",
+            "expression": true,
+            "default-value": "default",
+            "doc": "A comma-separated list of names of collision detectors used for storing collision boxes.",
+            "default-meaning": "Collision boxes will be placed only to the collision detector called `default`."
+        },
+        "collision-cache-detect": {
+            "type": "string",
+            "expression": true,
+            "default-value": "default",
+            "doc": "A comma-separated list of names of collision detectors used for collision detection.",
+            "default-meaning": "Collisions will be detected against collision detector called `default`."
         }
     },
     "map": {
@@ -710,6 +724,12 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "collision-cache-insert": {
+                "see-also": "collision-cache-insert"
+            },
+            "collision-cache-detect": {
+                "see-also": "collision-cache-detect"
             }
         },
         "shield": {
@@ -1057,6 +1077,12 @@
             },
             "comp-op": {
                 "see-also": "comp-op"
+            },
+            "collision-cache-insert": {
+                "see-also": "collision-cache-insert"
+            },
+            "collision-cache-detect": {
+                "see-also": "collision-cache-detect"
             }
         },
         "line-pattern": {
@@ -1363,6 +1389,12 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "collision-cache-insert": {
+                "see-also": "collision-cache-insert"
+            },
+            "collision-cache-detect": {
+                "see-also": "collision-cache-detect"
             }
         },
         "text": {
@@ -1736,6 +1768,12 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "collision-cache-insert": {
+                "see-also": "collision-cache-insert"
+            },
+            "collision-cache-detect": {
+                "see-also": "collision-cache-detect"
             }
         },
         "building": {
@@ -1768,6 +1806,13 @@
                 "doc": "The mode for debug rendering.",
                 "expression":true,
                 "default-meaning": "The otherwise invisible collision boxes will be rendered as squares on the map."
+            },
+            "collision-cache": {
+                "type": "string",
+                "expression": true,
+                "default-value": "",
+                "doc": "A comma separated list of collision detectors to visualize.",
+                "default-meaning": "All objects of all collision detectors are visualized."
             }
         },
         "dot": {
@@ -1883,18 +1928,10 @@
                 "default-meaning": "Do not allow placement to overlap with each other - overlapping placement will be discarded."
             },
             "collision-cache-insert": {
-                "type": "string",
-                "expression": true,
-                "default-value": "default",
-                "doc": "A comma-separated list of names of collision detectors used for storing collision boxes.",
-                "default-meaning": "Collision boxes will be placed only to the collision detector called `default`."
+                "see-also": "collision-cache-insert"
             },
             "collision-cache-detect": {
-                "type": "string",
-                "expression": true,
-                "default-value": "default",
-                "doc": "A comma-separated list of names of collision detectors used to collision detection.",
-                "default-meaning": "Collisions will be detected against collision detector called `default`."
+                "see-also": "collision-cache-detect"
             }
         }
     },
