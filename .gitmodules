@@ -1,12 +1,12 @@
 [submodule "debian"]
 	path = debian
-	url = git@github.com:mapycz/mapnik-debian.git
+	url = https://github.com/mapycz/mapnik-debian.git
 [submodule "test/data"]
 	path = test/data
-	url = git@github.com:mapycz/test-data.git
+	url = https://github.com/mapycz/test-data.git
 [submodule "test/data-visual"]
 	path = test/data-visual
-	url = git@github.com:mapycz/test-data-visual.git
+	url = https://github.com/mapycz/test-data-visual.git
 [submodule "deps/mapbox/variant"]
 	path = deps/mapbox/variant
-	url = git@github.com:mapbox/variant.git
+	url = https://github.com/mapbox/variant.git
