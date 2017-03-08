@@ -83,6 +83,16 @@
             "default-value": "point",
             "default-meaning": "Make placement at the center point (centroid) of the geometry.",
             "doc": "Attempt to make a placement on a point, in the center of a polygon, or if placement=line, then multiple times along a line. `interior` placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The `vertex-first` and `vertex-last` options can be used to make a placement at the first or last vertex of lines or polygons. `grid` allows placing repeated labels on area of a polygon, where all possible placements create grid of points. Only placements within given polygon are rendered. `alternating-grid` creates pattern similar to bricks in a wall."
+        },
+        "grid-cell-width": {
+            "doc": "Horizontal spacing between grid placements.",
+            "default-value": 10.0,
+            "type": "float"
+        },
+        "grid-cell-height": {
+            "doc": "Vertical spacing between grid placements.",
+            "default-value": 10.0,
+            "type": "float"
         }
     },
     "map": {
@@ -535,6 +545,12 @@
             "placement": {
                 "see-also": "placement"
             },
+            "grid-cell-width": {
+                "see-also": "grid-cell-width"
+            },
+            "grid-cell-height": {
+                "see-also": "grid-cell-height"
+            },
             "multi-policy": {
                 "type": [
                     "each",
@@ -733,6 +749,12 @@
             },
             "placement": {
                 "see-also": "placement"
+            },
+            "grid-cell-width": {
+                "see-also": "grid-cell-width"
+            },
+            "grid-cell-height": {
+                "see-also": "grid-cell-height"
             },
             "avoid-edges": {
                 "doc": "Avoid placing shields that intersect with tile boundaries.",
@@ -1251,6 +1273,12 @@
             "placement": {
                 "see-also": "placement"
             },
+            "grid-cell-width": {
+                "see-also": "grid-cell-width"
+            },
+            "grid-cell-height": {
+                "see-also": "grid-cell-height"
+            },
             "transform": {
                 "type": "functions",
                 "functions": [
@@ -1500,6 +1528,12 @@
             "placement": {
                 "see-also": "placement"
             },
+            "grid-cell-width": {
+                "see-also": "grid-cell-width"
+            },
+            "grid-cell-height": {
+                "see-also": "grid-cell-height"
+            },
             "placement-type": {
                 "doc": "Re-position and/or re-size text to avoid overlaps. \"simple\" for basic algorithm (using text-placements string,) \"dummy\" to turn this feature off.",
                 "type": [
@@ -1686,14 +1720,10 @@
                 "default-meaning": "In the case of placement=line then places a collision box every 100 pixels along a line."
             },
             "grid-cell-width": {
-                "doc": "Horizontal spacing between grid placements.",
-                "default-value": 10.0,
-                "type": "float"
+                "see-also": "grid-cell-width"
             },
             "grid-cell-height": {
-                "doc": "Vertical spacing between grid placements.",
-                "default-value": 10.0,
-                "type": "float"
+                "see-also": "grid-cell-height"
             },
             "placement": {
                 "see-also": "placement"
