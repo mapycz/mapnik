@@ -16,6 +16,8 @@ This repository contains a fork of [github.com/mapnik/mapnik](https://github.com
 * [Shadows with building symbolizer](docs/features/building-symbolizer-shadow.md)
 * [XSLT preprocessing](docs/features/xslt-preprocessing.md)
 
+See [mapycz.github.io/mapnik-api-web](https://mapycz.github.io/mapnik-api-web/) for complete API reference.
+
 # Mapnik
 
 Mapnik is an open source toolkit for developing mapping applications. At the core is a C++ shared library providing algorithms and patterns for spatial data access and visualization.
