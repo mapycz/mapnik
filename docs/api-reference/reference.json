@@ -65,6 +65,13 @@
             "default-value": "default",
             "doc": "A comma-separated list of names of collision detectors used for collision detection.",
             "default-meaning": "Collisions will be detected against collision detector called `default`."
+        },
+        "clip": {
+            "type": "boolean",
+            "expression": true,
+            "default-value": false,
+            "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
+            "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
         }
     },
     "map": {
@@ -307,11 +314,7 @@
                 "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
             },
             "clip": {
-                "type": "boolean",
-                "expression":true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extend outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "simplify": {
                 "type": "float",
@@ -444,11 +447,7 @@
                 "default-meaning": "Will auto-convert miters to bevel line joins when theta is less than 29 degrees as per the SVG spec: 'miterLength / stroke-width = 1 / sin ( theta / 2 )'."
             },
             "clip": {
-                "type": "boolean",
-                "expression":true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "simplify": {
                 "type": "float",
@@ -651,11 +650,7 @@
                 "doc": "Transform marker instance with specified function. Ignores map scale factor."
             },
             "clip": {
-                "type": "boolean",
-                "expression":true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "simplify": {
                 "type": "float",
@@ -1045,11 +1040,7 @@
                 "doc": "Transform shield instance with specified function. Ignores map scale factor."
             },
             "clip": {
-                "type": "boolean",
-                "expression":true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "simplify": {
                 "type": "float",
@@ -1096,11 +1087,7 @@
                 "default-meaning": ""
             },
             "clip": {
-                "type": "boolean",
-                "expression":true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "simplify": {
                 "type": "float",
@@ -1197,11 +1184,7 @@
                 "doc": "Level of antialiasing of polygon pattern edges."
             },
             "clip": {
-                "type": "boolean",
-                "expression":true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "simplify": {
                 "type": "float",
@@ -1716,11 +1699,7 @@
                 "default-meaning": "Auto alignment means that text will be centered by default except when using the `placement-type` parameter - in that case either right or left justification will be used automatically depending on where the text could be fit given the `text-placements` directives."
             },
             "clip": {
-                "type": "boolean",
-                "expression":true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "simplify": {
                 "type": "float",
@@ -1908,11 +1887,7 @@
                 "doc": "A special setting to allow the user to control rendering behavior for 'multi-geometries' (when a feature contains multiple geometries). The 'each' policy is default and means all geometries will get a placement. The 'whole' policy means that the aggregate position between all geometries will be used. The 'largest' policy means that only the largest (by bounding box areas) feature will get a placement."
             },
             "clip": {
-                "type": "boolean",
-                "expression": true,
-                "default-value": false,
-                "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-                "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+                "see-also": "clip"
             },
             "offset": {
                 "type": "float",
