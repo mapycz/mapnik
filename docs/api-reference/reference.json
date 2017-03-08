@@ -100,6 +100,12 @@
             "default-value": "none",
             "default-meaning": "Feature has no key and cannot be referenced.",
             "status": "experimental"
+        },
+        "extend": {
+            "type": "float",
+            "default-value": 0,
+            "default-meaning": "Geometry is unchanged.",
+            "doc": "Allows to extend line geometry. Beginning and ending segments of the line are extended by given number of pixels."
         }
     },
     "map": {
@@ -709,6 +715,9 @@
                 "default-meaning": "Markers are oriented to the right in the line direction.",
                 "doc": "How markers should be placed along lines. With the \"auto\" setting when marker is upside down the marker is automatically rotated by 180 degrees to keep it upright. The \"auto-down\" value places marker in the opposite orientation to \"auto\". The \"left\" or \"right\" settings can be used to force marker to always be placed along a line in a given direction and therefore disables rotating if marker appears upside down. The \"left-only\" or \"right-only\" properties also force a given direction but will discard upside down markers rather than trying to flip it. The \"up\" and \"down\" settings don't adjust marker's orientation to the line direction."
             },
+            "extend": {
+                "see-also": "extend"
+            },
             "opacity": {
                 "see-also": "opacity"
             },
@@ -1012,6 +1021,9 @@
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
                 "doc": "Smooths out the angles of the geometry used for shield placement. 0 is no smoothing, 1 is fully smoothed. Values greater than 1 will produce wild, looping geometries."
+            },
+            "extend": {
+                "see-also": "extend"
             },
             "comp-op": {
                 "see-also": "comp-op"
@@ -1651,6 +1663,12 @@
                 "default-meaning": "For multipolygons only polygon with largest bbox area is labeled (does not apply to other geometries).",
                 "doc": "Controls default labeling behavior on multipolygons. The default is true and means that only the polygon with largest bbox is labeled.",
                 "status": "experimental"
+            },
+            "extend": {
+                "type": "float",
+                "default-value": 0,
+                "default-meaning": "Geometry is unchanged.",
+                "doc": "Allows to render text along a line when length of the text exceeds length of the line. Beginning and ending segments of the underlaying line are extended by given number of pixels."
             },
             "opacity": {
                 "see-also": "opacity"
