@@ -397,7 +397,7 @@
             "stroke": {
                 "default-value": "black",
                 "type": "color",
-                "default-meaning": "black and fully opaque (alpha = 1), same as rgb(0,0,0) or rgba(0,0,0,1).",
+                "default-meaning": "black and fully opaque (alpha = 1), same as `rgb(0, 0, 0)` or `rgba(0, 0, 0, 1)`.",
                 "doc": "The color of a drawn line."
             },
             "stroke-width": {
@@ -557,8 +557,9 @@
                 "default-meaning": "The marker will be drawn with an outline of .5 pixels wide."
             },
             "stroke-opacity": {
-                "default-meaning": "Color is fully opaque. This property will also set the `stroke-opacity` of elements in an SVG loaded from a file.",
+                "default-meaning": "Color is fully opaque.",
                 "default-value": 1.0,
+                "doc": "The opacity of stroke around the marker. This property will also set the `stroke-opacity` of elements in an SVG loaded from a file.",
                 "see-also": "opacity"
             },
             "placement": {
@@ -1046,6 +1047,37 @@
                 "doc": "An image file to be repeated and warped along a line. Accepted formats: svg, jpg, png, tiff, and webp.",
                 "default-meaning": ""
             },
+            "stroke": {
+                "doc": "This property will set the `stroke` of elements in an SVG loaded from a file.",
+                "default-value": "none",
+                "type": "color",
+                "default-meaning": "No custom `stroke-color` used."
+            },
+            "stroke-width": {
+                "default-value": "none",
+                "default-meaning": "No custom `stroke-width` used.",
+                "doc": "This property will set the `stroke-width` of elements in an SVG loaded from a file.",
+                "type": "float"
+            },
+            "stroke-opacity": {
+                "default-value": "none",
+                "default-meaning": "No custom `stroke-opacity` used.",
+                "doc": "This property will set the `stroke-opacity` of elements in an SVG loaded from a file.",
+                "type": "float",
+                "see-also": "opacity"
+            },
+            "fill": {
+                "default-value": "none",
+                "doc": "This property will set the `fill` of elements in an SVG loaded from a file.",
+                "type": "color",
+                "default-meaning": "No custom `fill` used."
+            },
+            "fill-opacity": {
+                "doc": "This property will set the `fill-opacity` of elements in an SVG loaded from a file.",
+                "default-value": "none",
+                "default-meaning": "No custom `fill-opacity` used.",
+                "type": "float"
+            },
             "clip": {
                 "see-also": "clip"
             },
@@ -1122,6 +1154,21 @@
                 "required": true,
                 "doc": "Image to use as a repeated pattern fill within a polygon. Accepted formats: svg, jpg, png, tiff, and webp.",
                 "default-meaning": ""
+            },
+            "stroke": {
+                "see-also": "line-pattern/stroke"
+            },
+            "stroke-width": {
+                "see-also": "line-pattern/stroke-width"
+            },
+            "stroke-opacity": {
+                "see-also": "line-pattern/stroke-opacity"
+            },
+            "fill": {
+                "see-also": "line-pattern/fill"
+            },
+            "fill-opacity": {
+                "see-also": "line-pattern/fill-opacity"
             },
             "alignment": {
                 "type": [
