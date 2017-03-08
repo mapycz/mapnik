@@ -946,20 +946,10 @@
                 "default-value": "middle"
             },
             "placement-type": {
-                "doc": "Re-position and/or re-size shield to avoid overlaps. \"simple\" for basic algorithm (using shield-placements string,) \"dummy\" to turn this feature off.",
-                "type": [
-                    "dummy",
-                    "simple",
-                    "list"
-                ],
-                "default-meaning": "Alternative placements will not be enabled.",
-                "default-value": "dummy"
+                "see-also": "text/placement-type"
             },
             "placements": {
-                "type": "string",
-                "default-value": "",
-                "default-meaning": "No alternative placements will be used.",
-                "doc": "If \"placement-type\" is set to \"simple\", use this \"POSITIONS,[SIZES]\" string. An example is `shield-placements: \"E,NE,SE,W,NW,SW\";`."
+                "see-also": "text/placements"
             },
             "text-transform": {
                 "type": [
@@ -1566,11 +1556,13 @@
                 "see-also": "grid-cell-height"
             },
             "placement-type": {
-                "doc": "Re-position and/or re-size text to avoid overlaps. \"simple\" for basic algorithm (using text-placements string,) \"dummy\" to turn this feature off.",
+                "doc": "Re-position and/or re-size label to avoid overlaps. `simple` for basic algorithm (using `placements` string). `list` can try more alternative layouts. `combined` combines `simple` and `list`. `angle` can place text under given angle with tolerance. `dummy` to turn this feature off.",
                 "type": [
                     "dummy",
                     "simple",
-                    "list"
+                    "list",
+                    "combined",
+                    "angle"
                 ],
                 "default-meaning": "Alternative placements will not be enabled.",
                 "default-value": "dummy"
@@ -1579,7 +1571,7 @@
                 "type": "string",
                 "default-meaning": "No alternative placements will be used.",
                 "default-value": "",
-                "doc": "If \"placement-type\" is set to \"simple\", use this \"POSITIONS,[SIZES]\" string. An example is `text-placements: \"E,NE,SE,W,NW,SW\";`."
+                "doc": "If `placement-type` is set to `simple`, use this `\"POSITIONS,[SIZES]\"` string. An example is `\"E,NE,SE,W,NW,SW\"`."
             },
             "text-transform": {
                 "type": [
