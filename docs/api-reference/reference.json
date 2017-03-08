@@ -4,7 +4,6 @@
             "default-value": "src-over",
             "default-meaning": "Add the current compositing layer on top of other compositing layers.",
             "doc": "Composite operation. This defines how this compositing layer should behave relative to compositing layers atop or below it.",
-            "expression": true,
             "type": [
                 "clear",
                 "src",
@@ -47,28 +46,24 @@
         },
         "opacity": {
             "type": "float",
-            "expression": true,
             "doc": "A value from 0 (fully transparent) to 1 (fully opaque) to control the opacity during compositing.",
             "default-value": 1.0,
             "default-meaning": "The current compositing layer will be fully opaque."
         },
         "collision-cache-insert": {
             "type": "string",
-            "expression": true,
             "default-value": "default",
             "doc": "A comma-separated list of names of collision detectors used for storing collision boxes.",
             "default-meaning": "Collision boxes will be placed only to the collision detector called `default`."
         },
         "collision-cache-detect": {
             "type": "string",
-            "expression": true,
             "default-value": "default",
             "doc": "A comma-separated list of names of collision detectors used for collision detection.",
             "default-meaning": "Collisions will be detected against collision detector called `default`."
         },
         "clip": {
             "type": "boolean",
-            "expression": true,
             "default-value": false,
             "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
             "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
@@ -85,7 +80,6 @@
                 "grid",
                 "alternating-grid"
             ],
-            "expression": true,
             "default-value": "point",
             "default-meaning": "Make placement at the center point (centroid) of the geometry.",
             "doc": "Attempt to make a placement on a point, in the center of a polygon, or if placement=line, then multiple times along a line. `interior` placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The `vertex-first` and `vertex-last` options can be used to make a placement at the first or last vertex of lines or polygons. `grid` allows placing repeated labels on area of a polygon, where all possible placements create grid of points. Only placements within given polygon are rendered. `alternating-grid` creates pattern similar to bricks in a wall."
@@ -300,7 +294,6 @@
         "polygon": {
             "fill": {
                 "type": "color",
-                "expression":true,
                 "default-value": "The color gray will be used for fill.",
                 "default-meaning": "Gray and fully opaque (alpha = 1), same as rgb(128,128,128) or rgba(128,128,128,1).",
                 "doc": "Fill color to assign to a polygon."
@@ -311,7 +304,6 @@
             },
             "gamma": {
                 "type": "float",
-                "expression":true,
                 "default-value": 1.0,
                 "default-meaning": "Fully antialiased.",
                 "range": "0-1",
@@ -325,7 +317,6 @@
                     "threshold",
                     "multiply"
                 ],
-                "expression":true,
                 "default-value": "power",
                 "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
                 "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
@@ -335,7 +326,6 @@
             },
             "simplify": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "geometry will not be simplified.",
                 "doc": "Simplify geometries by the given tolerance."
@@ -345,14 +335,12 @@
                          "zhao-saalfeld",
                          "visvalingam-whyatt"
                         ],
-                "expression":true,
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
                 "doc": "Simplify geometries by the given algorithm."
             },
             "smooth": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
@@ -383,14 +371,12 @@
             "stroke": {
                 "default-value": "black",
                 "type": "color",
-                "expression":true,
                 "default-meaning": "black and fully opaque (alpha = 1), same as rgb(0,0,0) or rgba(0,0,0,1).",
                 "doc": "The color of a drawn line."
             },
             "stroke-width": {
                 "default-value": 1.0,
                 "type": "float",
-                "expression":true,
                 "doc": "The width of a line in pixels.",
                 "default-meaning": "The line will be rendered 1 pixel wide."
             },
@@ -406,7 +392,6 @@
                     "round",
                     "bevel"
                 ],
-                "expression":true,
                 "doc": "The behavior of lines when joining.",
                 "default-meaning": "The line joins will be rendered using a miter look."
             },
@@ -417,13 +402,11 @@
                     "round",
                     "square"
                 ],
-                "expression":true,
                 "doc": "The display of line endings.",
                 "default-meaning": "The line endings will be rendered using a butt look."
             },
             "stroke-gamma": {
                 "type": "float",
-                "expression":true,
                 "default-value": 1.0,
                 "default-meaning": "Fully antialiased.",
                 "range": "0-1",
@@ -437,28 +420,24 @@
                     "threshold",
                     "multiply"
                 ],
-                "expression":true,
                 "default-value": "power",
                 "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
                 "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
             },
             "stroke-dasharray": {
                 "type": "numbers",
-                "expression":true,
                 "doc": "A pair of length values [a,b], where (a) is the dash length and (b) is the gap length respectively. More than two values are supported for more complex patterns.",
                 "default-value": "none",
                 "default-meaning": "The line will be drawn without dashes."
             },
             "stroke-dashoffset": {
                 "type": "numbers",
-                "expression":true,
                 "doc": "Valid parameter but not currently used in renderers (only exists for experimental svg support in Mapnik which is not yet enabled).",
                 "default-value": "none",
                 "default-meaning": "The line will be drawn without dashes."
             },
             "stroke-miterlimit": {
                 "type": "float",
-                "expression":true,
                 "doc": "The limit on the ratio of the miter length to the stroke-width. Used to automatically convert miter joins to bevel joins for sharp angles to avoid the miter extending beyond the thickness of the stroking path. Normally will not need to be set, but a larger value can sometimes help avoid jaggy artifacts.",
                 "default-value": 4.0,
                 "default-meaning": "Will auto-convert miters to bevel line joins when theta is less than 29 degrees as per the SVG spec: 'miterLength / stroke-width = 1 / sin ( theta / 2 )'."
@@ -468,7 +447,6 @@
             },
             "simplify": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "geometry will not be simplified.",
                 "doc": "Simplify geometries by the given tolerance."
@@ -478,14 +456,12 @@
                          "zhao-saalfeld",
                          "visvalingam-whyatt"
                         ],
-                "expression":true,
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
                 "doc": "Simplify geometries by the given algorithm."
             },
             "smooth": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
@@ -493,7 +469,6 @@
             },
             "offset": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Will not be offset.",
                 "doc": "Offsets a line a number of pixels parallel to its actual path. Positive values move the line left, negative values move it right (relative to the directionality of the line).",
@@ -504,7 +479,6 @@
                     "full",
                     "fast"
                 ],
-                "expression":true,
                 "default-value": "full",
                 "doc": "Exposes an alternate AGG rendering method that sacrifices some accuracy for speed.",
                 "default-meaning": "The line will be rendered using the highest quality method rather than the fastest."
@@ -535,8 +509,7 @@
                 "doc": "A file that this marker shows at each placement. If no file is given, the marker will show an ellipse. Accepted formats: svg, jpg, png, tiff, and webp.",
                 "default-value": "none",
                 "default-meaning": "An ellipse or circle, if width equals height.",
-                "type": "uri",
-                "expression":true
+                "type": "uri"
             },
             "fill-opacity": {
                 "doc": "The fill opacity of the marker. This property will also set the `fill-opacity` of elements in an SVG loaded from a file.",
@@ -546,14 +519,12 @@
                 "doc": "The color of the stroke around the marker. This property will also set the `stroke` of elements in an SVG loaded from a file.",
                 "default-value": "black",
                 "type": "color",
-                "expression":true,
                 "default-meaning": "The marker will be drawn with a black outline."
             },
             "stroke-width": {
                 "default-value": 0.5,
                 "doc": "The width of the stroke around the marker, in pixels. This is positioned on the boundary, so high values can cover the area itself. This property will also set the `stroke-width` of elements in an SVG loaded from a file.",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "The marker will be drawn with an outline of .5 pixels wide."
             },
             "stroke-opacity": {
@@ -570,7 +541,6 @@
                     "whole",
                     "largest"
                 ],
-                "expression":true,
                 "default-value": "each",
                 "default-meaning": "If a feature contains multiple geometries and the placement type is either point or interior then a marker will be rendered for each.",
                 "doc": "A special setting to allow the user to control rendering behavior for 'multi-geometries' (when a feature contains multiple geometries). This setting does not apply to markers placed along lines. The 'each' policy is default and means all geometries will get a marker. The 'whole' policy means that the aggregate centroid between all geometries will be used. The 'largest' policy means that only the largest (by bounding box areas) feature will get a rendered marker (this is how text labeling behaves by default)."
@@ -580,7 +550,6 @@
                     "arrow",
                     "ellipse"
                 ],
-                "expression":true,
                 "default-value": "ellipse",
                 "default-meaning": "The marker shape is an ellipse.",
                 "doc": "The default marker-type. If a SVG file is not given as the marker-file parameter, the renderer provides either an arrow or an ellipse (a circle if height is equal to width).",
@@ -590,26 +559,22 @@
                 "default-value": 10.0,
                 "doc": "The width of the marker, if using one of the default types.",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "The marker width is 10 pixels."
             },
             "height": {
                 "default-value": 10.0,
                 "doc": "The height of the marker, if using one of the default types.",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "The marker height is 10 pixels."
             },
             "fill": {
                 "default-value": "blue",
                 "doc": "The color of the area of the marker. This property will also set the `fill` of elements in an SVG loaded from a file.",
                 "type": "color",
-                "expression":true,
                 "default-meaning": "The marker fill color is blue."
             },
             "allow-overlap": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "doc": "Control whether overlapping markers are shown or hidden.",
                 "default-meaning": "Do not allow markers to overlap with each other - overlapping markers will not be shown."
@@ -617,13 +582,11 @@
             "avoid-edges": {
                 "doc": "Avoid placing markers that intersect with tile boundaries.",
                 "type": "boolean",
-                "expression":true,
                 "default-meaning": "Markers will be potentially placed near tile edges and therefore may look cut off unless they are rendered on each adjacent tile.",
                 "default-value": false
             },
             "ignore-placement": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "default-meaning": "do not store the bbox of this geometry in the collision detector cache.",
                 "doc": "Value to control whether the placement of the feature will prevent the placement of other features."
@@ -632,12 +595,10 @@
                 "doc": "Space between repeated markers in pixels. If the spacing is less than the marker size or larger than the line segment length then no marker will be placed. Any value less than 1 will be ignored and the default will be used instead.",
                 "default-value": 100.0,
                 "type": "float",
-                "expression":true,
                 "default-meaning": "In the case of marker-placement:line then draw a marker every 100 pixels along a line."
             },
             "max-error": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.2,
                 "default-meaning": "N/A: not intended to be changed.",
                 "doc": "N/A: not intended to be changed."
@@ -661,7 +622,6 @@
             },
             "simplify": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Geometry will not be simplified.",
                 "doc": "geometries are simplified by the given tolerance."
@@ -671,14 +631,12 @@
                          "zhao-saalfeld",
                          "visvalingam-whyatt"
                         ],
-                "expression":true,
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
                 "doc": "geometries are simplified by the given algorithm."
             },
             "smooth": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
@@ -686,7 +644,6 @@
             },
             "geometry-transform": {
                 "type": "functions",
-                "expression":true,
                 "default-value": "none",
                 "default-meaning": "The geometry will not be transformed.",
                 "doc": "Transform marker geometry with specified function.",
@@ -701,7 +658,6 @@
             },
             "offset": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Will not be offset.",
                 "doc": "Offsets a marker from a line a number of pixels parallel to its actual path. Positive values move the marker left, negative values move it right (relative to the directionality of the line)."
@@ -721,7 +677,6 @@
                     "up",
                     "down"
                 ],
-                "expression": true,
                 "default-meaning": "Markers are oriented to the right in the line direction.",
                 "doc": "How markers should be placed along lines. With the \"auto\" setting when marker is upside down the marker is automatically rotated by 180 degrees to keep it upright. The \"auto-down\" value places marker in the opposite orientation to \"auto\". The \"left\" or \"right\" settings can be used to force marker to always be placed along a line in a given direction and therefore disables rotating if marker appears upside down. The \"left-only\" or \"right-only\" properties also force a given direction but will discard upside down markers rather than trying to flip it. The \"up\" and \"down\" settings don't adjust marker's orientation to the line direction."
             },
@@ -738,7 +693,6 @@
         "shield": {
             "name": {
                 "type": "string",
-                "expression":true,
                 "serialization": "content",
                 "default-value": "",
                 "default-meaning": "No text label will be rendered with the shield.",
@@ -747,37 +701,32 @@
             "file": {
                 "required": true,
                 "type": "uri",
-                "expression":true,
                 "default-value": "none",
                 "doc": "Image file to render behind the shield text. Accepted formats: svg, jpg, png, tiff, and webp.",
                 "default-meaning": ""
             },
             "face-name": {
                 "type": "string",
-                "expression":true,
                 "validate": "font",
-                "doc": "Font name and style to use for the shield text.",
+                "doc": "Font name and style to use for the shield text. This property is not evaluated as an expression.",
                 "default-value": "none",
                 "required": true,
                 "default-meaning": ""
             },
             "unlock-image": {
                 "type": "boolean",
-                "expression":true,
                 "doc": "This parameter should be set to true if you are trying to position text beside rather than on top of the shield image.",
                 "default-value": false,
                 "default-meaning": "text alignment relative to the shield image uses the center of the image as the anchor for text positioning."
             },
             "size": {
                 "type": "float",
-                "expression":true,
                 "default-value": 10.0,
                 "doc": "The size of the shield text in pixels.",
                 "default-meaning": "Font size of 10 will be used to render text."
             },
             "fill": {
                 "type": "color",
-                "expression":true,
                 "default-value": "black",
                 "doc": "The color of the shield text.",
                 "default-meaning": "The shield text will be rendered black."
@@ -788,47 +737,40 @@
             "avoid-edges": {
                 "doc": "Avoid placing shields that intersect with tile boundaries.",
                 "type": "boolean",
-                "expression":true,
                 "default-meaning": "Shields will be potentially placed near tile edges and therefore may look cut off unless they are rendered on each adjacent tile.",
                 "default-value": false
             },
             "allow-overlap": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "doc": "Control whether overlapping shields are shown or hidden.",
                 "default-meaning": "Do not allow shields to overlap with other map elements already placed."
             },
             "margin": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "No extra margin will be used to determine if a shield collides with any other text, shield, or marker.",
                 "doc": "Minimum distance that a shield can be placed from any other text, shield, or marker."
             },
             "repeat-distance": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Shields with the same text will be rendered without restriction.",
                 "doc": "Minimum distance between repeated shields. If set this will prevent shields being rendered nearby each other that contain the same text. Similar to shield-min-distance with the difference that it works the same no matter what placement strategy is used."
             },
             "minimum-distance": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Shields with the same text will be rendered without restriction.",
                 "doc": "Minimum distance to the next shield with the same text. Only works for line placement."
             },
             "spacing": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Only one shield per line will attempt to be placed.",
                 "doc": "Distance the renderer should use to try to place repeated shields on a line."
             },
             "minimum-padding": {
-                "expression":true,
                 "default-value": 0.0,
                 "doc": "Minimum distance a shield will be placed from the edge of a tile. This option is similar to shield-avoid-edges:true except that the extra margin is used to discard cases where the shield+margin are not fully inside the tile.",
                 "default-meaning": "No margin will be used to detect if a shield is nearby a tile boundary.",
@@ -837,34 +779,29 @@
             "label-position-tolerance": {
                 "default-value": "shield-spacing/2.0",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "If a shield cannot be placed then the renderer will advance by shield-spacing/2.0 to try placement again.",
                 "doc": "Allows the shield to be displaced from its ideal position by a number of pixels (only works with placement:line)."
             },
             "wrap-width": {
                 "type": "unsigned",
-                "expression":true,
                 "default-value": 0,
                 "default-meaning": "Text will not be wrapped.",
                 "doc": "Length of a chunk of text in pixels before wrapping text. If set to zero, text doesn't wrap."
             },
             "wrap-before": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "default-meaning": "Wrapped lines will be a bit longer than wrap-width.",
                 "doc": "Wrap text before wrap-width is reached."
             },
             "wrap-character": {
                 "type": "string",
-                "expression":true,
                 "default-value": "\" \"",
                 "default-meaning": "Lines will be wrapped when whitespace is encountered.",
                 "doc": "Use this character instead of a space to wrap long names."
             },
             "halo-fill": {
                 "type": "color",
-                "expression":true,
                 "default-value": "white",
                 "doc": "Specifies the color of the halo around the text.",
                 "default-meaning": "The shield halo text will be rendered white."
@@ -873,15 +810,13 @@
                 "default-value": 0.0,
                 "default-meaning": "no halo.",
                 "doc": "Specify the radius of the halo in pixels.",
-                "type": "float",
-                "expression":true
+                "type": "float"
             },
             "halo-rasterizer": {
                 "type": [
                     "full",
                     "fast"
                 ],
-                "expression":true,
                 "default-value": "full",
                 "default-meaning": "The shield will be rendered using the highest quality method rather than the fastest.",
                 "doc": "Exposes an alternate text halo rendering method that sacrifices quality for speed."
@@ -908,7 +843,6 @@
             },
             "character-spacing": {
                 "type": "unsigned",
-                "expression":true,
                 "default-value": 0,
                 "default-meaning": "The default character spacing of the font will be used.",
                 "doc": "Horizontal spacing between characters (in pixels). Currently works for point placement only, not line placement."
@@ -917,33 +851,28 @@
                 "default-value": 0,
                 "doc": "Vertical spacing between lines of multiline labels (in pixels).",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "The default font spacing will be used."
             },
             "dx": {
                 "type": "float",
-                "expression":true,
                 "doc": "Displace text within shield by fixed amount, in pixels, +/- along the X axis.  A positive value will shift the shield right.",
                 "default-meaning": "Text will not be displaced.",
                 "default-value": 0.0
             },
             "dy": {
                 "type": "float",
-                "expression":true,
                 "doc": "Displace text within shield by fixed amount, in pixels, +/- along the Y axis.  A positive value will shift the shield down.",
                 "default-meaning": "Text will not be displaced.",
                 "default-value": 0.0
             },
             "shield-dx": {
                 "type": "float",
-                "expression":true,
                 "doc": "Displace shield by fixed amount, in pixels, +/- along the X axis.  A positive value will shift the text right.",
                 "default-meaning": "Shield will not be displaced.",
                 "default-value": 0.0
             },
             "shield-dy": {
                 "type": "float",
-                "expression":true,
                 "doc": "Displace shield by fixed amount, in pixels, +/- along the Y axis.  A positive value will shift the text down.",
                 "default-meaning": "Shield will not be displaced.",
                 "default-value": 0.0
@@ -963,7 +892,6 @@
                     "right",
                     "auto"
                 ],
-                "expression":true,
                 "doc": "The shield's horizontal alignment from its centerpoint.",
                 "default-meaning": "TODO.",
                 "default-value": "auto"
@@ -975,7 +903,6 @@
                     "bottom",
                     "auto"
                 ],
-                "expression":true,
                 "doc": "The shield's vertical alignment from its centerpoint.",
                 "default-meaning": "TODO.",
                 "default-value": "middle"
@@ -987,13 +914,11 @@
                     "simple",
                     "list"
                 ],
-                "expression":true,
                 "default-meaning": "Alternative placements will not be enabled.",
                 "default-value": "dummy"
             },
             "placements": {
                 "type": "string",
-                "expression":true,
                 "default-value": "",
                 "default-meaning": "No alternative placements will be used.",
                 "doc": "If \"placement-type\" is set to \"simple\", use this \"POSITIONS,[SIZES]\" string. An example is `shield-placements: \"E,NE,SE,W,NW,SW\";`."
@@ -1006,7 +931,6 @@
                     "capitalize",
                     "reverse"
                 ],
-                "expression":true,
                 "doc": "Transform the case of the characters.",
                 "default-meaning": "No text transformation will be applied.",
                 "default-value": "none"
@@ -1018,7 +942,6 @@
                     "right",
                     "auto"
                 ],
-                "expression":true,
                 "doc": "Define how text in a shield's label is justified.",
                 "default-meaning": "TODO.",
                 "default-value": "auto"
@@ -1042,7 +965,6 @@
             },
             "simplify": {
                 "type": "float",
-                "expression": true,
                 "default-value": 0.0,
                 "default-meaning": "geometry will not be simplified.",
                 "doc": "Simplify the geometries used for shield placement by the given tolerance."
@@ -1052,14 +974,12 @@
                          "zhao-saalfeld",
                          "visvalingam-whyatt"
                         ],
-                "expression": true,
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
                 "doc": "Simplify the geometries used for shield placement by the given algorithm."
             },
             "smooth": {
                 "type": "float",
-                "expression": true,
                 "default-value": 0.0,
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
@@ -1078,7 +998,6 @@
         "line-pattern": {
             "file": {
                 "type": "uri",
-                "expression":true,
                 "default-value": "none",
                 "required": true,
                 "doc": "An image file to be repeated and warped along a line. Accepted formats: svg, jpg, png, tiff, and webp.",
@@ -1089,7 +1008,6 @@
             },
             "simplify": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "geometry will not be simplified.",
                 "doc": "geometries are simplified by the given tolerance."
@@ -1099,14 +1017,12 @@
                          "zhao-saalfeld",
                          "visvalingam-whyatt"
                         ],
-                "expression":true,
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
                 "doc": "geometries are simplified by the given algorithm."
             },
             "smooth": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
@@ -1114,7 +1030,6 @@
             },
             "offset": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "The line will not be offset.",
                 "doc": "Offsets a line a number of pixels parallel to its actual path. Positive values move the line left, negative values move it right (relative to the directionality of the line)."
@@ -1157,7 +1072,6 @@
         "polygon-pattern": {
             "file": {
                 "type": "uri",
-                "expression":true,
                 "default-value": "none",
                 "required": true,
                 "doc": "Image to use as a repeated pattern fill within a polygon. Accepted formats: svg, jpg, png, tiff, and webp.",
@@ -1168,14 +1082,12 @@
                     "global",
                     "local"
                 ],
-                "expression":true,
                 "default-value": "global",
                 "doc": "Specify whether to align pattern fills to the layer's geometry (local) or to the map (global).",
                 "default-meaning":"Patterns will be aligned to the map (or tile boundaries) when being repeated across polygons. This is ideal for seamless patterns in tiled rendering."
             },
             "gamma": {
                 "type": "float",
-                "expression":true,
                 "default-value": 1.0,
                 "default-meaning": "Fully antialiased.",
                 "range": "0-1",
@@ -1186,7 +1098,6 @@
             },
             "simplify": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "geometry will not be simplified.",
                 "doc": "geometries are simplified by the given tolerance."
@@ -1196,14 +1107,12 @@
                          "zhao-saalfeld",
                          "visvalingam-whyatt"
                         ],
-                "expression":true,
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
                 "doc": "geometries are simplified by the given algorithm."
             },
             "smooth": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
@@ -1322,7 +1231,6 @@
         "point": {
             "file": {
                 "type": "uri",
-                "expression":true,
                 "required": false,
                 "default-value": "none",
                 "default-meaning": "A 4x4 black square will be rendered.",
@@ -1330,14 +1238,12 @@
             },
             "allow-overlap": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "doc": "Control whether overlapping points are shown or hidden.",
                 "default-meaning": "Do not allow points to overlap with each other - overlapping markers will not be shown."
             },
             "ignore-placement": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "default-meaning": "do not store the bbox of this geometry in the collision detector cache.",
                 "doc": "Control whether the placement of the feature will prevent the placement of other features."
@@ -1375,7 +1281,6 @@
         "text": {
             "name": {
                 "type": "string",
-                "expression":true,
                 "required": true,
                 "default-value": "none",
                 "serialization": "content",
@@ -1384,16 +1289,14 @@
             },
             "face-name": {
                 "type": "string",
-                "expression":false,
                 "validate": "font",
                 "default-value": "none",
-                "doc": "Font name and style to render a label in.",
+                "doc": "Font name and style to render a label in. This property is not evaluated as an expression.",
                 "required": true,
                 "default-meaning": ""
             },
             "size": {
                 "type": "float",
-                "expression":true,
                 "default-value": 10.0,
                 "doc": "Text size in pixels.",
                 "default-meaning": "Font size of 10 will be used to render text."
@@ -1402,33 +1305,28 @@
                 "doc": "Define the amount of text (of the total) present on successive lines when wrapping occurs.",
                 "default-value": 0,
                 "type": "unsigned",
-                "expression":true,
                 "default-meaning":"TODO."
             },
             "wrap-width": {
                 "doc": "Length of a chunk of text in pixels before wrapping text. If set to zero, text doesn't wrap.",
                 "default-value": 0,
                 "type": "unsigned",
-                "expression":true,
                 "default-meaning": "Text will not be wrapped."
             },
             "wrap-before": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "default-meaning": "Wrapped lines will be a bit longer than wrap-width.",
                 "doc": "Wrap text before wrap-width is reached."
             },
             "wrap-character": {
                 "type": "string",
-                "expression":true,
                 "default-value": "\" \"",
                 "default-meaning": "Lines will be wrapped when whitespace is encountered.",
                 "doc": "Use this character instead of a space to wrap long text."
             },
             "repeat-wrap-character": {
                 "type": "boolean",
-                "expression": true,
                 "default-value": false,
                 "default-meaning": "Character will be removed when used to wrap a line.",
                 "doc": "Keep the character used to wrap a line instead of removing it, and repeat it on the new line.",
@@ -1436,14 +1334,12 @@
             },
             "spacing": {
                 "type": "unsigned",
-                "expression":true,
                 "default-value": 0,
                 "default-meaning": "Only one label per line will attempt to be placed.",
                 "doc": "Distance the renderer should use to try to place repeated text labels on a line."
             },
             "character-spacing": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "The default character spacing of the font will be used.",
                 "doc": "Horizontal spacing adjustment between characters in pixels. This value is ignored when `horizontal-alignment` is set to `adjust`. Typographic ligatures are turned off when this value is greater than zero."
@@ -1451,27 +1347,23 @@
             "line-spacing": {
                 "default-value": 0,
                 "type": "float",
-                "expression":true,
                 "default-meaning": "The default font spacing will be used.",
                 "doc": "Vertical spacing adjustment between lines in pixels."
             },
             "label-position-tolerance": {
                 "default-value": "text-spacing/2.0",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "If a shield cannot be placed then the renderer will advance by text-spacing/2.0 to try placement again.",
                 "doc": "Allows the label to be displaced from its ideal position by a number of pixels (only works with placement:line)."
             },
             "max-char-angle-delta": {
                 "type": "float",
-                "expression":true,
                 "default-value": 22.5,
                 "default-meaning":"The label will not be placed if a character falls on a line with an angle sharper than 22.5 degrees.",
                 "doc": "The maximum angle change, in degrees, allowed between adjacent characters in a label. This value internally is converted to radians to the default is 22.5*math.pi/180.0. The higher the value the fewer labels will be placed around around sharp corners."
             },
             "fill": {
                 "type": "color",
-                "expression":true,
                 "doc": "Specifies the color for the text.",
                 "default-value": "black",
                 "default-meaning": "The text will be rendered black."
@@ -1481,7 +1373,6 @@
             },
             "halo-fill": {
                 "type": "color",
-                "expression":true,
                 "default-value": "white",
                 "default-meaning": "The halo will be rendered white.",
                 "doc": "Specifies the color of the halo around the text."
@@ -1490,7 +1381,6 @@
                 "doc": "Specify the radius of the halo in pixels.",
                 "default-value": 0.0,
                 "type": "float",
-                "expression":true,
                 "default-meaning": "no halo."
             },
             "halo-rasterizer": {
@@ -1498,14 +1388,12 @@
                     "full",
                     "fast"
                 ],
-                "expression":true,
                 "default-value": "full",
                 "default-meaning": "The text will be rendered using the highest quality method rather than the fastest.",
                 "doc": "Exposes an alternate text halo rendering method that sacrifices quality for speed."
             },
             "halo-transform": {
                 "type": "functions",
-                "expression":true,
                 "functions": [
                     ["matrix", 6],
                     ["translate", 2],
@@ -1520,14 +1408,12 @@
             },
             "dx": {
                 "type": "float",
-                "expression":true,
                 "doc": "Displace text by fixed amount, in pixels, +/- along the X axis.  With \"dummy\" placement-type, a positive value displaces to the right. With \"simple\" placement-type, it is either left, right or unchanged, depending on the placement selected. Any non-zero value implies \"horizontal-alignment\" changes to \"left\" by default. Has no effect with 'line' text-placement-type.",
                 "default-meaning": "Text will not be displaced.",
                 "default-value": 0.0
             },
             "dy": {
                 "type": "float",
-                "expression":true,
                 "doc": "Displace text by fixed amount, in pixels, +/- along the Y axis.  With \"dummy\" placement-type, a positive value displaces downwards. With \"simple\" placement-type, it is either up, down or unchanged, depending on the placement selected. With \"line\" placement-type, a positive value displaces above the path.",
                 "default-meaning": "Text will not be displaced.",
                 "default-value": 0.0
@@ -1539,7 +1425,6 @@
                   "bottom",
                   "auto"
                 ],
-                "expression":true,
                 "doc": "Position of label relative to point position.",
                 "default-value": "auto",
                 "default-meaning": "Default affected by value of dy; \"top\" for dy>0, \"bottom\" for dy<0."
@@ -1548,19 +1433,16 @@
                 "doc": "Avoid placing labels that intersect with tile boundaries.",
                 "default-value": false,
                 "type": "boolean",
-                "expression":true,
                 "default-meaning": "Text will be potentially placed near tile edges and therefore may look cut off unless the same text label is rendered on each adjacent tile."
             },
             "margin": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "No extra margin will be used to determine if a label collides with any other text, shield, or marker.",
                 "doc": "Minimum distance that a label can be placed from any other text, shield, or marker."
             },
             "repeat-distance": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Labels with the same text will be rendered without restriction.",
                 "doc": "Minimum distance between repeated text. If set this will prevent text labels being rendered nearby each other that contain the same text. Similar to text-min-distance with the difference that it works the same no matter what placement strategy is used."
@@ -1568,7 +1450,6 @@
             "minimum-distance": {
                 "type": "float",
                 "default-value": 0.0,
-                "expression":true,
                 "default-meaning": "Labels with the same text will be rendered without restriction.",
                 "doc": "Minimum distance to the next label with the same text. Only works for line placement. Deprecated: replaced by `text-repeat-distance` and `text-margin`",
                 "status": "deprecated"
@@ -1576,27 +1457,23 @@
             "minimum-padding": {
                 "default-value": 0.0,
                 "type": "float",
-                "expression":true,
                 "doc": "Minimum distance a text label will be placed from the edge of a tile. This option is similar to shield-avoid-edges:true except that the extra margin is used to discard cases where the shield+margin are not fully inside the tile.",
                 "default-meaning": "No margin will be used to detect if a text label is nearby a tile boundary."
             },
             "minimum-path-length": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "place labels on all geometries no matter how small they are.",
                 "doc": "Place labels only on polygons and lines with a bounding width longer than this value (in pixels)."
             },
             "allow-overlap": {
                 "type": "boolean",
-                "expression":true,
                 "default-value": false,
                 "doc": "Control whether overlapping text is shown or hidden.",
                 "default-meaning": "Do not allow text to overlap with other text - overlapping markers will not be shown."
             },
             "orientation": {
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "doc": "Rotate the text. (only works with text-placement:point).",
                 "default-meaning": "Text is not rotated and is displayed upright."
@@ -1617,7 +1494,6 @@
                     "left-only",
                     "right-only"
                 ],
-                "expression":true,
                 "default-meaning": "Text will be positioned upright automatically.",
                 "doc": "How this label should be placed along lines. By default when more than half of a label's characters are upside down the label is automatically flipped to keep it upright. By changing this parameter you can prevent this \"auto-upright\" behavior. The \"auto-down\" value places text in the opposite orientation to \"auto\". The \"left\" or \"right\" settings can be used to force text to always be placed along a line in a given direction and therefore disables flipping if text appears upside down. The \"left-only\" or \"right-only\" properties also force a given direction but will discard upside down text rather than trying to flip it."
             },
@@ -1631,7 +1507,6 @@
                     "simple",
                     "list"
                 ],
-                "expression":true,
                 "default-meaning": "Alternative placements will not be enabled.",
                 "default-value": "dummy"
             },
@@ -1639,7 +1514,6 @@
                 "type": "string",
                 "default-meaning": "No alternative placements will be used.",
                 "default-value": "",
-                "expression":true,
                 "doc": "If \"placement-type\" is set to \"simple\", use this \"POSITIONS,[SIZES]\" string. An example is `text-placements: \"E,NE,SE,W,NW,SW\";`."
             },
             "text-transform": {
@@ -1650,7 +1524,6 @@
                     "capitalize",
                     "reverse"
                 ],
-                "expression":true,
                 "doc": "Transform the case of the characters.",
                 "default-meaning": "Transform text instance with specified function. Ignores map scale factor.",
                 "default-value": "none"
@@ -1663,7 +1536,6 @@
                     "auto",
                     "adjust"
                 ],
-                "expression":true,
                 "doc": "The text's horizontal alignment from it's centerpoint. If `placement` is set to `line`, then `adjust` can be set to auto-fit the text to the length of the path by dynamically calculating `character-spacing`.",
                 "default-value": "auto",
                 "default-meaning":"TODO."
@@ -1675,7 +1547,6 @@
                     "center",
                     "auto"
                 ],
-                "expression":true,
                 "doc": "Define how text is justified.",
                 "default-value": "auto",
                 "default-meaning": "Auto alignment means that text will be centered by default except when using the `placement-type` parameter - in that case either right or left justification will be used automatically depending on where the text could be fit given the `text-placements` directives."
@@ -1685,7 +1556,6 @@
             },
             "simplify": {
                 "type": "float",
-                "expression": true,
                 "default-value": 0.0,
                 "default-meaning": "geometry will not be simplified.",
                 "doc": "Simplify the geometries used for text placement by the given tolerance."
@@ -1695,14 +1565,12 @@
                          "zhao-saalfeld",
                          "visvalingam-whyatt"
                         ],
-                "expression": true,
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
                 "doc": "Simplify the geometries used for text placement by the given algorithm."
             },
             "smooth": {
                 "type": "float",
-                "expression": true,
                 "default-value": 0.0,
                 "default-meaning": "No smoothing.",
                 "range": "0-1",
@@ -1722,7 +1590,6 @@
             },
             "largest-bbox-only": {
                 "type": "boolean",
-                "expression": true,
                 "default-value": true,
                 "default-meaning": "For multipolygons only polygon with largest bbox area is labeled (does not apply to other geometries).",
                 "doc": "Controls default labeling behavior on multipolygons. The default is true and means that only the polygon with largest bbox is labeled.",
@@ -1740,7 +1607,6 @@
         },
         "building": {
             "fill": {
-                "expression":true,
                 "type":"color",
                 "default-value": "The color gray will be used for fill.",
                 "default-meaning": "Gray and fully opaque (alpha = 1), same as rgb(128,128,128) or rgba(128,128,128,1).",
@@ -1753,7 +1619,6 @@
             "height": {
                 "doc": "The height of the building in pixels.",
                 "type": "float",
-                "expression":true,
                 "default-value": 0.0,
                 "default-meaning": "Buildings will not have a visual height and will instead look like flat polygons."
             }
@@ -1766,12 +1631,10 @@
                 ],
                 "default-value": "collision",
                 "doc": "The mode for debug rendering.",
-                "expression":true,
                 "default-meaning": "The otherwise invisible collision boxes will be rendered as squares on the map."
             },
             "collision-cache": {
                 "type": "string",
-                "expression": true,
                 "default-value": "",
                 "doc": "A comma separated list of collision detectors to visualize.",
                 "default-meaning": "All objects of all collision detectors are visualized."
@@ -1782,21 +1645,18 @@
                 "default-value": "gray",
                 "doc": "The color of the area of the dot.",
                 "type": "color",
-                "expression":true,
                 "default-meaning": "The dot fill color is gray."
             },
             "width": {
                 "default-value": 1.0,
                 "doc": "The width of the dot in pixels.",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "The marker width is 1 pixel."
             },
             "height": {
                 "default-value": 1.0,
                 "doc": "The height of the dot in pixels.",
                 "type": "float",
-                "expression":true,
                 "default-meaning": "The marker height is 1 pixels."
             },
             "comp-op": {
@@ -1811,34 +1671,29 @@
                 "default-value": 1.0,
                 "doc": "The width of the collision box in pixels.",
                 "type": "float",
-                "expression": true,
                 "default-meaning": "The collision box width is 1 pixel."
             },
             "height": {
                 "default-value": 1.0,
                 "doc": "The height of the collision box in pixels.",
                 "type": "float",
-                "expression": true,
                 "default-meaning": "The collision box height is 1 pixels."
             },
             "spacing": {
                 "doc": "Space between repeated collision boxes on line in pixels. If the spacing is less than the collision box size or larger than the line length then no collision box will be placed. Any value less than 1 will be ignored and the default will be used instead.",
                 "default-value": 100.0,
                 "type": "float",
-                "expression": true,
                 "default-meaning": "In the case of placement=line then places a collision box every 100 pixels along a line."
             },
             "grid-cell-width": {
                 "doc": "Horizontal spacing between grid placements.",
                 "default-value": 10.0,
-                "type": "float",
-                "expression": true
+                "type": "float"
             },
             "grid-cell-height": {
                 "doc": "Vertical spacing between grid placements.",
                 "default-value": 10.0,
-                "type": "float",
-                "expression": true
+                "type": "float"
             },
             "placement": {
                 "see-also": "placement"
@@ -1849,7 +1704,6 @@
                     "whole",
                     "largest"
                 ],
-                "expression": true,
                 "default-value": "each",
                 "default-meaning": "If a feature contains multiple geometries all of them will get a placement.",
                 "doc": "A special setting to allow the user to control rendering behavior for 'multi-geometries' (when a feature contains multiple geometries). The 'each' policy is default and means all geometries will get a placement. The 'whole' policy means that the aggregate position between all geometries will be used. The 'largest' policy means that only the largest (by bounding box areas) feature will get a placement."
@@ -1859,14 +1713,12 @@
             },
             "offset": {
                 "type": "float",
-                "expression": true,
                 "default-value": 0.0,
                 "default-meaning": "Will not be offset.",
                 "doc": "Offsets a position from a line a number of pixels parallel to its actual path. Positive values move the position left, negative values move it right (relative to the directionality of the line)."
             },
             "allow-overlap": {
                 "type": "boolean",
-                "expression": true,
                 "default-value": false,
                 "doc": "Control whether overlapping placement is used.",
                 "default-meaning": "Do not allow placement to overlap with each other - overlapping placement will be discarded."
