@@ -72,6 +72,23 @@
             "default-value": false,
             "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
             "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+        },
+        "placement": {
+            "type": [
+                "point",
+                "centroid",
+                "interior",
+                "line",
+                "vertex",
+                "vertex-first",
+                "vertex-last",
+                "grid",
+                "alternating-grid"
+            ],
+            "expression": true,
+            "default-value": "point",
+            "default-meaning": "Make placement at the center point (centroid) of the geometry.",
+            "doc": "Attempt to make a placement on a point, in the center of a polygon, or if placement=line, then multiple times along a line. `interior` placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The `vertex-first` and `vertex-last` options can be used to make a placement at the first or last vertex of lines or polygons. `grid` allows placing repeated labels on area of a polygon, where all possible placements create grid of points. Only placements within given polygon are rendered. `alternating-grid` creates pattern similar to bricks in a wall."
         }
     },
     "map": {
@@ -545,17 +562,7 @@
                 "see-also": "opacity"
             },
             "placement": {
-                "type": [
-                    "point",
-                    "line",
-                    "interior",
-                    "vertex-first",
-                    "vertex-last"
-                ],
-                "expression":true,
-                "default-value": "point",
-                "default-meaning": "Place markers at the center point (centroid) of the geometry.",
-                "doc": "Attempt to place markers on a point, in the center of a polygon, or if markers-placement:line, then multiple times along a line. 'interior' placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The 'vertex-first' and 'vertex-last' options can be used to place markers at the first or last vertex of lines or polygons."
+                "see-also": "placement"
             },
             "multi-policy": {
                 "type": [
@@ -776,16 +783,7 @@
                 "default-meaning": "The shield text will be rendered black."
             },
             "placement": {
-                "type": [
-                    "point",
-                    "line",
-                    "vertex",
-                    "interior"
-                ],
-                "expression":true,
-                "default-value": "point",
-                "default-meaning": "One shield will be placed per geometry.",
-                "doc": "How this shield should be placed. Point placement places one shield on top of a point geometry and at the centroid of a polygon or the middle point of a line, line places along lines multiple times per feature, vertex places on the vertexes of polygons, and interior attempts to place inside of a polygon."
+                "see-also": "placement"
             },
             "avoid-edges": {
                 "doc": "Avoid placing shields that intersect with tile boundaries.",
@@ -1345,14 +1343,7 @@
                 "doc": "Control whether the placement of the feature will prevent the placement of other features."
             },
             "placement": {
-                "type": [
-                    "centroid",
-                    "interior"
-                ],
-                "expression":true,
-                "doc": "Control how this point should be placed. Centroid calculates the geometric center of a polygon, which can be outside of it, while interior always places inside of a polygon.",
-                "default-meaning": "The centroid of the geometry will be used to place the point.",
-                "default-value": "centroid"
+                "see-also": "placement"
             },
             "transform": {
                 "type": "functions",
@@ -1631,16 +1622,7 @@
                 "doc": "How this label should be placed along lines. By default when more than half of a label's characters are upside down the label is automatically flipped to keep it upright. By changing this parameter you can prevent this \"auto-upright\" behavior. The \"auto-down\" value places text in the opposite orientation to \"auto\". The \"left\" or \"right\" settings can be used to force text to always be placed along a line in a given direction and therefore disables flipping if text appears upside down. The \"left-only\" or \"right-only\" properties also force a given direction but will discard upside down text rather than trying to flip it."
             },
             "placement": {
-                "default-value": "point",
-                "type": [
-                    "point",
-                    "line",
-                    "vertex",
-                    "interior"
-                ],
-                "expression":true,
-                "default-meaning": "One shield will be placed per geometry.",
-                "doc": "How this label should be placed. Point placement places one label on top of a point geometry and at the centroid of a polygon or the middle point of a line, line places along lines multiple times per feature, vertex places on the vertexes of polygons, and interior attempts to place inside of a polygon."
+                "see-also": "placement"
             },
             "placement-type": {
                 "doc": "Re-position and/or re-size text to avoid overlaps. \"simple\" for basic algorithm (using text-placements string,) \"dummy\" to turn this feature off.",
@@ -1859,21 +1841,7 @@
                 "expression": true
             },
             "placement": {
-                "type": [
-                    "point",
-                    "centroid",
-                    "interior",
-                    "line",
-                    "vertex",
-                    "vertex-first",
-                    "vertex-last",
-                    "grid",
-                    "alternating-grid"
-                ],
-                "expression": true,
-                "default-value": "point",
-                "default-meaning": "Place collision box at the center point (centroid) of the geometry.",
-                "doc": "Attempt to place collision ob on a point, in the center of a polygon, or if placement=line, then multiple times along a line. `interior` placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The `vertex-first` and `vertex-last` options can be used to place collision box at the first or last vertex of lines or polygons."
+                "see-also": "placement"
             },
             "multi-policy": {
                 "type": [
