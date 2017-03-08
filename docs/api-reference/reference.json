@@ -1689,6 +1689,25 @@
                 "default-value": 0.0,
                 "default-meaning": "Buildings will not have a visual height and will instead look like flat polygons."
             },
+            "shadow-length": {
+                "type": "float",
+                "default-value": 0.0,
+                "default-meaning": "The shadow is turned off.",
+                "doc": "Can set shadow effect to the building. The value sets pixel length of the shadow."
+            },
+            "shadow-opacity": {
+                "type": "float",
+                "default-value": 0.1,
+                "default-meaning": "The shadow is almost transparent.",
+                "doc": "Can control darkness of the shadow.",
+                "see-also": "opacity"
+            },
+            "shadow-angle": {
+                "type": "float",
+                "default-value": 0.0,
+                "default-meaning": "The shadow goes along `x` axis.",
+                "doc": "The shadow direction in degees."
+            },
             "key": {
                 "see-also": "key"
             }
