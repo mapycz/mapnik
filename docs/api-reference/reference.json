@@ -542,6 +542,7 @@
             },
             "stroke-opacity": {
                 "default-meaning": "Color is fully opaque. This property will also set the `stroke-opacity` of elements in an SVG loaded from a file.",
+                "default-value": 1.0,
                 "see-also": "opacity"
             },
             "placement": {
