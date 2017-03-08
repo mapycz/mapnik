@@ -66,7 +66,7 @@
             "type": "boolean",
             "default-value": false,
             "default-meaning": "The geometry will not be clipped to map bounds before rendering.",
-            "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extent outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
+            "doc": "Turning on clipping can help performance in the case that the boundaries of the geometry extend outside of tile extents. But clipping can result in undesirable rendering artifacts in rare cases."
         },
         "placement": {
             "type": [
@@ -93,6 +93,13 @@
             "doc": "Vertical spacing between grid placements.",
             "default-value": 10.0,
             "type": "float"
+        },
+        "key": {
+            "type": "string",
+            "doc": "Feature identifier for referencing from other features. Allows to tie features across symbolizers, styles and layers. Once two features are connected, their mutual position and other properties can be adjusted.",
+            "default-value": "none",
+            "default-meaning": "Feature has no key and cannot be referenced.",
+            "status": "experimental"
         }
     },
     "map": {
@@ -375,6 +382,9 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "line": {
@@ -512,6 +522,9 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "markers": {
@@ -704,6 +717,9 @@
             },
             "collision-cache-detect": {
                 "see-also": "collision-cache-detect"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "shield": {
@@ -1015,6 +1031,9 @@
             },
             "collision-cache-detect": {
                 "see-also": "collision-cache-detect"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "line-pattern": {
@@ -1089,6 +1108,9 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "polygon-pattern": {
@@ -1173,6 +1195,9 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "raster": {
@@ -1248,6 +1273,9 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "point": {
@@ -1304,6 +1332,9 @@
             },
             "collision-cache-detect": {
                 "see-also": "collision-cache-detect"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "text": {
@@ -1637,6 +1668,16 @@
             },
             "collision-cache-detect": {
                 "see-also": "collision-cache-detect"
+            },
+            "key": {
+                "see-also": "key"
+            },
+            "anchor-key": {
+                "type": "string",
+                "default-value": "none",
+                "default-meaning": "No marker is referenced.",
+                "doc": "Can be used for referencing markers with the `key` property of the same value. `dx` and `dy` properties of the text symbolizer will be set according to the size of the marker so one doesn't have to adjust these properties if size of the marker changes.",
+                "status": "experimental"
             }
         },
         "building": {
@@ -1655,6 +1696,9 @@
                 "type": "float",
                 "default-value": 0.0,
                 "default-meaning": "Buildings will not have a visual height and will instead look like flat polygons."
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "debug": {
@@ -1698,6 +1742,9 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "key": {
+                "see-also": "key"
             }
         },
         "collision": {
@@ -1758,6 +1805,9 @@
             },
             "collision-cache-detect": {
                 "see-also": "collision-cache-detect"
+            },
+            "key": {
+                "see-also": "key"
             }
         }
     },
