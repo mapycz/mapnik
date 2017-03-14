@@ -8,7 +8,6 @@ Layers can be arbitrarily nested, in other words layers can be made of another l
 Layers are rendered in top-down order as they are defined. Rendering and even querying data by a layer is not proceeded in following situations:
 
 * A layer is deactivated (by `status` property in XML).
-* A layer has no datasource defined.
 * A layer is not visible for given scale denominator.
 * Layer's extent doesn't intersect with map's extent.
 * A layer has zero active styles.
