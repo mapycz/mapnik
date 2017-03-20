@@ -12,6 +12,7 @@ This repository contains a fork of [github.com/mapnik/mapnik](https://github.com
 * [Text placement method `angle`](docs/features/text-placement-angle.md)
 * [Anchors](docs/features/anchors.md)
 * [Pattern symbolizers improvements](docs/features/pattern-symbolizers.md)
+* [Text on extended geometry](docs/features/text-extend.md)
 * [Shadows with building symbolizer](docs/features/building-symbolizer-shadow.md)
 * [XSLT preprocessing](docs/features/xslt-preprocessing.md)
 
