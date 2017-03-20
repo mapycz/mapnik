@@ -1,6 +1,6 @@
-# Unification of placement code
+# Unification of placement options
 
-All these symbolizers have common purpose - placing labels on some geometric positions:
+All these symbolizers have common purpose - placing labels on geometric positions:
 
 * `TextSymbolizer`
 * `ShieldSymbolizer`
@@ -9,7 +9,7 @@ All these symbolizers have common purpose - placing labels on some geometric pos
 * `PointSymbolizer`
 * `CollisionSymbolizer`
 
-It makes sense to allow all possible placement options for all these symbolizers. Therefore all these symbolizers support all these placement options:
+It makes sense to allow all possible placement options for all these symbolizers. Therefore all these symbolizers now support all these placement options:
 
 * `point`
 * `interior`
