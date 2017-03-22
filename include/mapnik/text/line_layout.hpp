@@ -250,6 +250,11 @@ private:
         box_type const& box,
         const value_unicode_string &repeat_key) const;
 
+    bool is_reachable(
+        detector_type const & detector,
+        vertex_cache const & path,
+        text_layout const & layout) const;
+
     params_type const & params_;
     const std::vector<std::string> collision_cache_insert_;
     const std::vector<std::string> collision_cache_detect_;

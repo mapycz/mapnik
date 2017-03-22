@@ -131,6 +131,18 @@ bool single_line_layout::try_placement(
     return false;
 }
 
+bool single_line_layout::is_reachable(
+    detector_type const & detector,
+    vertex_cache const & path,
+    text_layout const & layout) const
+{
+    double layout_max_dimension = std::max(layout.width(), layout.height());
+    box2d<double> layout_max_box(0, 0, layout_max_dimension, layout_max_dimension);
+    pixel_position pos = path.current_position();
+    layout_max_box.re_center(pos.x, pos.y);
+    return detector.extent().intersects(layout_max_box);
+}
+
 bool single_line_layout::try_placement(
     layout_container const & layouts,
     detector_type & detector,
@@ -151,6 +163,13 @@ bool single_line_layout::try_placement(
     for (auto const& layout_wrapper : layouts)
     {
         text_layout const& layout = layout_wrapper.get();
+
+        if (!is_reachable(detector, pp, layout))
+        {
+            // Placements beyond collision extent are assumed to be successful.
+            return true;
+        }
+
         pixel_position align_offset = layout.alignment_offset();
         pixel_position const& layout_displacement = layout.displacement();
         double sign = (real_orientation == UPRIGHT_LEFT) ? -1 : 1;
