@@ -137,7 +137,7 @@ bool single_line_layout::is_reachable(
     text_layout const & layout) const
 {
     double layout_max_dimension = std::max(layout.width(), layout.height());
-    box2d<double> layout_max_box(0, 0, layout_max_dimension, layout_max_dimension);
+    box2d<double> layout_max_box(0, 0, layout_max_dimension * 2, layout_max_dimension * 2);
     pixel_position pos = path.current_position();
     layout_max_box.re_center(pos.x, pos.y);
     return detector.extent().intersects(layout_max_box);
