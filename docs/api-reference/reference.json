@@ -1161,6 +1161,15 @@
                 "doc": "Image to use as a repeated pattern fill within a polygon. Accepted formats: svg, jpg, png, tiff, and webp.",
                 "default-meaning": ""
             },
+            "lacing": {
+                "type": [
+                    "grid",
+                    "alternating-grid"
+                ],
+                "default-value": "grid",
+                "default-meaning": "Simple repetition of the pattern.",
+                "doc": "A style of pattern repetition. Value `alternating-grid` will render pattern resembling bricks in a wall."
+            },
             "stroke": {
                 "see-also": "line-pattern/stroke"
             },
