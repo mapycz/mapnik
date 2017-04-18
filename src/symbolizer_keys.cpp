@@ -163,6 +163,8 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "lacing",  [](enumeration_wrapper e)
                         {return enumeration<pattern_lacing_mode_enum,pattern_lacing_mode_enum_MAX>(pattern_lacing_mode_enum(e.value)).as_string();},
                         property_types::target_lacing},
+    property_meta_type{ "spacing-x", nullptr, property_types::target_double},
+    property_meta_type{ "spacing-y", nullptr, property_types::target_double},
 
 };
 
