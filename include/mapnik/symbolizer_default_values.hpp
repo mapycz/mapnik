@@ -192,6 +192,20 @@ struct symbolizer_default<value_double, keys::spacing>
     static value_double value() { return 100.0; }
 };
 
+// spacing-x
+template <>
+struct symbolizer_default<value_double, keys::spacing_x>
+{
+    static value_double value() { return 0.0; }
+};
+
+// spacing-y
+template <>
+struct symbolizer_default<value_double, keys::spacing_y>
+{
+    static value_double value() { return 0.0; }
+};
+
 // max-error
 template <>
 struct symbolizer_default<value_double, keys::max_error>

@@ -54,16 +54,15 @@ struct common_pattern_process_visitor
 {
     using image_type = image_rgba8;
 
-    common_pattern_process_visitor(Rasterizer & ras,
-                                   renderer_common const & common,
-                                   Symbolizer const & sym,
-                                   feature_impl const & feature)
-        : ras_(ras),
-          common_(common),
-          sym_(sym),
-          feature_(feature),
-          spacing_(get<value_double>(sym_, keys::spacing)),
-          lacing_(get<pattern_lacing_mode_enum>(sym_, keys::lacing))
+    common_pattern_process_visitor(
+        Rasterizer & ras,
+        renderer_common const & common,
+        Symbolizer const & sym,
+        feature_impl const & feature)
+        : common_pattern_process_visitor(ras, common, sym, feature,
+            get_optional<value_double, keys::spacing>(sym, feature, common.vars_),
+            get_optional<value_double, keys::spacing_x>(sym, feature, common.vars_),
+            get_optional<value_double, keys::spacing_y>(sym, feature, common.vars_))
     {
     }
 
@@ -91,6 +90,24 @@ struct common_pattern_process_visitor
     }
 
 private:
+    common_pattern_process_visitor(
+        Rasterizer & ras,
+        renderer_common const & common,
+        Symbolizer const & sym,
+        feature_impl const & feature,
+        boost::optional<value_double> spacing,
+        boost::optional<value_double> spacing_x,
+        boost::optional<value_double> spacing_y)
+        : ras_(ras),
+          common_(common),
+          sym_(sym),
+          feature_(feature),
+          spacing_x_(spacing_x ? *spacing_x : (spacing ? *spacing : 0)),
+          spacing_y_(spacing_y ? *spacing_y : (spacing ? *spacing : 0)),
+          lacing_(get<pattern_lacing_mode_enum>(sym_, keys::lacing))
+    {
+    }
+
     agg::trans_affine transform(box2d<double> & bbox) const
     {
         agg::trans_affine tr = agg::trans_affine_scaling(common_.scale_factor_);
@@ -114,7 +131,7 @@ private:
         using renderer_solid = agg::renderer_scanline_aa_solid<renderer_base>;
         agg::scanline_u8 sl;
 
-        image_rgba8 image(bbox.width() + spacing_, bbox.height() + spacing_);
+        image_rgba8 image(bbox.width() + spacing_x_, bbox.height() + spacing_y_);
         agg::rendering_buffer buf(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf(buf);
         renderer_base renb(pixf);
@@ -133,7 +150,7 @@ private:
             agg::pod_bvector<svg::path_attributes>, renderer_solid, pixfmt>;
         renderer_type svg_renderer(svg_path, used_attributes);
 
-        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
+        tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
         return image;
     }
@@ -147,7 +164,7 @@ private:
         using renderer_base = agg::renderer_base<pixfmt>;
         using renderer = agg::renderer_scanline_aa_solid<renderer_base>;
 
-        image_rgba8 image(bbox.width() + spacing_, bbox.height() + spacing_);
+        image_rgba8 image(bbox.width() + spacing_x_, bbox.height() + spacing_y_);
         agg::rendering_buffer buf_out(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf_out(buf_out);
         renderer_base rb(pixf_out);
@@ -160,7 +177,7 @@ private:
         const_rendering_buffer buf_in(src);
         pixfmt_in pixf(buf_in);
 
-        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
+        tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
         tr.invert();
 
         using interpolator_type = agg::span_interpolator_linear<>;
@@ -197,7 +214,7 @@ private:
         using renderer_solid = agg::renderer_scanline_aa_solid<renderer_base>;
         agg::scanline_u8 sl;
 
-        image_rgba8 image(bbox.width() + spacing_, (bbox.height() + spacing_) * 2.0);
+        image_rgba8 image(bbox.width() + spacing_x_, (bbox.height() + spacing_y_) * 2.0);
         agg::rendering_buffer buf(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf(buf);
         renderer_base renb(pixf);
@@ -216,11 +233,11 @@ private:
             agg::pod_bvector<svg::path_attributes>, renderer_solid, pixfmt>;
         renderer_type svg_renderer(svg_path, used_attributes);
 
-        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
+        tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
-        tr.translate(-(bbox.width() / 2.0 + spacing_ / 2.0), bbox.height() + spacing_);
+        tr.translate(-(bbox.width() / 2.0 + spacing_x_ / 2.0), bbox.height() + spacing_y_);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
-        tr.translate(bbox.width() + spacing_, 0);
+        tr.translate(bbox.width() + spacing_x_, 0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
         return image;
     }
@@ -234,7 +251,7 @@ private:
         using renderer_base = agg::renderer_base<pixfmt>;
         using renderer = agg::renderer_scanline_aa_solid<renderer_base>;
 
-        image_rgba8 image(bbox.width() + spacing_, (bbox.height() + spacing_) * 2.0);
+        image_rgba8 image(bbox.width() + spacing_x_, (bbox.height() + spacing_y_) * 2.0);
         agg::rendering_buffer buf_out(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf_out(buf_out);
         renderer_base rb(pixf_out);
@@ -247,7 +264,7 @@ private:
         const_rendering_buffer buf_in(src);
         pixfmt_in pixf(buf_in);
 
-        tr.translate(spacing_ / 2.0, spacing_ / 2.0);
+        tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
         tr.invert();
 
         using interpolator_type = agg::span_interpolator_linear<>;
@@ -272,12 +289,12 @@ private:
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
         tr.invert();
-        tr.translate(-(bbox.width() / 2.0 + spacing_ / 2.0), bbox.height() + spacing_);
+        tr.translate(-(bbox.width() / 2.0 + spacing_x_ / 2.0), bbox.height() + spacing_y_);
         tr.invert();
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
         tr.invert();
-        tr.translate(bbox.width() + spacing_, 0);
+        tr.translate(bbox.width() + spacing_x_, 0);
         tr.invert();
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
@@ -288,7 +305,8 @@ private:
     renderer_common const & common_;
     Symbolizer const & sym_;
     feature_impl const & feature_;
-    const value_double spacing_;
+    const value_double spacing_x_;
+    const value_double spacing_y_;
     const pattern_lacing_mode_enum lacing_;
 };
 
