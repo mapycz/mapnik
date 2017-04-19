@@ -1170,6 +1170,24 @@
                 "default-meaning": "Simple repetition of the pattern.",
                 "doc": "A style of pattern repetition. Value `alternating-grid` will render pattern resembling bricks in a wall."
             },
+            "spacing": {
+                "type": "float",
+                "default-value": "0.0",
+                "default-meaning": "No spacing between pattern tiles.",
+                "doc": "Spacing between tiles."
+            },
+            "spacing-x": {
+                "type": "float",
+                "default-value": "0.0",
+                "default-meaning": "If `spacing` parameter is set, its value is used. Otherwise the `spacing-x` is zero.",
+                "doc": "Spacing between tiles in `x` direction. Has priority over `spacing` parameter."
+            },
+            "spacing-y": {
+                "type": "float",
+                "default-value": "0.0",
+                "default-meaning": "If `spacing` parameter is set, its value is used. Otherwise the `spacing-y` is zero.",
+                "doc": "Spacing between tiles in `y` direction. Has priority over `spacing` parameter."
+            },
             "stroke": {
                 "see-also": "line-pattern/stroke"
             },
