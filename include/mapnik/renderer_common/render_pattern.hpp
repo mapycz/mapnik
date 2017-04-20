@@ -214,7 +214,9 @@ private:
         using renderer_solid = agg::renderer_scanline_aa_solid<renderer_base>;
         agg::scanline_u8 sl;
 
-        image_rgba8 image(bbox.width() + spacing_x_, (bbox.height() + spacing_y_) * 2.0);
+        image_rgba8 image(
+            std::round(bbox.width() + spacing_x_),
+            std::round((bbox.height() + spacing_y_) * 2.0));
         agg::rendering_buffer buf(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf(buf);
         renderer_base renb(pixf);
@@ -235,9 +237,10 @@ private:
 
         tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
-        tr.translate(-(bbox.width() / 2.0 + spacing_x_ / 2.0), bbox.height() + spacing_y_);
+        tr.translate(std::round(-(bbox.width() / 2.0 + spacing_x_ / 2.0)),
+            bbox.height() + spacing_y_);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
-        tr.translate(bbox.width() + spacing_x_, 0);
+        tr.translate(std::round(bbox.width() + spacing_x_), 0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
         return image;
     }
@@ -251,7 +254,9 @@ private:
         using renderer_base = agg::renderer_base<pixfmt>;
         using renderer = agg::renderer_scanline_aa_solid<renderer_base>;
 
-        image_rgba8 image(bbox.width() + spacing_x_, (bbox.height() + spacing_y_) * 2.0);
+        image_rgba8 image(
+            std::round(bbox.width() + spacing_x_),
+            std::round((bbox.height() + spacing_y_) * 2.0));
         agg::rendering_buffer buf_out(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf_out(buf_out);
         renderer_base rb(pixf_out);
@@ -289,12 +294,13 @@ private:
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
         tr.invert();
-        tr.translate(-(bbox.width() / 2.0 + spacing_x_ / 2.0), bbox.height() + spacing_y_);
+        tr.translate(std::round(-(bbox.width() / 2.0 + spacing_x_ / 2.0)),
+            bbox.height() + spacing_y_);
         tr.invert();
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
         tr.invert();
-        tr.translate(bbox.width() + spacing_x_, 0);
+        tr.translate(std::round(bbox.width() + spacing_x_), 0);
         tr.invert();
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
