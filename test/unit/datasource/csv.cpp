@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,8 +28,8 @@
 #include <mapnik/datasource.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/geometry.hpp>
-#include <mapnik/geometry_types.hpp>
-#include <mapnik/geometry_type.hpp>
+#include <mapnik/geometry/geometry_types.hpp>
+#include <mapnik/geometry/geometry_type.hpp>
 #include <mapnik/expression.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/debug.hpp>

@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,7 @@
 
 // mapnik
 #include <mapnik/well_known_srs.hpp>
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/image_compositing.hpp>
 
 // stl
@@ -97,12 +97,12 @@ public:
      */
     std::vector<std::string>& styles();
 
-    /*! \brief Add a layer to the map by copying it.
+    /*! \brief Add a child layer by copying it.
      *  @param l The layer to add.
      */
     void add_layer(layer const& l);
 
-    /*! \brief Add a layer to the map by moving it.
+    /*! \brief Add a child layer by moving it.
      *  @param l The layer to add.
      */
     void add_layer(layer && l);

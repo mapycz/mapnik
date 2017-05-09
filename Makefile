@@ -1,7 +1,4 @@
-
 OS := $(shell uname -s)
-
-PYTHON = python
 
 ifeq ($(JOBS),)
 	JOBS:=1
@@ -62,13 +59,6 @@ bench:
 
 demo:
 	cd demo/c++; ./rundemo `mapnik-config --prefix`
-
-pep8:
-	# https://gist.github.com/1903033
-	# gsed on osx
-	@pep8 -r --select=W293 -q --filename=*.py `pwd`/tests/ | xargs gsed -i 's/^[ \r\t]*$$//'
-	@pep8 -r --select=W391 -q --filename=*.py `pwd`/tests/ | xargs gsed -i -e :a -e '/^\n*$$/{$$d;N;ba' -e '}'
-	@pep8 -r --select=W391 -q --filename=*.py `pwd`/tests/ | xargs ged -i '/./,/^$$/!d'
 
 # note: pass --gen-suppressions=yes to create new suppression entries
 grind:

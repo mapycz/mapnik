@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@
 #include "../../plugins/input/csv/csv_getline.hpp"
 #include "../../plugins/input/csv/csv_utils.hpp"
 #include <mapnik/datasource.hpp>
-#include <mapnik/geometry_envelope.hpp>
+#include <mapnik/geometry/envelope.hpp>
 #include <mapnik/util/utf_conv_win.hpp>
 
 #if defined(MAPNIK_MEMORY_MAPPED_FILE)

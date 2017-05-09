@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@
 #include <mapnik/xml_loader.hpp>
 #include <mapnik/expression.hpp>
 #include <mapnik/parse_path.hpp>
-#include <mapnik/parse_transform.hpp>
+#include <mapnik/transform/parse_transform.hpp>
 #include <mapnik/raster_colorizer.hpp>
 #include <mapnik/svg/svg_path_parser.hpp>
 #include <mapnik/text/placements/registry.hpp>
@@ -55,7 +55,7 @@
 #include <mapnik/image_filter_types.hpp>
 #include <mapnik/projection.hpp>
 #include <mapnik/group/group_rule.hpp>
-#include <mapnik/transform_expression.hpp>
+#include <mapnik/transform/transform_expression.hpp>
 #include <mapnik/evaluate_global_attributes.hpp>
 #include <mapnik/boolean.hpp>
 
@@ -138,7 +138,7 @@ private:
     void find_unused_nodes_recursive(xml_node const& node, std::string & error_text);
     std::string ensure_relative_to_xml(boost::optional<std::string> const& opt_path);
     void ensure_exists(std::string const& file_path);
-    void check_styles(Map const & map) const throw (config_error);
+    void check_styles(Map const & map);
     boost::optional<color> get_opt_color_attr(boost::property_tree::ptree const& node,
                                               std::string const& name);
 
@@ -1235,10 +1235,14 @@ void map_parser::parse_shield_symbolizer(rule & rule, xml_node const& node)
         if (placement_type)
         {
             placements = placements::registry::instance().from_xml(*placement_type, node, fontsets_, true);
-        } else {
-            placements = std::make_shared<text_placements_dummy>();
+            if (!placements)
+                return;
         }
-        placements->defaults.from_xml(node, fontsets_, true);
+        else
+        {
+            placements = std::make_shared<text_placements_dummy>();
+            placements->defaults.from_xml(node, fontsets_, true);
+        }
         if (strict_ &&
             !placements->defaults.format_defaults.fontset)
         {
@@ -1578,32 +1582,32 @@ bool map_parser::parse_raster_colorizer(raster_colorizer_ptr const& rc,
                 colorizer_mode mode = n.get_attr<colorizer_mode>("mode", COLORIZER_INHERIT);
 
                 // value is required, and it must be bigger than the previous
-                optional<float> value = n.get_opt_attr<float>("value");
+                optional<float> val = n.get_opt_attr<float>("value");
 
-                if(!value)
+                if (!val)
                 {
                     throw config_error("stop tag missing value");
                 }
 
-                if(value < maximumValue)
+                if (val < maximumValue)
                 {
                     throw config_error("stop tag values must be in ascending order");
                 }
-                maximumValue = *value;
+                maximumValue = *val;
 
                 optional<std::string> label = n.get_opt_attr<std::string>("label");
 
                 //append the stop
-                colorizer_stop tmpStop;
-                tmpStop.set_color(*stopcolor);
-                tmpStop.set_mode(mode);
-                tmpStop.set_value(*value);
+                colorizer_stop stop;
+                stop.set_color(*stopcolor);
+                stop.set_mode(mode);
+                stop.set_value(*val);
                 if (label)
                 {
-                    tmpStop.set_label(*label);
+                    stop.set_label(*label);
                 }
 
-                rc->add_stop(tmpStop);
+                rc->add_stop(stop);
             }
         }
     }
@@ -1786,7 +1790,7 @@ void map_parser::find_unused_nodes_recursive(xml_node const& node, std::string &
     }
 }
 
-void map_parser::check_styles(Map const & map) const throw (config_error)
+void map_parser::check_styles(Map const & map)
 {
     for (auto const & layer : map.layers())
     {

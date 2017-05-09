@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -97,7 +97,10 @@ mapnik::feature_ptr csv_featureset::next()
         std::fseek(file_.get(), file_offset, SEEK_SET);
         std::vector<char> record;
         record.resize(size);
-        std::fread(record.data(), size, 1, file_.get());
+        if (std::fread(record.data(), size, 1, file_.get()) != 1)
+        {
+            return mapnik::feature_ptr();
+        }
         auto const* start = record.data();
         auto const*  end = start + record.size();
 #endif

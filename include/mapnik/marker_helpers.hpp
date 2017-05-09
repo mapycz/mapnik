@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,13 +25,13 @@
 
 #include <mapnik/feature.hpp>
 #include <mapnik/geometry.hpp>
-#include <mapnik/geometry_type.hpp>
-#include <mapnik/geometry_centroid.hpp>
+#include <mapnik/geometry/geometry_type.hpp>
+#include <mapnik/geometry/centroid.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/svg/svg_path_attributes.hpp>
 #include <mapnik/marker.hpp> // for svg_storage_type
 #include <mapnik/attribute.hpp>
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/label_collision_detector.hpp>
 #include <mapnik/symbol_cache.hpp>

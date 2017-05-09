@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -33,7 +33,7 @@
 #include <mapnik/query.hpp>
 #include <mapnik/datasource.hpp>
 #include <mapnik/feature_type_style.hpp>
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/layer.hpp>
 #include <mapnik/rule.hpp>
 #include <mapnik/rule_cache.hpp>
@@ -390,10 +390,10 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
             continue;
         }
 
-        std::vector<rule> const& rules = style->get_rules();
+        std::vector<rule> const& style_rules = style->get_rules();
         bool active_rules = false;
         rule_cache rc;
-        for(rule const& r : rules)
+        for(rule const& r : style_rules)
         {
             if (r.active(scale_denom))
             {

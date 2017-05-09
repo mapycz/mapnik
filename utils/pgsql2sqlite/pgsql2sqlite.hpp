@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,8 +29,8 @@
 #include <mapnik/global.hpp>
 #include <mapnik/sql_utils.hpp>
 #include <mapnik/util/conversions.hpp>
-#include <mapnik/geometry_is_empty.hpp>
-#include <mapnik/geometry_envelope.hpp>
+#include <mapnik/geometry/is_empty.hpp>
+#include <mapnik/geometry/envelope.hpp>
 
 #include "connection_manager.hpp"
 #include "cursorresultset.hpp"

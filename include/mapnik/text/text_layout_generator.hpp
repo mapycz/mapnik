@@ -22,7 +22,7 @@
 #ifndef MAPNIK_TEXT_LAYOUT_GENERATOR
 #define MAPNIK_TEXT_LAYOUT_GENERATOR
 
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/util/noncopyable.hpp>

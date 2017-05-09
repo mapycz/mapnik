@@ -22,7 +22,7 @@
 #ifndef MAPNIK_LABEL_PLACEMENT_VERTEX_LAYOUT_HPP
 #define MAPNIK_LABEL_PLACEMENT_VERTEX_LAYOUT_HPP
 
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/vertex_adapters.hpp>
 #include <mapnik/vertex_processor.hpp>
