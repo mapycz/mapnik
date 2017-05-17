@@ -7,7 +7,6 @@ subdirs =  {
   './sparsehash':{'dir':'sparsehash','glob':'*'},
   './sparsehash/internal':{'dir':'sparsehash/internal','glob':'*'},
   '../agg/include':{'dir':'agg','glob':'agg*'},
-  '../mapbox/variant/include':{'dir':'mapbox','glob':'*/*.hpp'}
 }
 
 if 'install' in COMMAND_LINE_TARGETS:

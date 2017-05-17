@@ -7,6 +7,3 @@
 [submodule "test/data-visual"]
 	path = test/data-visual
 	url = https://github.com/mapycz/test-data-visual.git
-[submodule "deps/mapbox/variant"]
-	path = deps/mapbox/variant
-	url = https://github.com/mapbox/variant.git
