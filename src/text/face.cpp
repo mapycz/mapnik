@@ -30,12 +30,38 @@ extern "C"
 {
 #include FT_GLYPH_H
 #include FT_TRUETYPE_TABLES_H
+
+#undef FTERRORS_H_
+#undef __FTERRORS_H__
+#define FT_ERRORDEF( e, v, s )  { e, s },
+#define FT_ERROR_START_LIST     {
+#define FT_ERROR_END_LIST       { 0, nullptr } };
+
+const struct
+{
+  int          err_code;
+  const char*  err_msg;
+} ft_errors[] =
+
+#include FT_ERRORS_H
 }
 
 #pragma GCC diagnostic pop
 
 namespace mapnik
 {
+
+const char * ft_translate_error_code(int err_code)
+{
+    for (auto const * e = ft_errors; e->err_msg != nullptr; ++e)
+    {
+        if (e->err_code == err_code)
+        {
+            return e->err_msg;
+        }
+    }
+    return "Unknown error";
+}
 
 font_face::font_face(FT_Face face)
     : face_(face), unscaled_ascender_(get_ascender())
@@ -66,16 +92,19 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     FT_Set_Transform(face_, 0, &pen);
     FT_Int32 load_flags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING;
     if (color_font_) load_flags |= FT_LOAD_COLOR ;
-    if (FT_Load_Glyph(face_, glyph.glyph_index, load_flags))
+    if (FT_Error error = FT_Load_Glyph(face_, glyph.glyph_index, load_flags))
     {
-        MAPNIK_LOG_ERROR(font_face) << "FT_Load_Glyph failed :( index=" << glyph.glyph_index << " " << load_flags
+        MAPNIK_LOG_ERROR(font_face) << "FT_Load_Glyph failed: " << ft_translate_error_code(error)
+                                    << " (0x" << std::hex << error << "): index="
+                                    << glyph.glyph_index << " " << load_flags
                                     << " " << face_->family_name << " " << face_->style_name  ;
         return false;
     }
     FT_Glyph image;
-    if (FT_Get_Glyph(face_->glyph, &image))
+    if (FT_Error error = FT_Get_Glyph(face_->glyph, &image))
     {
-        MAPNIK_LOG_ERROR(font_face) << "FT_Get_Glyph failed";
+        MAPNIK_LOG_ERROR(font_face) << "FT_Get_Glyph failed: " << ft_translate_error_code(error)
+                                    << " (0x" << std::hex << error << ")";
         return false;
     }
     FT_BBox glyph_bbox;
