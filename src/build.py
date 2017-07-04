@@ -103,7 +103,7 @@ if '-DHAVE_JPEG' in env['CPPDEFINES']:
 
 lib_env['LIBS'].append(env['ICU_LIB_NAME'])
 
-lib_env['LIBS'].append('freetype')
+lib_env['LIBS'].append(File('/opt/szn/lib/libfreetype.a'))
 
 if env['RUNTIME_LINK'] == 'static':
     if 'icuuc' in env['ICU_LIB_NAME']:
