@@ -128,7 +128,11 @@ public:
     void render(glyph_positions const& positions);
 private:
     pixmap_type & pixmap_;
-    void render_halo(FT_Bitmap_ *bitmap, unsigned rgba, int x, int y,
+    void render_halo(unsigned char *buffer,
+                     unsigned width,
+                     unsigned height,
+                     unsigned pixel_width,
+                     unsigned rgba, int x, int y,
                      double halo_radius, double opacity,
                      composite_mode_e comp_op);
 };
