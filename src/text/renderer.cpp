@@ -67,6 +67,7 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
 
     for (auto const& glyph_pos : positions)
     {
+          std::clog << "glyph_pos: " << glyph_pos.pos.x << "; " << glyph_pos.pos.y << std::endl;
         glyph_info const& glyph = glyph_pos.glyph;
         FT_Int32 load_flags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING;
 
@@ -89,6 +90,7 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
                     }
                 }
                 error = FT_Select_Size(face, best_match);
+                std::clog << "best_match: " << best_match << std::endl;
             }
         }
         else
@@ -139,6 +141,8 @@ template <typename T>
 void composite_color_bitmap(T & pixmap, FT_Bitmap *bitmap, int x, int y, double size, double opacity, composite_mode_e comp_op)
 {
   image_rgba8 image(bitmap->width, bitmap->rows);
+  //std::clog << "BITMAP: " << bitmap->width << "; " << bitmap->rows << std::endl;
+  std::clog << "xy: " << x << "; " << y << std::endl;
 
   for (unsigned i = 0, p = 0; i < bitmap->width; ++i, p += 4)
   {
@@ -152,6 +156,8 @@ void composite_color_bitmap(T & pixmap, FT_Bitmap *bitmap, int x, int y, double 
           image(i, j) = c;
       }
   }
+
+//mapnik::save_to_file(image, std::to_string((unsigned long)bitmap) + ".png", "png32");
   double scale = size/image.height();
   int scaled_width = bitmap->width * scale;
   int scaled_height = bitmap->rows * scale;
@@ -220,7 +226,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         error = FT_Glyph_Copy(glyph.image, &g);
         if (!error)
         {
-            FT_Glyph_Transform(g, &halo_matrix, &start_halo);
+            int e = FT_Glyph_Transform(g, &halo_matrix, &start_halo);
             if (rasterizer_ == HALO_RASTERIZER_FULL)
             {
                 stroker_->init(halo_radius);
@@ -263,7 +269,11 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         fill = glyph.properties.fill.rgba();
         text_opacity = glyph.properties.text_opacity;
 
-        FT_Glyph_Transform(glyph.image, &matrix, &start);
+        FT_Error e = FT_Glyph_Transform(glyph.image, &matrix, &start);
+        if (e)
+        {
+            std::clog << "NOT SCAL!" << std::endl;
+        }
         error = 0;
         if ( glyph.image->format != FT_GLYPH_FORMAT_BITMAP )
         {
@@ -272,6 +282,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         }
         if (error == 0)
         {
+              std::clog << "gl pos: " << glyph.pos.x << "; " << glyph.pos.y << std::endl;
             FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(glyph.image);
             int pixel_mode = bit->bitmap.pixel_mode;
             if (pixel_mode == 7)

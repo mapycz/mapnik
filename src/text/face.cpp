@@ -85,16 +85,16 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     glyph.unscaled_ymax = glyph_bbox.yMax;
     if (color_font_)
     {
-        int height = glyph.unscaled_ymax - glyph.unscaled_ymin;
-        std::clog << ">> " << height << std::endl;
-        glyph.unscaled_ymin = (glyph.unscaled_ymin / height) * 2048 / 64;
-        glyph.unscaled_ymax = (glyph.unscaled_ymax / height) * 2048 / 64;
+        double scale_multiplier = 2048.0 / (face_->size->metrics.height);
+        glyph.unscaled_ymin *= scale_multiplier;
+        glyph.unscaled_ymax *= scale_multiplier;
     }
     std::clog << "BOX: " << glyph_bbox.yMin << "; " << glyph_bbox.yMax << std::endl;
     //glyph.offset.set(face_->glyph->metrics.horiBearingX, face_->glyph->metrics.horiBearingY);
 
     glyph.unscaled_advance = face_->glyph->advance.x;
     glyph.unscaled_line_height = face_->size->metrics.height;
+    std::clog << "glyph.unscaled_line_height: " << face_->size->metrics.height << std::endl;
     return true;
 }
 

@@ -54,6 +54,7 @@ box2d<double> get_bbox(text_layout const& layout, glyph_info const& glyph, pixel
       (0/ymin)          (width/ymin)
       Add glyph offset in y direction, but not in x direction (as we use the full cluster width anyways)!
     */
+          std::clog << "XXX: " << glyph.ymin() << "; " << glyph.ymax() << std::endl;
     double width = layout.cluster_width(glyph.char_index);
     if (glyph.advance() <= 0) width = -width;
     pixel_position tmp, tmp2;
@@ -338,15 +339,19 @@ bool placement_finder::single_line_placement(vertex_cache &pp, text_upright_e or
                 }
 
                 pixel_position pos = off_pp.current_position() + cluster_offset;
+          std::clog << "0: " << pos.x << "; " << pos.y << std::endl;
                 // Center the text on the line
                 double char_height = line.max_char_height();
                 pos.y = -pos.y - char_height/2.0*rot.cos;
                 pos.x =  pos.x + char_height/2.0*rot.sin;
+          std::clog << "char_height: " << char_height << std::endl;
+          std::clog << "PLF: " << pos.x << "; " << pos.y << std::endl;
 
                 cluster_offset.x += rot.cos * glyph.advance();
                 cluster_offset.y -= rot.sin * glyph.advance();
 
                 box2d<double> bbox = get_bbox(layout, glyph, pos, rot);
+          std::clog << bbox << std::endl;
                 if (collision(bbox, layouts_.text(), true)) return false;
                 bboxes.push_back(std::move(bbox));
                 glyphs->emplace_back(glyph, pos, rot);
