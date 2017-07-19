@@ -277,10 +277,11 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
             if (pixel_mode == 7)
             {
                 int x = (start.x >> 6) + glyph.pos.x;
-                int y = height - (start.y >> 6) + glyph.pos.y;
+                int y = (start.y >> 6) + glyph.pos.y;
+              std::clog << "start.y: " << start.y << std::endl;
                 composite_color_bitmap(pixmap_,
                                        &bit->bitmap,
-                                       x,y, glyph.size,
+                                       x, y, glyph.size,
                                        text_opacity,
                                        comp_op_);
             }
