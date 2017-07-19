@@ -312,7 +312,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         {
             FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(glyph.image);
             int pixel_mode = bit->bitmap.pixel_mode;
-            if (pixel_mode == 7)
+            if (pixel_mode == FT_PIXEL_MODE_BGRA)
             {
                 int x = (start.x >> 6) + glyph.pos.x;
                 int y = height - (start.y >> 6) + glyph.pos.y;
