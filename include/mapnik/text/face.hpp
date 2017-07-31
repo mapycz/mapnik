@@ -77,11 +77,12 @@ public:
     ~font_face();
 
 private:
+    bool init_color_font();
     double get_ascender();
 
     FT_Face face_;
+    const bool color_font_;
     const double unscaled_ascender_;
-    bool color_font_ = false;
 };
 using face_ptr = std::shared_ptr<font_face>;
 

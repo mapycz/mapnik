@@ -172,7 +172,11 @@ static void shape_text(text_line & line,
                     g.scale_multiplier = theface->get_face()->units_per_EM > 0 ?
                         (size / theface->get_face()->units_per_EM) : (size / 2048.0) ;
                     //Overwrite default advance with better value provided by HarfBuzz
-                    g.unscaled_advance = gpos.x_advance;
+                    // TODO: Why FT advance is more precise for color fonts?
+                    if (!g.face->is_color())
+                    {
+                        g.unscaled_advance = gpos.x_advance;
+                    }
                     g.offset.set(gpos.x_offset * g.scale_multiplier, gpos.y_offset * g.scale_multiplier);
                     width_map[char_index] += g.advance();
                     line.add_glyph(std::move(g), scale_factor);

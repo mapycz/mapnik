@@ -35,7 +35,11 @@
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
 
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
+#include "agg_pixfmt_rgba.h"
 #include <agg_trans_affine.h>
+#pragma GCC diagnostic pop
 
 // freetype2
 extern "C"
@@ -50,19 +54,26 @@ extern "C"
 namespace mapnik
 {
 
-struct evaluated_format_properties;
-
 struct glyph_t
 {
+    glyph_info const& info;
     FT_Glyph image;
-    evaluated_format_properties const& properties;
     pixel_position pos;
+    rotation rot;
     double size;
-    glyph_t(FT_Glyph image_, evaluated_format_properties const& properties_, pixel_position const& pos_, double size_)
-        : image(image_),
-          properties(properties_),
+    box2d<double> bbox;
+    glyph_t(glyph_info const& info_,
+            FT_Glyph image_,
+            pixel_position const& pos_,
+            rotation const& rot_,
+            double size_,
+            box2d<double> const& bbox_)
+        : info(info_),
+          image(image_),
           pos(pos_),
-          size(size_) {}
+          rot(rot_),
+          size(size_),
+          bbox(bbox_) {}
 };
 
 class text_renderer : private util::noncopyable
@@ -115,6 +126,31 @@ protected:
     agg::trans_affine halo_transform_;
 };
 
+class halo_cache
+{
+public:
+    using key_type = std::tuple<std::string, // family
+                                std::string, // face
+                                unsigned, // glyph index
+                                unsigned, // glyph height
+                                int>; // halo radius
+    using img_type = image_gray8;
+    using value_type = std::unique_ptr<img_type>;
+
+    using pixfmt_type = agg::pixfmt_rgba32_pre;
+
+    image_gray8 const& get(glyph_info const & glyph,
+                           pixfmt_type const& bitmap,
+                           double halo_radius);
+
+private:
+    std::map<key_type, value_type> cache_;
+
+    void render_halo_img(pixfmt_type const& glyph_bitmap,
+                         img_type & halo_bitmap,
+                         int radius);
+};
+
 template <typename T>
 class agg_text_renderer : public text_renderer
 {
@@ -128,6 +164,8 @@ public:
     void render(glyph_positions const& positions);
 private:
     pixmap_type & pixmap_;
+    halo_cache halo_cache_;
+
     void render_halo(unsigned char *buffer,
                      unsigned width,
                      unsigned height,
