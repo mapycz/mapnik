@@ -414,8 +414,8 @@ struct agg_render_marker_visitor
         // center the svg marker on '0,0'
         agg::trans_affine mtx = agg::trans_affine_translation(-c.x,-c.y);
         // apply symbol transformation to get to map space
-        mtx *= tr_;
         mtx *= agg::trans_affine_scaling(common_.scale_factor_);
+        mtx *= tr_;
         // render the marker at the center of the marker box
         mtx.translate(pos_.x, pos_.y);
         using namespace mapnik::svg;
@@ -487,8 +487,8 @@ struct agg_render_marker_visitor
             agg::trans_affine marker_tr;
 
             marker_tr *= agg::trans_affine_translation(-pos_.x,-pos_.y);
-            marker_tr *= tr_;
             marker_tr *= agg::trans_affine_scaling(common_.scale_factor_);
+            marker_tr *= tr_;
             marker_tr *= agg::trans_affine_translation(pos_.x,pos_.y);
 
             marker_tr.transform(&p[0], &p[1]);
