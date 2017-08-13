@@ -125,6 +125,15 @@ private:
     std::atomic<std::size_t> & fail_count_;
 };
 
+struct renderer_name_visitor
+{
+    template <typename Renderer>
+    std::string operator()(Renderer const&) const
+    {
+        return Renderer::renderer_type::name;
+    }
+};
+
 runner::runner(runner::path_type const & styles_dir,
                config const & defaults,
                std::size_t iterations,
@@ -303,6 +312,16 @@ result_list runner::test_one(runner::path_type const& style_path,
         box.from_string(*bbox_string);
     }
 
+    boost::optional<std::string> ignored_renderers = params.get<std::string>("ignored_renderers");
+
+    if (ignored_renderers)
+    {
+        cfg.ignored_renderers.clear();
+        std::vector<std::string> renderer_names;
+        parse_name_list(*ignored_renderers, renderer_names);
+        cfg.ignored_renderers.insert(renderer_names.begin(), renderer_names.end());
+    }
+
     std::string name(style_path.stem().string());
 
     for (auto const & size : cfg.sizes)
@@ -322,6 +341,13 @@ result_list runner::test_one(runner::path_type const& style_path,
 
                 for (auto const & ren : renderers_)
                 {
+                    std::string renderer_name = mapnik::util::apply_visitor(
+                        renderer_name_visitor(), ren);
+                    if (cfg.ignored_renderers.count(renderer_name))
+                    {
+                        continue;
+                    }
+
                     map.resize(size.width * scale_factor, size.height * scale_factor);
                     if (box.valid())
                     {
@@ -360,6 +386,17 @@ void runner::parse_map_sizes(std::string const & str, std::vector<map_size> & si
     if (!boost::spirit::qi::phrase_parse(iter, end, map_sizes_parser_, space, sizes))
     {
         throw std::runtime_error("Failed to parse list of sizes: '" + str + "'");
+    }
+}
+
+void runner::parse_name_list(std::string const & str, std::vector<std::string> & list) const
+{
+    boost::spirit::ascii::space_type space;
+    std::string::const_iterator iter = str.begin();
+    std::string::const_iterator end = str.end();
+    if (!boost::spirit::qi::phrase_parse(iter, end, name_list_parser_, space, list))
+    {
+        throw std::runtime_error("Failed to parse list of names: '" + str + "'");
     }
 }
 

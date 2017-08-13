@@ -148,6 +148,10 @@ template struct comp_op_rgba_saturation<agg::rgba8, agg::order_rgba>;
 template struct comp_op_rgba_color<agg::rgba8, agg::order_rgba>;
 template struct comp_op_rgba_value<agg::rgba8, agg::order_rgba>;
 
+template struct comp_op_rgba_hue<agg::rgba8, agg::order_bgra>;
+template struct comp_op_rgba_saturation<agg::rgba8, agg::order_bgra>;
+template struct comp_op_rgba_color<agg::rgba8, agg::order_bgra>;
+template struct comp_op_rgba_value<agg::rgba8, agg::order_bgra>;
 
 
 }

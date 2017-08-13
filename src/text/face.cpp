@@ -64,12 +64,18 @@ const char * ft_translate_error_code(int err_code)
 }
 
 font_face::font_face(FT_Face face)
-    : face_(face), unscaled_ascender_(get_ascender())
+    : face_(face),
+      color_font_(init_color_font()),
+      unscaled_ascender_(get_ascender())
+{
+}
+
+bool font_face::init_color_font()
 {
     static const uint32_t tag = FT_MAKE_TAG('C', 'B', 'D', 'T');
     unsigned long length = 0;
     FT_Load_Sfnt_Table(face_, tag, 0, nullptr, &length);
-    if (length) color_font_ = true;
+    return length > 0;
 }
 
 bool font_face::set_character_sizes(double size)
@@ -112,9 +118,19 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     FT_Done_Glyph(image);
     glyph.unscaled_ymin = glyph_bbox.yMin;
     glyph.unscaled_ymax = glyph_bbox.yMax;
-    glyph.unscaled_advance = face_->glyph->advance.x;
-    glyph.unscaled_line_height = face_->size->metrics.height;
     glyph.unscaled_ascender = unscaled_ascender_;
+    glyph.unscaled_advance = face_->glyph->advance.x;
+
+    if (color_font_)
+    {
+        double scale_multiplier = 2048.0 / (face_->size->metrics.height);
+        glyph.unscaled_ymin *= scale_multiplier;
+        glyph.unscaled_ymax *= scale_multiplier;
+        glyph.unscaled_advance *= scale_multiplier;
+        glyph.unscaled_ascender *= scale_multiplier;
+    }
+
+    glyph.unscaled_line_height = face_->size->metrics.height;
     return true;
 }
 
@@ -138,7 +154,15 @@ double font_face::get_ascender()
     pen.y = 0;
     FT_Set_Transform(face_, 0, &pen);
     int e = 0;
-    if (!(e = FT_Load_Glyph(face_, glyph_index, FT_LOAD_NO_HINTING)))
+    FT_Int32 load_flags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING;
+
+    if (color_font_)
+    {
+        load_flags |= FT_LOAD_COLOR;
+        FT_Select_Size(face_, 0);
+    }
+
+    if (!(e = FT_Load_Glyph(face_, glyph_index, load_flags)))
     {
         FT_Glyph image;
         if (!FT_Get_Glyph(face_->glyph, &image))
@@ -146,7 +170,7 @@ double font_face::get_ascender()
             FT_BBox glyph_bbox;
             FT_Glyph_Get_CBox(image, FT_GLYPH_BBOX_TRUNCATE, &glyph_bbox);
             FT_Done_Glyph(image);
-            return 64.0 * (glyph_bbox.yMax - glyph_bbox.yMin);
+            return 64.0 * glyph_bbox.yMax;
         }
     }
     return face_->ascender;

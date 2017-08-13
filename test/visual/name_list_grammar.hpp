@@ -20,30 +20,40 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_VERSION_HPP
-#define MAPNIK_VERSION_HPP
+#ifndef NAME_LIST_GRAMMAR_HPP
+#define NAME_LIST_GRAMMAR_HPP
 
-#include <mapnik/stringify_macro.hpp>
-#include <mapnik/config.hpp>
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/phoenix.hpp>
+#pragma GCC diagnostic pop
 
-#include <string>
-
-#define MAPNIK_MAJOR_VERSION 3
-#define MAPNIK_MINOR_VERSION 8
-#define MAPNIK_PATCH_VERSION 0
-
-#define MAPNIK_VERSION (MAPNIK_MAJOR_VERSION*100000) + (MAPNIK_MINOR_VERSION*100) + (MAPNIK_PATCH_VERSION)
-
-#define MAPNIK_VERSION_STRING   MAPNIK_STRINGIFY(MAPNIK_MAJOR_VERSION) "." \
-                                MAPNIK_STRINGIFY(MAPNIK_MINOR_VERSION) "." \
-                                MAPNIK_STRINGIFY(MAPNIK_PATCH_VERSION)
-
-namespace mapnik
+namespace visual_tests
 {
 
-MAPNIK_DECL unsigned version_number();
-MAPNIK_DECL std::string version_string();
+namespace qi = boost::spirit::qi;
+namespace ascii = boost::spirit::ascii;
+
+template <typename Iterator>
+struct name_list_grammar : qi::grammar<Iterator, std::vector<std::string>(), ascii::space_type>
+{
+    name_list_grammar() : name_list_grammar::base_type(start)
+    {
+        using namespace boost::spirit::qi;
+        using namespace boost::phoenix;
+
+        alnum_type alnum;
+        _1_type _1;
+        _val_type val;
+        as_string_type as_string;
+
+        start = as_string[(+alnum)][push_back(val, _1)] % ',';
+    }
+
+    qi::rule<Iterator, std::vector<std::string>(), ascii::space_type> start;
+};
 
 }
 
-#endif // MAPNIK_VERSION_HPP
+#endif
