@@ -25,6 +25,7 @@
 
 // stl
 #include <vector>
+#include <set>
 #include <string>
 #include <chrono>
 
@@ -53,6 +54,7 @@ struct config
     std::vector<double> scales;
     std::vector<map_size> sizes;
     std::vector<map_size> tiles;
+    std::set<std::string> ignored_renderers;
 };
 
 enum result_state : std::uint8_t
