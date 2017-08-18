@@ -41,7 +41,7 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
     box2d<double> clip_box = clipping_extent(common_);
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
-    if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
+    if (transform) evaluate_transform(tr, feature, common_.vars_, *transform);
     text_symbolizer_helper helper(
         sym, feature, common_.vars_, prj_trans,
         common_.width_, common_.height_,
@@ -63,7 +63,7 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
     if (halo_transform)
     {
         agg::trans_affine halo_affine_transform;
-        evaluate_transform(halo_affine_transform, feature, common_.vars_, *halo_transform, common_.scale_factor_);
+        evaluate_transform(halo_affine_transform, feature, common_.vars_, *halo_transform);
         ren.set_halo_transform(halo_affine_transform);
     }
 

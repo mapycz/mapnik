@@ -68,7 +68,7 @@ void cairo_renderer<T>::process(line_symbolizer const& sym,
 
     agg::trans_affine tr;
     auto geom_transform = get_optional<transform_type>(sym, keys::geometry_transform);
-    if (geom_transform) { evaluate_transform(tr, feature, common_.vars_, *geom_transform, common_.scale_factor_); }
+    if (geom_transform) { evaluate_transform(tr, feature, common_.vars_, *geom_transform); }
 
     box2d<double> clipping_extent = common_.query_extent_;
     if (clip)

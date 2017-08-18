@@ -32,11 +32,11 @@ namespace mapnik {
 void evaluate_transform(agg::trans_affine& tr,
                         feature_impl const& feature,
                         attributes const& vars,
-                        transform_list_ptr const& trans_expr, double scale_factor)
+                        transform_list_ptr const& trans_expr)
 {
     if (trans_expr)
     {
-        transform_processor_type::evaluate(tr, feature, vars, *trans_expr, scale_factor);
+        transform_processor_type::evaluate(tr, feature, vars, *trans_expr);
     }
 }
 // END FIXME

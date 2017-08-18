@@ -91,7 +91,7 @@ void grid_renderer<T>::process(line_pattern_symbolizer const& sym,
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform)
     {
-        evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
+        evaluate_transform(tr, feature, common_.vars_, *transform);
     }
 
     box2d<double> clipping_extent = common_.query_extent_;

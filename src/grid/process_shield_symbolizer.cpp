@@ -48,7 +48,7 @@ void  grid_renderer<T>::process(shield_symbolizer const& sym,
 {
     agg::trans_affine tr;
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
-    if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
+    if (transform) evaluate_transform(tr, feature, common_.vars_, *transform);
 
     text_symbolizer_helper helper(
             sym, feature, common_.vars_, prj_trans,

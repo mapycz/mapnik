@@ -107,12 +107,10 @@ struct transform_processor
     {
         node_evaluator(transform_type& tr,
                        feature_type const& feat,
-                       variable_type const& v,
-                       double scale_factor)
+                       variable_type const& v)
             : transform_(tr),
               feature_(feat),
-              vars_(v),
-              scale_factor_(scale_factor) {}
+              vars_(v) {}
 
         void operator() (identity_node const&) const
         {
@@ -124,15 +122,15 @@ struct transform_processor
             double b = eval(node.b_);
             double c = eval(node.c_);
             double d = eval(node.d_); // scale y;
-            double e = eval(node.e_) * scale_factor_; // translate x
-            double f = eval(node.f_) * scale_factor_; // translate y
+            double e = eval(node.e_); // translate x
+            double f = eval(node.f_); // translate y
             transform_.multiply(agg::trans_affine(a, b, c, d, e, f));
         }
 
         void operator() (translate_node const& node) const
         {
-            double tx = eval(node.tx_) * scale_factor_;
-            double ty = eval(node.ty_, 0.0) * scale_factor_;
+            double tx = eval(node.tx_);
+            double ty = eval(node.ty_, 0.0);
             transform_.translate(tx, ty);
         }
 
@@ -192,7 +190,6 @@ struct transform_processor
         transform_type& transform_;
         feature_type const& feature_;
         variable_type const& vars_;
-        double scale_factor_;
     };
 
     template <typename Container>
@@ -210,10 +207,9 @@ struct transform_processor
     static void evaluate(transform_type& tr,
                          feature_type const& feat,
                          variable_type const& vars,
-                         transform_list const& list,
-                         double scale_factor)
+                         transform_list const& list)
     {
-        node_evaluator eval(tr, feat, vars, scale_factor);
+        node_evaluator eval(tr, feat, vars);
 
         transform_list::const_reverse_iterator rit;
         for (rit = list.rbegin(); rit!= list.rend(); ++rit)

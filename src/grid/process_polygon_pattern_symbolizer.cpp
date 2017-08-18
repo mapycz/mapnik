@@ -75,7 +75,7 @@ void grid_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (transform)
     {
-        evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
+        evaluate_transform(tr, feature, common_.vars_, *transform);
     }
 
     using vertex_converter_type = vertex_converter<clip_poly_tag,

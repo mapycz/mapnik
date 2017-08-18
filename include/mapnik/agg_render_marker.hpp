@@ -56,6 +56,7 @@ void render_vector_marker(SvgRenderer & svg_renderer, RasterizerType & ras, Rend
                           box2d<double> const& bbox, agg::trans_affine const& tr,
                           double opacity, bool snap_to_pixels)
 {
+    std::clog << "REN" << std::endl;
     agg::scanline_u8 sl;
     if (snap_to_pixels)
     {
