@@ -282,6 +282,10 @@ static void shape_text(text_line & line,
                         g.unscaled_advance = gpos.x_advance;
                         g.offset.set(gpos.x_offset * g.scale_multiplier, gpos.y_offset * g.scale_multiplier);
                         double tmp_height = g.height();
+                        if (g.face->is_color())
+                        {
+                            tmp_height = g.ymax();
+                        }
                         if (tmp_height > max_glyph_height) max_glyph_height = tmp_height;
                         width_map[char_index] += g.advance();
                         line.add_glyph(std::move(g), scale_factor);
