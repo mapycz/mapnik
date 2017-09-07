@@ -62,16 +62,21 @@ public:
                                 unsigned, // glyph height
                                 int>; // halo radius
     using img_type = image_gray8;
-    using value_type = std::unique_ptr<img_type>;
 
     using pixfmt_type = agg::pixfmt_rgba32_pre;
 
-    image_gray8 const& get(glyph_info const & glyph,
-                           pixfmt_type const& bitmap,
-                           double halo_radius);
+    img_type const& get(glyph_info const & glyph,
+                        pixfmt_type const& bitmap,
+                        double halo_radius);
 
 private:
-    std::map<key_type, value_type> cache_;
+    std::map<key_type, img_type> cache_;
+
+    using kernel_type = image_gray8;
+    using kernel_cache_type = std::map<unsigned, kernel_type>;
+    kernel_cache_type kernel_cache_;
+
+    kernel_type const& get_kernel(unsigned radius);
 
     void render_halo_img(pixfmt_type const& glyph_bitmap,
                          img_type & halo_bitmap,

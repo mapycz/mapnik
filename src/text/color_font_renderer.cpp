@@ -40,6 +40,9 @@
 #include "agg_span_image_filter_rgba.h"
 #include "agg_renderer_base.h"
 #include "agg_renderer_scanline.h"
+#include "agg_ellipse.h"
+#include "agg_pixfmt_gray.h"
+#include "agg_scanline_bin.h"
 #pragma GCC diagnostic pop
 
 namespace mapnik
@@ -214,21 +217,59 @@ void composite_color_glyph<image_rgba8>(image_rgba8 & pixmap,
                            double opacity,
                            composite_mode_e comp_op);
 
+void draw_kernel(image_gray8 & kernel)
+{
+    agg::rasterizer_scanline_aa<> ras;
+    agg::ellipse ellipse(kernel.width() / 2, kernel.height() / 2,
+                         kernel.width() / 2, kernel.height() / 2);
+    ras.add_path(ellipse);
+
+    agg::rendering_buffer buf(kernel.data(), kernel.width(), kernel.height(), kernel.row_size());
+    agg::pixfmt_gray8 pixfmt(buf);
+    using renderer_base = agg::renderer_base<agg::pixfmt_gray8>;
+    using renderer_bin = agg::renderer_scanline_bin_solid<renderer_base>;
+    renderer_base rb(pixfmt);
+    renderer_bin ren_bin(rb);
+    ren_bin.color(agg::gray8(1));
+    agg::scanline_bin sl_bin;
+    agg::render_scanlines(ras, sl_bin, ren_bin);
+
+}
+
+halo_cache::kernel_type const& halo_cache::get_kernel(unsigned radius)
+{
+    auto ret = kernel_cache_.emplace(std::piecewise_construct,
+                                     std::forward_as_tuple(radius),
+                                     std::forward_as_tuple(2 * radius, 2 * radius));
+
+    kernel_type & kernel = ret.first->second;
+
+    if (!ret.second)
+    {
+        return kernel;
+    }
+
+    draw_kernel(kernel);
+    return kernel;
+}
+
 void halo_cache::render_halo_img(pixfmt_type const& glyph_bitmap,
                                  img_type & halo_bitmap,
                                  int radius)
 {
+    image_gray8 const& kernel = get_kernel(radius);
+
     for (int x = 0; x < glyph_bitmap.width(); x++)
     {
         for (int y = 0; y < glyph_bitmap.height(); y++)
         {
             if (*reinterpret_cast<const pixfmt_type::pixel_type*>(glyph_bitmap.pix_ptr(x, y)))
             {
-                for (int n = -radius; n <= radius; ++n)
+                for (int n = 0; n < kernel.width(); ++n)
                 {
-                    for (int m = -radius; m <= radius; ++m)
+                    for (int m = 0; m < kernel.height(); ++m)
                     {
-                        halo_bitmap(radius + x + n, radius + y + m) = 1;
+                        halo_bitmap(x + n, y + m) |= kernel(n, m);
                     }
                 }
             }
@@ -236,22 +277,24 @@ void halo_cache::render_halo_img(pixfmt_type const& glyph_bitmap,
     }
 }
 
-image_gray8 const& halo_cache::get(glyph_info const & glyph,
-                                   pixfmt_type const& bitmap,
-                                   double halo_radius)
+halo_cache::img_type const& halo_cache::get(glyph_info const & glyph,
+                                            pixfmt_type const& bitmap,
+                                            double halo_radius)
 {
     key_type key(glyph.face->family_name(), glyph.face->style_name(),
         glyph.glyph_index, glyph.height(), halo_radius);
-    value_type & halo_img_ptr = cache_[key];
+    auto ret = cache_.emplace(std::piecewise_construct,
+                              std::forward_as_tuple(key),
+                              std::forward_as_tuple(bitmap.width() + 2 * halo_radius,
+                                                    bitmap.height() + 2 * halo_radius));
 
-    if (halo_img_ptr)
+    img_type & halo_img = ret.first->second;
+
+    if (!ret.second)
     {
-        return *halo_img_ptr;
+        return halo_img;
     }
 
-    halo_img_ptr.reset(new img_type(bitmap.width() + 2 * halo_radius,
-                                    bitmap.height() + 2 * halo_radius));
-    img_type & halo_img = *halo_img_ptr;
     render_halo_img(bitmap, halo_img, halo_radius);
     return halo_img;
 }
