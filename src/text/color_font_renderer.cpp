@@ -69,7 +69,7 @@ public:
 private:
     const agg::int8u* pixel() const
     {
-        int x = x_ + radius_, y = y_ + radius_;
+        int x = x_, y = y_;
         if (x < 0) x = 0;
         if (y < 0) y = 0;
         if (x >= halo_img_.width()) x = halo_img_.width() - 1;
@@ -114,7 +114,7 @@ void composite_color_glyph(Pixmap & pixmap,
                            ImageAccessor & img_accessor,
                            double width,
                            double height,
-                           agg::trans_affine const& transform,
+                           agg::trans_affine const& tr,
                            int x,
                            int y,
                            double angle,
@@ -123,20 +123,11 @@ void composite_color_glyph(Pixmap & pixmap,
                            double halo_radius,
                            composite_mode_e comp_op)
 {
-    double scale = bbox.height() / height;
-    double x0 = x;
-    double y0 = y - bbox.maxy() / scale;
     double p[8];
-    p[0] = x0;         p[1] = y0;
-    p[2] = x0 + width; p[3] = y0;
-    p[4] = x0 + width; p[5] = y0 + height;
-    p[6] = x0;         p[7] = y0 + height;
-
-    agg::trans_affine tr(transform);
-    tr *= agg::trans_affine_translation(-x, -y);
-    tr *= agg::trans_affine_rotation(angle);
-    tr *= agg::trans_affine_scaling(scale);
-    tr *= agg::trans_affine_translation(x, y);
+    p[0] = 0;     p[1] = 0;
+    p[2] = width; p[3] = 0;
+    p[4] = width; p[5] = height;
+    p[6] = 0;     p[7] = height;
 
     tr.transform(&p[0], &p[1]);
     tr.transform(&p[2], &p[3]);
@@ -200,9 +191,17 @@ void composite_color_glyph(T & pixmap,
     pixfmt_type glyph_pixf(glyph_buf);
     img_accessor_type img_accessor(glyph_pixf);
 
+    double scale = bbox.height() / height;
+    agg::trans_affine t;
+    t *= agg::trans_affine_translation(0, -bbox.maxy() / scale);
+    t *= tr;
+    t *= agg::trans_affine_rotation(angle);
+    t *= agg::trans_affine_scaling(scale);
+    t *= agg::trans_affine_translation(x, y);
+
     using order_type = agg::order_bgra;
     composite_color_glyph<T, img_accessor_type, order_type>(
-        pixmap, img_accessor, width, height, tr,
+        pixmap, img_accessor, width, height, t,
         x, y, angle, bbox, opacity, 0, comp_op);
 }
 
@@ -325,10 +324,18 @@ void composite_color_glyph_halo(T & pixmap,
     image_gray8 const& halo_bitmap = cache.get(glyph, glyph_pixf, scaled_radius);
     img_accessor_type img_accessor(halo_color, scaled_radius, halo_bitmap);
 
+    agg::trans_affine t;
+    t *= agg::trans_affine_translation(0, -bbox.maxy() / scale);
+    t *= agg::trans_affine_translation(-scaled_radius, -scaled_radius);
+    t *= tr;
+    t *= agg::trans_affine_rotation(angle);
+    t *= agg::trans_affine_scaling(scale);
+    t *= agg::trans_affine_translation(x, y);
+
     using order_type = agg::order_rgba;
     composite_color_glyph<T, img_accessor_type, order_type>(
-        pixmap, img_accessor, width, height, tr, x, y,
-        angle, bbox, opacity, halo_radius, comp_op);
+        pixmap, img_accessor, halo_bitmap.width(), halo_bitmap.height(), t, x, y,
+        angle, bbox, opacity, 0, comp_op);
 }
 
 template
