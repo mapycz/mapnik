@@ -115,12 +115,7 @@ void composite_color_glyph(Pixmap & pixmap,
                            double width,
                            double height,
                            agg::trans_affine const& tr,
-                           int x,
-                           int y,
-                           double angle,
-                           box2d<double> const& bbox,
                            double opacity,
-                           double halo_radius,
                            composite_mode_e comp_op)
 {
     double p[8];
@@ -135,10 +130,10 @@ void composite_color_glyph(Pixmap & pixmap,
     tr.transform(&p[6], &p[7]);
 
     rasterizer ras;
-    ras.move_to_d(p[0] - halo_radius, p[1] - halo_radius);
-    ras.line_to_d(p[2] + halo_radius, p[3] - halo_radius);
-    ras.line_to_d(p[4] + halo_radius, p[5] + halo_radius);
-    ras.line_to_d(p[6] - halo_radius, p[7] + halo_radius);
+    ras.move_to_d(p[0], p[1]);
+    ras.line_to_d(p[2], p[3]);
+    ras.line_to_d(p[4], p[5]);
+    ras.line_to_d(p[6], p[7]);
 
     using color_type = agg::rgba8;
     using blender_type = agg::comp_op_adaptor_rgba_pre<color_type, ColorOrder>; // comp blender
@@ -202,7 +197,7 @@ void composite_color_glyph(T & pixmap,
     using order_type = agg::order_bgra;
     composite_color_glyph<T, img_accessor_type, order_type>(
         pixmap, img_accessor, width, height, t,
-        x, y, angle, bbox, opacity, 0, comp_op);
+        opacity, comp_op);
 }
 
 template
@@ -334,8 +329,8 @@ void composite_color_glyph_halo(T & pixmap,
 
     using order_type = agg::order_rgba;
     composite_color_glyph<T, img_accessor_type, order_type>(
-        pixmap, img_accessor, halo_bitmap.width(), halo_bitmap.height(), t, x, y,
-        angle, bbox, opacity, 0, comp_op);
+        pixmap, img_accessor, halo_bitmap.width(), halo_bitmap.height(), t,
+        opacity, comp_op);
 }
 
 template
