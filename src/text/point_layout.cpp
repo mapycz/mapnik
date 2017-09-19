@@ -29,6 +29,7 @@
 #include <mapnik/text/glyph_info.hpp>
 #include <mapnik/text/text_properties.hpp>
 #include <mapnik/text/glyph_positions.hpp>
+#include <mapnik/text/glyph_bbox.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/util/math.hpp>
 #include <mapnik/symbolizer.hpp>
@@ -102,16 +103,9 @@ bool point_layout::try_placement(
             base_point_set = true;
         }
 
-        box2d<double> bbox = layout.bounds();
-        bbox.re_center(layout_center.x, layout_center.y);
-
-        /* For point placements it is faster to just check the bounding box. */
-        if (collision(detector, text_props, bbox, layouts.text())) return false;
-
-        if (layout.glyphs_count()) bboxes.push_back(std::move(bbox));
-
         pixel_position layout_offset = layout_center - glyphs.get_base_point();
         layout_offset.y = -layout_offset.y;
+        layout_center.y = -layout_center.y;
 
         // IMPORTANT NOTE:
         //   x and y are relative to the center of the text
@@ -131,8 +125,18 @@ bool point_layout::try_placement(
 
             for (auto const& glyph : line)
             {
+                pixel_position glyph_pos(x, y);
+                glyph_pos = glyph_pos.rotate(orientation);
+                box2d<double> bbox(get_bbox(layout, glyph, glyph_pos + layout_center, orientation));
+                if (collision(detector, text_props, bbox, layouts.text()))
+                {
+                    return false;
+                }
+
+                bboxes.push_back(bbox);
+
                 // place the character relative to the center of the string envelope
-                glyphs.emplace_back(glyph, (pixel_position(x, y).rotate(orientation)) + layout_offset, orientation);
+                glyphs.emplace_back(glyph, glyph_pos + layout_offset, orientation);
                 if (glyph.advance())
                 {
                     //Only advance if glyph is not part of a multiple glyph sequence
