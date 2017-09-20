@@ -235,14 +235,12 @@ private:
         evaluated_text_properties const & text_props,
         vertex_cache &pp,
         text_upright_e orientation,
-        glyph_positions & glyphs,
-        std::vector<box_type> & bboxes);
+        glyph_positions & glyphs);
 
     void process_bboxes(
         detector_type & detector,
         layout_container & layouts,
-        glyph_positions_ptr & glyphs,
-        std::vector<box_type> const & bboxes);
+        glyph_positions_ptr & glyphs);
 
     bool collision(
         detector_type & detector,

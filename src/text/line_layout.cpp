@@ -74,18 +74,13 @@ bool single_line_layout::try_placement(
     vertex_cache & path)
 {
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
-    std::vector<box_type> bboxes;
     layout_container & layouts = *layout_generator.layouts_;
     evaluated_text_properties const & text_props = layout_generator.get_text_props();
     detector_type & detector = layout_generator.detector_;
 
-    // TODO: useful?
-    //glyphs->reserve(layouts.glyphs_count());
-    //bboxes.reserve(layouts.glyphs_count());
-
-    if (try_placement(layouts, detector, text_props, path, text_props.upright, *glyphs, bboxes))
+    if (try_placement(layouts, detector, text_props, path, text_props.upright, *glyphs))
     {
-        process_bboxes(detector, layouts, glyphs, bboxes);
+        process_bboxes(detector, layouts, glyphs);
         return true;
     }
 
@@ -110,8 +105,7 @@ bool single_line_layout::try_placement(
     evaluated_text_properties const & text_props,
     vertex_cache &pp,
     text_upright_e orientation,
-    glyph_positions & glyphs,
-    std::vector<box_type> & bboxes)
+    glyph_positions & glyphs)
 {
     //
     // IMPORTANT NOTE: See note about coordinate systems in find_point_placement()!
@@ -228,8 +222,7 @@ bool single_line_layout::try_placement(
 
                 box2d<double> bbox = get_bbox(layout, glyph, pos, rot);
                 if (collision(detector, text_props, bbox, layouts.text())) return false;
-                bboxes.push_back(std::move(bbox));
-                glyphs.emplace_back(glyph, pos, rot);
+                glyphs.emplace_back(glyph, pos, rot, bbox);
             }
             // See comment above
             offset += sign * line.height()/2;
@@ -243,10 +236,8 @@ bool single_line_layout::try_placement(
             // Try again with opposite orientation
             begin.restore();
             glyphs.clear();
-            bboxes.clear();
             return try_placement(layouts, detector, text_props, pp,
-                real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT,
-                glyphs, bboxes);
+                real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT, glyphs);
         }
         // upright==left-only or right-only and more than 50% of characters upside down => no placement
         else if (orientation == UPRIGHT_LEFT_ONLY || orientation == UPRIGHT_RIGHT_ONLY)
@@ -259,10 +250,9 @@ bool single_line_layout::try_placement(
         // Try again with opposite orientation
         begin.restore();
         glyphs.clear();
-        bboxes.clear();
         return try_placement(layouts, detector, text_props, pp,
             real_orientation == UPRIGHT_RIGHT ? UPRIGHT_LEFT : UPRIGHT_RIGHT,
-            glyphs, bboxes);
+            glyphs);
     }
 
     return true;
@@ -271,28 +261,23 @@ bool single_line_layout::try_placement(
 void single_line_layout::process_bboxes(
     detector_type & detector,
     layout_container & layouts,
-    glyph_positions_ptr & glyphs,
-    std::vector<box_type> const & bboxes)
+    glyph_positions_ptr & glyphs)
 {
-    box_type label_box;
-    bool first = true;
-    for (auto const & box : bboxes)
+    bool in_canvas = false;
+    for (auto const & glyph_pos : *glyphs)
     {
-        if (first)
-        {
-            label_box = box;
-            first = false;
-        }
-        else
-        {
-            label_box.expand_to_include(box);
-        }
-        detector.insert(box, layouts.text(), collision_cache_insert_);
+        box2d<double> bbox(glyph_pos.bbox);
+        detector.insert(bbox, layouts.text(), collision_cache_insert_);
+
+        double halo_radius = glyph_pos.glyph.format->halo_radius * params_.scale_factor;
+        bbox.pad(halo_radius);
+
+        in_canvas |= params_.dims.intersects(bbox);
     }
 
     // do not render text off the canvas
     // TODO: throw away single glyphs earlier?
-    if (params_.dims.intersects(label_box))
+    if (in_canvas)
     {
         layouts.placements_.emplace_back(std::move(glyphs));
     }
