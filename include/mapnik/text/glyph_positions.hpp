@@ -44,20 +44,32 @@ namespace mapnik
 
 struct glyph_position
 {
-    glyph_position(glyph_info const& _glyph, pixel_position const& _pos, rotation const& _rot)
-        : glyph(_glyph), pos(_pos), rot(_rot) { }
+    glyph_position(glyph_info const& _glyph,
+                   pixel_position const& _pos,
+                   rotation const& _rot,
+                   box2d<double> const& _bbox)
+        : glyph(_glyph),
+          pos(_pos),
+          rot(_rot),
+          bbox(_bbox) { }
     glyph_info const& glyph;
     pixel_position pos;
     rotation rot;
+    box2d<double> bbox;
 };
 
 struct marker_info
 {
-    //marker_info() : marker(), transform() {}
-    marker_info(std::shared_ptr<marker const> _marker, agg::trans_affine const& _transform) :
-        marker_(_marker), transform_(_transform) {}
+    marker_info(std::shared_ptr<marker const> _marker,
+                agg::trans_affine const& _transform,
+                box2d<double> const& _bbox) :
+        marker_(_marker),
+        transform_(_transform),
+        bbox(_bbox) { }
+
     std::shared_ptr<marker const> marker_;
-    agg::trans_affine transform_;
+    const agg::trans_affine transform_;
+    const box2d<double> bbox;
 };
 
 using marker_info_ptr = std::shared_ptr<marker_info>;
@@ -77,7 +89,10 @@ public:
     const_iterator begin() const;
     const_iterator end() const;
 
-    void emplace_back(glyph_info const& glyph, pixel_position offset, rotation const& rot);
+    void emplace_back(glyph_info const& glyph,
+                      pixel_position offset,
+                      rotation const& rot,
+                      box2d<double> const& bbox);
     void reserve(unsigned count);
     void clear();
 
@@ -92,7 +107,6 @@ private:
     pixel_position base_point_;
     marker_info_ptr marker_info_;
     pixel_position marker_pos_;
-    box2d<double> bbox_;
 };
 
 using glyph_positions_ptr = std::unique_ptr<glyph_positions>;

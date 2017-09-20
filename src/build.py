@@ -253,6 +253,7 @@ source = Split(
     text/point_layout.cpp
     text/line_layout.cpp
     text/text_layout_generator.cpp
+    text/glyph_bbox.cpp
     group/group_layout_manager.cpp
     group/group_rule.cpp
     group/group_symbolizer_helper.cpp

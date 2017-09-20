@@ -35,8 +35,7 @@ glyph_positions::glyph_positions()
     : data_(),
       base_point_(),
       marker_info_(),
-      marker_pos_(),
-      bbox_() {}
+      marker_pos_() {}
 
 glyph_positions::const_iterator glyph_positions::begin() const
 {
@@ -48,9 +47,12 @@ glyph_positions::const_iterator glyph_positions::end() const
     return data_.end();
 }
 
-void glyph_positions::emplace_back(glyph_info const& glyph, pixel_position offset, rotation const& rot)
+void glyph_positions::emplace_back(glyph_info const& glyph,
+                                   pixel_position offset,
+                                   rotation const& rot,
+                                   box2d<double> const& bbox)
 {
-    data_.emplace_back(glyph, offset, rot);
+    data_.emplace_back(glyph, offset, rot, bbox);
 }
 
 void glyph_positions::reserve(unsigned count)

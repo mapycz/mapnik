@@ -65,14 +65,12 @@ protected:
         detector_type & detector,
         evaluated_text_properties const & text_props,
         pixel_position const& pos,
-        glyph_positions & glyphs,
-        std::vector<box_type> & bboxes);
+        glyph_positions & glyphs);
 
-    void process_bboxes(
+    bool process_bboxes(
         detector_type & detector,
         layout_container & layouts,
-        glyph_positions_ptr & glyphs,
-        std::vector<box_type> const & bboxes);
+        glyph_positions_ptr & glyphs);
 
     bool collision(
         detector_type & detector,
@@ -104,11 +102,14 @@ private:
         layout_container const & layouts,
         evaluated_text_properties const & text_props,
         glyph_positions & glyphs,
-        pixel_position const& pos,
-        std::vector<box_type> & bboxes) const;
+        pixel_position const& pos) const;
+
+    void process_bboxes(
+        detector_type & detector,
+        layout_container & layouts,
+        glyph_positions_ptr & glyphs);
 
     marker_info_ptr marker_;
-    box_type marker_box_;
     const bool marker_unlocked_;
     const pixel_position marker_displacement_;
 };

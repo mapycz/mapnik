@@ -19,31 +19,23 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  *****************************************************************************/
+#ifndef MAPNIK_GLYPH_BBOX_HPP
+#define MAPNIK_GLYPH_BBOX_HPP
 
-#ifndef MAPNIK_VERSION_HPP
-#define MAPNIK_VERSION_HPP
-
-#include <mapnik/stringify_macro.hpp>
-#include <mapnik/config.hpp>
-
-#include <string>
-
-#define MAPNIK_MAJOR_VERSION 3
-#define MAPNIK_MINOR_VERSION 8
-#define MAPNIK_PATCH_VERSION 1
-
-#define MAPNIK_VERSION (MAPNIK_MAJOR_VERSION*100000) + (MAPNIK_MINOR_VERSION*100) + (MAPNIK_PATCH_VERSION)
-
-#define MAPNIK_VERSION_STRING   MAPNIK_STRINGIFY(MAPNIK_MAJOR_VERSION) "." \
-                                MAPNIK_STRINGIFY(MAPNIK_MINOR_VERSION) "." \
-                                MAPNIK_STRINGIFY(MAPNIK_PATCH_VERSION)
+#include <mapnik/text/text_layout.hpp>
+#include <mapnik/text/glyph_info.hpp>
+#include <mapnik/box2d.hpp>
+#include <mapnik/pixel_position.hpp>
 
 namespace mapnik
 {
 
-MAPNIK_DECL unsigned version_number();
-MAPNIK_DECL std::string version_string();
+box2d<double> get_bbox(
+    text_layout const& layout,
+    glyph_info const& glyph,
+    pixel_position const& pos,
+    rotation const& rot);
 
-}
+}//ns mapnik
 
-#endif // MAPNIK_VERSION_HPP
+#endif
