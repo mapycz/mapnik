@@ -474,7 +474,15 @@ void map_parser::parse_style(Map & map, xml_node const& node)
                 parse_rule(style, rule_);
             }
         }
-        map.insert_style(name, std::move(style));
+
+        if (!map.insert_style(name, std::move(style)))
+        {
+            if (map.find_style(name))
+            {
+                throw config_error("duplicate style name: '" + name + "'");
+            }
+            throw config_error("failed to insert style to the map: '" + name + "'");
+        }
     }
     catch (config_error const& ex)
     {
