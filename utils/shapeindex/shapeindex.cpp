@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,13 +20,14 @@
  *
  *****************************************************************************/
 
-
 #include <iostream>
 #include <vector>
 #include <string>
+#include <mapnik/version.hpp>
 #include <mapnik/util/fs.hpp>
 #include <mapnik/quad_tree.hpp>
-#include <mapnik/geometry_envelope.hpp>
+//#include <mapnik/util/spatial_index.hpp>
+#include <mapnik/geometry/envelope.hpp>
 #include "shapefile.hpp"
 #include "shape_io.hpp"
 #include "shape_index_featureset.hpp"
@@ -37,7 +38,7 @@
 #pragma GCC diagnostic pop
 
 const int DEFAULT_DEPTH = 8;
-const double DEFAULT_RATIO=0.55;
+const double DEFAULT_RATIO = 0.55;
 
 int main (int argc,char** argv)
 {
@@ -71,7 +72,7 @@ int main (int argc,char** argv)
 
         if (vm.count("version"))
         {
-            std::clog << "version 0.3.0" <<std::endl;
+            std::clog << "version " << MAPNIK_VERSION_STRING << std::endl;
             return EXIT_FAILURE;
         }
 
@@ -171,7 +172,12 @@ int main (int argc,char** argv)
         }
         int pos = 50;
         shx.seek(pos * 2);
-        mapnik::quad_tree<mapnik::detail::node> tree(extent, depth, ratio);
+        mapnik::box2d<float> extent_f { static_cast<float>(extent.minx()),
+                static_cast<float>(extent.miny()),
+                static_cast<float>(extent.maxx()),
+                static_cast<float>(extent.maxy())};
+
+        mapnik::quad_tree<mapnik::detail::node, mapnik::box2d<float> > tree(extent_f, depth, ratio);
         int count = 0;
 
         if (shape_type != shape_io::shape_null)
@@ -187,7 +193,10 @@ int main (int argc,char** argv)
                 int shp_content_length = shp.read_xdr_integer();
                 if (shx_content_length != shp_content_length)
                 {
-                    std::clog << "Content length mismatch for record number " << record_number << std::endl;
+                    if (verbose)
+                    {
+                        std::clog << "Content length mismatch for record number " << record_number << std::endl;
+                    }
                     continue;
                 }
                 shape_type = shp.read_ndr_integer();
@@ -234,7 +243,11 @@ int main (int argc,char** argv)
                             {
                                 std::clog << "record number " << record_number << " box=" << item_ext << std::endl;
                             }
-                            tree.insert(mapnik::detail::node(offset * 2, start, end),item_ext);
+                            mapnik::box2d<float> ext_f {static_cast<float>(item_ext.minx()),
+                                    static_cast<float>(item_ext.miny()),
+                                    static_cast<float>(item_ext.maxx()),
+                                    static_cast<float>(item_ext.maxy())};
+                            tree.insert(mapnik::detail::node(offset * 2, start, end, std::move(ext_f)), ext_f);
                             ++count;
                         }
                     }
@@ -251,7 +264,12 @@ int main (int argc,char** argv)
                     {
                         std::clog << "record number " << record_number << " box=" << item_ext << std::endl;
                     }
-                    tree.insert(mapnik::detail::node(offset * 2,-1,0),item_ext);
+                    mapnik::box2d<float> ext_f {static_cast<float>(item_ext.minx()),
+                            static_cast<float>(item_ext.miny()),
+                            static_cast<float>(item_ext.maxx()),
+                            static_cast<float>(item_ext.maxy())};
+
+                    tree.insert(mapnik::detail::node(offset * 2, -1, 0, std::move(ext_f)), ext_f);
                     ++count;
                 }
             }
@@ -278,7 +296,8 @@ int main (int argc,char** argv)
         }
         else
         {
-            std::clog << "No non-empty geometries in shapefile" << std::endl;
+            std::clog << "Failed to read any features from \"" << filename << "\"" << std::endl;
+            return EXIT_FAILURE;
         }
     }
 

@@ -22,7 +22,7 @@
 #ifndef MAPNIK_MARKER_LAYOUT_HPP
 #define MAPNIK_MARKER_LAYOUT_HPP
 
-#include <mapnik/value_types.hpp>
+#include <mapnik/value/types.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/marker_layout_generator.hpp>

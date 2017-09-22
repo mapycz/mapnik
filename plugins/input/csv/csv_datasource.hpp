@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,10 +28,10 @@
 #include <mapnik/params.hpp>
 #include <mapnik/query.hpp>
 #include <mapnik/feature.hpp>
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/coord.hpp>
 #include <mapnik/feature_layer_desc.hpp>
-#include <mapnik/value_types.hpp>
+#include <mapnik/value/types.hpp>
 #include "csv_utils.hpp"
 
 #pragma GCC diagnostic push
@@ -73,7 +73,7 @@ class csv_datasource : public mapnik::datasource,
 {
 public:
     using box_type = mapnik::box2d<double>;
-    using item_type = std::pair<box_type, std::pair<std::size_t, std::size_t>>;
+    using item_type = std::pair<box_type, std::pair<std::uint64_t, std::uint64_t>>;
     using spatial_index_type = boost::geometry::index::rtree<item_type,csv_linear<16,4>>;
 
     csv_datasource(mapnik::parameters const& params);

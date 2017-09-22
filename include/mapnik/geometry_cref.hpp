@@ -24,9 +24,9 @@
 #define MAPNIK_GEOMETRY_CREF_HPP
 
 #include <mapnik/geometry.hpp>
-#include <mapnik/geometry_type.hpp>
-#include <mapnik/geometry_envelope.hpp>
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/geometry_type.hpp>
+#include <mapnik/geometry/envelope.hpp>
+#include <mapnik/geometry/box2d.hpp>
 
 #include <functional>
 

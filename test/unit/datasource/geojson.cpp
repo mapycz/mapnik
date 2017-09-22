@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,10 +27,14 @@
 #include <mapnik/datasource.hpp>
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/geometry.hpp>
-#include <mapnik/geometry_type.hpp>
+#include <mapnik/geometry/geometry_type.hpp>
+#include <mapnik/json/geometry_parser.hpp>
+#include <mapnik/util/geometry_to_geojson.hpp>
 #include <mapnik/util/fs.hpp>
 #include <cstdlib>
-
+#include <algorithm>
+#include <cctype>
+#include <locale>
 #include <boost/optional/optional_io.hpp>
 
 /*
@@ -104,14 +108,51 @@ TEST_CASE("geojson") {
                 params["type"] = "geojson";
                 params["file"] = "./test/data/json/empty_featurecollection.json";
                 params["cache_features"] = cache_features;
-                auto ds = mapnik::datasource_cache::instance().create(params);
-                CHECK(ds != nullptr);
-                auto fs = all_features(ds);
-                REQUIRE(!mapnik::is_valid(fs));
-                while (auto f = fs->next())
+                REQUIRE_THROWS(mapnik::datasource_cache::instance().create(params));
+            }
+        }
+
+        SECTION("GeoJSON empty Geometries handling")
+        {
+            auto valid_empty_geometries =
                 {
-                    CHECK(false); // shouldn't get here
-                }
+                    "null", // Point can't be empty
+                    "{ \"type\": \"LineString\", \"coordinates\": [] }",
+                    "{ \"type\": \"Polygon\", \"coordinates\": [ [ ] ] } ",
+                    "{ \"type\": \"MultiPoint\", \"coordinates\": [ ] }",
+                    "{ \"type\": \"MultiLineString\", \"coordinates\": [ [] ] }",
+                    "{ \"type\": \"MultiPolygon\", \"coordinates\": [[ []] ] }"
+                };
+
+            for (auto const& in  : valid_empty_geometries)
+            {
+                std::string json(in);
+                mapnik::geometry::geometry<double> geom;
+                CHECK(mapnik::json::from_geojson(json, geom));
+                // round trip
+                std::string json_out;
+                CHECK(mapnik::util::to_geojson(json_out, geom));
+                json.erase(std::remove_if(
+                               std::begin(json), std::end(json),
+                               [l = std::locale{}](auto ch) { return std::isspace(ch, l); }
+                               ), std::end(json));
+                REQUIRE(json == json_out);
+            }
+
+            auto invalid_empty_geometries =
+                {
+                    "{ \"type\": \"Point\", \"coordinates\": [] }",
+                    "{ \"type\": \"LineString\", \"coordinates\": [[]] }"
+                    "{ \"type\": \"Polygon\", \"coordinates\": [[[]]] }",
+                    "{ \"type\": \"MultiPoint\", \"coordinates\": [[]] }",
+                    "{ \"type\": \"MultiLineString\", \"coordinates\": [[[]]] }",
+                    "{ \"type\": \"MultiPolygon\", \"coordinates\": [[[[]]]] }"
+                };
+
+            for (auto const& json  : invalid_empty_geometries)
+            {
+                mapnik::geometry::geometry<double> geom;
+                CHECK(!mapnik::json::from_geojson(json, geom));
             }
         }
 
@@ -243,10 +284,9 @@ TEST_CASE("geojson") {
                 auto const& geometry = feature->get_geometry();
                 REQUIRE(mapnik::geometry::geometry_type(geometry) == mapnik::geometry::Polygon);
                 auto const& poly = mapnik::util::get<mapnik::geometry::polygon<double> >(geometry);
-                REQUIRE(poly.num_rings() == 2);
-                REQUIRE(poly.exterior_ring.size() == 5);
-                REQUIRE(poly.interior_rings.size() == 1);
-                REQUIRE(poly.interior_rings[0].size() == 5);
+                REQUIRE(poly.size() == 2);
+                REQUIRE(poly[0].size() == 5);
+                REQUIRE(poly[1].size() == 5);
                 REQUIRE(mapnik::geometry::envelope(poly) == mapnik::box2d<double>(100,0,101,1));
 
             }
@@ -300,8 +340,8 @@ TEST_CASE("geojson") {
                 REQUIRE(mapnik::geometry::geometry_type(geometry) == mapnik::geometry::MultiPolygon);
                 auto const& multi_poly = mapnik::util::get<mapnik::geometry::multi_polygon<double> >(geometry);
                 REQUIRE(multi_poly.size() == 2);
-                REQUIRE(multi_poly[0].num_rings() == 1);
-                REQUIRE(multi_poly[1].num_rings() == 2);
+                REQUIRE(multi_poly[0].size() == 1);
+                REQUIRE(multi_poly[1].size() == 2);
                 REQUIRE(mapnik::geometry::envelope(multi_poly) == mapnik::box2d<double>(100,0,103,3));
 
             }

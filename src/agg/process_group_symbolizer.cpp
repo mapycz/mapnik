@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -61,7 +61,7 @@ struct thunk_renderer<image_rgba8> : render_thunk_list_dispatch
 
     thunk_renderer(renderer_type &ren,
                    std::unique_ptr<rasterizer> const& ras_ptr,
-                   buffer_type &buf,
+                   buffer_type & buf,
                    renderer_common &common)
         : ren_(ren), ras_ptr_(ras_ptr), buf_(buf), common_(common),
           tex_(buf, HALO_RASTERIZER_FULL, src_over, src_over,
@@ -75,7 +75,6 @@ struct thunk_renderer<image_rgba8> : render_thunk_list_dispatch
         using pixfmt_comp_type = agg::pixfmt_custom_blend_rgba<blender_type, buf_type>;
         using renderer_base = agg::renderer_base<pixfmt_comp_type>;
         using renderer_type = agg::renderer_scanline_aa_solid<renderer_base>;
-        using svg_attribute_type = agg::pod_bvector<svg::path_attributes>;
         using svg_renderer_type = svg::svg_renderer_agg<svg_path_adapter,
                                                         svg_attribute_type,
                                                         renderer_type,
@@ -149,8 +148,7 @@ void agg_renderer<T0,T1>::process(group_symbolizer const& sym,
                                   mapnik::feature_impl & feature,
                                   proj_transform const& prj_trans)
 {
-    buffer_type & current_buffer = buffers_.top().get();
-    thunk_renderer<buffer_type> ren(*this, ras_ptr, current_buffer, common_);
+    thunk_renderer<buffer_type> ren(*this, ras_ptr, buffers_.top().get(), common_);
 
     render_group_symbolizer(
         sym, feature, common_.vars_, prj_trans, clipping_extent(common_), common_,

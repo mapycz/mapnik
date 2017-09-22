@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@
 #include <mapnik/boolean.hpp>
 #include <mapnik/geom_util.hpp>
 #include <mapnik/timer.hpp>
-#include <mapnik/value_types.hpp>
+#include <mapnik/value/types.hpp>
 
 #include <gdal_version.h>
 
@@ -96,7 +96,7 @@ gdal_datasource::gdal_datasource(parameters const& params)
     CPLSetErrorHandler(&mapnik_gdal_error_handler);
 
     boost::optional<std::string> file = params.get<std::string>("file");
-    if (! file) throw datasource_exception("missing <file> parameter");
+    if (!file) throw datasource_exception("missing <file> parameter");
 
     boost::optional<std::string> base = params.get<std::string>("base");
     if (base)

@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2016 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/geom_util.hpp>
 #include <mapnik/util/noncopyable.hpp>
-#include <mapnik/geometry_correct.hpp>
+#include <mapnik/geometry/correct.hpp>
 #include <cmath>
 
 namespace mapnik { namespace detail {
@@ -328,11 +328,7 @@ private:
     {
         unsigned int num_rings = read_unsigned_integer();
         mapnik::geometry::polygon<double> poly;
-        if (num_rings > 1)
-        {
-            poly.interior_rings.reserve(num_rings - 1);
-        }
-
+        poly.reserve(num_rings);
         for (unsigned int i = 0; i < num_rings; ++i)
         {
             mapnik::geometry::linear_ring<double> ring;
@@ -342,8 +338,7 @@ private:
                 ring.reserve(num_points);
                 read_coords<mapnik::geometry::linear_ring<double>>(ring, num_points);
             }
-            if ( i == 0) poly.set_exterior_ring(std::move(ring));
-            else poly.add_hole(std::move(ring));
+            poly.push_back(std::move(ring));
         }
         return poly;
     }

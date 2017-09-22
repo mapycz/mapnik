@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
 #ifndef GROUP_SYMBOLIZER_HELPER_HPP
 #define GROUP_SYMBOLIZER_HELPER_HPP
 
-#include <mapnik/value_types.hpp>
+#include <mapnik/value/types.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/font_engine_freetype.hpp>

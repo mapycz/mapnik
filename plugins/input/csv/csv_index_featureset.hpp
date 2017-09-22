@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/unicode.hpp>
 #include <mapnik/geom_util.hpp>
+#include <mapnik/util/spatial_index.hpp>
 #include "csv_utils.hpp"
 #include "csv_datasource.hpp"
 
@@ -40,12 +41,12 @@
 
 class csv_index_featureset : public mapnik::Featureset
 {
-    using value_type = std::pair<std::size_t, std::size_t>;
+    using value_type = mapnik::util::index_record;
     using locator_type = csv_utils::geometry_column_locator;
 public:
 
     csv_index_featureset(std::string const& filename,
-                         mapnik::filter_in_box const& filter,
+                         mapnik::bounding_box_filter<float> const& filter,
                          locator_type const& locator,
                          char separator,
                          char quote,

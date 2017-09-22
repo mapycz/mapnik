@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -131,6 +131,15 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     }
 
     glyph.unscaled_line_height = face_->size->metrics.height;
+
+    if (color_font_)
+    {
+        double scale_multiplier = 2048.0 / (face_->size->metrics.height);
+        glyph.unscaled_ymin *= scale_multiplier;
+        glyph.unscaled_ymax *= scale_multiplier;
+        glyph.unscaled_advance *= scale_multiplier;
+    }
+
     return true;
 }
 
@@ -183,11 +192,11 @@ void font_face_set::add(face_ptr face)
     faces_.push_back(face);
 }
 
-void font_face_set::set_character_sizes(double size)
+void font_face_set::set_character_sizes(double _size)
 {
     for (face_ptr const& face : faces_)
     {
-        face->set_character_sizes(size);
+        face->set_character_sizes(_size);
     }
 }
 

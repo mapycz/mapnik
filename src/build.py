@@ -151,27 +151,31 @@ else: # unix, non-macos
 
 source = Split(
     """
-    expression_grammar.cpp
+    expression_grammar_x3.cpp
     fs.cpp
     request.cpp
     well_known_srs.cpp
     params.cpp
-    image_filter_types.cpp
-    image_filter_grammar.cpp
+    parse_image_filters.cpp
+    generate_image_filters.cpp
+    image_filter_grammar_x3.cpp
     color.cpp
-    conversions.cpp
+    conversions_numeric.cpp
+    conversions_string.cpp
     image_copy.cpp
     image_compositing.cpp
     image_scaling.cpp
-    box2d.cpp
     datasource_cache.cpp
     datasource_cache_static.cpp
     debug.cpp
-    geometry_reprojection.cpp
+    geometry/box2d.cpp
+    geometry/reprojection.cpp
+    geometry/envelope.cpp
     expression_node.cpp
     expression_string.cpp
     expression.cpp
     transform_expression.cpp
+    transform_expression_grammar_x3.cpp
     feature_kv_iterator.cpp
     feature_style_processor.cpp
     feature_type_style.cpp
@@ -180,6 +184,7 @@ source = Split(
     font_set.cpp
     function_call.cpp
     gradient.cpp
+    path_expression_grammar_x3.cpp
     parse_path.cpp
     image_reader.cpp
     cairo_io.cpp
@@ -198,8 +203,6 @@ source = Split(
     load_map.cpp
     palette.cpp
     marker_helpers.cpp
-    transform_expression_grammar.cpp
-    geometry_envelope.cpp
     plugin.cpp
     rule.cpp
     save_map.cpp
@@ -222,8 +225,9 @@ source = Split(
     svg/svg_path_parser.cpp
     svg/svg_points_parser.cpp
     svg/svg_transform_parser.cpp
+    svg/svg_path_grammar_x3.cpp
     warp.cpp
-    css_color_grammar.cpp
+    css_color_grammar_x3.cpp
     vertex_cache.cpp
     vertex_adapters.cpp
     text/font_library.cpp
@@ -235,6 +239,7 @@ source = Split(
     text/glyph_positions.cpp
     text/properties_util.cpp
     text/renderer.cpp
+    text/color_font_renderer.cpp
     text/text_properties.cpp
     text/font_feature_settings.cpp
     text/formatting/base.cpp

@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,12 +25,23 @@
 #include <future>
 #include <atomic>
 
+
 #include <mapnik/load_map.hpp>
 
 #include "runner.hpp"
+#include "parse_map_sizes.hpp"
 
 namespace visual_tests
 {
+
+struct renderer_name_visitor
+{
+    template <typename Renderer>
+    std::string operator()(Renderer const&) const
+    {
+        return Renderer::renderer_type::name;
+    }
+};
 
 class renderer_visitor
 {
@@ -123,15 +134,6 @@ private:
     std::size_t iterations_;
     bool is_fail_limit_;
     std::atomic<std::size_t> & fail_count_;
-};
-
-struct renderer_name_visitor
-{
-    template <typename Renderer>
-    std::string operator()(Renderer const&) const
-    {
-        return Renderer::renderer_type::name;
-    }
 };
 
 runner::runner(runner::path_type const & styles_dir,
@@ -256,6 +258,44 @@ result_list runner::test_range(files_iterator begin,
     return results;
 }
 
+void runner::parse_params(mapnik::parameters const & params, config & cfg) const
+{
+    cfg.status = *params.get<mapnik::value_bool>("status", cfg.status);
+
+    boost::optional<std::string> sizes = params.get<std::string>("sizes");
+
+    if (sizes)
+    {
+        cfg.sizes.clear();
+        parse_map_sizes(*sizes, cfg.sizes);
+    }
+
+    boost::optional<std::string> tiles = params.get<std::string>("tiles");
+
+    if (tiles)
+    {
+        cfg.tiles.clear();
+        parse_map_sizes(*tiles, cfg.tiles);
+    }
+
+    boost::optional<std::string> bbox_string = params.get<std::string>("bbox");
+
+    if (bbox_string)
+    {
+        cfg.bbox.from_string(*bbox_string);
+    }
+
+    for (auto const & renderer : renderers_)
+    {
+        std::string renderer_name = mapnik::util::apply_visitor(renderer_name_visitor(), renderer);
+        boost::optional<mapnik::value_bool> enabled = params.get<mapnik::value_bool>(renderer_name);
+        if (enabled && !*enabled)
+        {
+            cfg.ignored_renderers.insert(renderer_name);
+        }
+    }
+}
+
 result_list runner::test_one(runner::path_type const& style_path,
                              report_type & report,
                              std::atomic<std::size_t> & fail_count) const
@@ -279,47 +319,11 @@ result_list runner::test_one(runner::path_type const& style_path,
         throw;
     }
 
-    mapnik::parameters const & params = map.get_extra_parameters();
+    parse_params(map.get_extra_parameters(), cfg);
 
-    boost::optional<mapnik::value_integer> status = params.get<mapnik::value_integer>("status", cfg.status);
-
-    if (!*status)
+    if (!cfg.status)
     {
         return results;
-    }
-
-    boost::optional<std::string> sizes = params.get<std::string>("sizes");
-
-    if (sizes)
-    {
-        cfg.sizes.clear();
-        parse_map_sizes(*sizes, cfg.sizes);
-    }
-
-    boost::optional<std::string> tiles = params.get<std::string>("tiles");
-
-    if (tiles)
-    {
-        cfg.tiles.clear();
-        parse_map_sizes(*tiles, cfg.tiles);
-    }
-
-    boost::optional<std::string> bbox_string = params.get<std::string>("bbox");
-    mapnik::box2d<double> box;
-
-    if (bbox_string)
-    {
-        box.from_string(*bbox_string);
-    }
-
-    boost::optional<std::string> ignored_renderers = params.get<std::string>("ignored_renderers");
-
-    if (ignored_renderers)
-    {
-        cfg.ignored_renderers.clear();
-        std::vector<std::string> renderer_names;
-        parse_name_list(*ignored_renderers, renderer_names);
-        cfg.ignored_renderers.insert(renderer_names.begin(), renderer_names.end());
     }
 
     std::string name(style_path.stem().string());
@@ -341,17 +345,16 @@ result_list runner::test_one(runner::path_type const& style_path,
 
                 for (auto const & ren : renderers_)
                 {
-                    std::string renderer_name = mapnik::util::apply_visitor(
-                        renderer_name_visitor(), ren);
+                    std::string renderer_name = mapnik::util::apply_visitor(renderer_name_visitor(), ren);
                     if (cfg.ignored_renderers.count(renderer_name))
                     {
                         continue;
                     }
 
-                    map.resize(size.width * scale_factor, size.height * scale_factor);
-                    if (box.valid())
+                    map.resize(size.width, size.height);
+                    if (cfg.bbox.valid())
                     {
-                        map.zoom_to_box(box);
+                        map.zoom_to_box(cfg.bbox);
                     }
                     else
                     {
@@ -374,30 +377,7 @@ result_list runner::test_one(runner::path_type const& style_path,
             }
         }
     }
-
     return results;
-}
-
-void runner::parse_map_sizes(std::string const & str, std::vector<map_size> & sizes) const
-{
-    boost::spirit::ascii::space_type space;
-    std::string::const_iterator iter = str.begin();
-    std::string::const_iterator end = str.end();
-    if (!boost::spirit::qi::phrase_parse(iter, end, map_sizes_parser_, space, sizes))
-    {
-        throw std::runtime_error("Failed to parse list of sizes: '" + str + "'");
-    }
-}
-
-void runner::parse_name_list(std::string const & str, std::vector<std::string> & list) const
-{
-    boost::spirit::ascii::space_type space;
-    std::string::const_iterator iter = str.begin();
-    std::string::const_iterator end = str.end();
-    if (!boost::spirit::qi::phrase_parse(iter, end, name_list_parser_, space, list))
-    {
-        throw std::runtime_error("Failed to parse list of names: '" + str + "'");
-    }
 }
 
 }

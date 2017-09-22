@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -149,6 +149,7 @@ void cairo_renderer<T>::setup(Map const& map)
     {
         cairo_save_restore guard(context_);
         context_.set_color(*bg);
+        context_.set_operator(composite_mode_e::src);
         context_.paint();
     }
     boost::optional<std::string> const& image_filename = map.background_image();
@@ -267,11 +268,11 @@ struct cairo_render_marker_visitor
                 marker_tr *= tr_;
             }
             marker_tr *= agg::trans_affine_scaling(common_.scale_factor_);
-            agg::pod_bvector<svg::path_attributes> const & attributes = vmarker->attributes();
+            agg::pod_bvector<svg::path_attributes> const & attrs = vmarker->attributes();
             svg::vertex_stl_adapter<svg::svg_path_storage> stl_storage(vmarker->source());
             svg::svg_path_adapter svg_path(stl_storage);
             marker_tr.translate(pos_.x, pos_.y);
-            render_vector_marker(context_, svg_path, attributes, bbox, marker_tr, opacity_);
+            render_vector_marker(context_, svg_path, attrs, bbox, marker_tr, opacity_);
         }
     }
 

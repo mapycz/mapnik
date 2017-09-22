@@ -2,8 +2,8 @@
 // mapnik
 #include <mapnik/wkb.hpp>
 #include <mapnik/geometry.hpp>
-#include <mapnik/geometry_adapters.hpp>
-#include <mapnik/geometry_is_empty.hpp>
+#include <mapnik/geometry/boost_adapters.hpp>
+#include <mapnik/geometry/is_empty.hpp>
 #include <mapnik/util/geometry_to_wkt.hpp>
 // bool
 #include <boost/version.hpp>
@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+
 
 #if BOOST_VERSION >= 105800
 namespace  {
@@ -84,7 +85,7 @@ bool spatially_equal(mapnik::geometry::geometry<T> const& g0, mapnik::geometry::
 
 TEST_CASE("Well-known-geometries")
 {
-    SECTION("wkb")
+    SECTION("wkb+wkt")
     {
         std::string filename("test/unit/data/well-known-geometries.test");
         std::ifstream is(filename.c_str(),std::ios_base::in | std::ios_base::binary);
@@ -100,17 +101,40 @@ TEST_CASE("Well-known-geometries")
             REQUIRE(mapnik::util::parse_hex(columns[2], twkb));
             mapnik::geometry::geometry<double> geom_0 = mapnik::geometry_utils::from_wkb(wkb.data(), wkb.size(), mapnik::wkbAuto);
             mapnik::geometry::geometry<double> geom_1 = mapnik::geometry_utils::from_twkb(twkb.data(), twkb.size());
-            // compare WKTs
-            std::string wkt0, wkt1;
+            // compare WKTs as doubles
+            std::string wkt, wkt0, wkt1;
+            wkt = columns[0];
+            //wkt.erase(std::remove(wkt.begin(), wkt.end(), ' '), wkt.end());
+            // ^ we can't use this approach because spaces are part of format e.g POINT(100 200)
             REQUIRE(mapnik::util::to_wkt(wkt0, geom_0));
             REQUIRE(mapnik::util::to_wkt(wkt1, geom_1));
             if (!mapnik::geometry::is_empty(geom_0) && !mapnik::geometry::is_empty(geom_1))
             {
                 REQUIRE(wkt0 == wkt1);
+                REQUIRE(wkt0 == wkt); // WKT round-trip
                 // compare spatially (NOTE: GeometryCollection comparison also enforces strict order)
 #if BOOST_VERSION >= 105800
                 REQUIRE(spatially_equal(geom_0, geom_1));
 #endif
+            }
+
+            // compare WKTS as ints
+            // note: mapnik::util::to_wkt<std::int64_t> used in mapnik-vt
+            std::string wkt2, wkt3;
+            mapnik::geometry::line_string<std::int64_t> geom_2;
+            geom_2.emplace_back(0,0);
+            geom_2.emplace_back(1,1);
+            geom_2.emplace_back(2,2);
+            mapnik::geometry::line_string<std::int64_t> geom_3;
+            geom_3.emplace_back(0,0);
+            geom_3.emplace_back(1,1);
+            geom_3.emplace_back(2,2);
+            REQUIRE(mapnik::util::to_wkt(wkt0, mapnik::geometry::geometry<std::int64_t>(geom_2)));
+            REQUIRE(mapnik::util::to_wkt(wkt1, mapnik::geometry::geometry<std::int64_t>(geom_3)));
+            if (!mapnik::geometry::is_empty(geom_2) && !mapnik::geometry::is_empty(geom_3))
+            {
+                REQUIRE(wkt2 == wkt3);
+                // compare spatially (NOTE: GeometryCollection comparison also enforces strict order)
             }
         }
     }

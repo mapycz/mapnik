@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,8 +26,6 @@
 #include "config.hpp"
 #include "report.hpp"
 #include "renderer.hpp"
-#include "map_sizes_grammar.hpp"
-#include "name_list_grammar.hpp"
 
 namespace visual_tests
 {
@@ -59,11 +57,8 @@ private:
     result_list test_one(path_type const & style_path,
                          report_type & report,
                          std::atomic<std::size_t> & fail_limit) const;
-    void parse_map_sizes(std::string const & str, std::vector<map_size> & sizes) const;
-    void parse_name_list(std::string const & str, std::vector<std::string> & list) const;
+    void parse_params(mapnik::parameters const & params, config & cfg) const;
 
-    const map_sizes_grammar<std::string::const_iterator> map_sizes_parser_;
-    const name_list_grammar<std::string::const_iterator> name_list_parser_;
     const path_type styles_dir_;
     const config defaults_;
     const std::size_t jobs_;
@@ -74,4 +69,4 @@ private:
 
 }
 
-#endif
+#endif //VISUAL_TEST_RUNNER_HPP

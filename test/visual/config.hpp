@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,8 @@
 // boost
 #include <boost/filesystem.hpp>
 
+#include <mapnik/geometry/box2d.hpp>
+
 namespace visual_tests
 {
 
@@ -48,12 +50,15 @@ struct config
     config() : status(true),
                scales({ 1.0, 2.0 }),
                sizes({ { 500, 100 } }),
-               tiles({ { 1, 1 } }) { }
+               tiles({ { 1, 1 } }),
+               bbox(),
+               ignored_renderers() { }
 
     bool status;
     std::vector<double> scales;
     std::vector<map_size> sizes;
     std::vector<map_size> tiles;
+    mapnik::box2d<double> bbox;
     std::set<std::string> ignored_renderers;
 };
 

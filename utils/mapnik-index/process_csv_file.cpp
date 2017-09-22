@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,7 +24,7 @@
 #include "../../plugins/input/csv/csv_getline.hpp"
 #include "../../plugins/input/csv/csv_utils.hpp"
 #include <mapnik/datasource.hpp>
-#include <mapnik/geometry_envelope.hpp>
+#include <mapnik/geometry/envelope.hpp>
 #include <mapnik/util/utf_conv_win.hpp>
 
 #if defined(MAPNIK_MEMORY_MAPPED_FILE)
@@ -93,7 +93,7 @@ std::pair<bool,typename T::value_type::first_type> process_csv_file(T & boxes, s
 }
 
 using box_type = mapnik::box2d<float>;
-using item_type = std::pair<box_type, std::pair<std::size_t, std::size_t>>;
+using item_type = std::pair<box_type, std::pair<std::uint64_t, std::uint64_t>>;
 using boxes_type = std::vector<item_type>;
 template std::pair<bool,box_type> process_csv_file(boxes_type&, std::string const&, std::string const&, char, char);
 

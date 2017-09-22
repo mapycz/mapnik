@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,11 +24,13 @@
 #define MAPNIK_QUAD_TREE_HPP
 
 // mapnik
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/make_unique.hpp>
+
 // stl
-#include <algorithm>
+#include <memory>
+#include <new>
 #include <vector>
 #include <type_traits>
 
@@ -83,12 +85,12 @@ class quad_tree : util::noncopyable
 
         int num_subnodes() const
         {
-            int count = 0;
+            int _count = 0;
             for (int i = 0; i < 4; ++i)
             {
-                if (children_[i]) ++count;
+                if (children_[i]) ++_count;
             }
-            return count;
+            return _count;
         }
         ~node () {}
     };
@@ -115,7 +117,7 @@ public:
         root_ = nodes_[0].get();
     }
 
-    void insert(value_type data, bbox_type const& box)
+    void insert(value_type const& data, bbox_type const& box)
     {
         unsigned int depth = 0;
         do_insert_data(data, box, root_, depth);
@@ -164,9 +166,9 @@ public:
 
     int count_items() const
     {
-        int count = 0;
-        count_items(root_, count);
-        return count;
+        int _count = 0;
+        count_items(root_, _count);
+        return _count;
     }
     void trim()
     {
@@ -205,13 +207,9 @@ private:
         }
     }
 
-    void do_insert_data(value_type data, bbox_type const& box, node * n, unsigned int& depth)
+    void do_insert_data(value_type const& data, bbox_type const& box, node * n, unsigned int& depth)
     {
-        if (++depth >= max_depth_)
-        {
-            n->cont_.push_back(data);
-        }
-        else
+        if (++depth < max_depth_)
         {
             bbox_type const& node_extent = n->extent();
             bbox_type ext[4];
@@ -223,17 +221,17 @@ private:
                     if (!n->children_[i])
                     {
                         nodes_.push_back(std::make_unique<node>(ext[i]));
-                        n->children_[i]=nodes_.back().get();
+                        n->children_[i] = nodes_.back().get();
                     }
-                    do_insert_data(data,box,n->children_[i],depth);
+                    do_insert_data(data, box, n->children_[i], depth);
                     return;
                 }
             }
-            n->cont_.push_back(data);
         }
+        n->cont_.push_back(data);
     }
 
-    void split_box(bbox_type const& node_extent,bbox_type * ext)
+    void split_box(bbox_type const& node_extent, bbox_type * ext)
     {
         typename bbox_type::value_type width = node_extent.width();
         typename bbox_type::value_type height = node_extent.height();
@@ -276,23 +274,23 @@ private:
         if (!n) return 0;
         else
         {
-            int count = 1;
+            int _count = 1;
             for (int i = 0; i < 4; ++i)
             {
-                count += count_nodes(n->children_[i]);
+                _count += count_nodes(n->children_[i]);
             }
-            return count;
+            return _count;
         }
     }
 
-    void count_items(node const* n,int& count) const
+    void count_items(node const* n, int& _count) const
     {
         if (n)
         {
-            count += n->cont_.size();
+            _count += n->cont_.size();
             for (int i = 0; i < 4; ++i)
             {
-                count_items(n->children_[i],count);
+                count_items(n->children_[i],_count);
             }
         }
     }

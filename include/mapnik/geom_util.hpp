@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,10 +24,10 @@
 #define MAPNIK_GEOM_UTIL_HPP
 
 // mapnik
-#include <mapnik/box2d.hpp>
+#include <mapnik/geometry/box2d.hpp>
 #include <mapnik/coord.hpp>
 #include <mapnik/vertex.hpp>
-#include <mapnik/geometry_types.hpp>
+#include <mapnik/geometry/geometry_types.hpp>
 // stl
 #include <cmath>
 #include <vector>
@@ -132,96 +132,104 @@ inline T sqr(T x)
     return x * x;
 }
 
-inline double distance2(double x0,double y0,double x1,double y1)
+inline double distance2(double x0, double y0, double x1, double y1)
 {
     double dx = x1 - x0;
     double dy = y1 - y0;
     return sqr(dx) + sqr(dy);
 }
 
-inline double distance(double x0,double y0, double x1,double y1)
+inline double distance(double x0, double y0, double x1, double y1)
 {
-    return std::sqrt(distance2(x0,y0,x1,y1));
+    return std::sqrt(distance2(x0, y0, x1, y1));
 }
 
 inline double point_to_segment_distance(double x, double y,
                                         double ax, double ay,
                                         double bx, double by)
 {
-    double len2 = distance2(ax,ay,bx,by);
+    double len2 = distance2(ax, ay, bx, by);
 
     if (len2 < 1e-14)
     {
-        return distance(x,y,ax,ay);
+        return distance(x, y, ax, ay);
     }
 
-    double r = ((x - ax)*(bx - ax) + (y - ay)*(by -ay))/len2;
-    if ( r < 0 )
+    double r = ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / len2;
+    if (r < 0)
     {
-        return distance(x,y,ax,ay);
+        return distance(x, y, ax, ay);
     }
     else if (r > 1)
     {
-        return distance(x,y,bx,by);
+        return distance(x, y, bx, by);
     }
-    double s = ((ay - y)*(bx - ax) - (ax - x)*(by - ay))/len2;
+    double s = ((ay - y) * (bx - ax) - (ax - x) * (by - ay)) / len2;
     return std::fabs(s) * std::sqrt(len2);
 }
 
 template <typename Iter>
-inline bool point_on_path(double x,double y,Iter start,Iter end, double tol)
+inline bool point_on_path(double x, double y, Iter start, Iter end, double tol)
 {
-    double x0=std::get<0>(*start);
-    double y0=std::get<1>(*start);
+    double x0 = std::get<0>(*start);
+    double y0 = std::get<1>(*start);
     double x1 = 0;
     double y1 = 0;
     while (++start != end)
     {
-        if ( std::get<2>(*start) == SEG_MOVETO)
+        if (std::get<2>(*start) == SEG_MOVETO)
         {
             x0 = std::get<0>(*start);
             y0 = std::get<1>(*start);
             continue;
         }
-        x1=std::get<0>(*start);
-        y1=std::get<1>(*start);
+        x1 = std::get<0>(*start);
+        y1 = std::get<1>(*start);
 
-        double distance = point_to_segment_distance(x,y,x0,y0,x1,y1);
+        double distance = point_to_segment_distance(x, y, x0, y0, x1, y1);
         if (distance < tol)
             return true;
-        x0=x1;
-        y0=y1;
+        x0 = x1;
+        y0 = y1;
     }
     return false;
 }
 
 // filters
-struct filter_in_box
+template <typename T>
+struct bounding_box_filter
 {
-    box2d<double> box_;
-    explicit filter_in_box(box2d<double> const& box)
+    using value_type = T;
+    box2d<value_type> box_;
+    explicit bounding_box_filter(box2d<value_type> const& box)
         : box_(box) {}
 
-    bool pass(box2d<double> const& extent) const
+    bool pass(box2d<value_type> const& extent) const
     {
         return extent.intersects(box_);
     }
 };
 
-struct filter_at_point
+using filter_in_box = bounding_box_filter<double>;
+
+template <typename T>
+struct at_point_filter
 {
-    box2d<double> box_;
-    explicit filter_at_point(coord2d const& pt, double tol=0)
-        : box_(pt,pt)
+    using value_type = T;
+    box2d<value_type> box_;
+    explicit at_point_filter(coord<value_type, 2> const& pt, double tol = 0)
+        : box_(pt, pt)
     {
         box_.pad(tol);
     }
 
-    bool pass(box2d<double> const& extent) const
+    bool pass(box2d<value_type> const& extent) const
     {
         return extent.intersects(box_);
     }
 };
+
+using filter_at_point = at_point_filter<double>;
 
 ////////////////////////////////////////////////////////////////////////////
 template <typename PathType>

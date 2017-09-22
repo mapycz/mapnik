@@ -2,7 +2,7 @@
  *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
- * Copyright (C) 2015 Artem Pavlenko
+ * Copyright (C) 2017 Artem Pavlenko
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,10 +27,12 @@
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/util/noncopyable.hpp>
-#include <mapnik/font_engine_freetype.hpp>
-#include <mapnik/text/glyph_positions.hpp>
-#include <mapnik/value_types.hpp>
 #include <mapnik/pixel_position.hpp>
+#include <mapnik/font_engine_freetype.hpp>
+#include <mapnik/text/rotation.hpp>
+#include <mapnik/text/color_font_renderer.hpp>
+#include <mapnik/text/glyph_positions.hpp>
+#include <mapnik/value/types.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -56,20 +58,20 @@ namespace mapnik
 
 struct glyph_t
 {
-    glyph_info const& info;
     FT_Glyph image;
+    evaluated_format_properties const& properties;
     pixel_position pos;
     rotation rot;
     double size;
     box2d<double> bbox;
-    glyph_t(glyph_info const& info_,
-            FT_Glyph image_,
+    glyph_t(FT_Glyph image_,
+            evaluated_format_properties const& properties_,
             pixel_position const& pos_,
             rotation const& rot_,
             double size_,
             box2d<double> const& bbox_)
-        : info(info_),
-          image(image_),
+        : image(image_),
+          properties(properties_),
           pos(pos_),
           rot(rot_),
           size(size_),
@@ -164,12 +166,11 @@ public:
     void render(glyph_positions const& positions);
 private:
     pixmap_type & pixmap_;
-    halo_cache halo_cache_;
 
+    template <std::size_t PixelWidth>
     void render_halo(unsigned char *buffer,
                      unsigned width,
                      unsigned height,
-                     unsigned pixel_width,
                      unsigned rgba, int x, int y,
                      double halo_radius, double opacity,
                      composite_mode_e comp_op);
@@ -186,7 +187,14 @@ public:
     void render(glyph_positions const& positions, value_integer feature_id);
 private:
     pixmap_type & pixmap_;
-    void render_halo_id(FT_Bitmap_ *bitmap, mapnik::value_integer feature_id, int x, int y, int halo_radius);
+
+    template <std::size_t PixelWidth>
+    void render_halo_id(unsigned char *buffer,
+                        unsigned width,
+                        unsigned height,
+                        mapnik::value_integer feature_id,
+                        int x, int y,
+                        int halo_radius);
 };
 
 }

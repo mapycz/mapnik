@@ -55,6 +55,7 @@ else:
         visual/report.cpp
         visual/runner.cpp
         visual/run.cpp
+        visual/parse_map_sizes.cpp
         """
         )
     test_program3 = test_env_local.Program('visual/run', source=source)
