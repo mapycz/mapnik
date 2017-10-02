@@ -28,7 +28,7 @@
 #include <mapnik/markers_placements/interior.hpp>
 #include <mapnik/markers_placements/vertex_first.hpp>
 #include <mapnik/markers_placements/vertex_last.hpp>
-#include <mapnik/markers_placements/pia.hpp>
+#include <mapnik/markers_placements/polylabel.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 
 namespace mapnik

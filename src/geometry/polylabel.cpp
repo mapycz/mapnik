@@ -21,9 +21,17 @@
  *****************************************************************************/
 
 #include <mapnik/geometry/polylabel.hpp>
+#include <mapnik/geometry/envelope.hpp>
 #include <mapbox/polylabel.hpp>
 
 namespace mapnik { namespace geometry {
+
+template <class T>
+T polylabel_precision(polygon<T> const& polygon)
+{
+    box2d<T> bbox(mapnik::geometry::envelope(polygon));
+    return (bbox.width() + bbox.height()) / 10.0;
+}
 
 template <class T>
 point<T> polylabel(polygon<T> const& polygon, T precision)
@@ -33,6 +41,9 @@ point<T> polylabel(polygon<T> const& polygon, T precision)
 
 template
 point<double> polylabel(polygon<double> const& polygon, double precision);
+
+template
+double polylabel_precision(polygon<double> const& polygon);
 
 } }
 

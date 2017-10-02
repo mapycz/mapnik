@@ -54,7 +54,8 @@ public:
 
         geometry::polygon_vertex_processor<double> vertex_processor;
         vertex_processor.add_path(this->locator_);
-        geometry::point<double> placement = geometry::polylabel(vertex_processor.polygon_, 1.0);
+        double precision = geometry::polylabel_precision(vertex_processor.polygon_);
+        geometry::point<double> placement = geometry::polylabel(vertex_processor.polygon_, precision);
 
         x = placement.x;
         y = placement.y;

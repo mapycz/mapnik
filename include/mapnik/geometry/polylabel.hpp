@@ -31,6 +31,9 @@ namespace mapnik { namespace geometry {
 template <class T>
 point<T> polylabel(polygon<T> const& polygon, T precision);
 
+template <class T>
+T polylabel_precision(polygon<T> const& polygon);
+
 } }
 
 #endif // MAPNIK_GEOMETRY_POLYLABEL_HPP

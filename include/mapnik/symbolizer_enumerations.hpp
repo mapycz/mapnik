@@ -139,6 +139,7 @@ enum label_placement_enum : std::uint8_t
     LINE_PLACEMENT,
     VERTEX_PLACEMENT,
     INTERIOR_PLACEMENT,
+    POLYLABEL_PLACEMENT,
     label_placement_enum_MAX
 };
 
