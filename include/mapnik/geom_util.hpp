@@ -549,7 +549,11 @@ struct bisector
     {
         double d1 = (p1.x - x) * cos + (p1.y - y) * sin;
         double d2 = (p2.x - x) * cos + (p2.y - y) * sin;
-        return (d1 <= 1 && d2 >= 1) || (d1 >= 1 && d2 <= 1);
+        return (d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0);
+    }
+
+    point_type intersection(point_type const& p1, point_type const& p2) const
+    {
     }
 
     double sin, cos;
@@ -562,6 +566,7 @@ bool interior_position(PathType & path, double & x, double & y)
     if (!label::centroid(path, x,y))
         return false;
 
+    const unsigned angle_count = 1;
     std::vector<bisector> bisectors;
     for (unsigned i = 0; i < angle_count; i++)
     {
