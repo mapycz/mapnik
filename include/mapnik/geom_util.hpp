@@ -527,12 +527,47 @@ bool hit_test(PathType & path, double x, double y, double tol)
     return inside;
 }
 
+void angles(unsigned count)
+{
+    for (unsigned i = 0; i < count; i++)
+    {
+        double angle = i * M_PI / count;
+    }
+}
+
+struct bisector
+{
+    using point_type = geometry::point<double>;
+
+    bisector(double angle)
+        : sin(std::sin(angle)),
+          cos(std::cos(angle))
+    {
+    }
+
+    bool intersects(point_type const& p1, point_type const& p2) const
+    {
+        double d1 = (p1.x - x) * cos + (p1.y - y) * sin;
+        double d2 = (p2.x - x) * cos + (p2.y - y) * sin;
+        return (d1 <= 1 && d2 >= 1) || (d1 >= 1 && d2 <= 1);
+    }
+
+    double sin, cos;
+};
+
 template <typename PathType>
 bool interior_position(PathType & path, double & x, double & y)
 {
     // start with the centroid
     if (!label::centroid(path, x,y))
         return false;
+
+    std::vector<bisector> bisectors;
+    for (unsigned i = 0; i < angle_count; i++)
+    {
+        double angle = i * M_PI / angle_count;
+        bisectors.emplace_back(angle);
+    }
 
     // otherwise we find a horizontal line across the polygon and then return the
     // center of the widest intersection between the polygon and the line.
@@ -553,6 +588,13 @@ bool interior_position(PathType & path, double & x, double & y)
             case SEG_CLOSE:
                 p0 = move_to;
             case SEG_LINETO:
+                for (auto const& bisector : bisectors)
+                {
+                    if (bisector.intersects(p0, p1))
+                    {
+                    }
+                }
+
                 // if the segments overlap
                 if (p0.y == p1.y)
                 {
