@@ -540,8 +540,8 @@ struct bisector
 
     inline bool intersects(point_type const& p1, point_type const& p2) const
     {
-        double d1 = (p1.x - center.x) * sin + (p1.y - center.y) * cos;
-        double d2 = (p2.x - center.x) * sin + (p2.y - center.y) * cos;
+        double d1 = (center.x - p1.x) * sin + (p1.y - center.y) * cos;
+        double d2 = (center.x - p2.x) * sin + (p2.y - center.y) * cos;
         return (d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0);
     }
 
