@@ -30,7 +30,7 @@ template <class T>
 T polylabel_precision(polygon<T> const& polygon)
 {
     box2d<T> bbox(mapnik::geometry::envelope(polygon));
-    return (bbox.width() + bbox.height()) / 10.0;
+    return (bbox.width() + bbox.height()) / 100.0;
 }
 
 template <class T>

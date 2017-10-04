@@ -540,14 +540,18 @@ struct bisector
 
     inline bool intersects(point_type const& p1, point_type const& p2) const
     {
-        double d1 = (p1.x - center.x) * cos + (p1.y - center.y) * sin;
-        double d2 = (p2.x - center.x) * cos + (p2.y - center.y) * sin;
+        double d1 = (p1.x - center.x) * sin + (p1.y - center.y) * cos;
+        double d2 = (p2.x - center.x) * sin + (p2.y - center.y) * cos;
         return (d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0);
     }
 
     inline point_type intersection(point_type const& p1, point_type const& p2) const
     {
         double denom = (p2.y - p1.y) * cos - (p2.x - p1.x) * sin;
+        if (denom == 0)
+        {
+            return point_type((p2.x + p1.x) / 2.0, (p2.y + p1.y) / 2.0);
+        }
         double c1 = center.x * sin - center.y * cos;
         double c2 = p1.x * p2.y - p1.y * p2.x;
         return point_type((c1 * (p1.x - p2.x) + cos * c2) / denom,
