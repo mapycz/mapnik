@@ -31,7 +31,6 @@ SECTION("polygon 2") {
     ring.emplace_back(1, 0);
     ring.emplace_back(0, 1);
     ring.emplace_back(-1, 0);
-    ring.emplace_back(-1, -1);
     ring.emplace_back(0, -1);
     ring.emplace_back(1, 0);
     poly.push_back(std::move(ring));
@@ -53,6 +52,19 @@ SECTION("bisector") {
         bisector_type bisector(point_type(0.5, 0.5), 0);
         CHECK(!bisector.intersects(point_type(0, 0), point_type(1, 0)));
         CHECK(bisector.intersects(point_type(0, 0), point_type(1, 1)));
+    }
+
+    {
+        bisector_type bisector(point_type(270.20886059972594, 253.57572393803318), 3.0 * M_PI / 4.0);
+        const point_type p1(179.15547826136165, 399.62713043390545);
+        const point_type p2(151.90817391149596, 364.54399999915978);
+
+        CHECK(bisector.intersects(p1, p2));
+        CHECK(bisector.intersects(p2, p1));
+
+        const point_type intersection = bisector.intersection(p1, p2);
+        CHECK(intersection.x == Approx(155.1134848429));
+        CHECK(intersection.y == Approx(368.6710996948));
     }
 
     {
