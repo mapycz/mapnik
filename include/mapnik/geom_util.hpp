@@ -558,13 +558,10 @@ struct bisector
                           (c1 * (p1.y - p2.y) + sin * c2) / denom);
     }
 
-    // TODO: test
     inline point_type rotate_back(point_type const& p) const
     {
-        return point_type(-p.x * cos - p.y * sin,
-                           p.x * sin - p.y * cos);
-        //return pixel_position(p.x * rot.cos - p.y * rot.sin,
-                              //p.x * rot.sin + p.y * rot.cos);
+        return point_type( p.x * cos + p.y * sin,
+                          -p.x * sin + p.y * cos);
     }
 
     double sin, cos;
@@ -626,58 +623,38 @@ bool interior_position(PathType & path, double & x, double & y)
                         intersections_per_bisector[bi].emplace_back(intersection_point, relative_intersection.x);
                     }
                 }
-
-/*
-                // if the segments overlap
-                if (p0.y == p1.y)
-                {
-                    if (p0.y == y)
-                    {
-                        double xi = (p0.x + p1.x) / 2.0;
-                        intersections.push_back(xi);
-                    }
-                }
-                // if the path segment crosses the bisector
-                else if ((p0.y <= y && p1.y >= y) ||
-                         (p0.y >= y && p1.y <= y))
-                {
-                    // then calculate the intersection
-                    double xi = p0.x;
-                    if (p0.x != p1.x)
-                    {
-                        double m = (p1.y - p0.y) / (p1.x - p0.x);
-                        double c = p0.y - m * p0.x;
-                        xi = (y - c) / m;
-                    }
-
-                    intersections.push_back(xi);
-                }
-                */
                 break;
         }
         p1 = p0;
     }
 
-    // no intersections we just return the default
-    //if (intersections.empty())
-        //return true;
-
-
+    unsigned intersection_count = 0;
     for (auto & intersections : intersections_per_bisector)
     {
         std::sort(intersections.begin(), intersections.end(),
             [](intersection const& i1, intersection const& i2) {
                 return i1.distance < i2.distance;
             });
+        intersection_count += intersections.size();
+        if ((intersection_count % 2) != 0)
+        {
+            return true;
+        }
     }
 
+    // no intersections we just return the default
+    if (intersection_count == 0)
+    {
+        return true;
+    }
+
+    double max_width = 0;
     for (auto const& intersections : intersections_per_bisector)
     {
-        double max_width = 0;
-        for (unsigned ii = 1; ii < intersections.size(); ii += 2)
+        for (unsigned i = 1; i < intersections.size(); i += 2)
         {
-            intersection const& low = intersections[ii - 1];
-            intersection const& high = intersections[ii];
+            intersection const& low = intersections[i - 1];
+            intersection const& high = intersections[i];
             double width = high.distance - low.distance;
             if (width > max_width)
             {
