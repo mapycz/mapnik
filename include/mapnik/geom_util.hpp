@@ -548,7 +548,7 @@ struct bisector
     inline point_type intersection(point_type const& p1, point_type const& p2) const
     {
         double denom = (p2.y - p1.y) * cos - (p2.x - p1.x) * sin;
-        if (denom == 0)
+        if (denom == 0) // parallel
         {
             return point_type((p2.x + p1.x) / 2.0, (p2.y + p1.y) / 2.0);
         }
@@ -558,8 +558,21 @@ struct bisector
                           (c1 * (p1.y - p2.y) + sin * c2) / denom);
     }
 
+    inline point_type rotate(point_type const& p) const
+    {
+        return pixel_position(p.x * rot.cos - p.y * rot.sin, p.x * rot.sin + p.y * rot.cos);
+    }
+
     double sin, cos;
     point_type center;
+};
+
+struct intersection
+{
+    using point_type = geometry::point<double>;
+
+    point_type point;
+    double distance; // distance from origin
 };
 
 template <typename PathType>
@@ -569,7 +582,7 @@ bool interior_position(PathType & path, double & x, double & y)
     if (!label::centroid(path, x,y))
         return false;
 
-    const unsigned angle_count = 1;
+    const unsigned angle_count = 2;
     bisector::point_type center(x, y);
     std::vector<bisector> bisectors;
     for (unsigned i = 0; i < angle_count; i++)
@@ -578,10 +591,7 @@ bool interior_position(PathType & path, double & x, double & y)
         bisectors.emplace_back(center, angle);
     }
 
-    // otherwise we find a horizontal line across the polygon and then return the
-    // center of the widest intersection between the polygon and the line.
-
-    std::vector<double> intersections; // only need to store the X as we know the y
+    std::vector<vector<intersection>> intersections(bisectors.size());
     geometry::point<double> p0, p1, move_to;
     unsigned command = SEG_END;
 
@@ -597,12 +607,15 @@ bool interior_position(PathType & path, double & x, double & y)
             case SEG_CLOSE:
                 p0 = move_to;
             case SEG_LINETO:
-                for (auto const& bisector : bisectors)
+                for (std::size_t bi = 0; bi < bisectors.size(); bi++)
                 {
-                    if (bisector.intersects(p0, p1))
+                    if (bisectors[bi].intersects(p0, p1))
                     {
-                        bisector::point_type intersection = bisector.intersection(p0, p1);
-                        intersections.push_back(intersection.x);
+                        bisector::point_type intersection_point = bisectors[bi].intersection(p0, p1);
+                        intersections[bi].emplace_back(
+                            intersection_point,
+                            std::pow(intersection_point.x - x, 2) +
+                            std::pow(intersection_point.y - y, 2));
                     }
                 }
 
@@ -638,9 +651,15 @@ bool interior_position(PathType & path, double & x, double & y)
     }
 
     // no intersections we just return the default
-    if (intersections.empty())
-        return true;
-    std::sort(intersections.begin(), intersections.end());
+    //if (intersections.empty())
+        //return true;
+
+
+    for (auto const& points : intersections)
+    {
+        std::sort(points.begin(), points.end());
+    }
+
     double max_width = 0;
     for (unsigned ii = 1; ii < intersections.size(); ii += 2)
     {
