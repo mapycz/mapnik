@@ -527,36 +527,35 @@ bool hit_test(PathType & path, double x, double y, double tol)
     return inside;
 }
 
-void angles(unsigned count)
-{
-    for (unsigned i = 0; i < count; i++)
-    {
-        double angle = i * M_PI / count;
-    }
-}
-
 struct bisector
 {
     using point_type = geometry::point<double>;
 
-    bisector(double angle)
-        : sin(std::sin(angle)),
+    bisector(point_type const& center, double angle)
+        : center(center),
+          sin(std::sin(angle)),
           cos(std::cos(angle))
     {
     }
 
-    bool intersects(point_type const& p1, point_type const& p2) const
+    inline bool intersects(point_type const& p1, point_type const& p2) const
     {
-        double d1 = (p1.x - x) * cos + (p1.y - y) * sin;
-        double d2 = (p2.x - x) * cos + (p2.y - y) * sin;
+        double d1 = (p1.x - center.x) * cos + (p1.y - center.y) * sin;
+        double d2 = (p2.x - center.x) * cos + (p2.y - center.y) * sin;
         return (d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0);
     }
 
-    point_type intersection(point_type const& p1, point_type const& p2) const
+    inline point_type intersection(point_type const& p1, point_type const& p2) const
     {
+        double denom = (p2.y - p1.y) * cos - (p2.x - p1.x) * sin;
+        double c1 = center.x * sin - center.y * cos;
+        double c2 = p1.x * p2.y - p1.y * p2.x;
+        return point_type((c1 * (p1.x - p2.x) + cos * c2) / denom,
+                          (c1 * (p1.y - p2.y) + sin * c2) / denom);
     }
 
     double sin, cos;
+    point_type center;
 };
 
 template <typename PathType>
@@ -567,11 +566,12 @@ bool interior_position(PathType & path, double & x, double & y)
         return false;
 
     const unsigned angle_count = 1;
+    bisector::point_type center(x, y);
     std::vector<bisector> bisectors;
     for (unsigned i = 0; i < angle_count; i++)
     {
         double angle = i * M_PI / angle_count;
-        bisectors.emplace_back(angle);
+        bisectors.emplace_back(center, angle);
     }
 
     // otherwise we find a horizontal line across the polygon and then return the
@@ -597,9 +597,12 @@ bool interior_position(PathType & path, double & x, double & y)
                 {
                     if (bisector.intersects(p0, p1))
                     {
+                        bisector::point_type intersection = bisector.intersection(p0, p1);
+                        intersections.push_back(intersection.x);
                     }
                 }
 
+/*
                 // if the segments overlap
                 if (p0.y == p1.y)
                 {
@@ -624,6 +627,7 @@ bool interior_position(PathType & path, double & x, double & y)
 
                     intersections.push_back(xi);
                 }
+                */
                 break;
         }
         p1 = p0;
