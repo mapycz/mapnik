@@ -581,6 +581,13 @@ struct intersection
     double distance; // distance from origin
 };
 
+struct placement
+{
+    using point_type = geometry::point<double>;
+    point_type point;
+    double width;
+};
+
 template <typename PathType>
 bool interior_position(PathType & path, double & x, double & y)
 {
@@ -588,7 +595,7 @@ bool interior_position(PathType & path, double & x, double & y)
     if (!label::centroid(path, x,y))
         return false;
 
-    const unsigned angle_count = 4;
+    const unsigned angle_count = 16;
     bisector::point_type center(x, y);
     std::vector<bisector> bisectors;
     for (unsigned i = 0; i < angle_count; i++)
@@ -649,9 +656,13 @@ bool interior_position(PathType & path, double & x, double & y)
         return true;
     }
 
+    placement placement_horizontal { {x, y}, 0 };
+    placement placement_other = placement_horizontal;
+
     double max_width = 0;
-    for (auto const& intersections : intersections_per_bisector)
+    for (unsigned ipb = 0; ipb < intersections_per_bisector.size(); ipb++)
     {
+        auto const& intersections = intersections_per_bisector[ipb];
         for (unsigned i = 1; i < intersections.size(); i += 2)
         {
             intersection const& low = intersections[i - 1];
@@ -659,13 +670,40 @@ bool interior_position(PathType & path, double & x, double & y)
             double width = high.distance - low.distance;
             if (width > max_width)
             {
-                x = (low.point.x + high.point.x) / 2.0;
-                y = (low.point.y + high.point.y) / 2.0;
+                placement & p = ipb == 0 ? placement_horizontal : placement_other;
+                p.point.x = (low.point.x + high.point.x) / 2.0;
+                p.point.y = (low.point.y + high.point.y) / 2.0;
+                p.width = width;
                 max_width = width;
             }
         }
     }
 
+    // Prefer horizontal intersecton
+    if (placement_other.width > placement_horizontal.width)
+    {
+        const double min_allowed_distance = std::pow(placement_horizontal.width / 2.0, 2);
+        for (auto const& intersections : intersections_per_bisector)
+        {
+            for (auto const& in : intersections)
+            {
+                double distance = std::pow(in.point.x - placement_other.point.x, 2) + 
+                                  std::pow(in.point.y - placement_other.point.y, 2);
+                if (distance < min_allowed_distance)
+                {
+                    x = placement_horizontal.point.x;
+                    y = placement_horizontal.point.y;
+                    return true;
+                }
+            }
+        }
+        x = placement_other.point.x;
+        y = placement_other.point.y;
+        return true;
+    }
+
+    x = placement_horizontal.point.x;
+    y = placement_horizontal.point.y;
     return true;
 }
 
