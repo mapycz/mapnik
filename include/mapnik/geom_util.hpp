@@ -588,7 +588,7 @@ bool interior_position(PathType & path, double & x, double & y)
     if (!label::centroid(path, x,y))
         return false;
 
-    const unsigned angle_count = 2;
+    const unsigned angle_count = 4;
     bisector::point_type center(x, y);
     std::vector<bisector> bisectors;
     for (unsigned i = 0; i < angle_count; i++)
@@ -631,15 +631,16 @@ bool interior_position(PathType & path, double & x, double & y)
     unsigned intersection_count = 0;
     for (auto & intersections : intersections_per_bisector)
     {
+        // TODO: test this
+        if ((intersection_count % 2) != 0)
+        {
+            return true;
+        }
         std::sort(intersections.begin(), intersections.end(),
             [](intersection const& i1, intersection const& i2) {
                 return i1.distance < i2.distance;
             });
         intersection_count += intersections.size();
-        if ((intersection_count % 2) != 0)
-        {
-            return true;
-        }
     }
 
     // no intersections we just return the default
