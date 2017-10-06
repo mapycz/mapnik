@@ -595,8 +595,8 @@ struct placement
               bool is_horizontal_)
         : point(point_),
           width(width_),
-          distance_from_origin(distance_from_origin_),
-          distance_to_intersection(distance_to_intersection_),
+          distance_origin(distance_from_origin_),
+          distance_intersection_sq(distance_to_intersection_),
           is_horizontal(is_horizontal_)
     {
     }
@@ -608,13 +608,15 @@ struct placement
 
     double value() const
     {
-        return width * (is_horizontal ? 10.0 : 0) / (distance_from_origin * distance_to_intersection);
+        return width * (is_horizontal ? 1.0 : 0.0);
+        //return width * (is_horizontal ? 1.5 : 1.0) * std::sqrt(distance_intersection_sq) /
+            //(1.0 + std::sqrt(std::abs(distance_origin)));
     }
 
     point_type point;
     double width;
-    double distance_from_origin;
-    double distance_to_intersection;
+    double distance_origin;
+    double distance_intersection_sq;
     bool is_horizontal;
 };
 
@@ -656,8 +658,8 @@ void make_intersections(Path & path,
     }
 }
 
-inline double min_distance(std::vector<std::vector<intersection>> const& intersections_per_bisector,
-                           placement::point_type const& point)
+inline double min_distance_sq(std::vector<std::vector<intersection>> const& intersections_per_bisector,
+                              placement::point_type const& point)
 {
     double min = std::numeric_limits<double>::max(); 
     for (auto const& intersections : intersections_per_bisector)
@@ -726,11 +728,11 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
             placement::point_type point((low.point.x + high.point.x) / 2.0,
                                         (low.point.y + high.point.y) / 2.0);
             double width = high.distance - low.distance;
-            double distance_from_origin = (high.distance + low.distance) / 2.0;
-            double distance_to_intersection = min_distance(intersections_per_bisector, point);
+            double distance_origin = (high.distance + low.distance) / 2.0;
+            double distance_intersection_sq = min_distance_sq(intersections_per_bisector, point);
             bool is_horizontal = ipb == 0;
-            placements.emplace_back(point, width, distance_from_origin,
-                                    distance_to_intersection, is_horizontal);
+            placements.emplace_back(point, width, distance_origin,
+                                    distance_intersection_sq, is_horizontal);
         }
     }
 
