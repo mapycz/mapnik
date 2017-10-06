@@ -45,7 +45,7 @@ SECTION("polygon 2") {
 
 SECTION("bisector") {
 
-    using bisector_type = mapnik::label::bisector;
+    using bisector_type = mapnik::label::detail::bisector;
     using point_type = bisector_type::point_type;
 
     {

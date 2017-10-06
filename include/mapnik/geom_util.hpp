@@ -527,6 +527,9 @@ bool hit_test(PathType & path, double x, double y, double tol)
     return inside;
 }
 
+namespace detail
+{
+
 struct bisector
 {
     using point_type = geometry::point<double>;
@@ -588,19 +591,18 @@ struct placement
     double width;
 };
 
-template <typename PathType>
-bool interior_position(PathType & path, double & x, double & y)
+template <typename Path>
+bool interior_position(Path & path, double & x, double & y, unsigned bisector_count)
 {
     // start with the centroid
     if (!label::centroid(path, x,y))
         return false;
 
-    const unsigned angle_count = 16;
     bisector::point_type center(x, y);
     std::vector<bisector> bisectors;
-    for (unsigned i = 0; i < angle_count; i++)
+    for (unsigned i = 0; i < bisector_count; i++)
     {
-        double angle = i * M_PI / angle_count;
+        double angle = i * M_PI / bisector_count;
         bisectors.emplace_back(center, angle);
     }
 
@@ -705,6 +707,14 @@ bool interior_position(PathType & path, double & x, double & y)
     x = placement_horizontal.point.x;
     y = placement_horizontal.point.y;
     return true;
+}
+
+}
+
+template <typename PathType>
+bool interior_position(PathType & path, double & x, double & y)
+{
+    detail::interior_position(path, x, y, 8);
 }
 
 }}
