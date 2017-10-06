@@ -592,21 +592,10 @@ struct placement
 };
 
 template <typename Path>
-bool interior_position(Path & path, double & x, double & y, unsigned bisector_count)
+void make_intersections(Path & path,
+                        std::vector<bisector> const& bisectors,
+                        std::vector<std::vector<intersection>> & intersections_per_bisector)
 {
-    // start with the centroid
-    if (!label::centroid(path, x,y))
-        return false;
-
-    bisector::point_type center(x, y);
-    std::vector<bisector> bisectors;
-    for (unsigned i = 0; i < bisector_count; i++)
-    {
-        double angle = i * M_PI / bisector_count;
-        bisectors.emplace_back(center, angle);
-    }
-
-    std::vector<std::vector<intersection>> intersections_per_bisector(bisectors.size());
     geometry::point<double> p0, p1, move_to;
     unsigned command = SEG_END;
 
@@ -624,11 +613,13 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
             case SEG_LINETO:
                 for (std::size_t bi = 0; bi < bisectors.size(); bi++)
                 {
-                    if (bisectors[bi].intersects(p0, p1))
+                    bisector const& bisec = bisectors[bi];
+                    if (bisec.intersects(p0, p1))
                     {
-                        bisector::point_type intersection_point = bisectors[bi].intersection(p0, p1);
-                        bisector::point_type relative_intersection(intersection_point.x - x, intersection_point.y - y);
-                        relative_intersection = bisectors[bi].rotate_back(relative_intersection);
+                        bisector::point_type intersection_point = bisec.intersection(p0, p1);
+                        bisector::point_type relative_intersection(intersection_point.x - bisec.center.x,
+                                                                   intersection_point.y - bisec.center.y);
+                        relative_intersection = bisec.rotate_back(relative_intersection);
                         intersections_per_bisector[bi].emplace_back(intersection_point, relative_intersection.x);
                     }
                 }
@@ -636,20 +627,58 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
         }
         p1 = p0;
     }
+}
+
+inline double min_distance(std::vector<std::vector<intersection>> const& intersections_per_bisector,
+                           placement const& p)
+{
+    double min = std::numeric_limits<double>::max(); 
+    for (auto const& intersections : intersections_per_bisector)
+    {
+        for (auto const& in : intersections)
+        {
+            double distance = std::pow(in.point.x - p.point.x, 2) + 
+                              std::pow(in.point.y - p.point.y, 2);
+            min = std::min(min, distance);
+        }
+    }
+    return min;
+}
+
+template <typename Path>
+bool interior_position(Path & path, double & x, double & y, unsigned bisector_count)
+{
+    // start with the centroid
+    if (!label::centroid(path, x,y))
+    {
+        return false;
+    }
+
+    const bisector::point_type center(x, y);
+    std::vector<bisector> bisectors;
+    for (unsigned i = 0; i < bisector_count; i++)
+    {
+        double angle = i * M_PI / bisector_count;
+        bisectors.emplace_back(center, angle);
+    }
+
+    std::vector<std::vector<intersection>> intersections_per_bisector(bisectors.size());
+    make_intersections(path, bisectors, intersections_per_bisector);
 
     unsigned intersection_count = 0;
     for (auto & intersections : intersections_per_bisector)
     {
+        intersection_count += intersections.size();
         // TODO: test this
         if ((intersection_count % 2) != 0)
         {
             return true;
         }
+
         std::sort(intersections.begin(), intersections.end(),
             [](intersection const& i1, intersection const& i2) {
                 return i1.distance < i2.distance;
             });
-        intersection_count += intersections.size();
     }
 
     // no intersections we just return the default
@@ -709,7 +738,7 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
     return true;
 }
 
-}
+} // namespace detail
 
 template <typename PathType>
 bool interior_position(PathType & path, double & x, double & y)
