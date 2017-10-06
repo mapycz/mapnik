@@ -28,7 +28,9 @@
 #include <mapnik/coord.hpp>
 #include <mapnik/vertex.hpp>
 #include <mapnik/geometry/geometry_types.hpp>
-#include <mapnik/geometry/point.hpp>
+#include <mapnik/geometry/boost_adapters.hpp>
+
+#include <boost/geometry/algorithms/distance.hpp>
 
 // stl
 #include <cmath>
@@ -608,7 +610,9 @@ struct placement
 
     double value() const
     {
-        return width * (is_horizontal ? 1.0 : 0.0);
+        //return distance_intersection_sq;
+        return distance_intersection_sq / (1.0 + std::sqrt(std::abs(distance_origin)));
+        //return width * (is_horizontal ? 1.0 : (0.9 * std::sqrt(distance_intersection_sq)/(1.0 + std::abs(distance_origin))));
         //return width * (is_horizontal ? 1.5 : 1.0) * std::sqrt(distance_intersection_sq) /
             //(1.0 + std::sqrt(std::abs(distance_origin)));
     }
@@ -658,22 +662,6 @@ void make_intersections(Path & path,
     }
 }
 
-inline double min_distance_sq(std::vector<std::vector<intersection>> const& intersections_per_bisector,
-                              placement::point_type const& point)
-{
-    double min = std::numeric_limits<double>::max(); 
-    for (auto const& intersections : intersections_per_bisector)
-    {
-        for (auto const& in : intersections)
-        {
-            double distance = std::pow(in.point.x - point.x, 2) +
-                              std::pow(in.point.y - point.y, 2);
-            min = std::min(min, distance);
-        }
-    }
-    return min;
-}
-
 template <typename Path>
 bool interior_position(Path & path, double & x, double & y, unsigned bisector_count)
 {
@@ -694,12 +682,16 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
     std::vector<std::vector<intersection>> intersections_per_bisector(bisectors.size());
     make_intersections(path, bisectors, intersections_per_bisector);
 
-    unsigned intersection_count = 0;
+    geometry::multi_point<double> intersection_points;
     for (auto & intersections : intersections_per_bisector)
     {
-        intersection_count += intersections.size();
-        // TODO: test this
-        if ((intersection_count % 2) != 0)
+        for (auto const& i : intersections)
+        {
+            intersection_points.push_back(i.point);
+        }
+
+        // TODO: test
+        if ((intersection_points.size() % 2) != 0)
         {
             return true;
         }
@@ -710,8 +702,7 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
             });
     }
 
-    // no intersections we just return the default
-    if (intersection_count == 0)
+    if (intersection_points.size() == 0)
     {
         return true;
     }
@@ -729,7 +720,7 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
                                         (low.point.y + high.point.y) / 2.0);
             double width = high.distance - low.distance;
             double distance_origin = (high.distance + low.distance) / 2.0;
-            double distance_intersection_sq = min_distance_sq(intersections_per_bisector, point);
+            double distance_intersection_sq = std::pow(boost::geometry::distance(point, intersection_points), 2);
             bool is_horizontal = ipb == 0;
             placements.emplace_back(point, width, distance_origin,
                                     distance_intersection_sq, is_horizontal);
@@ -737,58 +728,10 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
     }
 
     auto it = std::max_element(placements.begin(), placements.end());
-
     x = it->point.x;
     y = it->point.y;
+
     return true;
-
-/*
-    placement placement_horizontal { {x, y}, 0 };
-    placement placement_other = placement_horizontal;
-
-    double max_width = 0;
-    for (unsigned ipb = 0; ipb < intersections_per_bisector.size(); ipb++)
-    {
-        auto const& intersections = intersections_per_bisector[ipb];
-        for (unsigned i = 1; i < intersections.size(); i += 2)
-        {
-            intersection const& low = intersections[i - 1];
-            intersection const& high = intersections[i];
-            double width = high.distance - low.distance;
-            if (width > max_width)
-            {
-                placement & p = ipb == 0 ? placement_horizontal : placement_other;
-                p.point.x = (low.point.x + high.point.x) / 2.0;
-                p.point.y = (low.point.y + high.point.y) / 2.0;
-                p.width = width;
-                max_width = width;
-            }
-        }
-    }
-
-    // Prefer horizontal intersecton
-    if (placement_other.width > placement_horizontal.width)
-    {
-        const double min_allowed_distance = std::pow(placement_horizontal.width / 2.0, 2);
-        for (auto const& intersections : intersections_per_bisector)
-        {
-            for (auto const& in : intersections)
-            {
-                double distance = std::pow(in.point.x - placement_other.point.x, 2) + 
-                                  std::pow(in.point.y - placement_other.point.y, 2);
-                if (distance < min_allowed_distance)
-                {
-                    x = placement_horizontal.point.x;
-                    y = placement_horizontal.point.y;
-                    return true;
-                }
-            }
-        }
-        x = placement_other.point.x;
-        y = placement_other.point.y;
-        return true;
-    }
-    */
 }
 
 } // namespace detail
@@ -796,7 +739,7 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
 template <typename PathType>
 bool interior_position(PathType & path, double & x, double & y)
 {
-    detail::interior_position(path, x, y, 8);
+    detail::interior_position(path, x, y, 128);
 }
 
 }}
