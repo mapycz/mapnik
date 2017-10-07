@@ -739,7 +739,7 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
 template <typename PathType>
 bool interior_position(PathType & path, double & x, double & y)
 {
-    detail::interior_position(path, x, y, 128);
+    return detail::interior_position(path, x, y, 128);
 }
 
 }}
