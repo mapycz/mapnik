@@ -1,9 +1,9 @@
 #include "catch.hpp"
 
 #include <mapnik/vertex_adapters.hpp>
-#include <mapnik/geom_util.hpp>
+#include <mapnik/geometry/interior.hpp>
 
-TEST_CASE("polygon interior") {
+TEST_CASE("interior") {
 
 SECTION("polygon 1") {
 
@@ -19,7 +19,7 @@ SECTION("polygon 1") {
     mapnik::geometry::polygon_vertex_adapter<double> va(poly);
 
     mapnik::geometry::point<double> interior;
-    REQUIRE(mapnik::label::interior_position(va, interior.x, interior.y));
+    REQUIRE(mapnik::geometry::interior(va, interior.x, interior.y));
     REQUIRE(interior.x == 0.5);
     REQUIRE(interior.y == 0.5);
 }
@@ -38,14 +38,14 @@ SECTION("polygon 2") {
     mapnik::geometry::polygon_vertex_adapter<double> va(poly);
 
     mapnik::geometry::point<double> interior;
-    REQUIRE(mapnik::label::interior_position(va, interior.x, interior.y));
+    REQUIRE(mapnik::geometry::interior(va, interior.x, interior.y));
     REQUIRE(interior.x == 0.0);
     REQUIRE(interior.y == 0.0);
 }
 
 SECTION("bisector") {
 
-    using bisector_type = mapnik::label::detail::bisector;
+    using bisector_type = mapnik::geometry::detail::bisector;
     using point_type = bisector_type::point_type;
 
     {
