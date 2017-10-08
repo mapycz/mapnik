@@ -583,7 +583,7 @@ struct intersection
     }
 
     point_type point;
-    double distance; // distance from origin
+    double distance; // from origin
 };
 
 struct placement
@@ -591,33 +591,20 @@ struct placement
     using point_type = geometry::point<double>;
 
     placement(point_type const& point_,
-              double width_,
-              double distance_from_origin_,
-              double distance_to_intersection_,
-              bool is_horizontal_)
+              double distance_origin,
+              double distance_intersection)
         : point(point_),
-          width(width_),
-          distance_origin(distance_from_origin_),
-          distance_intersection_sq(distance_to_intersection_),
-          is_horizontal(is_horizontal_)
+          value(distance_intersection / (1.0 + std::sqrt(std::abs(distance_origin))))
     {
     }
 
     bool operator<(placement const& rhs) const
     {
-        return value() < rhs.value();
-    }
-
-    double value() const
-    {
-        return distance_intersection_sq / (1.0 + std::sqrt(std::abs(distance_origin)));
+        return value < rhs.value;
     }
 
     point_type point;
-    double width;
-    double distance_origin;
-    double distance_intersection_sq;
-    bool is_horizontal;
+    double value;
 };
 
 template <typename Path>
@@ -727,12 +714,9 @@ bool interior_position(Path & path, double & x, double & y, unsigned bisector_co
             intersection const& high = intersections[i];
             placement::point_type point((low.point.x + high.point.x) / 2.0,
                                         (low.point.y + high.point.y) / 2.0);
-            double width = high.distance - low.distance;
             double distance_origin = (high.distance + low.distance) / 2.0;
-            double distance_intersection_sq = std::pow(boost::geometry::distance(point, intersection_points), 2);
-            bool is_horizontal = ipb == 0;
-            placements.emplace_back(point, width, distance_origin,
-                                    distance_intersection_sq, is_horizontal);
+            double distance_intersection = std::pow(boost::geometry::distance(point, intersection_points), 2);
+            placements.emplace_back(point, distance_origin, distance_intersection);
         }
     }
 
