@@ -610,11 +610,7 @@ struct placement
 
     double value() const
     {
-        //return distance_intersection_sq;
         return distance_intersection_sq / (1.0 + std::sqrt(std::abs(distance_origin)));
-        //return width * (is_horizontal ? 1.0 : (0.9 * std::sqrt(distance_intersection_sq)/(1.0 + std::abs(distance_origin))));
-        //return width * (is_horizontal ? 1.5 : 1.0) * std::sqrt(distance_intersection_sq) /
-            //(1.0 + std::sqrt(std::abs(distance_origin)));
     }
 
     point_type point;
@@ -633,7 +629,6 @@ void make_intersections(Path & path,
     geometry::point<double> p0, p1, move_to;
     unsigned command = SEG_END;
     int sector_p0, sector_p1;
-    double p0_angle, p1_angle;
     const double sector_angle = M_PI / bisectors.size();
 
     path.rewind(0);
@@ -644,23 +639,17 @@ void make_intersections(Path & path,
         {
             case SEG_MOVETO:
                 move_to = p0;
-                p0_angle = std::atan2(p0.y - center.y, p0.x - center.x);
-                if (p0_angle < 0)
                 {
-                    p0_angle = 2.0 * M_PI + p0_angle;
+                    double angle = 2.0 * M_PI + std::atan2(p0.y - center.y, p0.x - center.x);
+                    sector_p0 = angle / sector_angle;
                 }
-                sector_p0 = p0_angle / sector_angle;
                 break;
             case SEG_CLOSE:
                 p0 = move_to;
             case SEG_LINETO:
-                p0_angle = std::atan2(p0.y - center.y, p0.x - center.x);
-                if (p0_angle < 0)
-                {
-                    p0_angle = 2.0 * M_PI + p0_angle;
-                }
-                sector_p0 = p0_angle / sector_angle;
-                if (sector_p0 != sector_p1 || std::abs(p0_angle - p1_angle) < 0.00000001)
+                double angle = 2.0 * M_PI + std::atan2(p0.y - center.y, p0.x - center.x);
+                sector_p0 = angle / sector_angle;
+                if (sector_p0 != sector_p1)
                 {
                     for (std::size_t bi = 0; bi < bisectors.size(); bi++)
                     {
@@ -679,7 +668,6 @@ void make_intersections(Path & path,
         }
         p1 = p0;
         sector_p1 = sector_p0;
-        p1_angle = p0_angle;
     }
 }
 
