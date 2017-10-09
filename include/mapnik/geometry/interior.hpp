@@ -45,12 +45,6 @@ struct bisector
 {
     using point_type = point<double>;
 
-    struct intersection_result
-    {
-        point_type position;
-        bool parallel;
-    };
-
     bisector(point_type const& center, double angle)
         : center(center),
           sin(std::sin(angle)),
@@ -65,17 +59,17 @@ struct bisector
         return (d1 < 0 && d2 >= 0) || (d1 > 0 && d2 <= 0) || (d1 == 0 && d2 == 0);
     }
 
-    inline intersection_result intersection(point_type const& p1, point_type const& p2) const
+    inline point_type intersection(point_type const& p1, point_type const& p2) const
     {
         double denom = (p2.y - p1.y) * cos - (p2.x - p1.x) * sin;
         if (denom == 0)
         {
-            return { p2, true };
+            return p2;
         }
         double c1 = center.x * sin - center.y * cos;
         double c2 = p1.x * p2.y - p1.y * p2.x;
-        return { { (c1 * (p1.x - p2.x) + cos * c2) / denom,
-                   (c1 * (p1.y - p2.y) + sin * c2) / denom }, false };
+        return { (c1 * (p1.x - p2.x) + cos * c2) / denom,
+                 (c1 * (p1.y - p2.y) + sin * c2) / denom };
     }
 
     inline point_type rotate_back(point_type const& p) const
@@ -151,7 +145,7 @@ void make_intersections(Path & path,
             case SEG_LINETO:
                 angle_p0 = 2.0 * M_PI + std::atan2(p0.y - center.y, p0.x - center.x);
                 sector_p0 = angle_p0 / sector_angle;
-                std::clog << sector_p0 << "; " << sector_p1 << std::endl;
+                //std::clog << sector_p0 << "; " << sector_p1 << std::endl;
                 if (sector_p0 != sector_p1
                     //|| std::abs(angle_p0 - sector_p0 * sector_angle) < angle_epsilon
                     || std::abs(angle_p1 - sector_p0 * sector_angle) < angle_epsilon)
@@ -161,14 +155,7 @@ void make_intersections(Path & path,
                         bisector const& bisec = bisectors[bi];
                         if (bisec.intersects(p0, p1))
                         {
-                            bisector::intersection_result result = bisec.intersection(p0, p1);
-                            /*
-                            if (result.parallel)
-                            {
-                                continue;
-                            }
-                            */
-                            bisector::point_type const& intersection_point = result.position;
+                            bisector::point_type intersection_point = bisec.intersection(p0, p1);
                             bisector::point_type relative_intersection(intersection_point.x - bisec.center.x,
                                                                        intersection_point.y - bisec.center.y);
                             relative_intersection = bisec.rotate_back(relative_intersection);
@@ -182,7 +169,7 @@ void make_intersections(Path & path,
         sector_p1 = sector_p0;
         angle_p1 = angle_p0;
     }
-    std::clog << std::endl;
+    //std::clog << std::endl;
 }
 
 template <typename Path>
