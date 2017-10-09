@@ -63,18 +63,35 @@ SECTION("bisector crosses vertex") {
     using intersection_type = mapnik::geometry::detail::intersection;
     using point_type = bisector_type::point_type;
 
-    const point_type center(0, 0);
-    const double angle = 0;
+    {
+        const point_type center(0, 0);
+        const double angle = 0;
 
-    std::vector<bisector_type> bisectors;
-    bisectors.emplace_back(center, angle);
+        std::vector<bisector_type> bisectors;
+        bisectors.emplace_back(center, angle);
 
-    std::vector<std::vector<intersection_type>> intersections_per_bisector(bisectors.size());
-    mapnik::geometry::detail::make_intersections(va, bisectors, intersections_per_bisector, center);
+        std::vector<std::vector<intersection_type>> intersections_per_bisector(bisectors.size());
+        mapnik::geometry::detail::make_intersections(va, bisectors, intersections_per_bisector, center);
 
-    std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
+        std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
 
-    REQUIRE(intersections.size() == 2);
+        CHECK(intersections.size() == 2);
+    }
+
+    {
+        const point_type center(0, 1);
+        const double angle = 0;
+
+        std::vector<bisector_type> bisectors;
+        bisectors.emplace_back(center, angle);
+
+        std::vector<std::vector<intersection_type>> intersections_per_bisector(bisectors.size());
+        mapnik::geometry::detail::make_intersections(va, bisectors, intersections_per_bisector, center);
+
+        std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
+
+        CHECK(intersections.size() == 1);
+    }
 }
 
 SECTION("segment parallel to bisector") {
@@ -105,7 +122,7 @@ SECTION("segment parallel to bisector") {
 
     std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
 
-    REQUIRE(intersections.size() == 2);
+    CHECK(intersections.size() == 2);
 }
 
 SECTION("polygon - a square") {
@@ -123,8 +140,8 @@ SECTION("polygon - a square") {
 
     mapnik::geometry::point<double> interior;
     REQUIRE(mapnik::geometry::interior(va, interior.x, interior.y));
-    REQUIRE(interior.x == 0.5);
-    REQUIRE(interior.y == 0.5);
+    CHECK(interior.x == 0.5);
+    CHECK(interior.y == 0.5);
 }
 
 SECTION("polygon - bisectors crosses vertices") {
@@ -142,8 +159,8 @@ SECTION("polygon - bisectors crosses vertices") {
 
     mapnik::geometry::point<double> interior;
     REQUIRE(mapnik::geometry::interior(va, interior.x, interior.y));
-    REQUIRE(interior.x == 0.0);
-    REQUIRE(interior.y == 0.0);
+    CHECK(interior.x == 0.0);
+    CHECK(interior.y == 0.0);
 }
 
 SECTION("polygon - bisectors crosses vertices, only horizontal bisector") {
@@ -161,8 +178,8 @@ SECTION("polygon - bisectors crosses vertices, only horizontal bisector") {
 
     mapnik::geometry::point<double> interior;
     REQUIRE(mapnik::geometry::interior(va, interior.x, interior.y, 1));
-    REQUIRE(interior.x == 0.0);
-    REQUIRE(interior.y == 0.0);
+    CHECK(interior.x == 0.0);
+    CHECK(interior.y == 0.0);
 }
 
 }
