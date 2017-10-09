@@ -43,6 +43,38 @@ SECTION("polygon 2") {
     REQUIRE(interior.y == 0.0);
 }
 
+SECTION("polygon 3") {
+
+    mapnik::geometry::polygon<double> poly;
+    mapnik::geometry::linear_ring<double> ring;
+    ring.emplace_back(0, 0);
+    ring.emplace_back(1, 0);
+    ring.emplace_back(1, 1);
+    ring.emplace_back(0, 1);
+    ring.emplace_back(0, 0);
+    poly.push_back(std::move(ring));
+
+    mapnik::geometry::polygon_vertex_adapter<double> va(poly);
+
+    using bisector_type = mapnik::geometry::detail::bisector;
+    using intersection_type = mapnik::geometry::detail::intersection;
+    using point_type = bisector_type::point_type;
+
+    const point_type center(0.5, 1);
+    const double angle = 0;
+
+    std::vector<bisector_type> bisectors;
+    bisectors.emplace_back(center, angle);
+
+    std::vector<std::vector<intersection_type>> intersections_per_bisector(bisectors.size());
+    mapnik::geometry::detail::make_intersections(va, bisectors, intersections_per_bisector, center);
+
+    std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
+
+    REQUIRE(intersections.size() == 2);
+}
+
+
 SECTION("bisector") {
 
     using bisector_type = mapnik::geometry::detail::bisector;
