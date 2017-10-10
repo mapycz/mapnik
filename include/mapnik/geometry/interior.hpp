@@ -51,20 +51,19 @@ struct bisector
     {
     }
 
-    inline bool intersects(point_type const& p1, point_type const& p2) const
+    inline bool intersects(point_type const& p1,
+                           point_type const& p2) const
     {
         double d1 = (center.x - p1.x) * sin + (p1.y - center.y) * cos;
         double d2 = (center.x - p2.x) * sin + (p2.y - center.y) * cos;
         return (d1 < 0 && d2 > 0) || (d1 > 0 && d2 < 0);
     }
 
-    inline point_type intersection(point_type const& p1, point_type const& p2) const
+    inline point_type intersection(point_type const& p1,
+                                   point_type const& p2) const
     {
         double denom = (p2.y - p1.y) * cos - (p2.x - p1.x) * sin;
-        if (denom == 0)
-        {
-            return { };
-        }
+        // if (denom == 0) return { }; // A caller must ensure lines are not parallel
         double c1 = center.x * sin - center.y * cos;
         double c2 = p1.x * p2.y - p1.y * p2.x;
         return { (c1 * (p1.x - p2.x) + cos * c2) / denom,
@@ -143,7 +142,8 @@ struct intersector
 
     inline void process_vertex(point_type const& vertex, int & sector)
     {
-        double angle = 2.0 * M_PI + std::atan2(vertex.y - center.y, vertex.x - center.x);
+        double angle = 2.0 * M_PI + std::atan2(vertex.y - center.y,
+                                               vertex.x - center.x);
         sector = angle / sector_angle;
         if (std::abs(sector * sector_angle - angle) < angle_epsilon)
         {
@@ -162,10 +162,13 @@ struct intersector
             if (bisec.enabled && bisec.intersects(p1, p2))
             {
                 point_type intersection_point = bisec.intersection(p1, p2);
-                point_type relative_intersection(intersection_point.x - bisec.center.x,
-                                                 intersection_point.y - bisec.center.y);
-                relative_intersection = bisec.rotate_back(relative_intersection);
-                intersections_per_bisector[bi].emplace_back(intersection_point, relative_intersection.x);
+                point_type relative_intersection(
+                    intersection_point.x - bisec.center.x,
+                    intersection_point.y - bisec.center.y);
+                relative_intersection = bisec.rotate_back(
+                    relative_intersection);
+                intersections_per_bisector[bi].emplace_back(
+                    intersection_point, relative_intersection.x);
             }
         }
     }
@@ -207,6 +210,11 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
         return false;
     }
 
+    if (bisector_count == 0)
+    {
+        return true;
+    }
+
     const point_type center(x, y);
     intersector ir(center, bisector_count);
     ir.apply(path);
@@ -240,10 +248,13 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
             intersection const& low = intersections[i - 1];
             intersection const& high = intersections[i];
             point_type position((low.position.x + high.position.x) / 2.0,
-                                           (low.position.y + high.position.y) / 2.0);
+                                (low.position.y + high.position.y) / 2.0);
             double distance_origin = (high.distance + low.distance) / 2.0;
-            double distance_intersection = boost::geometry::distance(position, intersection_points);
-            placements.emplace_back(position, distance_origin, distance_intersection);
+            double distance_intersection = boost::geometry::distance(
+                position, intersection_points);
+            placements.emplace_back(position,
+                                    distance_origin,
+                                    distance_intersection);
         }
     }
 
