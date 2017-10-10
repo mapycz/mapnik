@@ -29,6 +29,8 @@
 
 // boost
 #include <boost/geometry/algorithms/distance.hpp>
+#include <boost/optional.hpp>
+#include <boost/utility/in_place_factory.hpp>
 
 // stl
 #include <cmath>
@@ -104,7 +106,7 @@ struct intersector
         for (unsigned i = 0; i < bisector_count; i++)
         {
             double angle = i * M_PI / bisector_count;
-            bisectors.emplace_back(center, angle);
+            bisectors.emplace_back(boost::in_place(center, angle));
         }
     }
 
@@ -148,7 +150,7 @@ struct intersector
         if (std::abs(sector * sector_angle - angle) < angle_epsilon)
         {
             std::size_t bisector_index = sector % bisectors.size();
-            bisectors[bisector_index].enabled = false;
+            bisectors[bisector_index] = boost::none;
             intersections_per_bisector[bisector_index].clear();
         }
     }
@@ -158,14 +160,14 @@ struct intersector
     {
         for (std::size_t bi = 0; bi < bisectors.size(); bi++)
         {
-            bisector const& bisec = bisectors[bi];
-            if (bisec.enabled && bisec.intersects(p1, p2))
+            boost::optional<bisector> const& bisec = bisectors[bi];
+            if (bisec && bisec->intersects(p1, p2))
             {
-                point_type intersection_point = bisec.intersection(p1, p2);
+                point_type intersection_point = bisec->intersection(p1, p2);
                 point_type relative_intersection(
-                    intersection_point.x - bisec.center.x,
-                    intersection_point.y - bisec.center.y);
-                relative_intersection = bisec.rotate_back(
+                    intersection_point.x - bisec->center.x,
+                    intersection_point.y - bisec->center.y);
+                relative_intersection = bisec->rotate_back(
                     relative_intersection);
                 intersections_per_bisector[bi].emplace_back(
                     intersection_point, relative_intersection.x);
@@ -176,7 +178,7 @@ struct intersector
     const point_type center;
     const double sector_angle;
     const double angle_epsilon;
-    std::vector<bisector> bisectors;
+    std::vector<boost::optional<bisector>> bisectors;
     std::vector<std::vector<intersection>> intersections_per_bisector;
 };
 
