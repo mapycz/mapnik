@@ -8,7 +8,7 @@ TEST_CASE("interior") {
 SECTION("bisector") {
 
     using bisector_type = mapnik::geometry::detail::bisector;
-    using point_type = bisector_type::point_type;
+    using point_type = mapnik::geometry::detail::point_type;
 
     {
         bisector_type bisector(point_type(0.5, 0.5), 0);
@@ -61,7 +61,7 @@ SECTION("bisector crosses vertex") {
 
     using bisector_type = mapnik::geometry::detail::bisector;
     using intersection_type = mapnik::geometry::detail::intersection;
-    using point_type = bisector_type::point_type;
+    using point_type = mapnik::geometry::detail::point_type;
 
     {
         const point_type center(0, 0);
@@ -109,7 +109,7 @@ SECTION("segment parallel to bisector") {
 
     using bisector_type = mapnik::geometry::detail::bisector;
     using intersection_type = mapnik::geometry::detail::intersection;
-    using point_type = bisector_type::point_type;
+    using point_type = mapnik::geometry::detail::point_type;
 
     const point_type center(0.5, 1);
     const double angle = 0;
