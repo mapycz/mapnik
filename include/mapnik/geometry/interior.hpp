@@ -97,6 +97,8 @@ struct intersector
 {
     intersector(point_type const& center_, unsigned bisector_count)
         : center(center_),
+          sector_angle(M_PI / bisector_count),
+          angle_epsilon(std::numeric_limits<double>::epsilon()),
           bisectors(),
           intersections_per_bisector(bisector_count)
     {
@@ -142,12 +144,12 @@ struct intersector
     inline void process_vertex(point_type const& vertex, int & sector)
     {
         double angle = 2.0 * M_PI + std::atan2(vertex.y - center.y, vertex.x - center.x);
-        const double sector_angle = M_PI / bisectors.size();
-        const double angle_epsilon = std::numeric_limits<double>::epsilon();
         sector = angle / sector_angle;
         if (std::abs(sector * sector_angle - angle) < angle_epsilon)
         {
-            bisectors[sector % bisectors.size()].enabled = false;
+            std::size_t bisector_index = sector % bisectors.size();
+            bisectors[bisector_index].enabled = false;
+            intersections_per_bisector[bisector_index].clear();
         }
     }
 
@@ -157,7 +159,7 @@ struct intersector
         for (std::size_t bi = 0; bi < bisectors.size(); bi++)
         {
             bisector const& bisec = bisectors[bi];
-            if (bisec.enabled && bisec.intersects(p1, p2) /* todo */)
+            if (bisec.enabled && bisec.intersects(p1, p2))
             {
                 point_type intersection_point = bisec.intersection(p1, p2);
                 point_type relative_intersection(intersection_point.x - bisec.center.x,
@@ -169,6 +171,8 @@ struct intersector
     }
 
     const point_type center;
+    const double sector_angle;
+    const double angle_epsilon;
     std::vector<bisector> bisectors;
     std::vector<std::vector<intersection>> intersections_per_bisector;
 };
@@ -180,7 +184,7 @@ struct placement
               double distance_origin,
               double distance_intersection)
         : position(point_),
-          value(distance_intersection /
+          value(std::pow(distance_intersection, 2) /
               (1.0 + std::sqrt(std::abs(distance_origin))))
     {
     }
@@ -238,7 +242,7 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
             point_type position((low.position.x + high.position.x) / 2.0,
                                            (low.position.y + high.position.y) / 2.0);
             double distance_origin = (high.distance + low.distance) / 2.0;
-            double distance_intersection = std::pow(boost::geometry::distance(position, intersection_points), 2);
+            double distance_intersection = boost::geometry::distance(position, intersection_points);
             placements.emplace_back(position, distance_origin, distance_intersection);
         }
     }
