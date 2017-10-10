@@ -48,8 +48,7 @@ struct bisector
     bisector(point_type const& center, double angle)
         : center(center),
           sin(std::sin(angle)),
-          cos(std::cos(angle)),
-          enabled(true)
+          cos(std::cos(angle))
     {
     }
 
@@ -80,7 +79,6 @@ struct bisector
 
     point_type center;
     double sin, cos;
-    bool enabled;
 };
 
 struct intersection

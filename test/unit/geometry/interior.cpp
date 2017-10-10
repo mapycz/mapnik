@@ -69,6 +69,8 @@ SECTION("bisector crosses vertex") {
         ir.apply(va);
 
         REQUIRE(ir.intersections_per_bisector.size() == 1);
+        REQUIRE(ir.bisectors.size() == 1);
+        CHECK(!ir.bisectors[0]);
 
         std::vector<intersection_type> const& intersections = ir.intersections_per_bisector.front();
 
@@ -81,6 +83,8 @@ SECTION("bisector crosses vertex") {
         ir.apply(va);
 
         REQUIRE(ir.intersections_per_bisector.size() == 1);
+        REQUIRE(ir.bisectors.size() == 1);
+        CHECK(!ir.bisectors[0]);
 
         std::vector<intersection_type> const& intersections = ir.intersections_per_bisector.front();
 
@@ -110,6 +114,8 @@ SECTION("segment parallel to bisector") {
     ir.apply(va);
 
     REQUIRE(ir.intersections_per_bisector.size() == 1);
+    REQUIRE(ir.bisectors.size() == 1);
+    CHECK(!ir.bisectors[0]);
 
     std::vector<intersection_type> const& intersections = ir.intersections_per_bisector.front();
 
