@@ -59,38 +59,32 @@ SECTION("bisector crosses vertex") {
 
     mapnik::geometry::polygon_vertex_adapter<double> va(poly);
 
-    using bisector_type = mapnik::geometry::detail::bisector;
+    using intersector_type = mapnik::geometry::detail::intersector;
     using intersection_type = mapnik::geometry::detail::intersection;
     using point_type = mapnik::geometry::detail::point_type;
 
     {
         const point_type center(0, 0);
-        const double angle = 0;
+        intersector_type ir(center, 1);
+        ir.apply(va);
 
-        std::vector<bisector_type> bisectors;
-        bisectors.emplace_back(center, angle);
+        REQUIRE(ir.intersections_per_bisector.size() == 1);
 
-        std::vector<std::vector<intersection_type>> intersections_per_bisector(bisectors.size());
-        mapnik::geometry::detail::make_intersections(va, bisectors, intersections_per_bisector, center);
+        std::vector<intersection_type> const& intersections = ir.intersections_per_bisector.front();
 
-        std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
-
-        CHECK(intersections.size() == 2);
+        CHECK(intersections.size() == 0);
     }
 
     {
         const point_type center(0, 1);
-        const double angle = 0;
+        intersector_type ir(center, 1);
+        ir.apply(va);
 
-        std::vector<bisector_type> bisectors;
-        bisectors.emplace_back(center, angle);
+        REQUIRE(ir.intersections_per_bisector.size() == 1);
 
-        std::vector<std::vector<intersection_type>> intersections_per_bisector(bisectors.size());
-        mapnik::geometry::detail::make_intersections(va, bisectors, intersections_per_bisector, center);
+        std::vector<intersection_type> const& intersections = ir.intersections_per_bisector.front();
 
-        std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
-
-        CHECK(intersections.size() == 1);
+        CHECK(intersections.size() == 0);
     }
 }
 
@@ -107,22 +101,19 @@ SECTION("segment parallel to bisector") {
 
     mapnik::geometry::polygon_vertex_adapter<double> va(poly);
 
-    using bisector_type = mapnik::geometry::detail::bisector;
+    using intersector_type = mapnik::geometry::detail::intersector;
     using intersection_type = mapnik::geometry::detail::intersection;
     using point_type = mapnik::geometry::detail::point_type;
 
     const point_type center(0.5, 1);
-    const double angle = 0;
+    intersector_type ir(center, 1);
+    ir.apply(va);
 
-    std::vector<bisector_type> bisectors;
-    bisectors.emplace_back(center, angle);
+    REQUIRE(ir.intersections_per_bisector.size() == 1);
 
-    std::vector<std::vector<intersection_type>> intersections_per_bisector(bisectors.size());
-    mapnik::geometry::detail::make_intersections(va, bisectors, intersections_per_bisector, center);
+    std::vector<intersection_type> const& intersections = ir.intersections_per_bisector.front();
 
-    std::vector<intersection_type> const& intersections = intersections_per_bisector.front();
-
-    CHECK(intersections.size() == 2);
+    CHECK(intersections.size() == 0);
 }
 
 SECTION("polygon - a square") {

@@ -90,17 +90,98 @@ struct intersection
     }
 
     point_type position;
-    double distance; // from origin
+    double distance; // from center
 };
+
+struct intersector
+{
+    intersector(point_type const& center_, unsigned bisector_count)
+        : center(center_),
+          bisectors(),
+          intersections_per_bisector(bisector_count)
+    {
+        for (unsigned i = 0; i < bisector_count; i++)
+        {
+            double angle = i * M_PI / bisector_count;
+            bisectors.emplace_back(center, angle);
+        }
+    }
+
+    template <typename Path>
+    void apply(Path & path)
+    {
+        point<double> p0, p1, move_to;
+        unsigned command = SEG_END;
+        int sector_p0, sector_p1;
+
+        path.rewind(0);
+
+        while (SEG_END != (command = path.vertex(&p0.x, &p0.y)))
+        {
+            switch (command)
+            {
+                case SEG_MOVETO:
+                    move_to = p0;
+                    process_vertex(p0, sector_p0);
+                    break;
+                case SEG_CLOSE:
+                    p0 = move_to;
+                case SEG_LINETO:
+                    process_vertex(p0, sector_p0);
+                    if (sector_p0 != sector_p1)
+                    {
+                        process_segment(p0, p1);
+                    }
+                    break;
+            }
+            p1 = p0;
+            sector_p1 = sector_p0;
+        }
+    }
+
+    inline void process_vertex(point_type const& vertex, int & sector)
+    {
+        double angle = 2.0 * M_PI + std::atan2(vertex.y - center.y, vertex.x - center.x);
+        const double sector_angle = M_PI / bisectors.size();
+        const double angle_epsilon = std::numeric_limits<double>::epsilon();
+        sector = angle / sector_angle;
+        if (std::abs(sector * sector_angle - angle) < angle_epsilon)
+        {
+            bisectors[sector % bisectors.size()].enabled = false;
+        }
+    }
+
+    inline void process_segment(point_type const& p1,
+                                point_type const& p2)
+    {
+        for (std::size_t bi = 0; bi < bisectors.size(); bi++)
+        {
+            bisector const& bisec = bisectors[bi];
+            if (bisec.enabled && bisec.intersects(p1, p2) /* todo */)
+            {
+                point_type intersection_point = bisec.intersection(p1, p2);
+                point_type relative_intersection(intersection_point.x - bisec.center.x,
+                                                 intersection_point.y - bisec.center.y);
+                relative_intersection = bisec.rotate_back(relative_intersection);
+                intersections_per_bisector[bi].emplace_back(intersection_point, relative_intersection.x);
+            }
+        }
+    }
+
+    const point_type center;
+    std::vector<bisector> bisectors;
+    std::vector<std::vector<intersection>> intersections_per_bisector;
+};
+
 
 struct placement
 {
-
     placement(point_type const& point_,
               double distance_origin,
               double distance_intersection)
         : position(point_),
-          value(distance_intersection / (1.0 + std::sqrt(std::abs(distance_origin))))
+          value(distance_intersection /
+              (1.0 + std::sqrt(std::abs(distance_origin))))
     {
     }
 
@@ -113,76 +194,6 @@ struct placement
     double value;
 };
 
-inline void process_vertex(point_type const& vertex,
-                           point_type const& center,
-                           int & sector,
-                           std::vector<bisector> & bisectors)
-{
-    double angle = 2.0 * M_PI + std::atan2(vertex.y - center.y, vertex.x - center.x);
-    const double sector_angle = M_PI / bisectors.size();
-    const double angle_epsilon = std::numeric_limits<double>::epsilon();
-    sector = angle / sector_angle;
-    if (std::abs(sector * sector_angle - angle) < angle_epsilon)
-    {
-        bisectors[sector % bisectors.size()].enabled = false;
-    }
-}
-
-inline void process_segment(point_type const& p1,
-                            point_type const& p2,
-                            point_type const& center,
-                            std::vector<bisector> & bisectors,
-                            std::vector<std::vector<intersection>> & intersections_per_bisector)
-{
-    for (std::size_t bi = 0; bi < bisectors.size(); bi++)
-    {
-        bisector const& bisec = bisectors[bi];
-        if (bisec.enabled && bisec.intersects(p1, p2) /* todo */)
-        {
-            point_type intersection_point = bisec.intersection(p1, p2);
-            point_type relative_intersection(intersection_point.x - bisec.center.x,
-                                             intersection_point.y - bisec.center.y);
-            relative_intersection = bisec.rotate_back(relative_intersection);
-            intersections_per_bisector[bi].emplace_back(intersection_point, relative_intersection.x);
-        }
-    }
-}
-
-template <typename Path>
-void make_intersections(Path & path,
-                        std::vector<bisector> & bisectors,
-                        std::vector<std::vector<intersection>> & intersections_per_bisector,
-                        point_type const& center)
-{
-    point<double> p0, p1, move_to;
-    unsigned command = SEG_END;
-    int sector_p0, sector_p1;
-
-    path.rewind(0);
-
-    while (SEG_END != (command = path.vertex(&p0.x, &p0.y)))
-    {
-        switch (command)
-        {
-            case SEG_MOVETO:
-                move_to = p0;
-                process_vertex(p0, center, sector_p0, bisectors);
-                break;
-            case SEG_CLOSE:
-                p0 = move_to;
-            case SEG_LINETO:
-                process_vertex(p0, center, sector_p0, bisectors);
-                if (sector_p0 != sector_p1)
-                {
-                    process_segment(p0, p1, center, bisectors, intersections_per_bisector);
-                }
-                break;
-        }
-        p1 = p0;
-        sector_p1 = sector_p0;
-    }
-}
-
 template <typename Path>
 bool interior(Path & path, double & x, double & y, unsigned bisector_count)
 {
@@ -193,29 +204,15 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
     }
 
     const point_type center(x, y);
-    std::vector<bisector> bisectors;
-    for (unsigned i = 0; i < bisector_count; i++)
-    {
-        double angle = i * M_PI / bisector_count;
-        bisectors.emplace_back(center, angle);
-    }
-
-    std::vector<std::vector<intersection>> intersections_per_bisector(bisectors.size());
-    make_intersections(path, bisectors, intersections_per_bisector, center);
+    intersector ir(center, bisector_count);
+    ir.apply(path);
 
     multi_point<double> intersection_points;
-    for (auto & intersections : intersections_per_bisector)
+    for (auto & intersections : ir.intersections_per_bisector)
     {
         for (auto const& i : intersections)
         {
             intersection_points.push_back(i.position);
-        }
-
-        // TODO: test
-        if ((intersections.size() % 2) != 0)
-        {
-            throw std::runtime_error("odd intersections");
-            return true;
         }
 
         std::sort(intersections.begin(), intersections.end(),
@@ -231,9 +228,9 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
 
     std::vector<placement> placements;
 
-    for (unsigned ipb = 0; ipb < intersections_per_bisector.size(); ipb++)
+    for (unsigned ipb = 0; ipb < ir.intersections_per_bisector.size(); ipb++)
     {
-        auto const& intersections = intersections_per_bisector[ipb];
+        auto const& intersections = ir.intersections_per_bisector[ipb];
         for (unsigned i = 1; i < intersections.size(); i += 2)
         {
             intersection const& low = intersections[i - 1];
