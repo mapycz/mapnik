@@ -412,8 +412,10 @@ double placement_finder::get_spacing(double path_length, double layout_width) co
     int num_labels = 1;
     if (horizontal_alignment_ != H_ADJUST && text_props_->label_spacing > 0)
     {
-        num_labels = static_cast<int>(std::floor(
-                                          path_length / (text_props_->label_spacing * scale_factor_ + layout_width)));
+        double count_float = path_length / (text_props_->label_spacing * scale_factor_ + layout_width);
+        const double epsilon = std::numeric_limits<double>::epsilon() * count_float;
+        bool round = std::abs(count_float - std::round(count_float)) < epsilon;
+        num_labels = round ? std::round(count_float) : std::floor(count_float);
     }
     if (num_labels <= 0)
     {
