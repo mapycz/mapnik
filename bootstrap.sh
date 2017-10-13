@@ -60,8 +60,20 @@ function install_mason_deps() {
     install proj 4.9.2 libproj &
     install pixman 0.34.0 libpixman-1 &
     install cairo 1.14.6 libcairo &
+    install protobuf 2.6.1 &
+    # technically protobuf is not a mapnik core dep, but installing
+    # here by default helps make mapnik-vector-tile builds easier
     install webp 0.5.1 libwebp &
     install gdal 2.1.1 libgdal &
+    install boost 1.61.0 &
+    install boost_libsystem 1.61.0 &
+    install boost_libfilesystem 1.61.0 &
+    install boost_libprogram_options 1.61.0 &
+    install boost_libregex_icu 1.61.0 &
+    # technically boost thread and python are not a core dep, but installing
+    # here by default helps make python-mapnik builds easier
+    install boost_libthread 1.61.0 &
+    install boost_libpython 1.61.0 &
     install freetype 2.6.5 libfreetype &
     install harfbuzz 1.3.0 libharfbuzz &
     for job in $(jobs -p)
@@ -88,6 +100,8 @@ INPUT_PLUGINS = 'all'
 PATH = '${MASON_LINKED_REL}/bin'
 PKG_CONFIG_PATH = '${MASON_LINKED_REL}/lib/pkgconfig'
 PATH_REPLACE = '$HOME/build/mapbox/mason/mason_packages:./mason_packages'
+BOOST_INCLUDES = '${MASON_LINKED_REL}/include'
+BOOST_LIBS = '${MASON_LINKED_REL}/lib'
 ICU_INCLUDES = '${MASON_LINKED_REL}/include'
 ICU_LIBS = '${MASON_LINKED_REL}/lib'
 HB_INCLUDES = '${MASON_LINKED_REL}/include'
