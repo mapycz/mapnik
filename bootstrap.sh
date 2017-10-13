@@ -70,10 +70,6 @@ function install_mason_deps() {
     install boost_libfilesystem 1.61.0 &
     install boost_libprogram_options 1.61.0 &
     install boost_libregex_icu 1.61.0 &
-    # technically boost thread and python are not a core dep, but installing
-    # here by default helps make python-mapnik builds easier
-    install boost_libthread 1.61.0 &
-    install boost_libpython 1.61.0 &
     install freetype 2.6.5 libfreetype &
     install harfbuzz 1.3.0 libharfbuzz &
     for job in $(jobs -p)
