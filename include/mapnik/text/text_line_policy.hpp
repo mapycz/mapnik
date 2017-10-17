@@ -60,8 +60,10 @@ struct text_line_policy
         int num_labels = 1;
         if (spacing_ > 0)
         {
-            num_labels = static_cast<int>(std::floor(
-                path_.length() / (spacing_ * params_.scale_factor + layout_width_)));
+            double count_float = path_.length() / (spacing_ * params_.scale_factor + layout_width_);
+            const double epsilon = std::numeric_limits<double>::epsilon() * count_float;
+            bool round = std::abs(count_float - std::round(count_float)) < epsilon;
+            num_labels = round ? std::round(count_float) : std::floor(count_float);
         }
         if (num_labels <= 0)
         {
