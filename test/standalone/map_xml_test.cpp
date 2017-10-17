@@ -174,6 +174,7 @@ TEST_CASE("map xml I/O") {
   SECTION("good maps") {
     std::vector<bfs::path> good_maps;
     add_xml_files("test/data/good_maps", good_maps);
+    add_xml_files("test/data-visual/styles", good_maps);
 
     for (auto const &path : good_maps) {
       CAPTURE(path.native());
