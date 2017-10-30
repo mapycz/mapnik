@@ -355,12 +355,12 @@ layer& Map::get_layer(size_t index)
     return layers_[index];
 }
 
-std::vector<layer> const& Map::layers() const
+std::deque<layer> const& Map::layers() const
 {
     return layers_;
 }
 
-std::vector<layer> & Map::layers()
+std::deque<layer> & Map::layers()
 {
     return layers_;
 }

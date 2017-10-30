@@ -30,7 +30,7 @@
 #include <mapnik/feature_style_processor_context.hpp>
 
 // stl
-#include <vector>
+#include <deque>
 #include <set>
 #include <string>
 
@@ -95,7 +95,7 @@ private:
                       proj_transform const& prj_trans);
 
     void prepare_layers(layer_rendering_material & parent_mat,
-                        std::vector<layer> const & layers,
+                        std::deque<layer> const & layers,
                         feature_style_context_map & ctx_map,
                         Processor & p,
                         double scale_denom);
