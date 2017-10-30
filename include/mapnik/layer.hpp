@@ -29,7 +29,7 @@
 #include <mapnik/image_compositing.hpp>
 
 // stl
-#include <vector>
+#include <deque>
 #include <memory>
 
 namespace mapnik
@@ -89,13 +89,13 @@ public:
     /*!
      * @return the styles list attached to this layer.
      */
-    std::vector<std::string> const& styles() const;
+    std::deque<std::string> const& styles() const;
 
     /*!
      * @return the styles list attached to this layer
      *         (non-const version).
      */
-    std::vector<std::string>& styles();
+    std::deque<std::string>& styles();
 
     /*! \brief Add a layer to the map by copying it.
      *  @param l The layer to add.
@@ -107,7 +107,9 @@ public:
      */
     void add_layer(layer && l);
 
-    std::vector<layer> const& layers() const;
+    std::deque<layer> const& layers() const;
+
+    std::deque<layer> & layers();
 
     std::vector<layer> & layers();
 
@@ -235,8 +237,8 @@ private:
     bool clear_label_cache_;
     bool cache_features_;
     std::string group_by_;
-    std::vector<std::string> styles_;
-    std::vector<layer> layers_;
+    std::deque<std::string> styles_;
+    std::deque<layer> layers_;
     datasource_ptr ds_;
     boost::optional<int> buffer_size_;
     boost::optional<box2d<double> > maximum_extent_;

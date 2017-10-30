@@ -33,7 +33,7 @@
 #endif
 
 // stl
-#include <vector>
+#include <deque>
 #include <set>
 #include <string>
 #ifdef MAPNIK_STATS_RENDER
@@ -109,7 +109,7 @@ private:
                       );
 
     void prepare_layers(layer_rendering_material & parent_mat,
-                        std::vector<layer> const & layers,
+                        std::deque<layer> const & layers,
                         feature_style_context_map & ctx_map,
                         Processor & p,
                         double scale_denom);

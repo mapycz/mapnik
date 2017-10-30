@@ -15,7 +15,7 @@
 template <typename Renderer> void process_layers(Renderer & ren,
                                             mapnik::request const& m_req,
                                             mapnik::projection const& map_proj,
-                                            std::vector<mapnik::layer> const& layers,
+                                            std::deque<mapnik::layer> const& layers,
                                             double scale_denom)
 {
     unsigned layers_size = layers.size();
@@ -95,7 +95,7 @@ public:
         scale_denom *= scale_factor_;
         mapnik::agg_renderer<mapnik::image_rgba8> ren(*m_,m_req,variables,im_,scale_factor_);
         ren.start_map_processing(*m_);
-        std::vector<mapnik::layer> const& layers = m_->layers();
+        std::deque<mapnik::layer> const& layers = m_->layers();
         process_layers(ren,m_req,map_proj,layers,scale_denom);
         ren.end_map_processing(*m_);
         if (!preview_.empty()) {
@@ -121,7 +121,7 @@ public:
             scale_denom *= scale_factor_;
             mapnik::agg_renderer<mapnik::image_rgba8> ren(*m_,m_req,variables,im,scale_factor_);
             ren.start_map_processing(*m_);
-            std::vector<mapnik::layer> const& layers = m_->layers();
+            std::deque<mapnik::layer> const& layers = m_->layers();
             process_layers(ren,m_req,map_proj,layers,scale_denom);
             ren.end_map_processing(*m_);
             bool diff = false;

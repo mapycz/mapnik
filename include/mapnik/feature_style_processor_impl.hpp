@@ -135,7 +135,7 @@ feature_style_processor<Processor>::feature_style_processor(Map const& m, double
 
 template <typename Processor>
 void feature_style_processor<Processor>::prepare_layers(layer_rendering_material & parent_mat,
-                                                        std::vector<layer> const & layers,
+                                                        std::deque<layer> const & layers,
                                                         feature_style_context_map & ctx_map,
                                                         Processor & p,
                                                         double scale_denom)
@@ -304,7 +304,7 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
         return;
     }
 
-    std::vector<std::string> const& style_names = lay.styles();
+    std::deque<std::string> const& style_names = lay.styles();
 
     std::size_t num_styles = style_names.size();
     if (num_styles == 0)
