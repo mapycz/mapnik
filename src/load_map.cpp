@@ -70,6 +70,8 @@
 
 // stl
 #include <algorithm>
+#include <deque>
+#include <future>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -81,6 +83,7 @@ using boost::tokenizer;
 namespace mapnik
 {
 using boost::optional;
+using datasource_futures_type = std::deque<std::future<void>>;
 
 constexpr unsigned name2int(const char *str, int off = 0)
 {
@@ -100,13 +103,16 @@ public:
         fontsets_(),
         xml_base_path_() {}
 
-    void parse_map(Map & map, xml_node const& node, std::string const& base_path);
+    void parse_map(Map & map,
+                   xml_node const& node,
+                   std::string const& base_path,
+                   datasource_futures_type & datasource_futures);
 private:
-    void parse_map_include(Map & map, xml_node const& node);
+    void parse_map_include(Map & map, xml_node const& node, datasource_futures_type & datasource_futures);
     void parse_style(Map & map, xml_node const& node);
 
     template <typename Parent>
-    void parse_layer(Parent & parent, xml_node const& node);
+    void parse_layer(Parent & parent, xml_node const& node, datasource_futures_type & datasource_futures);
 
     void parse_symbolizer_base(symbolizer_base &sym, xml_node const& node);
     void parse_fontset(Map & map, xml_node const & node);
@@ -160,7 +166,24 @@ void load_map(Map & map, std::string const& filename, bool strict, std::string b
     tree.set_filename(filename);
     read_xml(filename, tree.root());
     map_parser parser(map, strict, filename);
-    parser.parse_map(map, tree.root(), base_path);
+    datasource_futures_type datasource_futures;
+    parser.parse_map(map, tree.root(), base_path, datasource_futures);
+
+    try
+    {
+        for (auto & future : datasource_futures)
+        {
+            future.get();
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        throw config_error(ex.what());
+    }
+    catch (...)
+    {
+        throw config_error("Unknown exception occurred attempting to create datasoure for layer '" /*+ lyr.name() +*/ "'");
+    }
 }
 
 void load_map_string(Map & map, std::string const& str, bool strict, std::string base_path)
@@ -175,10 +198,30 @@ void load_map_string(Map & map, std::string const& str, bool strict, std::string
         read_xml_string(str, tree.root(), map.base_path()); // FIXME - this value is not fully known yet
     }
     map_parser parser(map, strict, base_path);
-    parser.parse_map(map, tree.root(), base_path);
+    datasource_futures_type datasource_futures;
+    parser.parse_map(map, tree.root(), base_path, datasource_futures);
+
+    try
+    {
+        for (auto & future : datasource_futures)
+        {
+            future.get();
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        throw config_error(ex.what());
+    }
+    catch (...)
+    {
+        throw config_error("Unknown exception occurred attempting to create datasoure for layer '" /*+ lyr.name() +*/ "'");
+    }
 }
 
-void map_parser::parse_map(Map & map, xml_node const& node, std::string const& base_path)
+void map_parser::parse_map(Map & map,
+                           xml_node const& node,
+                           std::string const& base_path,
+                           datasource_futures_type & datasource_futures)
 {
     try
     {
@@ -328,7 +371,7 @@ void map_parser::parse_map(Map & map, xml_node const& node, std::string const& b
             throw;
         }
 
-        parse_map_include(map, map_node);
+        parse_map_include(map, map_node, datasource_futures);
     }
     catch (node_not_found const&)
     {
@@ -341,7 +384,9 @@ void map_parser::parse_map(Map & map, xml_node const& node, std::string const& b
     }
 }
 
-void map_parser::parse_map_include(Map & map, xml_node const& node)
+void map_parser::parse_map_include(Map & map,
+                                   xml_node const& node,
+                                   datasource_futures_type & datasource_futures)
 {
     try
     {
@@ -350,7 +395,7 @@ void map_parser::parse_map_include(Map & map, xml_node const& node)
             if (n.is_text()) continue;
             if (n.is("Include"))
             {
-                parse_map_include(map, n);
+                parse_map_include(map, n, datasource_futures);
             }
             else if (n.is("Style"))
             {
@@ -358,7 +403,7 @@ void map_parser::parse_map_include(Map & map, xml_node const& node)
             }
             else if (n.is("Layer"))
             {
-                parse_layer(map, n);
+                parse_layer(map, n, datasource_futures);
             }
             else if (n.is("FontSet"))
             {
@@ -572,8 +617,17 @@ bool map_parser::parse_font(font_set & fset, xml_node const& f)
     return false;
 }
 
+void create_datasource(layer & lyr, parameters params)
+{
+    std::shared_ptr<datasource> ds =
+        datasource_cache::instance().create(params);
+    lyr.set_datasource(ds);
+}
+
 template <typename Parent>
-void map_parser::parse_layer(Parent & parent, xml_node const& node)
+void map_parser::parse_layer(Parent & parent,
+                             xml_node const& node,
+                             datasource_futures_type & datasource_futures)
 {
     std::string name;
     try
@@ -599,8 +653,9 @@ void map_parser::parse_layer(Parent & parent, xml_node const& node)
         {
             throw mapnik::config_error(ex.what());
         }
-        layer lyr(name, srs);
 
+        parent.layers().emplace_back(name, srs);
+        layer & lyr = parent.layers().back();
 
         if (status)
         {
@@ -774,28 +829,15 @@ void map_parser::parse_layer(Parent & parent, xml_node const& node)
                     params["file"] = ensure_relative_to_xml(file_param);
                 }
 
-                //now we are ready to create datasource
-                try
-                {
-                    std::shared_ptr<datasource> ds =
-                        datasource_cache::instance().create(params);
-                    lyr.set_datasource(ds);
-                }
-                catch (std::exception const& ex)
-                {
-                    throw config_error(ex.what());
-                }
-                catch (...)
-                {
-                    throw config_error("Unknown exception occurred attempting to create datasoure for layer '" + lyr.name() + "'");
-                }
+                std::future<void> datasource_future = std::async(
+                    std::launch::async, create_datasource, std::ref(lyr), params);
+                datasource_futures.emplace_back(std::move(datasource_future));
             }
             else if (child.is("Layer"))
             {
-                parse_layer(lyr, child);
+                parse_layer(lyr, child, datasource_futures);
             }
         }
-        parent.add_layer(std::move(lyr));
     }
     catch (config_error const& ex)
     {
