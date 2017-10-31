@@ -45,6 +45,7 @@
 
 // stl
 #include <stdexcept>
+#include <mutex>
 
 #define DEFAULT_OPTIONS (XML_PARSE_NOENT | XML_PARSE_NOBLANKS | XML_PARSE_DTDLOAD | XML_PARSE_NOCDATA)
 
@@ -85,7 +86,13 @@ public:
         {
             throw std::runtime_error("Failed to create parser context.");
         }
-        exsltRegisterAll();
+
+	{
+#ifdef MAPNIK_THREADSAFE
+		std::lock_guard<std::mutex> lock(mutex_);
+#endif
+		exsltRegisterAll();
+	}
     }
 
     ~libxml2_loader()
@@ -243,6 +250,9 @@ private:
     const char *encoding_;
     int options_;
     const char *url_;
+#ifdef MAPNIK_THREADSAFE
+    std::mutex mutex_;
+#endif
 };
 
 void read_xml(std::string const & filename, xml_node &node)
