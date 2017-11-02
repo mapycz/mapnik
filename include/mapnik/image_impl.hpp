@@ -39,8 +39,27 @@ image_dimensions<max_size>::image_dimensions(int width, int height)
     : width_(width),
       height_(height)
 {
-    if (width < 0 || static_cast<std::size_t>(width) > max_size) throw std::runtime_error("Invalid width for image dimensions requested");
-    if (height < 0 || static_cast<std::size_t>(height) > max_size) throw std::runtime_error("Invalid height for image dimensions requested");
+    if (width < 0)
+    {
+        throw std::runtime_error("Invalid width for image dimensions requested: the width is smaller than zero");
+    }
+    if (height < 0)
+    {
+        throw std::runtime_error("Invalid height for image dimensions requested: the height is smaller than zero");
+    }
+
+    const char * note = "Note: If this error comes from Mapnik during rendering, "
+        "it might mean input data contains unexpected value. "
+        "This may be caused by wrong srs set on a Layer or out "
+        "of range data in input dataset.";
+    if (static_cast<std::size_t>(width) > max_size)
+    {
+        throw std::runtime_error("Invalid width for image dimensions requested: the width is too high. " + std::string(note));
+    }
+    if (static_cast<std::size_t>(height) > max_size)
+    {
+        throw std::runtime_error("Invalid height for image dimensions requested: the height is too high." + std::string(note));
+    }
 }
 
 template <std::size_t max_size>
