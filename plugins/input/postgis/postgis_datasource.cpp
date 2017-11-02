@@ -780,7 +780,9 @@ featureset_ptr postgis_datasource::features_with_context(query const& q,processo
             conn = pool->borrowObject();
             if(!conn )
             {
-                throw mapnik::datasource_exception("Postgis Plugin: Null connection");
+                throw mapnik::datasource_exception("Postgis Plugin: "
+                    "All connections from the pool have been taken. "
+                    "You can enlarge pool size by setting max_size parameter.");
             }
         }
 
