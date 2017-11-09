@@ -52,9 +52,11 @@ libraries = copy(plugin_env['LIBS'])
 
 if env['PLUGIN_LINKING'] == 'shared':
     libraries.insert(0,env['MAPNIK_NAME'])
+    libraries.append('icui18n')
     libraries.append(env['ICU_LIB_NAME'])
     libraries.append(env['BOOST_LIB_PATHS']['system'])
     libraries.append(env['BOOST_LIB_PATHS']['regex'])
+    libraries.append('icudata')
 
     TARGET = plugin_env.SharedLibrary('../%s' % PLUGIN_NAME,
                                       SHLIBPREFIX='',

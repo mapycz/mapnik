@@ -471,7 +471,7 @@ T box2d<T>::operator[] (int index) const
     case -1:
         return maxy_;
     default:
-        throw std::out_of_range("index out of range, max value is 3, min value is -4 ");
+        throw std::out_of_range(std::string("index out of range, max value is 3, min value is -4 "));
     }
 }
 
