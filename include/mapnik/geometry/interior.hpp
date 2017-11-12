@@ -26,6 +26,7 @@
 // mapnik
 #include <mapnik/geom_util.hpp>
 #include <mapnik/geometry/boost_adapters.hpp>
+#include <mapnik/geometry/envelope.hpp>
 
 // boost
 #include <boost/geometry/algorithms/distance.hpp>
@@ -185,16 +186,29 @@ struct intersector
     std::vector<std::vector<intersection>> intersections_per_bisector;
 };
 
+inline double placement_fitness(double distance_center,
+                         double distance_intersection,
+                         box2d<double> const& bbox)
+{
+    double distance_center_threshold = (bbox.width() + bbox.height()) / 8.0;
+    double distance_above_threshold = std::abs(distance_center) - distance_center_threshold;
+    double distance_center_coef = std::max(0.0, distance_above_threshold) * 0.5;
+    return distance_intersection / (1.0 + distance_center_coef);
+}
 
 struct placement
 {
     placement(point_type const& point_,
               double distance_center,
-              double distance_intersection)
+              double distance_intersection,
+              box2d<double> const& bbox)
         : position(point_),
           // Fitness of the placement.
-          fitness(std::pow(distance_intersection, 2) /
-                  (1.0 + std::sqrt(std::abs(distance_center))))
+          fitness(placement_fitness(distance_center, distance_intersection, bbox))
+          /*
+          fitness(distance_intersection /
+                  (1.0 + (((std::max(bbox.width(), bbox.height()) / 8.0) > distance_center)
+                      ? 0 : std::pow(std::abs(distance_center), 0.5))))*/
     {
     }
 
@@ -249,6 +263,7 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
         return true;
     }
 
+    box2d<double> bbox = envelope(intersection_points);
     std::vector<placement> placements;
 
     // Generate all possible placements.
@@ -267,7 +282,8 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
                 position, intersection_points);
             placements.emplace_back(position,
                                     distance_center,
-                                    distance_intersection);
+                                    distance_intersection,
+                                    bbox);
         }
     }
 
