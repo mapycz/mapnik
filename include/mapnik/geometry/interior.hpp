@@ -190,6 +190,7 @@ inline double placement_fitness(double distance_center,
                          double distance_intersection,
                          box2d<double> const& bbox)
 {
+    std::clog << distance_intersection << "\t" << std::abs(distance_center) << std::endl;
     double distance_center_threshold = (bbox.width() + bbox.height()) / 8.0;
     double distance_above_threshold = std::abs(distance_center) - distance_center_threshold;
     double distance_center_coef = std::max(0.0, distance_above_threshold) * 0.5;
