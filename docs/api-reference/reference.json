@@ -1477,7 +1477,7 @@
                 "type": "unsigned",
                 "default-value": 0,
                 "default-meaning": "Only one label per line will attempt to be placed.",
-                "doc": "Distance the renderer should use to try to place repeated text labels on a line."
+                "doc": "Distance the renderer should use to try to place repeated text labels on a line. The spacing is measured from the end of one label to the beginning of next label."
             },
             "character-spacing": {
                 "type": "float",
