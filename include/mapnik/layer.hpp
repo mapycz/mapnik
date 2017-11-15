@@ -109,6 +109,8 @@ public:
 
     std::vector<layer> const& layers() const;
 
+    std::vector<layer> & layers();
+
     /*!
      * @param minimum_scale_denom The minimum scale denominator
      */
