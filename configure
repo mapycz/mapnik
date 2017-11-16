@@ -2,7 +2,7 @@
 
 set -eu
 
-PYTHON=${PYTHON:-python}
+PYTHON=${PYTHON:-python3}
 
 # mapnik-settings.env is an optional file to store
 # environment variables that should be used before

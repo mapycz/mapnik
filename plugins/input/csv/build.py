@@ -21,9 +21,9 @@
 
 Import ('env')
 
-Import ('plugin_base')
-
 PLUGIN_NAME = 'csv'
+
+Import ('plugin_base')
 
 plugin_env = plugin_base.Clone()
 
