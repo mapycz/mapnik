@@ -525,7 +525,7 @@ opts.Update(env)
 if not force_configure:
     if os.path.exists(SCONS_CONFIGURE_CACHE):
         try:
-            pickled_environment = open(SCONS_CONFIGURE_CACHE, 'r')
+            pickled_environment = open(SCONS_CONFIGURE_CACHE, 'rb')
             pickled_values = pickle.load(pickled_environment)
             for key, value in pickled_values.items():
                 env[key] = value
@@ -651,12 +651,12 @@ def get_pkg_lib(context, config, lib):
     parsed = False
     if ret:
         try:
-            value = call(cmd,silent=True)
+            value = call(cmd, silent=True).decode("utf8")
             if ' ' in value:
                 parts = value.split(' ')
                 if len(parts) > 1:
                     value = parts[1]
-            libnames = re.findall(libpattern,value)
+            libnames = re.findall(libpattern, value)
             if libnames:
                 libname = libnames[0]
             else:
@@ -664,7 +664,7 @@ def get_pkg_lib(context, config, lib):
                 libname = 'gdal'
         except Exception as e:
             ret = False
-            print (' unable to determine library name:# {}'.format(str(e)))
+            print (' unable to determine library name:# {0!s}'.format(e))
             return None
     context.Result( libname )
     return libname
@@ -676,8 +676,8 @@ def parse_pg_config(context, config):
     context.Message( 'Checking for %s... ' % tool)
     ret = context.TryAction(env[config])[0]
     if ret:
-        lib_path = call('%s --libdir' % env[config])
-        inc_path = call('%s --includedir' % env[config])
+        lib_path = call('%s --libdir' % env[config]).decode("utf8")
+        inc_path = call('%s --includedir' % env[config]).decode("utf8")
         env.AppendUnique(CPPPATH = fix_path(inc_path))
         env.AppendUnique(LIBPATH = fix_path(lib_path))
         lpq = env['PLUGINS']['postgis']['lib']
@@ -1274,6 +1274,9 @@ if not preconfigured:
 
     env['PLATFORM'] = platform.uname()[0]
     color_print(4,"Configuring on %s in *%s*..." % (env['PLATFORM'],mode))
+
+    cxx_version = call("%s --version" % env["CXX"] ,silent=True)
+    color_print(5, "CXX %s" % cxx_version.decode("utf8"))
 
     env['MISSING_DEPS'] = []
     env['SKIPPED_DEPS'] = []
