@@ -219,7 +219,7 @@ struct placement
           distance_intersection(distance_intersection),
           excenter_coef(excenter_coef),
           // Fitness of the placement.
-          fitness(distance_intersection),
+          fitness(distance_intersection * excenter_coef),
           bisector_index(bisector_index)
           //fitness(placement_fitness(distance_center, distance_intersection, excenter_coef)),
           /*
@@ -316,10 +316,11 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
     }
 
     // TODO: this doesn't work with bisector_count == 0
-    const double excenter_coef = std::sin(M_PI / bisector_count);
     box2d<double> bbox = envelope(intersection_points);
+    const double excenter_coef = std::sin(M_PI / bisector_count) / std::max(bbox.width(), bbox.height());
     std::vector<placement> placements;
     std::vector<std::vector<placement>> placements_ber_bisector(bisector_count);
+    double max_distance = 0;
 
     // Generate all possible placements.
     for (unsigned ipb = 0; ipb < ir.intersections_per_bisector.size(); ipb++)
@@ -329,7 +330,7 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
         {
             intersection const& low = intersections[i - 1];
             intersection const& high = intersections[i];
-            const double positions[] = { 0.3, 0.5, 0.7 };
+            const double positions[] = { 0.2, 0.3, 0.5, 0.7, 0.8 };
             for (double pos : positions)
             {
                 // Put placement to the middle of two intersection points.
@@ -342,9 +343,11 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
                                         distance_center,
                                         distance_intersection,
                                         bbox,
-                                        excenter_coef,
+                                        1.0 - 1.0 * distance_center / std::max(bbox.width(), bbox.height()),
+                                        //excenter_coef * distance_center,
                                         ipb);
                 placements_ber_bisector[ipb].push_back(placements.back());
+                max_distance = std::max(max_distance, distance_center);
             }
         }
     }
@@ -355,7 +358,8 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
 
     for (auto const & p : placements)
     {
-        const double near_radius = p.distance_center; // * excenter_coef;
+        //const double near_radius = p.distance_center; // * excenter_coef;
+        const double near_radius = max_distance / 2.0; // * excenter_coef;
 
         std::size_t prev_bisector_index = (bisector_count + p.bisector_index - 1) % bisector_count;
         std::size_t next_bisector_index = (p.bisector_index + 1) % bisector_count;
