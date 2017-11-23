@@ -253,7 +253,7 @@ bool in_radius(Point const& p1, Point const& p2, double radius)
 inline bool near_fitness(double fitness1, double fitness2)
 {
     //return fitness2 <= fitness1;
-    const double coef = 0.5;
+    const double coef = 0.25;
     return fitness2 <= fitness1 &&
         std::abs(fitness1 - fitness2) <= (fitness1 * coef);
 }
