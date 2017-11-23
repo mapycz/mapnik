@@ -193,7 +193,7 @@ inline double placement_fitness_orig(double distance_center,
 {
     //return distance_intersection;
     double distance_center_threshold = (bbox.width() + bbox.height()) / 8.0;
-    double distance_above_threshold = std::abs(distance_center) - distance_center_threshold;
+    double distance_above_threshold = distance_center - distance_center_threshold;
     double distance_center_coef = std::max(0.0, distance_above_threshold) * 0.5;
     return distance_intersection / (1.0 + distance_center_coef);
 }
@@ -202,7 +202,7 @@ inline double placement_fitness(double distance_center,
                          double distance_intersection,
                          double excenter_coef)
 {
-    double excenter_inaccuracy = std::abs(distance_center) * excenter_coef;
+    double excenter_inaccuracy = distance_center * excenter_coef;
     return distance_intersection - excenter_inaccuracy;
 }
 
@@ -245,15 +245,17 @@ struct placement
 template <typename Point>
 bool in_radius(Point const& p1, Point const& p2, double radius)
 {
-    const double radius_coef = 2.0;
+    const double radius_coef = 1.0;
     return (std::pow(p1.x - p2.x, 2) +
             std::pow(p1.y - p2.y, 2)) <= std::pow(radius * radius_coef, 2);
 }
 
 inline bool near_fitness(double fitness1, double fitness2)
 {
-    const double coef = 0.2;
-    return std::abs(fitness1 - fitness2) <= (fitness1 * coef);
+    //return fitness2 <= fitness1;
+    const double coef = 0.5;
+    return fitness2 <= fitness1 &&
+        std::abs(fitness1 - fitness2) <= (fitness1 * coef);
 }
 
 inline bool has_near_placement(placement const& p,
@@ -327,27 +329,33 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
         {
             intersection const& low = intersections[i - 1];
             intersection const& high = intersections[i];
-            // Put placement to the middle of two intersection points.
-            point_type position((low.position.x + high.position.x) / 2.0,
-                                (low.position.y + high.position.y) / 2.0);
-            double distance_center = (high.distance + low.distance) / 2.0;
-            double distance_intersection = boost::geometry::distance(
-                position, intersection_points);
-            placements.emplace_back(position,
-                                    distance_center,
-                                    distance_intersection,
-                                    bbox,
-                                    excenter_coef,
-                                    ipb);
-            placements_ber_bisector[ipb].push_back(placements.back());
+            const double positions[] = { 0.3, 0.5, 0.7 };
+            for (double pos : positions)
+            {
+                // Put placement to the middle of two intersection points.
+                point_type position(low.position.x + (high.position.x - low.position.x) * pos,
+                                    low.position.y + (high.position.y - low.position.y) * pos);
+                double distance_center = std::abs(low.distance + (high.distance - low.distance) * pos);
+                double distance_intersection = boost::geometry::distance(
+                    position, intersection_points);
+                placements.emplace_back(position,
+                                        distance_center,
+                                        distance_intersection,
+                                        bbox,
+                                        excenter_coef,
+                                        ipb);
+                placements_ber_bisector[ipb].push_back(placements.back());
+            }
         }
     }
 
     std::sort(placements.begin(), placements.end());
 
+        std::clog << std::endl;
+
     for (auto const & p : placements)
     {
-        const double near_radius = std::abs(p.distance_center) * excenter_coef;
+        const double near_radius = p.distance_center; // * excenter_coef;
 
         std::size_t prev_bisector_index = (bisector_count + p.bisector_index - 1) % bisector_count;
         std::size_t next_bisector_index = (p.bisector_index + 1) % bisector_count;
