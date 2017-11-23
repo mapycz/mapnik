@@ -37,6 +37,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 namespace mapnik { namespace geometry {
 
@@ -186,15 +187,23 @@ struct intersector
     std::vector<std::vector<intersection>> intersections_per_bisector;
 };
 
-inline double placement_fitness(double distance_center,
+inline double placement_fitness_orig(double distance_center,
                          double distance_intersection,
                          box2d<double> const& bbox)
 {
-    std::clog << distance_intersection << "\t" << std::abs(distance_center) << std::endl;
+    //return distance_intersection;
     double distance_center_threshold = (bbox.width() + bbox.height()) / 8.0;
     double distance_above_threshold = std::abs(distance_center) - distance_center_threshold;
     double distance_center_coef = std::max(0.0, distance_above_threshold) * 0.5;
     return distance_intersection / (1.0 + distance_center_coef);
+}
+
+inline double placement_fitness(double distance_center,
+                         double distance_intersection,
+                         double excenter_coef)
+{
+    double excenter_inaccuracy = std::abs(distance_center) * excenter_coef;
+    return distance_intersection - excenter_inaccuracy;
 }
 
 struct placement
@@ -202,10 +211,17 @@ struct placement
     placement(point_type const& point_,
               double distance_center,
               double distance_intersection,
-              box2d<double> const& bbox)
+              box2d<double> const& bbox,
+              double excenter_coef,
+              std::size_t bisector_index)
         : position(point_),
+          distance_center(distance_center),
+          distance_intersection(distance_intersection),
+          excenter_coef(excenter_coef),
           // Fitness of the placement.
-          fitness(placement_fitness(distance_center, distance_intersection, bbox))
+          fitness(distance_intersection),
+          bisector_index(bisector_index)
+          //fitness(placement_fitness(distance_center, distance_intersection, excenter_coef)),
           /*
           fitness(distance_intersection /
                   (1.0 + (((std::max(bbox.width(), bbox.height()) / 8.0) > distance_center)
@@ -215,12 +231,45 @@ struct placement
 
     bool operator<(placement const& rhs) const
     {
-        return fitness < rhs.fitness;
+        return fitness > rhs.fitness;
     }
 
     point_type position;
+    double distance_center;
+    double distance_intersection;
+    double excenter_coef;
     double fitness;
+    std::size_t bisector_index;
 };
+
+template <typename Point>
+bool in_radius(Point const& p1, Point const& p2, double radius)
+{
+    const double radius_coef = 2.0;
+    return (std::pow(p1.x - p2.x, 2) +
+            std::pow(p1.y - p2.y, 2)) <= std::pow(radius * radius_coef, 2);
+}
+
+inline bool near_fitness(double fitness1, double fitness2)
+{
+    const double coef = 0.2;
+    return std::abs(fitness1 - fitness2) <= (fitness1 * coef);
+}
+
+inline bool has_near_placement(placement const& p,
+                        std::vector<placement> const& placements,
+                        double near_radius)
+{
+    for (auto const& near_placement : placements)
+    {
+        if (in_radius(p.position, near_placement.position, near_radius)
+            && near_fitness(p.fitness, near_placement.fitness))
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 template <typename Path>
 bool interior(Path & path, double & x, double & y, unsigned bisector_count)
@@ -264,8 +313,11 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
         return true;
     }
 
+    // TODO: this doesn't work with bisector_count == 0
+    const double excenter_coef = std::sin(M_PI / bisector_count);
     box2d<double> bbox = envelope(intersection_points);
     std::vector<placement> placements;
+    std::vector<std::vector<placement>> placements_ber_bisector(bisector_count);
 
     // Generate all possible placements.
     for (unsigned ipb = 0; ipb < ir.intersections_per_bisector.size(); ipb++)
@@ -284,14 +336,70 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
             placements.emplace_back(position,
                                     distance_center,
                                     distance_intersection,
-                                    bbox);
+                                    bbox,
+                                    excenter_coef,
+                                    ipb);
+            placements_ber_bisector[ipb].push_back(placements.back());
         }
     }
 
+    std::sort(placements.begin(), placements.end());
+
+    for (auto const & p : placements)
+    {
+        const double near_radius = std::abs(p.distance_center) * excenter_coef;
+
+        std::size_t prev_bisector_index = (bisector_count + p.bisector_index - 1) % bisector_count;
+        std::size_t next_bisector_index = (p.bisector_index + 1) % bisector_count;
+
+        bool has_prev_placement = has_near_placement(
+            p,
+            placements_ber_bisector[prev_bisector_index],
+            near_radius);
+        bool has_next_placement = has_near_placement(
+            p,
+            placements_ber_bisector[next_bisector_index],
+            near_radius);
+
+        std::clog << std::setprecision(3) <<
+            p.fitness << "\t" <<
+            p.distance_intersection << "\t" <<
+            near_radius << "\t" <<
+            p.position.x << "\t" <<
+            p.position.y << "\t" <<
+            std::endl;
+
+        if (has_prev_placement && has_next_placement)
+        {
+            x = p.position.x;
+            y = p.position.y;
+            return true;
+        }
+    }
+
+/*
+    for (auto const & p : placements)
+    {
+        std::clog << std::setprecision(3) <<
+            p.fitness << "\t" <<
+            p.distance_intersection << "\t" <<
+            p.excenter_coef * std::abs(p.distance_center) << "\t" <<
+            p.position.x << "\t" <<
+            p.position.y << "\t" <<
+            std::endl;
+    }
+    */
+
+    std::clog << "NOT A BEST FIT" << std::endl;
+
     // Find placement with maximal fitness.
+    /*
     auto it = std::max_element(placements.begin(), placements.end());
     x = it->position.x;
     y = it->position.y;
+    */
+    x = placements.front().position.x;
+    y = placements.front().position.y;
 
     return true;
 }
