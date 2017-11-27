@@ -301,7 +301,7 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
         {
             intersection const& low = intersections[i - 1];
             intersection const& high = intersections[i];
-            const double positions[] = { 0.2, 0.3, 0.5, 0.7, 0.8 };
+            const double positions[] = { 0.3, 0.5, 0.7 };
             for (double pos : positions)
             {
                 // Put placement to the middle of two intersection points.
