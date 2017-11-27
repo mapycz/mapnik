@@ -190,17 +190,12 @@ struct intersector
 struct placement
 {
     placement(point_type const& point_,
-              double distance_center,
+              std::size_t bisector_index,
               double distance_intersection,
-              box2d<double> const& bbox,
-              double excenter_coef,
-              std::size_t bisector_index)
+              double excenter_coef)
         : position(point_),
-          distance_center(distance_center),
-          distance_intersection(distance_intersection),
-          // Fitness of the placement.
-          fitness(distance_intersection * excenter_coef),
-          bisector_index(bisector_index)
+          bisector_index(bisector_index),
+          fitness(distance_intersection * (1.0 - excenter_coef))
     {
     }
 
@@ -210,10 +205,8 @@ struct placement
     }
 
     point_type position;
-    double distance_center;
-    double distance_intersection;
-    double fitness;
     std::size_t bisector_index;
+    double fitness;
 };
 
 template <typename Point>
@@ -225,7 +218,6 @@ bool in_radius(Point const& p1, Point const& p2, double radius)
 
 inline bool near_fitness(double fitness1, double fitness2)
 {
-    //return fitness2 <= fitness1;
     const double coef = 0.25;
     return fitness2 <= fitness1 &&
         std::abs(fitness1 - fitness2) <= (fitness1 * coef);
@@ -246,10 +238,80 @@ inline bool has_near_placement(placement const& p,
     return false;
 }
 
+inline void generate_placements(
+    intersector const& ir,
+    multi_point<double> const& intersection_points,
+    double max_distance,
+    std::vector<placement> & placements,
+    std::vector<std::vector<placement>> & placements_ber_bisector)
+{
+    for (unsigned ipb = 0; ipb < ir.intersections_per_bisector.size(); ipb++)
+    {
+        auto const& intersections = ir.intersections_per_bisector[ipb];
+        for (unsigned i = 1; i < intersections.size(); i += 2)
+        {
+            intersection const& low = intersections[i - 1];
+            intersection const& high = intersections[i];
+            const double positions[] = { 0.3, 0.5, 0.7 };
+            for (double pos : positions)
+            {
+                // Put placement in between of two intersection points.
+                point_type position(
+                    low.position.x + (high.position.x - low.position.x) * pos,
+                    low.position.y + (high.position.y - low.position.y) * pos);
+                double distance_center = std::abs(low.distance +
+                    (high.distance - low.distance) * pos);
+                double distance_intersection = boost::geometry::distance(
+                    position, intersection_points);
+                placements.emplace_back(position,
+                                        ipb,
+                                        distance_intersection,
+                                        distance_center / max_distance);
+                placements_ber_bisector[ipb].push_back(placements.back());
+            }
+        }
+    }
+}
+
+inline bool find_best_placement(
+    std::vector<placement> const& placements,
+    std::vector<std::vector<placement>> const& placements_ber_bisector,
+    double max_distance,
+    double & x,
+    double & y)
+{
+    // Max distance to neighbour placement.
+    const double near_radius = max_distance / 4.0;
+    const unsigned bisector_count = placements_ber_bisector.size();
+
+    for (auto const & p : placements)
+    {
+        std::size_t prev_bisector_index = (bisector_count + p.bisector_index - 1) % bisector_count;
+        std::size_t next_bisector_index = (p.bisector_index + 1) % bisector_count;
+
+        bool has_prev_placement = has_near_placement(
+            p,
+            placements_ber_bisector[prev_bisector_index],
+            near_radius);
+        bool has_next_placement = has_near_placement(
+            p,
+            placements_ber_bisector[next_bisector_index],
+            near_radius);
+
+        if (has_prev_placement && has_next_placement)
+        {
+            x = p.position.x;
+            y = p.position.y;
+            return true;
+        }
+    }
+    return false;
+}
+
 template <typename Path>
 bool interior(Path & path, double & x, double & y, unsigned bisector_count)
 {
-    // start with the centroid
+    // Start with the centroid.
     if (!label::centroid(path, x, y))
     {
         return false;
@@ -267,8 +329,7 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
     ir.apply(path);
 
     multi_point<double> intersection_points;
-    // Sort intersection points by distance to the
-    // center for each bisector.
+    // Sort intersection points by distance to the center for each bisector.
     // Collect all intersection points to one multi_point structure.
     for (auto & intersections : ir.intersections_per_bisector)
     {
@@ -288,95 +349,32 @@ bool interior(Path & path, double & x, double & y, unsigned bisector_count)
         return true;
     }
 
-    box2d<double> bbox = envelope(intersection_points);
+    const box2d<double> bbox = envelope(intersection_points);
+    // Maximum distance from the center to an intersection.
+    const double max_distance = std::max(bbox.width(), bbox.height());
     std::vector<placement> placements;
     std::vector<std::vector<placement>> placements_ber_bisector(bisector_count);
-    const double max_distance = std::max(bbox.width(), bbox.height());
 
     // Generate all possible placements.
-    for (unsigned ipb = 0; ipb < ir.intersections_per_bisector.size(); ipb++)
-    {
-        auto const& intersections = ir.intersections_per_bisector[ipb];
-        for (unsigned i = 1; i < intersections.size(); i += 2)
-        {
-            intersection const& low = intersections[i - 1];
-            intersection const& high = intersections[i];
-            const double positions[] = { 0.3, 0.5, 0.7 };
-            for (double pos : positions)
-            {
-                // Put placement to the middle of two intersection points.
-                point_type position(low.position.x + (high.position.x - low.position.x) * pos,
-                                    low.position.y + (high.position.y - low.position.y) * pos);
-                double distance_center = std::abs(low.distance + (high.distance - low.distance) * pos);
-                double distance_intersection = boost::geometry::distance(
-                    position, intersection_points);
-                placements.emplace_back(position,
-                                        distance_center,
-                                        distance_intersection,
-                                        bbox,
-                                        1.0 - distance_center / max_distance,
-                                        ipb);
-                placements_ber_bisector[ipb].push_back(placements.back());
-            }
-        }
-    }
+    generate_placements(ir, intersection_points, max_distance,
+                        placements, placements_ber_bisector);
 
+    // Sort placements by fitness.
     std::sort(placements.begin(), placements.end());
 
-        std::clog << std::endl;
-    const double near_radius = max_distance / 4.0;
-
-    for (auto const & p : placements)
+    // The best placement has not only top fitness, but also has
+    // neighbour placements with similar fitness.
+    // This simple approach filters out excesses caused by inaccuracy
+    // of limited number of bisectors.
+    if (find_best_placement(placements,
+                            placements_ber_bisector,
+                            max_distance,
+                            x, y))
     {
-        std::size_t prev_bisector_index = (bisector_count + p.bisector_index - 1) % bisector_count;
-        std::size_t next_bisector_index = (p.bisector_index + 1) % bisector_count;
-
-        bool has_prev_placement = has_near_placement(
-            p,
-            placements_ber_bisector[prev_bisector_index],
-            near_radius);
-        bool has_next_placement = has_near_placement(
-            p,
-            placements_ber_bisector[next_bisector_index],
-            near_radius);
-
-        std::clog << std::setprecision(3) <<
-            p.fitness << "\t" <<
-            p.distance_intersection << "\t" <<
-            near_radius << "\t" <<
-            p.position.x << "\t" <<
-            p.position.y << "\t" <<
-            std::endl;
-
-        if (has_prev_placement && has_next_placement)
-        {
-            x = p.position.x;
-            y = p.position.y;
-            return true;
-        }
+        return true;
     }
 
-/*
-    for (auto const & p : placements)
-    {
-        std::clog << std::setprecision(3) <<
-            p.fitness << "\t" <<
-            p.distance_intersection << "\t" <<
-            p.excenter_coef * std::abs(p.distance_center) << "\t" <<
-            p.position.x << "\t" <<
-            p.position.y << "\t" <<
-            std::endl;
-    }
-    */
-
-    std::clog << "NOT A BEST FIT" << std::endl;
-
-    // Find placement with maximal fitness.
-    /*
-    auto it = std::max_element(placements.begin(), placements.end());
-    x = it->position.x;
-    y = it->position.y;
-    */
+    // If no best placement found, take the one with top fitness.
     x = placements.front().position.x;
     y = placements.front().position.y;
 
