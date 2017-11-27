@@ -29,7 +29,7 @@ namespace mapnik { namespace geometry {
 template <class T>
 T polylabel_precision(polygon<T> const& polygon)
 {
-    return 1;
+    return 10;
 }
 
 template <class T>
