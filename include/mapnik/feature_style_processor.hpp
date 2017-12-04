@@ -28,11 +28,17 @@
 #include <mapnik/featureset.hpp>
 #include <mapnik/config.hpp>
 #include <mapnik/feature_style_processor_context.hpp>
+#ifdef MAPNIK_STATS_RENDER
+#include <mapnik/value_types.hpp>
+#endif
 
 // stl
 #include <vector>
 #include <set>
 #include <string>
+#ifdef MAPNIK_STATS_RENDER
+#include <deque>
+#endif
 
 namespace mapnik
 {
@@ -85,6 +91,26 @@ public:
                         std::set<std::string>& names);
 
 private:
+#ifdef MAPNIK_STATS_RENDER
+    struct painted_features
+    {
+        painted_features(std::string const& layer_name)
+            : layer_name(layer_name),
+              painted_ids(),
+              all_features_count(0)
+        {
+        }
+
+        std::string layer_name;
+        std::set<mapnik::value_integer> painted_ids;
+        unsigned all_features_count = 0;
+    };
+
+    std::deque<painted_features> painted_features_per_layer;
+
+    void log_painted_features() const;
+#endif
+
     /*!
      * \brief renders a featureset with the given styles.
      */
@@ -92,7 +118,11 @@ private:
                       feature_type_style const* style,
                       rule_cache const& rules,
                       featureset_ptr features,
-                      proj_transform const& prj_trans);
+                      proj_transform const& prj_trans
+#ifdef MAPNIK_STATS_RENDER
+                      ,painted_features & pf
+#endif
+                      );
 
     void prepare_layers(layer_rendering_material & parent_mat,
                         std::vector<layer> const & layers,

@@ -163,6 +163,10 @@ void feature_style_processor<Processor>::apply(double scale_denom)
     }
 
     p.end_map_processing(m_);
+#ifdef MAPNIK_STATS_RENDER
+    log_painted_features();
+    painted_features_per_layer.clear();
+#endif
 }
 
 template <typename Processor>
@@ -191,6 +195,10 @@ void feature_style_processor<Processor>::apply(mapnik::layer const& lyr,
                        names);
     }
     p.end_map_processing(m_);
+#ifdef MAPNIK_STATS_RENDER
+    log_painted_features();
+    painted_features_per_layer.clear();
+#endif
 }
 
 /*!
@@ -495,6 +503,11 @@ void feature_style_processor<Processor>::render_material(layer_rendering_materia
     layer const& lay = mat.lay_;
     datasource_ptr ds = lay.datasource();
 
+#ifdef MAPNIK_STATS_RENDER
+    painted_features_per_layer.emplace_back(lay.name());
+    painted_features & pf = painted_features_per_layer.back();
+#endif
+
     if (!ds)
     {
         return;
@@ -543,7 +556,11 @@ void feature_style_processor<Processor>::render_material(layer_rendering_materia
                         render_style(p, style,
                                      rule_caches[i],
                                      cache,
-                                     prj_trans);
+                                     prj_trans
+#ifdef MAPNIK_STATS_RENDER
+                                     ,pf
+#endif
+                                     );
                         ++i;
                     }
                     cache->clear();
@@ -556,7 +573,11 @@ void feature_style_processor<Processor>::render_material(layer_rendering_materia
             for (feature_type_style const* style : active_styles)
             {
                 cache->prepare();
-                render_style(p, style, rule_caches[i], cache, prj_trans);
+                render_style(p, style, rule_caches[i], cache, prj_trans
+#ifdef MAPNIK_STATS_RENDER
+                             ,pf
+#endif
+                             );
                 ++i;
             }
             cache->clear();
@@ -582,7 +603,11 @@ void feature_style_processor<Processor>::render_material(layer_rendering_materia
             cache->prepare();
             render_style(p, style,
                          rule_caches[i],
-                         cache, prj_trans);
+                         cache, prj_trans
+#ifdef MAPNIK_STATS_RENDER
+                         ,pf
+#endif
+                         );
             ++i;
         }
     }
@@ -597,10 +622,18 @@ void feature_style_processor<Processor>::render_material(layer_rendering_materia
             render_style(p, style,
                          rule_caches[i],
                          features,
-                         prj_trans);
+                         prj_trans
+#ifdef MAPNIK_STATS_RENDER
+                         ,pf
+#endif
+                         );
             ++i;
         }
     }
+
+#ifdef MAPNIK_STATS_RENDER
+    pf.all_features_count /= active_styles.size();
+#endif
 }
 
 template <typename Processor>
@@ -609,7 +642,11 @@ void feature_style_processor<Processor>::render_style(
     feature_type_style const* style,
     rule_cache const& rc,
     featureset_ptr features,
-    proj_transform const& prj_trans)
+    proj_transform const& prj_trans
+#ifdef MAPNIK_STATS_RENDER
+    ,painted_features & pf
+#endif
+    )
 {
     p.start_style_processing(*style);
     if (!features)
@@ -622,6 +659,9 @@ void feature_style_processor<Processor>::render_style(
     bool was_painted = false;
     while ((feature = features->next()))
     {
+#ifdef MAPNIK_STATS_RENDER
+        pf.all_features_count++;
+#endif
         bool do_else = true;
         bool do_also = false;
         for (rule const* r : rc.get_if_rules() )
@@ -631,6 +671,9 @@ void feature_style_processor<Processor>::render_style(
             if (result.to_bool())
             {
                 was_painted = true;
+#ifdef MAPNIK_STATS_RENDER
+                pf.painted_ids.insert(feature->id());
+#endif
                 do_else=false;
                 do_also=true;
                 rule::symbolizers const& symbols = r->get_symbolizers();
@@ -654,6 +697,9 @@ void feature_style_processor<Processor>::render_style(
             for( rule const* r : rc.get_else_rules() )
             {
                 was_painted = true;
+#ifdef MAPNIK_STATS_RENDER
+                pf.painted_ids.insert(feature->id());
+#endif
                 rule::symbolizers const& symbols = r->get_symbolizers();
                 if(!p.process(symbols,*feature,prj_trans))
                 {
@@ -683,5 +729,23 @@ void feature_style_processor<Processor>::render_style(
     p.painted(p.painted() | was_painted);
     p.end_style_processing(*style);
 }
+
+#ifdef MAPNIK_STATS_RENDER
+template <typename Processor>
+void feature_style_processor<Processor>::log_painted_features() const
+{
+    std::clog << "Painted features: ";
+    for (auto const& pf : painted_features_per_layer)
+    {
+        if (&pf != &painted_features_per_layer.front())
+        {
+            std::clog << ", ";
+        }
+        std::clog << pf.layer_name << " " << pf.painted_ids.size()
+                  << "/" << pf.all_features_count;
+    }
+    std::clog << std::endl;
+}
+#endif
 
 }
