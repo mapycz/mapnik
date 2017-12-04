@@ -90,8 +90,6 @@ gdal_datasource::gdal_datasource(parameters const& params)
     mapnik::progress_timer __stats__(std::clog, "gdal_datasource::init");
 #endif
 
-    GDALAllRegister();
-
     // wrap GDAL error reporting in mapnik's own
     CPLSetErrorHandler(&mapnik_gdal_error_handler);
 
