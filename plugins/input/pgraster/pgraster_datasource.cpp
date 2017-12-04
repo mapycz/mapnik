@@ -627,10 +627,10 @@ std::string pgraster_datasource::sql_bbox(box2d<double> const& env) const
         b << "ST_SetSRID(";
     }
 
-    b << "'BOX3D(";
+    b << "'BOX(";
     b << std::setprecision(16);
     b << env.minx() << " " << env.miny() << ",";
-    b << env.maxx() << " " << env.maxy() << ")'::box3d";
+    b << env.maxx() << " " << env.maxy() << ")'::box2d";
 
     if (srid_ > 0)
     {
@@ -842,7 +842,9 @@ featureset_ptr pgraster_datasource::features_with_context(query const& q,process
             conn = pool->borrowObject();
             if(!conn )
             {
-                throw mapnik::datasource_exception("Pgraster Plugin: Null connection");
+                throw mapnik::datasource_exception("Pgraster Plugin: "
+                    "All connections from the pool have been taken. "
+                    "You can enlarge pool size by setting max_size parameter.");
             }
         }
 

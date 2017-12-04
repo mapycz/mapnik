@@ -76,22 +76,22 @@ struct MAPNIK_DECL offset_converter
         return threshold_;
     }
 
-    void set_offset(double value)
+    void set_offset(double val)
     {
         // conform to the new algorithm
         // TODO: replace with the new algorithm
-        value = -value;
+        val = -val;
 
-        if (offset_ != value)
+        if (offset_ != val)
         {
-            offset_ = value;
+            offset_ = val;
             reset();
         }
     }
 
-    void set_threshold(double value)
+    void set_threshold(double val)
     {
-        threshold_ = value;
+        threshold_ = val;
         // no need to reset(), since threshold doesn't affect
         // offset vertices' computation, it only controls how
         // far will we be looking for self-intersections

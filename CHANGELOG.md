@@ -6,6 +6,61 @@ Developers: Please commit along with changes.
 
 For a complete change history, see the git log.
 
+## 3.0.15
+
+Released: June 16, 2017
+
+#### Summary
+
+(Packaged from 6e6cf84)
+
+- Restored `filter_factor` logic in `gdal.input` and added to `raster.input` (#3699)
+   (updated tests https://github.com/mapnik/test-data-visual/commit/fd518f1f512b8aea4ac740c2ce12c249616a291c)
+- Fixed bug related to rows swapping implementation in `tiff_reader` ref #3679
+   (updated visual tests to catch this regression in the future
+      https://github.com/mapnik/test-data-visual/commit/be0ba965cd2240576a8edfca84801cbb7a4832d6)
+- TIFF I/O - port memory mapped based I/O from master
+
+## 3.0.14
+
+Released: June 5, 2017
+
+(Packaged from 2b42e17)
+
+#### Summary
+
+- Fixed problems with high levels of overzooming in the GDAL and raster plugin where data would be slightly offset
+- High levels of overzooming on raster data no longer results in the return of a transparent image.
+- Fixed bug in `mapnik::util::file::data()` (a220bda05d2aa1)
+- TIFF I/O - added support for grey scale multiband images + fixed and made generic `read_stripped` and `read_generic`.
+- shapeindex - return error code when no features can read from shapefile (#3198)
+- Upgrade Scons to `2.5.1`
+- Fixed bug (typo) in `raster_featureset.cpp` (#3696)
+- Made `freetype_engine` singleton again. This allows for better control of its life-time. Original interface is preserved via adding static methods (#3688)
+
+## 3.0.13
+
+Released: February 8, 2017
+
+(Packaged from 2a153c0)
+
+#### Summary
+
+- Unbundle `unifont` font from distribution
+- GeoJSON: improved parsing grammar avoiding temp synthesised attribute (#3507)
+- GeoJSON: expose `num_features_to_query` datasource parameter + unit test (#3515)
+- Fixed intersecting extents in different projections (PR #3525 )
+- Fixed `blur` implementation by taking into account `scale_factor`
+- postgis.input - use 2D box for pgraster bounding box (PR #3551)
+- Fixed GroupSymbolizer PairLayout with 3+ items (#3526)
+- Simplified `hash` implementation (204d30e58d3553278ab6bcda2d4122b0f13f6392)
+- Simplified `mapnik::value` conversion rules (#3570)
+- Changed `render_thunk_list` to `std::list<render_thunk>` (PR #3585)
+- Upgraded to variant `v1.1.5`
+- CSV.input - fixed `blank` line test (8a3a380b3b5c64681f2478b4f0d06f6a907f5eed)
+- GeoJSON - handle empty elements in position grammar (ref #3609)
+- mapnik-index - return failure on invalid bounding box (ref #3611)
+
 ## 3.0.12
 
 Released: September 8, 2016

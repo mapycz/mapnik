@@ -28,7 +28,6 @@
 #include <mapnik/debug.hpp>
 
 // stl
-#include <bitset>
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
@@ -45,9 +44,9 @@ public:
         what_( _what )
     {
     }
-    virtual ~illegal_enum_value() throw() {}
+    virtual ~illegal_enum_value() {}
 
-    virtual const char * what() const throw()
+    virtual const char * what() const noexcept
     {
         return what_.c_str();
     }

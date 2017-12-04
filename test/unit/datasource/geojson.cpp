@@ -28,9 +28,12 @@
 #include <mapnik/datasource_cache.hpp>
 #include <mapnik/geometry.hpp>
 #include <mapnik/geometry_type.hpp>
+#include <mapnik/json/geometry_parser.hpp> // from_geojson
+#include <mapnik/util/geometry_to_geojson.hpp>
 #include <mapnik/util/fs.hpp>
 #include <cstdlib>
-
+#include <locale>
+#include <algorithm>
 #include <boost/optional/optional_io.hpp>
 
 /*
@@ -112,6 +115,50 @@ TEST_CASE("geojson") {
                 {
                     CHECK(false); // shouldn't get here
                 }
+            }
+        }
+
+        SECTION("GeoJSON empty Geometries handling")
+        {
+            auto valid_empty_geometries =
+                {
+                    "null", // Point can't be empty
+                    "{ \"type\": \"LineString\", \"coordinates\": [] }",
+                    "{ \"type\": \"Polygon\", \"coordinates\": [ [ ] ] } ",
+                    "{ \"type\": \"MultiPoint\", \"coordinates\": [ ] }",
+                    "{ \"type\": \"MultiLineString\", \"coordinates\": [ [] ] }",
+                    "{ \"type\": \"MultiPolygon\", \"coordinates\": [[ []] ] }"
+                };
+
+            for (auto const& in  : valid_empty_geometries)
+            {
+                std::string json(in);
+                mapnik::geometry::geometry<double> geom;
+                CHECK(mapnik::json::from_geojson(json, geom));
+                // round trip
+                std::string json_out;
+                CHECK(mapnik::util::to_geojson(json_out, geom));
+                json.erase(std::remove_if(
+                               std::begin(json), std::end(json),
+                               [](char ch) { return std::isspace(ch, std::locale{}); }
+                               ), std::end(json));
+                REQUIRE(json == json_out);
+            }
+
+            auto invalid_empty_geometries =
+                {
+                    "{ \"type\": \"Point\", \"coordinates\": [] }",
+                    "{ \"type\": \"LineString\", \"coordinates\": [[]] }"
+                    "{ \"type\": \"Polygon\", \"coordinates\": [[[]]] }",
+                    "{ \"type\": \"MultiPoint\", \"coordinates\": [[]] }",
+                    "{ \"type\": \"MultiLineString\", \"coordinates\": [[[]]] }",
+                    "{ \"type\": \"MultiPolygon\", \"coordinates\": [[[[]]]] }"
+                };
+
+            for (auto const& json  : invalid_empty_geometries)
+            {
+                mapnik::geometry::geometry<double> geom;
+                CHECK(!mapnik::json::from_geojson(json, geom));
             }
         }
 
@@ -514,7 +561,8 @@ TEST_CASE("geojson") {
 
             for (auto const& c_str : {"./test/data/json/feature-malformed-1.geojson",
                         "./test/data/json/feature-malformed-2.geojson",
-                        "./test/data/json/feature-malformed-3.geojson"})
+                        "./test/data/json/feature-malformed-3.geojson",
+                        "./test/data/json/feature-malformed-4.geojson"})
             {
                 std::string filename(c_str);
                 params["file"] = filename;
@@ -554,43 +602,45 @@ TEST_CASE("geojson") {
 
         SECTION("GeoJSON ensure mapnik::featureset::next() throws on malformed input")
         {
-            std::string filename{"./test/data/json/featurecollection-malformed.json"};
             mapnik::parameters params;
             params["type"] = "geojson";
-            params["file"] = filename;
-
-            // cleanup in the case of a failed previous run
-            if (mapnik::util::exists(filename + ".index"))
+            for (auto const& c_str : {"./test/data/json/featurecollection-malformed.json"})
             {
-                mapnik::util::remove(filename + ".index");
-            }
+                std::string filename(c_str);
+                params["file"] = filename;
+                // cleanup in the case of a failed previous run
+                if (mapnik::util::exists(filename + ".index"))
+                {
+                    mapnik::util::remove(filename + ".index");
+                }
 
-            CHECK(!mapnik::util::exists(filename + ".index"));
-            int ret = create_disk_index(filename);
-            int ret_posix = (ret >> 8) & 0x000000ff;
-            INFO(ret);
-            INFO(ret_posix);
-            CHECK(mapnik::util::exists(filename + ".index"));
+                CHECK(!mapnik::util::exists(filename + ".index"));
+                int ret = create_disk_index(filename);
+                int ret_posix = (ret >> 8) & 0x000000ff;
+                INFO(ret);
+                INFO(ret_posix);
+                CHECK(mapnik::util::exists(filename + ".index"));
 
-            for (auto cache_features : {true,false})
-            {
-                params["cache_features"] = cache_features;
-                auto ds = mapnik::datasource_cache::instance().create(params);
-                auto fields = ds->get_descriptor().get_descriptors();
-                mapnik::query query(ds->envelope());
-                auto features = ds->features(query);
-                REQUIRE_THROWS(
-                    auto feature = features->next();
-                    while (feature != nullptr)
-                    {
-                        feature = features->next();
-                    });
-            }
+                for (auto cache_features : {true,false})
+                {
+                    params["cache_features"] = cache_features;
+                    auto ds = mapnik::datasource_cache::instance().create(params);
+                    auto fields = ds->get_descriptor().get_descriptors();
+                    mapnik::query query(ds->envelope());
+                    auto features = ds->features(query);
+                    REQUIRE_THROWS(
+                        auto feature = features->next();
+                        while (feature != nullptr)
+                        {
+                            feature = features->next();
+                        });
+                }
 
-            // cleanup
-            if (mapnik::util::exists(filename + ".index"))
-            {
-                mapnik::util::remove(filename + ".index");
+                // cleanup
+                if (mapnik::util::exists(filename + ".index"))
+                {
+                    mapnik::util::remove(filename + ".index");
+                }
             }
         }
 
