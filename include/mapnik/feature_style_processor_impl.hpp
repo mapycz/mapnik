@@ -737,6 +737,10 @@ void feature_style_processor<Processor>::log_painted_features() const
     std::clog << "Painted features: ";
     for (auto const& pf : painted_features_per_layer)
     {
+        if (pf.all_features_count == 0)
+        {
+            continue;
+        }
         if (&pf != &painted_features_per_layer.front())
         {
             std::clog << ", ";
