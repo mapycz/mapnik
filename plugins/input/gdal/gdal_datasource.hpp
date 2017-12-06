@@ -31,6 +31,8 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/coord.hpp>
 #include <mapnik/feature_layer_desc.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 
 // boost
 #include <boost/optional.hpp>
@@ -68,6 +70,11 @@ private:
     bool shared_dataset_;
     boost::optional<double> nodata_value_;
     double nodata_tolerance_;
+
+    boost::interprocess::mapped_region * mutex_shm_;
+    using mutex_type = boost::interprocess::interprocess_mutex;
+    mutex_type * mutex_;
+    pid_t pid_;
 };
 
 #endif // GDAL_DATASOURCE_HPP
