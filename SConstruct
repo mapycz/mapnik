@@ -1628,13 +1628,13 @@ if not preconfigured:
             env['QUERIED_GDAL_DATA'] = os.environ['GDAL_DATA']
             color_print(4,'Detected GDAL_DATA in environ, using env value instead: %s' % os.environ['GDAL_DATA'] )
         # now validate the paths actually exist
-        if env['QUERIED_PROJ_LIB'] and not os.path.exists(env['QUERIED_PROJ_LIB']):
+        if env['QUERIED_PROJ_LIB'] and not os.path.exists(env['QUERIED_PROJ_LIB'].strip()):
             color_print(1,'%s not detected on your system' % env['QUERIED_PROJ_LIB'] )
             env['MISSING_DEPS'].append('PROJ_LIB')
-        if env['QUERIED_GDAL_DATA'] and not os.path.exists(env['QUERIED_GDAL_DATA']):
+        if env['QUERIED_GDAL_DATA'] and not os.path.exists(env['QUERIED_GDAL_DATA'].strip()):
             color_print(1,'%s not detected on your system' % env['QUERIED_GDAL_DATA'] )
             env['MISSING_DEPS'].append('GDAL_DATA')
-        if env['QUERIED_ICU_DATA'] and not os.path.exists(env['QUERIED_ICU_DATA']):
+        if env['QUERIED_ICU_DATA'] and not os.path.exists(env['QUERIED_ICU_DATA'].strip()):
             color_print(1,'%s not detected on your system' % env['QUERIED_ICU_DATA'] )
             env['MISSING_DEPS'].append('ICU_DATA')
 
