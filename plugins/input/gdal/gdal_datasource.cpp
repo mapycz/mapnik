@@ -32,8 +32,6 @@
 
 #include <gdal_version.h>
 
-#include <boost/interprocess/anonymous_shared_memory.hpp>
-
 using mapnik::datasource;
 using mapnik::parameters;
 
@@ -84,11 +82,7 @@ gdal_datasource::gdal_datasource(parameters const& params)
       dataset_(nullptr, &GDALClose),
       desc_(gdal_datasource::name(), "utf-8"),
       nodata_value_(params.get<double>("nodata")),
-      nodata_tolerance_(*params.get<double>("nodata_tolerance",1e-12)),
-      mutex_shm_(new boost::interprocess::mapped_region(
-          boost::interprocess::anonymous_shared_memory(sizeof(mutex_type)))),
-      mutex_(new (mutex_shm_->get_address()) mutex_type),
-      pid_(::getpid())
+      nodata_tolerance_(*params.get<double>("nodata_tolerance",1e-12))
 {
     MAPNIK_LOG_DEBUG(gdal) << "gdal_datasource: Initializing...";
 
@@ -226,11 +220,6 @@ gdal_datasource::gdal_datasource(parameters const& params)
 gdal_datasource::~gdal_datasource()
 {
     MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Closing Dataset=" << dataset_.get();
-
-    if (pid_ == ::getpid())
-    {
-        delete mutex_shm_;
-    }
 }
 
 datasource::datasource_t gdal_datasource::type() const
@@ -274,8 +263,7 @@ featureset_ptr gdal_datasource::features(query const& q) const
                                               dx_,
                                               dy_,
                                               nodata_value_,
-                                              nodata_tolerance_,
-                                              *mutex_);
+                                              nodata_tolerance_);
 }
 
 featureset_ptr gdal_datasource::features_at_point(coord2d const& pt, double tol) const
@@ -294,6 +282,5 @@ featureset_ptr gdal_datasource::features_at_point(coord2d const& pt, double tol)
                                               dx_,
                                               dy_,
                                               nodata_value_,
-                                              nodata_tolerance_,
-                                              *mutex_);
+                                              nodata_tolerance_);
 }
