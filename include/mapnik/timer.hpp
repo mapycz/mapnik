@@ -68,7 +68,7 @@ public:
         restart();
     }
 
-    virtual ~timer()
+    ~timer()
     {
     }
 
@@ -79,39 +79,70 @@ public:
         cpu_start_ = clock();
     }
 
-    virtual void stop() const
+    void stop()
     {
         stopped_ = true;
         cpu_end_ = clock();
         wall_clock_end_ = time_now();
     }
 
+    bool stopped() const
+    {
+        return stopped_;
+    }
+
     double cpu_elapsed() const
     {
         // return elapsed CPU time in ms
-        if (! stopped_)
-        {
-            stop();
-        }
-
         return ((double) (cpu_end_ - cpu_start_)) / CLOCKS_PER_SEC * 1000.0;
     }
 
     double wall_clock_elapsed() const
     {
         // return elapsed wall clock time in ms
-        if (! stopped_)
-        {
-            stop();
-        }
-
         return (wall_clock_end_ - wall_clock_start_) * 1000.0;
     }
 
+    std::string to_string() const
+    {
+        std::ostringstream s;
+        s.precision(2);
+        s << std::fixed;
+        s << wall_clock_elapsed() << "ms (cpu " << cpu_elapsed() << "ms)";
+        return s.str();
+    }
+
+private:
+    double wall_clock_start_, wall_clock_end_;
+    clock_t cpu_start_, cpu_end_;
+    bool stopped_;
+};
+
+template <class Action>
+class timer_with_action
+{
+public:
+    timer_with_action(Action const& action)
+        : action_(action),
+          timer_()
+    {}
+
+    ~timer_with_action()
+    {
+        if (!timer_.stopped())
+        {
+            timer_.stop();
+            try
+            {
+                action_(timer_);
+            }
+            catch (...) {} // eat any exceptions
+        }
+    }
+
 protected:
-    mutable double wall_clock_start_, wall_clock_end_;
-    mutable clock_t cpu_start_, cpu_end_;
-    mutable bool stopped_;
+    timer timer_;
+    Action const& action_;
 };
 
 //  A progress_timer behaves like a timer except that the destructor displays
@@ -121,40 +152,23 @@ class progress_timer : public timer
 public:
     progress_timer(std::ostream & os, std::string const& base_message)
         : os_(os),
-          base_message_(base_message)
+          base_message_(base_message),
+          timer_(*this)
     {}
 
-    ~progress_timer()
+    void operator()(timer const& t) const
     {
-        if (! stopped_)
-        {
-            stop();
-        }
+        std::ostringstream s;
+        s << t.to_string();
+        s << std::setw(30 - (int)s.tellp()) << std::right << "|";
+        s << " " << base_message_ << std::endl;
+        os_ << s.str();
     }
 
-    void stop() const
-    {
-        timer::stop();
-        try
-        {
-            std::ostringstream s;
-            s.precision(2);
-            s << std::fixed;
-            s << wall_clock_elapsed() << "ms (cpu " << cpu_elapsed() << "ms)";
-            s << std::setw(30 - (int)s.tellp()) << std::right << "| " << base_message_ << "\n";
-            os_ << s.str();
-        }
-        catch (...) {} // eat any exceptions
-    }
-
-    void discard()
-    {
-        stopped_ = true;
-    }
-
-private:
+protected:
     std::ostream & os_;
     std::string base_message_;
+    timer_with_action<progress_timer> timer_;
 };
 
 }

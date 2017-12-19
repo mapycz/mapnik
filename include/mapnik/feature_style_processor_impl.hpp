@@ -54,6 +54,45 @@
 namespace mapnik
 {
 
+#ifdef MAPNIK_STATS_RENDER
+struct painted_features
+{
+    painted_features(std::string const& layer_name)
+        : layer_name(layer_name),
+          painted_ids(),
+          all_features_count(0)
+    {
+    }
+
+    std::string layer_name;
+    std::set<value_integer> painted_ids;
+    unsigned all_features_count = 0;
+};
+
+struct log_painted_features
+{
+    log_painted_features(std::string const& layer_name)
+        : painted_features_(layer_name)
+    {
+    }
+
+    template <typename Timer>
+    void operator()(Timer const& t) const
+    {
+        std::ostringstream s;
+        s << t.to_string();
+        s << std::setw(30 - (int)s.tellp()) << std::right << "|";
+        s << " layer: " << painted_features_.layer_name
+            << ", painted features: "
+            << painted_features_.painted_ids.size() << "/"
+            << painted_features_.all_features_count << std::endl;
+        std::clog << s.str();
+    }
+
+    painted_features painted_features_;
+};
+#endif
+
 // Store material for layer rendering in a two step process
 struct layer_rendering_material
 {
@@ -163,10 +202,6 @@ void feature_style_processor<Processor>::apply(double scale_denom)
     }
 
     p.end_map_processing(m_);
-#ifdef MAPNIK_STATS_RENDER
-    log_painted_features();
-    painted_features_per_layer.clear();
-#endif
 }
 
 template <typename Processor>
@@ -195,10 +230,6 @@ void feature_style_processor<Processor>::apply(mapnik::layer const& lyr,
                        names);
     }
     p.end_map_processing(m_);
-#ifdef MAPNIK_STATS_RENDER
-    log_painted_features();
-    painted_features_per_layer.clear();
-#endif
 }
 
 /*!
@@ -236,7 +267,16 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
     {
         p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
-        render_material(mat,p);
+#ifdef MAPNIK_STATS_RENDER
+        log_painted_features lpf(mat.lay_.name());
+        timer_with_action<log_painted_features> __stats__(lpf);
+#endif
+
+        render_material(mat, p
+#ifdef MAPNIK_STATS_RENDER
+                , lpf.painted_features_
+#endif
+                );
         render_submaterials(mat, p);
 
         p.end_layer_processing(mat.lay_);
@@ -484,11 +524,16 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
         if (!mat.empty())
         {
 #ifdef MAPNIK_STATS_RENDER
-            mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
+            log_painted_features lpf(mat.lay_.name());
+            timer_with_action<log_painted_features> __stats__(lpf);
 #endif
             p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
-            render_material(mat, p);
+            render_material(mat, p
+#ifdef MAPNIK_STATS_RENDER
+                , lpf.painted_features_
+#endif
+                );
             render_submaterials(mat, p);
 
             p.end_layer_processing(mat.lay_);
@@ -498,15 +543,14 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
 
 template <typename Processor>
 void feature_style_processor<Processor>::render_material(layer_rendering_material const & mat,
-                                                         Processor & p)
+                                                         Processor & p
+#ifdef MAPNIK_STATS_RENDER
+                                                         ,painted_features & pf
+#endif
+                                                         )
 {
     layer const& lay = mat.lay_;
     datasource_ptr ds = lay.datasource();
-
-#ifdef MAPNIK_STATS_RENDER
-    painted_features_per_layer.emplace_back(lay.name());
-    painted_features & pf = painted_features_per_layer.back();
-#endif
 
     if (!ds)
     {
@@ -729,27 +773,5 @@ void feature_style_processor<Processor>::render_style(
     p.painted(p.painted() | was_painted);
     p.end_style_processing(*style);
 }
-
-#ifdef MAPNIK_STATS_RENDER
-template <typename Processor>
-void feature_style_processor<Processor>::log_painted_features() const
-{
-    std::clog << "Painted features: ";
-    for (auto const& pf : painted_features_per_layer)
-    {
-        if (pf.all_features_count == 0)
-        {
-            continue;
-        }
-        if (&pf != &painted_features_per_layer.front())
-        {
-            std::clog << ", ";
-        }
-        std::clog << pf.layer_name << " " << pf.painted_ids.size()
-                  << "/" << pf.all_features_count;
-    }
-    std::clog << std::endl;
-}
-#endif
 
 }
