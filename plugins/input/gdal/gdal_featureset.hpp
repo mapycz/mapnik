@@ -29,8 +29,6 @@
 #include <mapnik/util/variant.hpp>
 // boost
 #include <boost/optional.hpp>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 
 class GDALDataset;
 class GDALRasterBand;
@@ -58,9 +56,6 @@ class gdal_featureset : public mapnik::Featureset
     };
 
 public:
-    using mutex_type = boost::interprocess::interprocess_mutex;
-    using scoped_lock_type = boost::interprocess::scoped_lock<mutex_type>;
-
     gdal_featureset(GDALDataset& dataset,
                     int band,
                     gdal_query q,
@@ -71,8 +66,7 @@ public:
                     double dx,
                     double dy,
                     boost::optional<double> const& nodata,
-                    double nodata_tolerance,
-                    mutex_type & mutex);
+                    double nodata_tolerance);
     virtual ~gdal_featureset();
     mapnik::feature_ptr next();
 
@@ -92,7 +86,6 @@ private:
     boost::optional<double> nodata_value_;
     double nodata_tolerance_;
     bool first_;
-    mutex_type & mutex_;
 };
 
 #endif // GDAL_FEATURESET_HPP
