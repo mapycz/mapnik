@@ -106,9 +106,24 @@ private:
         unsigned all_features_count = 0;
     };
 
-    std::deque<painted_features> painted_features_per_layer;
+    struct log_painted_features
+    {
+        log_painted_features(std::string const& layer_name)
+            : painted_features_(layer_name)
+        {
+        }
 
-    void log_painted_features() const;
+        void operator()(std::ostream & o) const
+        {
+            o << " (painted " << painted_features_.layer_name << " "
+                << painted_features_.painted_ids.size() << "/"
+                << painted_features_.all_features_count << ")";
+        }
+
+        painted_features painted_features_;
+    };
+
+    //void log_painted_features() const;
 #endif
 
     /*!
@@ -147,7 +162,13 @@ private:
     /*!
      * \brief render features list queued when they are available.
      */
-    void render_material(layer_rendering_material const & mat, Processor & p );
+    void render_material(layer_rendering_material const & mat,
+                         Processor & p
+#ifdef MAPNIK_STATS_RENDER
+                         ,painted_features & pf
+#endif
+                         );
+
     void render_submaterials(layer_rendering_material const & mat, Processor & p);
 
     Map const& m_;

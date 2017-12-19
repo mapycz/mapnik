@@ -152,9 +152,33 @@ public:
         stopped_ = true;
     }
 
-private:
+protected:
     std::ostream & os_;
     std::string base_message_;
+};
+
+template <class Action>
+class progress_timer_with_action : public progress_timer
+{
+public:
+    progress_timer_with_action(std::ostream & os,
+                               std::string const& base_message,
+                               Action action)
+        : progress_timer(os, base_message),
+          action_(action)
+    {}
+
+    ~progress_timer_with_action()
+    {
+        if (! stopped_)
+        {
+            stop();
+            action_(os_);
+        }
+    }
+
+protected:
+    Action action_;
 };
 
 }

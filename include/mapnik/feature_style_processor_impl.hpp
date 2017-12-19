@@ -163,10 +163,6 @@ void feature_style_processor<Processor>::apply(double scale_denom)
     }
 
     p.end_map_processing(m_);
-#ifdef MAPNIK_STATS_RENDER
-    log_painted_features();
-    painted_features_per_layer.clear();
-#endif
 }
 
 template <typename Processor>
@@ -195,10 +191,6 @@ void feature_style_processor<Processor>::apply(mapnik::layer const& lyr,
                        names);
     }
     p.end_map_processing(m_);
-#ifdef MAPNIK_STATS_RENDER
-    log_painted_features();
-    painted_features_per_layer.clear();
-#endif
 }
 
 /*!
@@ -236,7 +228,17 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
     {
         p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
-        render_material(mat,p);
+#ifdef MAPNIK_STATS_RENDER
+        log_painted_features lpf(mat.lay_.name());
+        using timer_type = mapnik::progress_timer_with_action<log_painted_features>;
+        timer_type __stats__(std::clog, "layer: " + mat.lay_.name(), lpf);
+#endif
+
+        render_material(mat,p
+#ifdef MAPNIK_STATS_RENDER
+                , lpf.painted_features_
+#endif
+                );
         render_submaterials(mat, p);
 
         p.end_layer_processing(mat.lay_);
@@ -484,11 +486,17 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
         if (!mat.empty())
         {
 #ifdef MAPNIK_STATS_RENDER
-            mapnik::progress_timer __stats__(std::clog, "layer: " + mat.lay_.name());
+            log_painted_features lpf(mat.lay_.name());
+            using timer_type = mapnik::progress_timer_with_action<log_painted_features>;
+            timer_type __stats__(std::clog, "layer: " + mat.lay_.name(), lpf);
 #endif
             p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
-            render_material(mat, p);
+            render_material(mat, p
+#ifdef MAPNIK_STATS_RENDER
+                , lpf.painted_features_
+#endif
+                );
             render_submaterials(mat, p);
 
             p.end_layer_processing(mat.lay_);
@@ -498,15 +506,14 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
 
 template <typename Processor>
 void feature_style_processor<Processor>::render_material(layer_rendering_material const & mat,
-                                                         Processor & p)
+                                                         Processor & p
+#ifdef MAPNIK_STATS_RENDER
+                                                         ,painted_features & pf
+#endif
+                                                         )
 {
     layer const& lay = mat.lay_;
     datasource_ptr ds = lay.datasource();
-
-#ifdef MAPNIK_STATS_RENDER
-    painted_features_per_layer.emplace_back(lay.name());
-    painted_features & pf = painted_features_per_layer.back();
-#endif
 
     if (!ds)
     {
@@ -731,6 +738,7 @@ void feature_style_processor<Processor>::render_style(
 }
 
 #ifdef MAPNIK_STATS_RENDER
+/*
 template <typename Processor>
 void feature_style_processor<Processor>::log_painted_features() const
 {
@@ -750,6 +758,7 @@ void feature_style_processor<Processor>::log_painted_features() const
     }
     std::clog << std::endl;
 }
+*/
 #endif
 
 }
