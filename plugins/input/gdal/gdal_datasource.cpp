@@ -29,6 +29,7 @@
 #include <mapnik/geom_util.hpp>
 #include <mapnik/timer.hpp>
 #include <mapnik/value_types.hpp>
+#include <mapnik/make_unique.hpp>
 
 #include <gdal_version.h>
 
@@ -79,6 +80,7 @@ void mapnik_gdal_error_handler(CPLErr err_class, int err_no, const char *msg) {
 
 gdal_datasource::gdal_datasource(parameters const& params)
     : datasource(params),
+      mmapped_dataset_(),
       dataset_(nullptr, &GDALClose),
       desc_(gdal_datasource::name(), "utf-8"),
       nodata_value_(params.get<double>("nodata")),
@@ -106,6 +108,11 @@ gdal_datasource::gdal_datasource(parameters const& params)
     else
     {
         dataset_name_ = *file;
+    }
+
+    if (*params.get<bool>("mmap_tiff", true))
+    {
+        mmap_tiff();
     }
 
     shared_dataset_ = *params.get<mapnik::boolean_type>("shared", false);
@@ -283,4 +290,25 @@ featureset_ptr gdal_datasource::features_at_point(coord2d const& pt, double tol)
                                               dy_,
                                               nodata_value_,
                                               nodata_tolerance_);
+}
+
+void gdal_datasource::mmap_tiff()
+{
+    boost::filesystem::path dataset_path(dataset_name_);
+    if (dataset_path.extension().string().find("tif") == std::string::npos)
+    {
+        return;
+    }
+
+    try
+    {
+        mmapped_dataset_ = std::make_unique<mmapped_dataset>(dataset_name_);
+        dataset_name_ = mmapped_dataset_->name;
+        CPLSetConfigOption("GTIFF_USE_MMAP", "ON");
+    }
+    catch (std::exception const& e)
+    {
+        MAPNIK_LOG_ERROR(gdal) << "gdal_datasource: Cannot mmap() '"
+            << dataset_name_ << "': " << e.what();
+    }
 }
