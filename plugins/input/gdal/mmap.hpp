@@ -23,15 +23,19 @@
 #ifndef GDAL_DATASOURCE_MMAP_HPP
 #define GDAL_DATASOURCE_MMAP_HPP
 
+#include <mapnik/util/fs.hpp>
+#include <mapnik/make_unique.hpp>
+#include <mapnik/debug.hpp>
+
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/filesystem.hpp>
 
 #include <gdal_priv.h>
 
-struct mmapped_dataset
+struct mmapped_vsifile
 {
-    mmapped_dataset(std::string const& filepath)
+    mmapped_vsifile(std::string const& filepath)
         : mapping(filepath.c_str(), boost::interprocess::read_only),
           region(mapping, boost::interprocess::read_only)
     {
@@ -53,7 +57,7 @@ struct mmapped_dataset
         name = vsimem.string();
     }
 
-    ~mmapped_dataset()
+    ~mmapped_vsifile()
     {
         VSIFCloseL(virt_file);
     }
@@ -62,6 +66,34 @@ struct mmapped_dataset
     boost::interprocess::mapped_region region;
     VSILFILE * virt_file;
     std::string name;
+};
+
+struct mmapped_tiff_dataset
+{
+    mmapped_tiff_dataset(std::string const& filepath)
+        : tiff_file_mapping(filepath),
+          overviews_file_mapping()
+    {
+        std::string ovr_file_name = filepath + ".ovr";
+        if (mapnik::util::exists(ovr_file_name))
+        {
+            try
+            {
+                overviews_file_mapping = std::make_unique<mmapped_vsifile>(
+                    ovr_file_name);
+            }
+            catch (std::exception const& e)
+            {
+                MAPNIK_LOG_ERROR(mmapped_tiff_dataset) <<
+                    "gdal_datasource: Cannot mmap() "
+                    " overviews file '" << ovr_file_name <<
+                    "': " << e.what();
+            }
+        }
+    }
+
+    mmapped_vsifile tiff_file_mapping;
+    std::unique_ptr<mmapped_vsifile> overviews_file_mapping;
 };
 
 #endif // GDAL_DATASOURCE_MMAP_HPP

@@ -302,8 +302,8 @@ void gdal_datasource::mmap_tiff()
 
     try
     {
-        mmapped_dataset_ = std::make_unique<mmapped_dataset>(dataset_name_);
-        dataset_name_ = mmapped_dataset_->name;
+        mmapped_dataset_ = std::make_unique<mmapped_tiff_dataset>(dataset_name_);
+        dataset_name_ = mmapped_dataset_->tiff_file_mapping.name;
         CPLSetConfigOption("GTIFF_USE_MMAP", "ON");
     }
     catch (std::exception const& e)
