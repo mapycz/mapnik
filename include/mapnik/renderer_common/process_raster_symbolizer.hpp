@@ -267,7 +267,9 @@ void render_raster_symbolizer(raster_symbolizer const& sym,
                 bool scale = (std::fabs(image_ratio_x - 1.0) > eps) ||
                      (std::fabs(image_ratio_y - 1.0) > eps) ||
                      (std::abs(start_x) > eps) ||
-                     (std::abs(start_y) > eps);
+                     (std::abs(start_y) > eps) ||
+                     (raster_width != source->data_.width()) ||
+                     (raster_height != source->data_.height());
                 detail::image_dispatcher<F> dispatcher(start_x, start_y, raster_width, raster_height,
                                                             image_ratio_x, image_ratio_y,
                                                             offset_x, offset_y,
