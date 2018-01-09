@@ -410,6 +410,10 @@ void traverse_tree(svg_parser & parser, rapidxml::xml_node<char> const* node)
             parse_id(parser, node);
             //parse_dimensions(parser, node);
             break;
+        case name_to_int("clipPath"):
+            // TODO: The clipPath element is ignored so far.
+            // https://github.com/mapnik/mapnik/issues/3818
+            return;
         }
 
         if (!parser.is_defs_) // FIXME
