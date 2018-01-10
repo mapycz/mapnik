@@ -31,6 +31,7 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/coord.hpp>
 #include <mapnik/feature_layer_desc.hpp>
+#include "mmap.hpp"
 
 // boost
 #include <boost/optional.hpp>
@@ -55,6 +56,9 @@ public:
     boost::optional<mapnik::datasource_geometry_t> get_geometry_type() const;
     mapnik::layer_descriptor get_descriptor() const;
 private:
+    void mmap_tiff();
+
+    std::unique_ptr<mmapped_tiff_dataset> mmapped_dataset_;
     std::unique_ptr<GDALDataset, decltype(&GDALClose)> dataset_;
     mapnik::box2d<double> extent_;
     std::string dataset_name_;

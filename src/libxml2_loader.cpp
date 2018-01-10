@@ -87,12 +87,10 @@ public:
             throw std::runtime_error("Failed to create parser context.");
         }
 
-	{
-#ifdef MAPNIK_THREADSAFE
-		std::lock_guard<std::mutex> lock(mutex_);
-#endif
-		exsltRegisterAll();
-	}
+        static std::once_flag once_flag;
+        std::call_once(once_flag, []() {
+            exsltRegisterAll();
+        });
     }
 
     ~libxml2_loader()
@@ -250,9 +248,6 @@ private:
     const char *encoding_;
     int options_;
     const char *url_;
-#ifdef MAPNIK_THREADSAFE
-    std::mutex mutex_;
-#endif
 };
 
 void read_xml(std::string const & filename, xml_node &node)

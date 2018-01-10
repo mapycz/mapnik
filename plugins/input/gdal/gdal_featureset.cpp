@@ -201,7 +201,23 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
 
     if (width > 0 && height > 0)
     {
-        MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Image Size=(" << width << "," << height << ")";
+        double width_res = std::get<0>(q.resolution());
+        double height_res = std::get<1>(q.resolution());
+        int im_width = int(width_res * feature_raster_extent.width() + 0.5);
+        int im_height = int(height_res * feature_raster_extent.height() + 0.5);
+
+        im_width = int(im_width * filter_factor + 0.5);
+        im_height = int(im_height * filter_factor + 0.5);
+
+        // case where we need to avoid upsampling so that the
+        // image can be later scaled within raster_symbolizer
+        if (im_width >= width || im_height >= height || im_width <= 0 || im_height <= 0)
+        {
+            im_width = width;
+            im_height = height;
+        }
+
+        MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Image Size=(" << im_width << "," << im_height << ")";
         MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Reading band=" << band_;
         if (band_ > 0) // we are querying a single band
         {
@@ -217,7 +233,7 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
             {
             case GDT_Byte:
             {
-                mapnik::image_gray8 image(width, height);
+                mapnik::image_gray8 image(im_width, im_height);
                 image.set(std::numeric_limits<std::uint8_t>::max());
                 raster_nodata = band->GetNoDataValue(&raster_has_nodata);
                 raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
@@ -237,7 +253,7 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
             case GDT_Float64:
             case GDT_Float32:
             {
-                mapnik::image_gray32f image(width, height);
+                mapnik::image_gray32f image(im_width, im_height);
                 image.set(std::numeric_limits<float>::max());
                 raster_nodata = band->GetNoDataValue(&raster_has_nodata);
                 raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
@@ -256,7 +272,7 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
             }
             case GDT_UInt16:
             {
-                mapnik::image_gray16 image(width, height);
+                mapnik::image_gray16 image(im_width, im_height);
                 image.set(std::numeric_limits<std::uint16_t>::max());
                 raster_nodata = band->GetNoDataValue(&raster_has_nodata);
                 raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
@@ -276,7 +292,7 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
             default:
             case GDT_Int16:
             {
-                mapnik::image_gray16s image(width, height);
+                mapnik::image_gray16s image(im_width, im_height);
                 image.set(std::numeric_limits<std::int16_t>::max());
                 raster_nodata = band->GetNoDataValue(&raster_has_nodata);
                 raster_io_error = band->RasterIO(GF_Read, x_off, y_off, width, height,
@@ -297,7 +313,7 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
         }
         else // working with all bands
         {
-            mapnik::image_rgba8 image(width, height);
+            mapnik::image_rgba8 image(im_width, im_height);
             image.set(std::numeric_limits<std::uint32_t>::max());
             for (int i = 0; i < nbands_; ++i)
             {
