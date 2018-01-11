@@ -36,7 +36,7 @@
 
 #define MAPNIK_VERSION_STRING   MAPNIK_STRINGIFY(MAPNIK_MAJOR_VERSION) "." \
                                 MAPNIK_STRINGIFY(MAPNIK_MINOR_VERSION) "." \
-                                MAPNIK_STRINGIFY(MAPNIK_PATCH_VERSION) "~stats-2"
+                                MAPNIK_STRINGIFY(MAPNIK_PATCH_VERSION) "~stats-1"
 
 namespace mapnik
 {
