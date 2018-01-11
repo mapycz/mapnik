@@ -57,6 +57,10 @@ enum eAttributeCollectionPolicy
     COLLECT_ALL = 1
 };
 
+#ifdef MAPNIK_STATS_RENDER
+struct painted_features;
+#endif
+
 template <typename Processor>
 class MAPNIK_DECL feature_style_processor
 {
@@ -91,26 +95,6 @@ public:
                         std::set<std::string>& names);
 
 private:
-#ifdef MAPNIK_STATS_RENDER
-    struct painted_features
-    {
-        painted_features(std::string const& layer_name)
-            : layer_name(layer_name),
-              painted_ids(),
-              all_features_count(0)
-        {
-        }
-
-        std::string layer_name;
-        std::set<mapnik::value_integer> painted_ids;
-        unsigned all_features_count = 0;
-    };
-
-    std::deque<painted_features> painted_features_per_layer;
-
-    void log_painted_features() const;
-#endif
-
     /*!
      * \brief renders a featureset with the given styles.
      */
@@ -120,7 +104,7 @@ private:
                       featureset_ptr features,
                       proj_transform const& prj_trans
 #ifdef MAPNIK_STATS_RENDER
-                      ,painted_features & pf
+                      , painted_features & pf
 #endif
                       );
 
@@ -147,7 +131,13 @@ private:
     /*!
      * \brief render features list queued when they are available.
      */
-    void render_material(layer_rendering_material const & mat, Processor & p );
+    void render_material(layer_rendering_material const & mat,
+                         Processor & p
+#ifdef MAPNIK_STATS_RENDER
+                         , painted_features & pf
+#endif
+                         );
+
     void render_submaterials(layer_rendering_material const & mat, Processor & p);
 
     Map const& m_;
