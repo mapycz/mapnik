@@ -185,11 +185,6 @@ std::deque<layer> & layer::layers()
     return layers_;
 }
 
-std::vector<layer> & layer::layers()
-{
-    return layers_;
-}
-
 void layer::set_minimum_scale_denominator(double minimum_scale_denom)
 {
     minimum_scale_denom_=minimum_scale_denom;

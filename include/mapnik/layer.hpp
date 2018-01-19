@@ -111,8 +111,6 @@ public:
 
     std::deque<layer> & layers();
 
-    std::vector<layer> & layers();
-
     /*!
      * @param minimum_scale_denom The minimum scale denominator
      */
