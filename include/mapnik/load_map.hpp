@@ -28,13 +28,24 @@
 
 // stl
 #include <string>
+#include <future>
 
 namespace mapnik
 {
 class Map;
 
-MAPNIK_DECL void load_map(Map & map, std::string const& filename, bool strict = false, std::string base_path="");
-MAPNIK_DECL void load_map_string(Map & map, std::string const& str, bool strict = false, std::string base_path="");
+MAPNIK_DECL void load_map(Map & map,
+                          std::string const& filename,
+                          bool strict = false,
+                          std::string base_path="",
+                          std::launch datasource_init = std::launch::deferred);
+
+MAPNIK_DECL void load_map_string(Map & map,
+                                 std::string const& str,
+                                 bool strict = false,
+                                 std::string base_path="",
+                                 std::launch datasource_init = std::launch::deferred);
+
 }
 
 #endif // MAPNIK_LOAD_MAP_HPP
