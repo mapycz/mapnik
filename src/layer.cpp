@@ -155,12 +155,12 @@ void layer::add_style(std::string const& stylename)
     styles_.push_back(stylename);
 }
 
-std::vector<std::string> const& layer::styles() const
+std::deque<std::string> const& layer::styles() const
 {
     return styles_;
 }
 
-std::vector<std::string> & layer::styles()
+std::deque<std::string> & layer::styles()
 {
     return styles_;
 }
@@ -175,12 +175,12 @@ void layer::add_layer(layer && l)
     layers_.push_back(std::move(l));
 }
 
-std::vector<layer> const& layer::layers() const
+std::deque<layer> const& layer::layers() const
 {
     return layers_;
 }
 
-std::vector<layer> & layer::layers()
+std::deque<layer> & layer::layers()
 {
     return layers_;
 }

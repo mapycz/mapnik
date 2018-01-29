@@ -42,7 +42,7 @@
 // stl
 #include <map>
 #include <memory>
-#include <vector>
+#include <deque>
 #include <string>
 
 namespace mapnik
@@ -94,7 +94,7 @@ private:
     float background_image_opacity_;
     std::map<std::string,feature_type_style> styles_;
     std::map<std::string,font_set> fontsets_;
-    std::vector<layer> layers_;
+    std::deque<layer> layers_;
     aspect_fix_mode aspectFixMode_;
     box2d<double> current_extent_;
     boost::optional<box2d<double> > maximum_extent_;
@@ -273,12 +273,12 @@ public:
     /*! \brief Get all layers.
      *  @return Constant layers.
      */
-    std::vector<layer> const& layers() const;
+    std::deque<layer> const& layers() const;
 
     /*! \brief Get all layers.
      *  @return Non-constant layers.
      */
-    std::vector<layer> & layers();
+    std::deque<layer> & layers();
 
     /*! \brief Remove all layers and styles from the map.
      */

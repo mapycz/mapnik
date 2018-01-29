@@ -71,6 +71,7 @@
 
 // stl
 #include <algorithm>
+#include <deque>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -597,8 +598,9 @@ void map_parser::parse_layer(Parent & parent, xml_node const& node)
         {
             throw mapnik::config_error(ex.what());
         }
-        layer lyr(name, srs);
 
+        parent.layers().emplace_back(name, srs);
+        layer & lyr = parent.layers().back();
 
         if (status)
         {
@@ -793,7 +795,6 @@ void map_parser::parse_layer(Parent & parent, xml_node const& node)
                 parse_layer(lyr, child);
             }
         }
-        parent.add_layer(std::move(lyr));
     }
     catch (config_error const& ex)
     {
