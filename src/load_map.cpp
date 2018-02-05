@@ -93,7 +93,7 @@ public:
     map_parser(Map & map,
                bool strict,
                std::string const& filename,
-               std::launch datasource_init = std::launch::async) :
+               std::launch datasource_init) :
         strict_(strict),
         filename_(filename),
         datasource_init_(datasource_init),
@@ -164,8 +164,7 @@ private:
 void parse_map(map_parser & parser,
                Map & map,
                xml_tree const& tree,
-               std::string const& base_path,
-               std::launch datasource_init)
+               std::string const& base_path)
 {
     datasource_futures_type datasource_futures;
     parser.parse_map(map, tree.root(), base_path, datasource_futures);
@@ -185,8 +184,8 @@ void load_map(Map & map,
     xml_tree tree;
     tree.set_filename(filename);
     read_xml(filename, tree.root());
-    map_parser parser(map, strict, filename);
-    parse_map(parser, map, tree, base_path, datasource_init);
+    map_parser parser(map, strict, filename, datasource_init);
+    parse_map(parser, map, tree, base_path);
 }
 
 void load_map_string(Map & map,
@@ -204,8 +203,8 @@ void load_map_string(Map & map,
     {
         read_xml_string(str, tree.root(), map.base_path()); // FIXME - this value is not fully known yet
     }
-    map_parser parser(map, strict, base_path);
-    parse_map(parser, map, tree, base_path, datasource_init);
+    map_parser parser(map, strict, base_path, datasource_init);
+    parse_map(parser, map, tree, base_path);
 }
 
 void map_parser::parse_map(Map & map,
