@@ -38,13 +38,13 @@ MAPNIK_DECL void load_map(Map & map,
                           std::string const& filename,
                           bool strict = false,
                           std::string base_path="",
-                          std::launch datasource_init = std::launch::deferred);
+                          std::launch datasource_init = std::launch::async);
 
 MAPNIK_DECL void load_map_string(Map & map,
                                  std::string const& str,
                                  bool strict = false,
                                  std::string base_path="",
-                                 std::launch datasource_init = std::launch::deferred);
+                                 std::launch datasource_init = std::launch::async);
 
 }
 
