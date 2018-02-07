@@ -83,6 +83,11 @@ public:
         return static_cast<double>(bitmap_data_.height());
     }
 
+    inline std::tuple<double,double> dimensions() const
+    {
+        return std::make_tuple(bitmap_data_.width(), bitmap_data_.height());
+    }
+
     image_rgba8 const& get_data() const
     {
         return bitmap_data_;

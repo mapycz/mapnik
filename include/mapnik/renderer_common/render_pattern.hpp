@@ -74,7 +74,9 @@ struct common_pattern_process_visitor
     template <typename Marker>
     image_type operator() (Marker const & marker) const
     {
-        box2d<double> bbox(marker.bounding_box());
+        double w, h;
+        std::tie(w, h) = marker.dimensions();
+        box2d<double> bbox(0, 0, w, h);
         agg::trans_affine tr(transform(bbox));
 
         if (bbox.width() < 1.0 || bbox.height() < 1.0)
