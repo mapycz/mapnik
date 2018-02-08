@@ -77,11 +77,6 @@ struct common_pattern_process_visitor
         box2d<double> bbox(marker.bounding_box());
         agg::trans_affine tr(transform(bbox));
 
-        if (bbox.width() < 1.0 || bbox.height() < 1.0)
-        {
-            MAPNIK_LOG_ERROR(common_pattern_process_visitor) << "Pattern image smaller than one pixel";
-        }
-
         if (lacing_ == PATTERN_LACING_MODE_ALTERNATING_GRID)
         {
             return render_pattern_alternating(ras_, marker, bbox, tr);
