@@ -30,6 +30,7 @@
 #include <mapnik/feature_style_processor_context.hpp>
 #ifdef MAPNIK_STATS_RENDER
 #include <mapnik/value_types.hpp>
+#include <mapnik/timer.hpp>
 #endif
 
 // stl
@@ -141,6 +142,9 @@ private:
     void render_submaterials(layer_rendering_material const & mat, Processor & p);
 
     Map const& m_;
+#ifdef MAPNIK_STATS_RENDER
+    std::map<std::string, timer> datasource_query_times_;
+#endif
 };
 }
 

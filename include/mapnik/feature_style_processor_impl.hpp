@@ -45,7 +45,6 @@
 #include <mapnik/util/featureset_buffer.hpp>
 #include <mapnik/util/variant.hpp>
 #include <mapnik/symbolizer_dispatch.hpp>
-#include <mapnik/timer.hpp>
 
 // stl
 #include <vector>
@@ -69,20 +68,32 @@ struct painted_features
     unsigned all_features_count = 0;
 };
 
-struct log_painted_features
+struct log_layer_stats
 {
-    log_painted_features(std::string const& layer_name)
-        : painted_features_(layer_name)
+    log_layer_stats(std::string const& layer_name,
+                    std::map<std::string, timer> const& datasource_query_times)
+        : painted_features_(layer_name),
+          datasource_query_times_(datasource_query_times)
     {
     }
 
     template <typename Timer>
     void operator()(Timer const& t) const
     {
+        std::string datasource_time;
+
+        auto dqt_it = datasource_query_times_.find(painted_features_.layer_name);
+        if (dqt_it != datasource_query_times_.end())
+        {
+            datasource_time = dqt_it->second.to_string();
+        }
+
         std::ostringstream s;
         s << t.to_string();
-        s << std::setw(30 - (int)s.tellp()) << std::right << "|";
-        s << " layer: " << painted_features_.layer_name
+        s << std::setw(31 - (int)s.tellp()) << std::right << "| ";
+        s << datasource_time;
+        s << std::setw(60 - (int)s.tellp()) << std::right << "| ";
+        s << "layer: " << painted_features_.layer_name
             << ", painted features: "
             << painted_features_.painted_ids.size() << "/"
             << painted_features_.all_features_count << std::endl;
@@ -90,6 +101,19 @@ struct log_painted_features
     }
 
     painted_features painted_features_;
+    std::map<std::string, timer> const& datasource_query_times_;
+};
+
+struct log_datasource_query_time
+{
+    template <typename Timer>
+    void operator()(Timer const& t) const
+    {
+        datasource_query_times[layer_name] = t;
+    }
+
+    std::string layer_name;
+    std::map<std::string, timer> & datasource_query_times;
 };
 #endif
 
@@ -268,8 +292,8 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
         p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
 #ifdef MAPNIK_STATS_RENDER
-        log_painted_features lpf(mat.lay_.name());
-        timer_with_action<log_painted_features> __stats__(lpf);
+        log_layer_stats lpf(mat.lay_.name(), datasource_query_times_);
+        timer_with_action<log_layer_stats> __stats__(lpf);
 #endif
 
         render_material(mat, p
@@ -499,6 +523,11 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
         q.add_property_name(group_by);
     }
 
+#ifdef MAPNIK_STATS_RENDER
+    log_datasource_query_time ldqt{ lay.name(), datasource_query_times_ };
+    timer_with_action<log_datasource_query_time> __query_stats__(ldqt);
+#endif
+
     bool cache_features = lay.cache_features() && active_styles.size() > 1;
 
     std::vector<featureset_ptr> & featureset_ptr_list = mat.featureset_ptr_list_;
@@ -524,8 +553,8 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
         if (!mat.empty())
         {
 #ifdef MAPNIK_STATS_RENDER
-            log_painted_features lpf(mat.lay_.name());
-            timer_with_action<log_painted_features> __stats__(lpf);
+            log_layer_stats lpf(mat.lay_.name(), datasource_query_times_);
+            timer_with_action<log_layer_stats> __stats__(lpf);
 #endif
             p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
