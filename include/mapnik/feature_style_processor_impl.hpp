@@ -89,9 +89,9 @@ struct log_layer_stats
         }
 
         std::ostringstream s;
-        s << t.to_string();
-        s << std::setw(31 - (int)s.tellp()) << std::right << "| ";
         s << datasource_time;
+        s << std::setw(31 - (int)s.tellp()) << std::right << "| ";
+        s << t.to_string();
         s << std::setw(60 - (int)s.tellp()) << std::right << "| ";
         s << "layer: " << painted_features_.layer_name
             << ", painted features: "
@@ -149,6 +149,7 @@ feature_style_processor<Processor>::feature_style_processor(Map const& m, double
 {
 #ifdef MAPNIK_STATS_RENDER
     std::clog << "EXTENT: " << m.get_current_extent() << std::endl;
+    std::clog << "Datasource query time        | Render time                |" << std::endl;
 #endif
     // https://github.com/mapnik/mapnik/issues/1100
     if (scale_factor <= 0)
