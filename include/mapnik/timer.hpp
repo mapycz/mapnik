@@ -141,8 +141,8 @@ public:
     }
 
 protected:
-    timer timer_;
     Action const& action_;
+    timer timer_;
 };
 
 //  A progress_timer behaves like a timer except that the destructor displays
