@@ -273,6 +273,8 @@ source = Split(
     marker_layout.cpp
     collision_cache.cpp
     version.cpp
+    uses_collision_detector.cpp
+    map_set_layer_buffer_size.cpp
     """
     )
 

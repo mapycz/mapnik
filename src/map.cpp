@@ -68,6 +68,7 @@ Map::Map()
     height_(400),
     srs_(MAPNIK_LONGLAT_PROJ),
     buffer_size_(0),
+    buffer_size_collisions_(),
     background_image_comp_op_(src_over),
     background_image_opacity_(1.0),
     aspectFixMode_(GROW_BBOX),
@@ -82,6 +83,7 @@ Map::Map(int width,int height, std::string const& srs)
       height_(height),
       srs_(srs),
       buffer_size_(0),
+      buffer_size_collisions_(),
       background_image_comp_op_(src_over),
       background_image_opacity_(1.0),
       aspectFixMode_(GROW_BBOX),
@@ -96,6 +98,7 @@ Map::Map(Map const& rhs)
       height_(rhs.height_),
       srs_(rhs.srs_),
       buffer_size_(rhs.buffer_size_),
+      buffer_size_collisions_(rhs.buffer_size_collisions_),
       background_(rhs.background_),
       background_image_(rhs.background_image_),
       background_image_comp_op_(rhs.background_image_comp_op_),
@@ -119,6 +122,7 @@ Map::Map(Map && rhs)
       height_(std::move(rhs.height_)),
       srs_(std::move(rhs.srs_)),
       buffer_size_(std::move(rhs.buffer_size_)),
+      buffer_size_collisions_(std::move(rhs.buffer_size_collisions_)),
       background_(std::move(rhs.background_)),
       background_image_(std::move(rhs.background_image_)),
       background_image_comp_op_(std::move(rhs.background_image_comp_op_)),
@@ -150,6 +154,7 @@ void swap (Map & lhs, Map & rhs)
     std::swap(lhs.height_, rhs.height_);
     std::swap(lhs.srs_, rhs.srs_);
     std::swap(lhs.buffer_size_, rhs.buffer_size_);
+    std::swap(lhs.buffer_size_collisions_, rhs.buffer_size_collisions_);
     std::swap(lhs.background_, rhs.background_);
     std::swap(lhs.background_image_, rhs.background_image_);
     std::swap(lhs.background_image_comp_op_, rhs.background_image_comp_op_);
@@ -174,6 +179,7 @@ bool Map::operator==(Map const& rhs) const
         (height_ == rhs.height_) &&
         (srs_ == rhs.srs_) &&
         (buffer_size_ == rhs.buffer_size_) &&
+        (buffer_size_collisions_ == rhs.buffer_size_collisions_) &&
         (background_ == rhs.background_) &&
         (background_image_ == rhs.background_image_) &&
         (background_image_comp_op_ == rhs.background_image_comp_op_) &&
@@ -430,6 +436,16 @@ void Map::set_buffer_size( int buffer_size)
 int Map::buffer_size() const
 {
     return buffer_size_;
+}
+
+void Map::set_buffer_size_collisions(int buffer_size)
+{
+    buffer_size_collisions_ = buffer_size;
+}
+
+boost::optional<int> Map::buffer_size_collisions() const
+{
+    return buffer_size_collisions_;
 }
 
 boost::optional<color> const& Map::background() const

@@ -59,6 +59,7 @@
 #include <mapnik/transform_expression.hpp>
 #include <mapnik/evaluate_global_attributes.hpp>
 #include <mapnik/boolean.hpp>
+#include <mapnik/map_set_layer_buffer_size.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -173,6 +174,8 @@ void parse_map(map_parser & parser,
     {
         future.get();
     }
+
+    set_layer_buffer_size(map);
 }
 
 void load_map(Map & map,
@@ -280,6 +283,12 @@ void map_parser::parse_map(Map & map,
             if (buffer_size)
             {
                 map.set_buffer_size(*buffer_size);
+            }
+
+            optional<int> buffer_size_collisions = map_node.get_opt_attr<int>("buffer-size-collisions");
+            if (buffer_size_collisions)
+            {
+                map.set_buffer_size_collisions(*buffer_size_collisions);
             }
 
             optional<std::string> maximum_extent = map_node.get_opt_attr<std::string>("maximum-extent");

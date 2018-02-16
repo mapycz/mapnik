@@ -88,6 +88,7 @@ private:
     unsigned height_;
     std::string srs_;
     int buffer_size_;
+    boost::optional<int> buffer_size_collisions_;
     boost::optional<color> background_;
     boost::optional<std::string> background_image_;
     composite_mode_e background_image_comp_op_;
@@ -366,6 +367,10 @@ public:
      *  @return Buffer size as int
      */
     int buffer_size() const;
+
+    void set_buffer_size_collisions(int buffer_size);
+
+    boost::optional<int> buffer_size_collisions() const;
 
     /*! \brief Set the map maximum extent.
      *  @param box The bounding box for the maximum extent.
