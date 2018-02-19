@@ -142,6 +142,12 @@
             "default-meaning": "No buffer will be used.",
             "doc": "Extra tolerance around the map (in pixels) used to ensure labels crossing tile boundaries are equally rendered in each tile (e.g. cut in each tile). Not intended to be used in combination with \"avoid-edges\"."
         },
+        "buffer-size-collisions": {
+            "default-value": "none",
+            "type": "float",
+            "default-meaning": "Value of `buffer-size` option will be used.",
+            "doc": "This buffer size will apply only to layers that can potentially use collision detector. This value overrides `buffer-size` option of the map but does not override `buffer-size` set to the layer."
+        },
         "maximum-extent": {
             "default-value": "-20037508.34,-20037508.34,20037508.34,20037508.34",
             "type":"string",
