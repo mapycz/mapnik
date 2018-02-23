@@ -24,6 +24,7 @@
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/offset_converter.hpp>
 #include <mapnik/make_unique.hpp>
+#include <mapnik/util/math.hpp>
 
 namespace mapnik
 {
@@ -45,8 +46,7 @@ vertex_cache::vertex_cache(vertex_cache && rhs)
 
 double vertex_cache::current_segment_angle()
 {
-    return std::atan2(current_segment_->pos.y - segment_starting_point_.y,
-                      current_segment_->pos.x - segment_starting_point_.x);
+    return (current_segment_->pos - segment_starting_point_).angle();
 }
 
 double vertex_cache::angle(double width)
@@ -66,8 +66,7 @@ double vertex_cache::angle(double width)
         if (move(width))
         {
             pixel_position const& old_pos = s.get_state().position();
-            return std::atan2(current_position_.y - old_pos.y,
-                              current_position_.x - old_pos.x);
+            return (current_position_ - old_pos).angle();
         }
         else
         {
@@ -155,7 +154,8 @@ vertex_cache & vertex_cache::get_offseted(double offset, double region_width)
 
     // find the point on the offset line closest to the current position,
     // which we'll use to make the offset line aligned to this one.
-    double seek = offseted_line->position_closest_to(current_position_);
+    double seek = offseted_line->position_closest_to(current_position_,
+                                                     current_segment_angle());
     offseted_line->move(seek);
     return *offseted_line;
 }
@@ -165,7 +165,8 @@ inline double dist_sq(pixel_position const &d)
     return d.x*d.x + d.y*d.y;
 }
 
-double vertex_cache::position_closest_to(pixel_position const &target_pos)
+double vertex_cache::position_closest_to(pixel_position const &target_pos,
+                                         double target_angle)
 {
     bool first = true;
     pixel_position old_pos, new_pos;
@@ -190,6 +191,15 @@ double vertex_cache::position_closest_to(pixel_position const &target_pos)
             new_pos = seg.pos;
 
             pixel_position d = new_pos - old_pos;
+            double angle_diff = std::abs(util::normalize_angle(d.angle() - target_angle));
+
+            if (angle_diff > M_PI * 0.5)
+            {
+                old_pos = new_pos;
+                lin_pos += seg.length;
+                continue;
+            }
+
             if ((d.x != 0.0) || (d.y != 0))
             {
                 pixel_position c = target_pos - old_pos;

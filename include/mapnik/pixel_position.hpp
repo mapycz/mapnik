@@ -76,6 +76,11 @@ struct pixel_position
     {
         return std::sqrt(x * x + y * y);
     }
+
+    double angle() const
+    {
+        return std::atan2(y, x);
+    }
 };
 
 inline pixel_position operator* (double factor, pixel_position const& pos)

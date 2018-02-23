@@ -139,7 +139,8 @@ public:
     void reset();
 
     // position on this line closest to the target position
-    double position_closest_to(pixel_position const &target_pos);
+    double position_closest_to(pixel_position const &target_pos,
+                               double target_angle);
 
 private:
     void rewind_subpath();

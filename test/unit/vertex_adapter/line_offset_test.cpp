@@ -27,7 +27,7 @@ void test_simple_segment(double const &offset)
 
     while (vc.move(dx)) {
         double pos = vc.linear_position();
-        double off_pos = off_vc.position_closest_to(vc.current_position());
+        double off_pos = off_vc.position_closest_to(vc.current_position(), vc.current_segment_angle());
         REQUIRE(std::abs(pos - off_pos) < 1.0e-6);
     }
 }
@@ -43,7 +43,7 @@ void test_straight_line(double const &offset) {
 
     while (vc.move(dx)) {
         double pos = vc.linear_position();
-        double off_pos = off_vc.position_closest_to(vc.current_position());
+        double off_pos = off_vc.position_closest_to(vc.current_position(), vc.current_segment_angle());
         REQUIRE(std::abs(pos - off_pos) < 1.0e-6);
     }
 }
@@ -68,7 +68,7 @@ void test_offset_curve(double const &offset) {
 
     while (vc.move(dx)) {
         double mpos = vc.linear_position();
-        double moff_pos = off_vc.position_closest_to(vc.current_position());
+        double moff_pos = off_vc.position_closest_to(vc.current_position(), vc.current_segment_angle());
         {
             mapnik::vertex_cache::scoped_state s(off_vc);
             off_vc.move(moff_pos);
@@ -105,7 +105,7 @@ void test_s_shaped_curve(double const &offset) {
     off_vc.reset(); off_vc.next_subpath();
 
     while (vc.move(dx)) {
-        double moff_pos = off_vc.position_closest_to(vc.current_position());
+        double moff_pos = off_vc.position_closest_to(vc.current_position(), vc.current_segment_angle());
         {
             mapnik::vertex_cache::scoped_state s(off_vc);
             off_vc.move(moff_pos);
