@@ -182,6 +182,82 @@ public:
     { }
 };
 
+template<class Source, class Interpolator>
+class span_image_filter_gray_bilinear_float : public agg::span_image_filter<Source, Interpolator>
+{
+public:
+    typedef Source source_type;
+    typedef typename source_type::color_type color_type;
+    typedef Interpolator interpolator_type;
+    typedef agg::span_image_filter<source_type, interpolator_type> base_type;
+    typedef typename color_type::value_type value_type;
+    typedef typename color_type::calc_type calc_type;
+
+    enum base_scale_e
+    {
+        base_shift = color_type::base_shift,
+        base_mask  = color_type::base_mask
+    };
+
+    const double subpixel_shift;
+
+    //--------------------------------------------------------------------
+    span_image_filter_gray_bilinear_float() :
+        subpixel_shift(std::pow(2, agg::image_subpixel_shift * 2))
+    {}
+
+    span_image_filter_gray_bilinear_float(source_type& src,
+                                    interpolator_type& inter) :
+        base_type(src, inter, 0), 
+        subpixel_shift(std::pow(2, agg::image_subpixel_shift * 2))
+    {}
+
+    //--------------------------------------------------------------------
+    void generate(color_type* span, int x, int y, unsigned len)
+    {
+        base_type::interpolator().begin(x + base_type::filter_dx_dbl(),
+                                        y + base_type::filter_dy_dbl(), len);
+        calc_type fg;
+        const value_type *fg_ptr;
+        do
+        {
+            int x_hr;
+            int y_hr;
+
+            base_type::interpolator().coordinates(&x_hr, &y_hr);
+
+            x_hr -= base_type::filter_dx_int();
+            y_hr -= base_type::filter_dy_int();
+
+            int x_lr = x_hr >> agg::image_subpixel_shift;
+            int y_lr = y_hr >> agg::image_subpixel_shift;
+
+            fg = agg::image_subpixel_scale * agg::image_subpixel_scale / 2;
+
+            x_hr &= agg::image_subpixel_mask;
+            y_hr &= agg::image_subpixel_mask;
+
+            fg_ptr = (const value_type*)base_type::source().span(x_lr, y_lr, 2);
+            fg    += *fg_ptr * (agg::image_subpixel_scale - x_hr) * (agg::image_subpixel_scale - y_hr);
+
+            fg_ptr = (const value_type*)base_type::source().next_x();
+            fg    += *fg_ptr * x_hr * (agg::image_subpixel_scale - y_hr);
+
+            fg_ptr = (const value_type*)base_type::source().next_y();
+            fg    += *fg_ptr * (agg::image_subpixel_scale - x_hr) * y_hr;
+
+            fg_ptr = (const value_type*)base_type::source().next_x();
+            fg    += *fg_ptr * x_hr * y_hr;
+
+            span->v = value_type(fg / subpixel_shift);
+            span->a = base_mask;
+            ++span;
+            ++base_type::interpolator();
+
+        } while(--len);
+    }
+};
+
 }
 
 #endif

@@ -53,6 +53,7 @@ struct agg_scaling_traits<image_rgba8>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_rgba_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_rgba_affine<img_src_type>;
+    using span_image_filter_bilinear = agg::span_image_filter_rgba_bilinear<img_src_type,interpolator_type>;
 
 };
 
@@ -65,6 +66,7 @@ struct agg_scaling_traits<image_gray8>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = agg::span_image_filter_gray_bilinear<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -76,6 +78,7 @@ struct agg_scaling_traits<image_gray8s>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = agg::span_image_filter_gray_bilinear<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -87,6 +90,7 @@ struct agg_scaling_traits<image_gray16>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = agg::span_image_filter_gray_bilinear<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -98,6 +102,7 @@ struct agg_scaling_traits<image_gray16s>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = agg::span_image_filter_gray_bilinear<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -109,6 +114,7 @@ struct agg_scaling_traits<image_gray32>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = span_image_filter_gray_bilinear_float<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -120,6 +126,7 @@ struct agg_scaling_traits<image_gray32s>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = span_image_filter_gray_bilinear_float<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -131,6 +138,7 @@ struct agg_scaling_traits<image_gray32f>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = span_image_filter_gray_bilinear_float<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -142,6 +150,7 @@ struct agg_scaling_traits<image_gray64>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = span_image_filter_gray_bilinear_float<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -153,6 +162,7 @@ struct agg_scaling_traits<image_gray64s>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = span_image_filter_gray_bilinear_float<img_src_type,interpolator_type>;
 };
 
 template <>
@@ -164,6 +174,7 @@ struct agg_scaling_traits<image_gray64f>
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
     using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_filter_bilinear = span_image_filter_gray_bilinear_float<img_src_type,interpolator_type>;
 };
 
 template <typename Filter>
