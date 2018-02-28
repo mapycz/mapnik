@@ -115,6 +115,9 @@ public:
 
     bool registerPool(ConnectionCreator<Connection> const& creator,unsigned initialSize,unsigned maxSize)
     {
+#ifdef MAPNIK_THREADSAFE
+        std::lock_guard<std::mutex> lock(mutex_);
+#endif
         ContType::const_iterator itr = pools_.find(creator.id());
 
         if (itr != pools_.end())
