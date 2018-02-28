@@ -135,7 +135,7 @@ public:
 
     }
 
-    std::shared_ptr<PoolType> getPool(std::string const& key)
+    std::shared_ptr<PoolType> getPool(std::string const& key) const
     {
         ContType::const_iterator itr=pools_.find(key);
         if (itr!=pools_.end())
