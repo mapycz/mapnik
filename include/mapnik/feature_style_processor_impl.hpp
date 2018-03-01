@@ -365,6 +365,12 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
         buffered_query_ext.clip(*maximum_extent);
     }
 
+    boost::optional<box2d<double>> const& layer_maximum_extent = lay.maximum_extent();
+    if (layer_maximum_extent)
+    {
+        buffered_query_ext.clip(*layer_maximum_extent);
+    }
+
     box2d<double> layer_ext = lay.envelope();
     const box2d<double> buffered_query_ext_map_srs = buffered_query_ext;
     bool fw_success = false;
