@@ -113,7 +113,12 @@ private:
                         std::deque<layer> const & layers,
                         feature_style_context_map & ctx_map,
                         Processor & p,
-                        double scale_denom);
+                        double scale,
+                        double scale_denom,
+                        unsigned width,
+                        unsigned height,
+                        box2d<double> const& extent,
+                        int buffer_size);
 
     /*!
      * \brief prepare features for rendering asynchronously.

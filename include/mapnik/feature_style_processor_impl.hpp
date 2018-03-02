@@ -163,7 +163,12 @@ void feature_style_processor<Processor>::prepare_layers(layer_rendering_material
                                                         std::deque<layer> const & layers,
                                                         feature_style_context_map & ctx_map,
                                                         Processor & p,
-                                                        double scale_denom)
+                                                        double scale,
+                                                        double scale_denom,
+                                                        unsigned width,
+                                                        unsigned height,
+                                                        box2d<double> const& extent,
+                                                        int buffer_size)
 {
     for (layer const& lyr : layers)
     {
@@ -175,18 +180,27 @@ void feature_style_processor<Processor>::prepare_layers(layer_rendering_material
             prepare_layer(mat,
                           ctx_map,
                           p,
-                          m_.scale(),
+                          scale,
                           scale_denom,
-                          m_.width(),
-                          m_.height(),
-                          m_.get_current_extent(),
-                          m_.buffer_size(),
+                          width,
+                          height,
+                          extent,
+                          buffer_size,
                           names);
 
             // Store active material
             if (!mat.empty())
             {
-                prepare_layers(mat, lyr.layers(), ctx_map, p, scale_denom);
+                prepare_layers(mat,
+                               lyr.layers(),
+                               ctx_map,
+                               p,
+                               scale,
+                               scale_denom,
+                               width,
+                               height,
+                               extent,
+                               buffer_size);
                 parent_mat.materials_.emplace_back(std::move(mat));
             }
         }
@@ -221,7 +235,15 @@ void feature_style_processor<Processor>::apply(double scale_denom)
     if (!m_.layers().empty())
     {
         layer_rendering_material root_mat(m_.layers().front(), proj);
-        prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
+        prepare_layers(root_mat,
+                       m_.layers(),
+                       ctx_map, p,
+                       m_.scale(),
+                       scale_denom,
+                       m_.width(),
+                       m_.height(),
+                       m_.get_current_extent(),
+                       m_.buffer_size());
 
         render_submaterials(root_mat, p);
     }
@@ -286,7 +308,16 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
                   buffer_size,
                   names);
 
-    prepare_layers(mat, lay.layers(), ctx_map, p, scale_denom);
+    prepare_layers(mat,
+                   lay.layers(),
+                   ctx_map,
+                   p,
+                   scale,
+                   scale_denom,
+                   width,
+                   height,
+                   extent,
+                   buffer_size);
 
     if (!mat.empty())
     {
