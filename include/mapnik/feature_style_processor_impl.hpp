@@ -308,6 +308,53 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
     }
 }
 
+void clip_query_extent(box2d<double> & extent, Map const& map, layer const& lay)
+{
+    // clip buffered extent by maximum extent, if supplied
+    boost::optional<box2d<double>> const& maximum_extent = map.maximum_extent();
+    if (maximum_extent)
+    {
+        extent.clip(*maximum_extent);
+    }
+
+    if (!extent.valid())
+    {
+        return;
+    }
+
+    boost::optional<box2d<double>> const& layer_maximum_extent = lay.maximum_extent();
+    if (layer_maximum_extent)
+    {
+        extent.clip(*layer_maximum_extent);
+    }
+}
+
+void collect_styles_with_comp_op(std::vector<feature_type_style const*> & active_styles,
+                                 Map const& map,
+                                 layer const& lay,
+                                 double scale_denom)
+{
+    // check for styles needing compositing operations applied
+    // https://github.com/mapnik/mapnik/issues/1477
+    for (std::string const& style_name : lay.styles())
+    {
+        boost::optional<feature_type_style const&> style=map.find_style(style_name);
+        if (!style)
+        {
+            continue;
+        }
+
+        if (style->comp_op() || style->image_filters().size() > 0)
+        {
+            if (style->active(scale_denom))
+            {
+                // we'll have to handle compositing ops
+                active_styles.push_back(&(*style));
+            }
+        }
+    }
+}
+
 template <typename Processor>
 void feature_style_processor<Processor>::prepare_layer(layer_rendering_material & mat,
                                                        feature_style_context_map & ctx_map,
@@ -358,17 +405,14 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
     buffered_query_ext.width(query_ext.width() + buffer_padding);
     buffered_query_ext.height(query_ext.height() + buffer_padding);
 
-    // clip buffered extent by maximum extent, if supplied
-    boost::optional<box2d<double> > const& maximum_extent = m_.maximum_extent();
-    if (maximum_extent)
-    {
-        buffered_query_ext.clip(*maximum_extent);
-    }
+    clip_query_extent(buffered_query_ext, m_, lay);
 
-    boost::optional<box2d<double>> const& layer_maximum_extent = lay.maximum_extent();
-    if (layer_maximum_extent)
+    std::vector<feature_type_style const*> & active_styles = mat.active_styles_;
+
+    if (!buffered_query_ext.valid())
     {
-        buffered_query_ext.clip(*layer_maximum_extent);
+        collect_styles_with_comp_op(active_styles, m_, lay, scale_denom);
+        return;
     }
 
     box2d<double> layer_ext = lay.envelope();
@@ -406,34 +450,15 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
         early_return = true;
     }
 
-    std::vector<feature_type_style const*> & active_styles = mat.active_styles_;
-
     if (early_return)
     {
-        // check for styles needing compositing operations applied
-        // https://github.com/mapnik/mapnik/issues/1477
-        for (std::string const& style_name : style_names)
-        {
-            boost::optional<feature_type_style const&> style=m_.find_style(style_name);
-            if (!style)
-            {
-                continue;
-            }
-
-            if (style->comp_op() || style->image_filters().size() > 0)
-            {
-                if (style->active(scale_denom))
-                {
-                    // we'll have to handle compositing ops
-                    active_styles.push_back(&(*style));
-                }
-            }
-        }
+        collect_styles_with_comp_op(active_styles, m_, lay, scale_denom);
         return;
     }
 
     // if we've got this far, now prepare the unbuffered extent
     // which is used as a bbox for clipping geometries
+    boost::optional<box2d<double>> const& maximum_extent = m_.maximum_extent();
     if (maximum_extent)
     {
         query_ext.clip(*maximum_extent);
