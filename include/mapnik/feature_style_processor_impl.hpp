@@ -442,7 +442,6 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
 
     if (!buffered_query_ext.valid())
     {
-        collect_styles_with_comp_op(active_styles, m_, lay, scale_denom);
         return;
     }
 
