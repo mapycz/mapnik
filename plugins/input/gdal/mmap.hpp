@@ -33,17 +33,21 @@
 
 #include <gdal_priv.h>
 
+#include <sstream>
+
 struct mmapped_vsifile
 {
-    mmapped_vsifile(std::string const& filepath)
+    mmapped_vsifile(std::string const& filepath,
+                    std::string const& unique_path)
         : mapping(filepath.c_str(), boost::interprocess::read_only),
           region(mapping, boost::interprocess::read_only)
     {
-        boost::filesystem::path vsimem("/vsimem");
-        vsimem /= filepath;
+        boost::filesystem::path vsimem_path("/vsimem");
+        vsimem_path /= unique_path.empty() ? unique_id() : unique_path;
+        vsimem_path /= filepath;
 
         virt_file = VSIFileFromMemBuffer(
-            vsimem.string().c_str(),
+            vsimem_path.string().c_str(),
             static_cast<GByte*>(region.get_address()),
             region.get_size(),
             false);
@@ -51,15 +55,23 @@ struct mmapped_vsifile
         if (virt_file == NULL)
         {
             throw std::runtime_error("Call to VSIFileFromMemBuffer "
-                "failed with '" + vsimem.string() + "'");
+                "failed with '" + vsimem_path.string() + "'");
         }
 
-        name = vsimem.string();
+        name = vsimem_path.string();
+    }
+
+    std::string unique_id() const
+    {
+        std::stringstream ss;
+        ss << region.get_address();
+        return ss.str();
     }
 
     ~mmapped_vsifile()
     {
         VSIFCloseL(virt_file);
+        VSIUnlink(name.c_str());
     }
 
     boost::interprocess::file_mapping mapping;
@@ -71,7 +83,7 @@ struct mmapped_vsifile
 struct mmapped_tiff_dataset
 {
     mmapped_tiff_dataset(std::string const& filepath)
-        : tiff_file_mapping(filepath),
+        : tiff_file_mapping(filepath, std::string()),
           overviews_file_mapping()
     {
         std::string ovr_file_name = filepath + ".ovr";
@@ -80,7 +92,7 @@ struct mmapped_tiff_dataset
             try
             {
                 overviews_file_mapping = std::make_unique<mmapped_vsifile>(
-                    ovr_file_name);
+                    ovr_file_name, tiff_file_mapping.unique_id());
             }
             catch (std::exception const& e)
             {
