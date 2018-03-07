@@ -110,7 +110,7 @@ void grid_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     // render id
     ren.color(color_type(feature.id()));
     agg::scanline_bin sl;
-    ras_ptr->filling_rule(agg::fill_even_odd);
+    ras_ptr->filling_rule(agg::fill_non_zero);
     agg::render_scanlines(*ras_ptr, sl, ren);
 
     // add feature properties to grid cache

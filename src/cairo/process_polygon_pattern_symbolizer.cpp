@@ -89,7 +89,7 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     apply_vertex_converter_type apply(converter, context_);
     mapnik::util::apply_visitor(vertex_processor_type(apply),feature.get_geometry());
     // fill polygon
-    context_.set_fill_rule(CAIRO_FILL_RULE_EVEN_ODD);
+    context_.set_fill_rule(CAIRO_FILL_RULE_WINDING);
     context_.fill();
 }
 

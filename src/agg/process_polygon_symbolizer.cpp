@@ -86,7 +86,7 @@ void agg_renderer<T0,T1>::process(polygon_symbolizer const& sym,
             renderer_type ren(renb);
             ren.color(agg::rgba8_pre(r, g, b, int(a * opacity)));
             agg::scanline_u8 sl;
-            ras_ptr->filling_rule(agg::fill_even_odd);
+            ras_ptr->filling_rule(agg::fill_non_zero);
             agg::render_scanlines(*ras_ptr, sl, ren);
         });
 }

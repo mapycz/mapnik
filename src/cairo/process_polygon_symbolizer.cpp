@@ -48,7 +48,7 @@ void cairo_renderer<T>::process(polygon_symbolizer const& sym,
         [&](color const &fill, double opacity) {
             context_.set_color(fill, opacity);
             // fill polygon
-            context_.set_fill_rule(CAIRO_FILL_RULE_EVEN_ODD);
+            context_.set_fill_rule(CAIRO_FILL_RULE_WINDING);
             context_.fill();
         });
 }

@@ -251,7 +251,7 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     apply_vertex_converter_type apply(converter, *ras_ptr);
     mapnik::util::apply_visitor(vertex_processor_type(apply),feature.get_geometry());
     agg::scanline_u8 sl;
-    ras_ptr->filling_rule(agg::fill_even_odd);
+    ras_ptr->filling_rule(agg::fill_non_zero);
     agg::render_scanlines(*ras_ptr, sl, rp);
 }
 
