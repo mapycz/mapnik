@@ -395,6 +395,7 @@ opts.AddVariables(
     # Variables for logging and statistics
     BoolVariable('ENABLE_LOG', 'Enable logging, which is enabled by default when building in *debug*', 'False'),
     BoolVariable('ENABLE_STATS', 'Enable global statistics during map processing', 'False'),
+    BoolVariable('ENABLE_STATS_RENDER', 'Enable detailed render performance statistics', 'False'),
     ('DEFAULT_LOG_SEVERITY', 'The default severity of the logger (eg. ' + ', '.join(severities) + ')', 'error'),
 
     # Plugin linking
@@ -1934,6 +1935,9 @@ if not preconfigured:
         if env['ENABLE_STATS']:
             debug_defines.append('-DMAPNIK_STATS')
             ndebug_defines.append('-DMAPNIK_STATS')
+        if env['ENABLE_STATS_RENDER']:
+            debug_defines.append('-DMAPNIK_STATS_RENDER')
+            ndebug_defines.append('-DMAPNIK_STATS_RENDER')
 
         # Add rdynamic to allow using statics between application and plugins
         # http://stackoverflow.com/questions/8623657/multiple-instances-of-singleton-across-shared-libraries-on-linux
