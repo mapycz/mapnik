@@ -275,6 +275,7 @@ source = Split(
     version.cpp
     uses_collision_detector.cpp
     map_set_layer_buffer_size.cpp
+    parallel_blur.cpp
     """
     )
 

@@ -28,6 +28,8 @@
 #include <mapnik/image_filter_types.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/util/hsl.hpp>
+#include <mapnik/safe_cast.hpp>
+#include <mapnik/parallel_blur.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -47,6 +49,7 @@
 
 // stl
 #include <cmath>
+#include <thread>
 
 // 8-bit YUV
 //Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16
@@ -401,9 +404,19 @@ template <typename Src>
 void apply_filter(Src & src, agg_stack_blur const& op, double scale_factor)
 {
     premultiply_alpha(src);
-    agg::rendering_buffer buf(src.bytes(),src.width(),src.height(), src.row_size());
-    agg::pixfmt_rgba32_pre pixf(buf);
-    agg::stack_blur_rgba32(pixf, op.rx * scale_factor, op.ry * scale_factor);
+    const std::size_t parallel_threshold = 1024 * 1024;
+    unsigned rx = safe_cast<unsigned>(op.rx * scale_factor);
+    unsigned ry = safe_cast<unsigned>(op.ry * scale_factor);
+    if (src.width() * src.height() >= parallel_threshold)
+    {
+        stack_blur_rgba32_parallel(src, rx, ry, std::thread::hardware_concurrency());
+    }
+    else
+    {
+        agg::rendering_buffer buf(src.bytes(), src.width(), src.height(), src.row_size());
+        agg::pixfmt_rgba32_pre pixf(buf);
+        agg::stack_blur_rgba32(pixf, rx, ry);
+    }
 }
 
 inline double channel_delta(double source, double match)
