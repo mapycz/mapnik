@@ -179,6 +179,7 @@ struct colorize_alpha : std::vector<color_stop>
 using filter_type =  util::variant<filter::blur,
                                    filter::gray,
                                    filter::agg_stack_blur,
+                                   filter::parallel_blur,
                                    filter::emboss,
                                    filter::sharpen,
                                    filter::edge_detect,

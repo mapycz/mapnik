@@ -20,10 +20,13 @@
  *
  *****************************************************************************/
 
-// mapnik
+#include <mapnik/parallel_blur.hpp>
 
 #include "agg_blur.h"
 #include "agg_pixfmt_rgba.h"
+
+#include <vector>
+#include <future>
 
 namespace mapnik
 {
@@ -335,38 +338,91 @@ void process_column(Img & img,
     }
 }
 
+struct chunk
+{
+    unsigned begin;
+    unsigned end;
+};
 
 template <class Img>
-void stack_blur_rgba32_parallel(Img& img,
-                                unsigned rx,
-                                unsigned ry,
-                                unsigned jobs)
+void process_row_chunck(Img & img,
+                 chunk const& ch,
+                 unsigned rx,
+                 agg::pod_vector<typename Img::color_type> & stack)
+{
+    for (unsigned y = ch.begin; y < ch.end; y++)
+    {
+        process_row(img, y, rx, stack);
+    }
+}
+
+MAPNIK_DECL void stack_blur_rgba32_parallel(image_rgba8 & img,
+                                            unsigned rx,
+                                            unsigned ry,
+                                            unsigned jobs)
 {
     unsigned w = img.width();
     unsigned h = img.height();
-    agg::pod_vector<typename Img::color_type> stack;
 
+    agg::rendering_buffer buf(img.bytes(), img.width(), img.height(), img.row_size());
+    agg::pixfmt_rgba32_pre pixf(buf);
+
+    using color_type = typename agg::pixfmt_rgba32_pre::color_type;
+    std::vector<agg::pod_vector<color_type>> stack(jobs);
+
+    if (rx > 0)
+    {
+        unsigned chunk_size = h / jobs;
+
+        if (chunk_size == 0)
+        {
+            chunk_size = h;
+            jobs = 1;
+        }
+
+        std::vector<std::future<void>> futures(jobs);
+
+        for (std::size_t i = 0; i < jobs; i++)
+        {
+            chunk ch { i * chunk_size, (i + 1) * chunk_size };
+
+            // Handle remainder of h / jobs
+            if (i == jobs - 1)
+            {
+                ch.end = h;
+            }
+
+            futures[i] = std::async(std::launch::async,
+                                    process_row_chunck<decltype(pixf)>,
+                                    std::ref(pixf),
+                                    ch,
+                                    rx,
+                                    std::ref(stack[i]));
+        }
+
+        for (auto & f : futures)
+        {
+            f.get();
+        }
+    }
+
+/*
     if (rx > 0)
     {
         for (unsigned y = 0; y < h; y++)
         {
-            process_row(img, y, rx, stack);
+            process_row(img, y, rx, stack[0]);
         }
     }
+    */
 
     if (ry > 0)
     {
         for (unsigned x = 0; x < w; x++)
         {
-            process_column(img, x, ry, stack);
+            process_column(pixf, x, ry, stack[0]);
         }
     }
 }
-
-template
-void stack_blur_rgba32_parallel(agg::pixfmt_rgba32_pre & img,
-                                unsigned rx,
-                                unsigned ry,
-                                unsigned jobs);
 
 } // end ns

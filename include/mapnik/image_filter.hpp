@@ -29,6 +29,7 @@
 #include <mapnik/image_util.hpp>
 #include <mapnik/util/hsl.hpp>
 #include <mapnik/parallel_blur.hpp>
+#include <mapnik/safe_cast.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -412,10 +413,10 @@ template <typename Src>
 void apply_filter(Src & src, parallel_blur const& op, double scale_factor)
 {
     premultiply_alpha(src);
-    agg::rendering_buffer buf(src.bytes(),src.width(),src.height(), src.row_size());
-    agg::pixfmt_rgba32_pre pixf(buf);
-    unsigned jobs = std::thread::hardware_concurrency();
-    parallel_blur(pixf, op.rx * scale_factor, op.ry * scale_factor, jobs);
+    stack_blur_rgba32_parallel(src,
+                               safe_cast<unsigned>(op.rx * scale_factor),
+                               safe_cast<unsigned>(op.ry * scale_factor),
+                               std::thread::hardware_concurrency());
 }
 
 inline double channel_delta(double source, double match)

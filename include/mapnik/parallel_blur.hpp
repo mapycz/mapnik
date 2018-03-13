@@ -24,14 +24,14 @@
 #define MAPNIK_PARALLEL_BLUR
 
 #include <mapnik/config.hpp>
+#include <mapnik/image.hpp>
 
 namespace mapnik {
 
-template <class Img>
-void stack_blur_rgba32_parallel(Img& img,
-                                unsigned rx,
-                                unsigned ry,
-                                unsigned jobs);
+MAPNIK_DECL void stack_blur_rgba32_parallel(image_rgba8 & img,
+                                            unsigned rx,
+                                            unsigned ry,
+                                            unsigned jobs);
 
 } // end ns mapnik
 
