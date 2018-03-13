@@ -29,9 +29,11 @@ namespace mapnik
 {
 
 template<class Img>
-void process_row(Img & img, unsigned y, unsigned rx)
+void process_row(Img & img,
+                 unsigned y,
+                 unsigned rx,
+                 agg::pod_vector<typename Img::color_type> & stack)
 {
-    using color_type = typename Img::color_type;
     using order_type = typename Img::order_type;
 
     enum order_e
@@ -48,7 +50,7 @@ void process_row(Img & img, unsigned y, unsigned rx)
 
     const agg::int8u* src_pix_ptr;
           agg::int8u* dst_pix_ptr;
-    color_type*  stack_pix_ptr;
+    typename Img::color_type*  stack_pix_ptr;
 
     unsigned sum_r = 0;
     unsigned sum_g = 0;
@@ -77,7 +79,6 @@ void process_row(Img & img, unsigned y, unsigned rx)
         rx = 254;
     }
 
-    agg::pod_vector<color_type> stack;
     div = rx * 2 + 1;
     mul_sum = agg::stack_blur_tables<int>::g_stack_blur8_mul[rx];
     shr_sum = agg::stack_blur_tables<int>::g_stack_blur8_shr[rx];
@@ -181,9 +182,11 @@ void process_row(Img & img, unsigned y, unsigned rx)
 }
 
 template<class Img>
-void process_column(Img & img, unsigned x, unsigned ry)
+void process_column(Img & img,
+                    unsigned x,
+                    unsigned ry,
+                    agg::pod_vector<typename Img::color_type> & stack)
 {
-    using color_type = typename Img::color_type;
     using order_type = typename Img::order_type;
 
     enum order_e
@@ -200,7 +203,7 @@ void process_column(Img & img, unsigned x, unsigned ry)
 
     const agg::int8u* src_pix_ptr;
           agg::int8u* dst_pix_ptr;
-    color_type*  stack_pix_ptr;
+    typename Img::color_type*  stack_pix_ptr;
 
     unsigned sum_r = 0;
     unsigned sum_g = 0;
@@ -229,7 +232,6 @@ void process_column(Img & img, unsigned x, unsigned ry)
         ry = 254;
     }
 
-    agg::pod_vector<color_type> stack;
     div = ry * 2 + 1;
     mul_sum = agg::stack_blur_tables<int>::g_stack_blur8_mul[ry];
     shr_sum = agg::stack_blur_tables<int>::g_stack_blur8_shr[ry];
@@ -334,67 +336,29 @@ void process_column(Img & img, unsigned x, unsigned ry)
 }
 
 
-template<class Img>
+template <class Img>
 void stack_blur_rgba32_parallel(Img& img,
                                 unsigned rx,
                                 unsigned ry,
                                 unsigned jobs)
 {
-    typedef typename Img::color_type color_type;
-    typedef typename Img::order_type order_type;
-    enum order_e
-    {
-        R = order_type::R,
-        G = order_type::G,
-        B = order_type::B,
-        A = order_type::A
-    };
-
-    unsigned x, y, xp, yp, i;
-    unsigned stack_ptr;
-    unsigned stack_start;
-
-    const agg::int8u* src_pix_ptr;
-          agg::int8u* dst_pix_ptr;
-    color_type*  stack_pix_ptr;
-
-    unsigned sum_r;
-    unsigned sum_g;
-    unsigned sum_b;
-    unsigned sum_a;
-    unsigned sum_in_r;
-    unsigned sum_in_g;
-    unsigned sum_in_b;
-    unsigned sum_in_a;
-    unsigned sum_out_r;
-    unsigned sum_out_g;
-    unsigned sum_out_b;
-    unsigned sum_out_a;
-
-    unsigned w   = img.width();
-    unsigned h   = img.height();
-    unsigned wm  = w - 1;
-    unsigned hm  = h - 1;
-
-    unsigned div;
-    unsigned mul_sum;
-    unsigned shr_sum;
-
-    agg::pod_vector<color_type> stack;
+    unsigned w = img.width();
+    unsigned h = img.height();
+    agg::pod_vector<typename Img::color_type> stack;
 
     if (rx > 0)
     {
-        for (y = 0; y < h; y++)
+        for (unsigned y = 0; y < h; y++)
         {
-            process_row(img, y, rx);
+            process_row(img, y, rx, stack);
         }
     }
 
     if (ry > 0)
     {
-        for (x = 0; x < w; x++)
+        for (unsigned x = 0; x < w; x++)
         {
-            process_column(img, x, ry);
+            process_column(img, x, ry, stack);
         }
     }
 }

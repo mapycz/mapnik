@@ -94,6 +94,14 @@ image_filter_grammar<Iterator,ContType>::image_filter_grammar()
         [push_back(_val, construct<filter::agg_stack_blur>(1, 1))]
         ;
 
+    add("stack-blur-parallel") =
+        (lit('(') >> radius_ >> -( lit(',') >> radius_ ) >> lit(')'))
+        [push_back(_val, construct<filter::parallel_blur>(_1, ovo(_2, _1)))]
+        |
+        no_args
+        [push_back(_val, construct<filter::parallel_blur>(1, 1))]
+        ;
+
     add("scale-hsla") =
         (lit('(')
           >> double_ >> lit(',') >> double_ >> lit(',')

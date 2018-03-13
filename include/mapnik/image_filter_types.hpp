@@ -92,6 +92,11 @@ struct agg_stack_blur : image_filter_base
     unsigned ry;
 };
 
+struct parallel_blur : agg_stack_blur
+{
+    using agg_stack_blur::agg_stack_blur;
+};
+
 struct color_to_alpha : image_filter_base
 {
     color_to_alpha(mapnik::color const& c)
