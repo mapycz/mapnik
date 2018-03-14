@@ -346,10 +346,12 @@ struct chunk
 
 template <class Img>
 void process_row_chunck(Img & img,
-                 chunk const& ch,
-                 unsigned rx,
-                 agg::pod_vector<typename Img::color_type> & stack)
+                 chunk ch,
+                 unsigned rx)
 {
+    using color_type = typename agg::pixfmt_rgba32_pre::color_type;
+    agg::pod_vector<color_type> stack();
+
     for (unsigned y = ch.begin; y < ch.end; y++)
     {
         process_row(img, y, rx, stack);
@@ -358,10 +360,12 @@ void process_row_chunck(Img & img,
 
 template <class Img>
 void process_column_chunck(Img & img,
-                 chunk const& ch,
-                 unsigned ry,
-                 agg::pod_vector<typename Img::color_type> & stack)
+                 chunk ch,
+                 unsigned ry)
 {
+    using color_type = typename agg::pixfmt_rgba32_pre::color_type;
+    agg::pod_vector<color_type> stack();
+
     for (unsigned x = ch.begin; x < ch.end; x++)
     {
         process_column(img, x, ry, stack);
@@ -378,9 +382,6 @@ MAPNIK_DECL void stack_blur_rgba32_parallel(image_rgba8 & img,
 
     agg::rendering_buffer buf(img.bytes(), img.width(), img.height(), img.row_size());
     agg::pixfmt_rgba32_pre pixf(buf);
-
-    using color_type = typename agg::pixfmt_rgba32_pre::color_type;
-    std::vector<agg::pod_vector<color_type>> stack(jobs);
 
     if (rx > 0)
     {
@@ -408,8 +409,7 @@ MAPNIK_DECL void stack_blur_rgba32_parallel(image_rgba8 & img,
                                     process_row_chunck<decltype(pixf)>,
                                     std::ref(pixf),
                                     ch,
-                                    rx,
-                                    std::ref(stack[i]));
+                                    rx);
         }
 
         for (auto & f : futures)
@@ -444,8 +444,7 @@ MAPNIK_DECL void stack_blur_rgba32_parallel(image_rgba8 & img,
                                     process_column_chunck<decltype(pixf)>,
                                     std::ref(pixf),
                                     ch,
-                                    ry,
-                                    std::ref(stack[i]));
+                                    ry);
         }
 
         for (auto & f : futures)
