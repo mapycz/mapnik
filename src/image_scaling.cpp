@@ -24,6 +24,7 @@
 #include <mapnik/image.hpp>
 #include <mapnik/image_scaling.hpp>
 #include <mapnik/image_scaling_traits.hpp>
+#include <mapnik/parallel_scale.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -159,9 +160,12 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
         break;
         case SCALING_BILINEAR_FAST:
         {
+            scale_parallel(source, target, 4, image_ratio_x, image_ratio_y);
+        /*
             using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_filter_bilinear;
             span_gen_type sg(img_src, interpolator);
             agg::render_scanlines_aa(ras, sl, rb_dst_pre, sa, sg);
+            */
         }
         break;
         default:
