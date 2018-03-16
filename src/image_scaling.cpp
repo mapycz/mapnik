@@ -25,6 +25,8 @@
 #include <mapnik/image_scaling.hpp>
 #include <mapnik/image_scaling_traits.hpp>
 #include <mapnik/parallel_scale.hpp>
+#include <mapnik/timer.hpp>
+#include <iostream>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -103,6 +105,9 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
                      double image_ratio_x, double image_ratio_y, double x_off_f, double y_off_f,
                      double filter_factor, boost::optional<double> const & nodata_value)
 {
+    scale_parallel(source, target, 16, scaling_method, image_ratio_x, image_ratio_y, x_off_f, y_off_f, filter_factor, nodata_value);
+
+/*
     // "the image filters should work namely in the premultiplied color space"
     // http://old.nabble.com/Re:--AGG--Basic-image-transformations-p1110665.html
     // "Yes, you need to use premultiplied images only. Only in this case the simple weighted averaging works correctly in the image fitering."
@@ -160,12 +165,13 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
         break;
         case SCALING_BILINEAR_FAST:
         {
+            mapnik::progress_timer __stats__(std::clog, "FAST");
             scale_parallel(source, target, 4, image_ratio_x, image_ratio_y);
-        /*
+        *
             using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_filter_bilinear;
             span_gen_type sg(img_src, interpolator);
             agg::render_scanlines_aa(ras, sl, rb_dst_pre, sa, sg);
-            */
+            *
         }
         break;
         default:
@@ -182,6 +188,7 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
             agg::render_scanlines_aa(ras, sl, rb_dst_pre, sa, sg);
         }
     }
+    */
 }
 
 template MAPNIK_DECL void scale_image_agg(image_rgba8 &, image_rgba8 const&, scaling_method_e,
