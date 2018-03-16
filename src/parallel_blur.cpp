@@ -21,6 +21,7 @@
  *****************************************************************************/
 
 #include <mapnik/parallel_blur.hpp>
+#include <mapnik/util/parallelize.hpp>
 
 #include "agg_blur.h"
 #include "agg_pixfmt_rgba.h"
@@ -338,78 +339,39 @@ void process_column(Img & img,
     }
 }
 
-struct chunk
+struct process_row_chunck
 {
-    unsigned begin;
-    unsigned end;
+    agg::pixfmt_rgba32_pre & img;
+    unsigned rx;
+
+    void operator()(unsigned begin, unsigned end)
+    {
+        using color_type = typename agg::pixfmt_rgba32_pre::color_type;
+        agg::pod_vector<color_type> stack;
+
+        for (unsigned y = begin; y < end; y++)
+        {
+            process_row(img, y, rx, stack);
+        }
+    }
 };
 
-void process_row_chunck(agg::pixfmt_rgba32_pre & img,
-                 chunk ch,
-                 unsigned rx)
+struct process_column_chunck
 {
-    using color_type = typename agg::pixfmt_rgba32_pre::color_type;
-    agg::pod_vector<color_type> stack;
+    agg::pixfmt_rgba32_pre & img;
+    unsigned ry;
 
-    for (unsigned y = ch.begin; y < ch.end; y++)
+    void operator()(unsigned begin, unsigned end)
     {
-        process_row(img, y, rx, stack);
-    }
-}
+        using color_type = typename agg::pixfmt_rgba32_pre::color_type;
+        agg::pod_vector<color_type> stack;
 
-void process_column_chunck(agg::pixfmt_rgba32_pre & img,
-                 chunk ch,
-                 unsigned ry)
-{
-    using color_type = typename agg::pixfmt_rgba32_pre::color_type;
-    agg::pod_vector<color_type> stack;
-
-    for (unsigned x = ch.begin; x < ch.end; x++)
-    {
-        process_column(img, x, ry, stack);
-    }
-}
-
-using process_chunk_func = void (*) (agg::pixfmt_rgba32_pre &, chunk, unsigned);
-
-void paralelize(agg::pixfmt_rgba32_pre & pixf,
-                unsigned blur_radius,
-                unsigned size,
-                unsigned jobs,
-                process_chunk_func process_chunk)
-{
-    unsigned chunk_size = size / jobs;
-
-    if (chunk_size == 0)
-    {
-        chunk_size = size;
-        jobs = 1;
-    }
-
-    std::vector<std::future<void>> futures(jobs);
-
-    for (std::size_t i = 0; i < jobs; i++)
-    {
-        chunk ch { i * chunk_size, (i + 1) * chunk_size };
-
-        // Handle remainder of size / jobs
-        if (i == jobs - 1)
+        for (unsigned x = begin; x < end; x++)
         {
-            ch.end = size;
+            process_column(img, x, ry, stack);
         }
-
-        futures[i] = std::async(std::launch::async,
-                                process_chunk,
-                                std::ref(pixf),
-                                ch,
-                                blur_radius);
     }
-
-    for (auto & f : futures)
-    {
-        f.get();
-    }
-}
+};
 
 MAPNIK_DECL void stack_blur_rgba32_parallel(image_rgba8 & img,
                                             unsigned rx,
@@ -424,12 +386,14 @@ MAPNIK_DECL void stack_blur_rgba32_parallel(image_rgba8 & img,
 
     if (rx > 0)
     {
-        paralelize(pixf, rx, img.height(), jobs, process_row_chunck);
+        process_row_chunck func{ pixf, rx };
+        util::parallelize(func, jobs, img.height());
     }
 
     if (ry > 0)
     {
-        paralelize(pixf, ry, img.width(), jobs, process_column_chunck);
+        process_column_chunck func{ pixf, ry };
+        util::parallelize(func, jobs, img.width());
     }
 }
 
