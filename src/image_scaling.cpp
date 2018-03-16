@@ -25,8 +25,6 @@
 #include <mapnik/image_scaling.hpp>
 #include <mapnik/image_scaling_traits.hpp>
 #include <mapnik/util/parallelize.hpp>
-#include <mapnik/timer.hpp>
-#include <iostream>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -196,98 +194,12 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
                      double image_ratio_x, double image_ratio_y, double x_off_f, double y_off_f,
                      double filter_factor, boost::optional<double> const & nodata_value)
 {
-    mapnik::progress_timer __stats__(std::clog, "SCALE");
-    unsigned jobs = (target.width() * target.height() < 1024 * 1024) ?
-        1 : std::thread::hardware_concurrency();
+    unsigned jobs = (target.width() * target.height() < 1024 * 1024) ? 1
+        : std::thread::hardware_concurrency();
     scale_functor<T> scale_func{ source, target, scaling_method,
         image_ratio_x, image_ratio_y, x_off_f, y_off_f,
         filter_factor, nodata_value };
     util::parallelize(scale_func, jobs, target.height());
-
-    //scale_parallel(source, target, 16, scaling_method, image_ratio_x, image_ratio_y, x_off_f, y_off_f, filter_factor, nodata_value);
-
-/*
-    // "the image filters should work namely in the premultiplied color space"
-    // http://old.nabble.com/Re:--AGG--Basic-image-transformations-p1110665.html
-    // "Yes, you need to use premultiplied images only. Only in this case the simple weighted averaging works correctly in the image fitering."
-    // http://permalink.gmane.org/gmane.comp.graphics.agg/3443
-    using image_type = T;
-    using pixel_type = typename image_type::pixel_type;
-    using pixfmt_pre = typename detail::agg_scaling_traits<image_type>::pixfmt_pre;
-    using color_type = typename detail::agg_scaling_traits<image_type>::color_type;
-    using img_src_type = typename detail::agg_scaling_traits<image_type>::img_src_type;
-    using interpolator_type = typename detail::agg_scaling_traits<image_type>::interpolator_type;
-    using renderer_base_pre = agg::renderer_base<pixfmt_pre>;
-    constexpr std::size_t pixel_size = sizeof(pixel_type);
-
-    // define some stuff we'll use soon
-    agg::rasterizer_scanline_aa<> ras;
-    agg::scanline_u8 sl;
-    agg::span_allocator<color_type> sa;
-
-    // initialize source AGG buffer
-    agg::rendering_buffer rbuf_src(const_cast<unsigned char*>(source.bytes()),
-                                   source.width(), source.height(), source.width() * pixel_size);
-    pixfmt_pre pixf_src(rbuf_src);
-
-    img_src_type img_src(pixf_src);
-
-    // initialize destination AGG buffer (with transparency)
-    agg::rendering_buffer rbuf_dst(target.bytes(), target.width(), target.height(), target.width() * pixel_size);
-    pixfmt_pre pixf_dst(rbuf_dst);
-    renderer_base_pre rb_dst_pre(pixf_dst);
-
-    // create a scaling matrix
-    agg::trans_affine img_mtx;
-    img_mtx *= agg::trans_affine_translation(x_off_f, y_off_f);
-    img_mtx /= agg::trans_affine_scaling(image_ratio_x, image_ratio_y);
-
-    // create a linear interpolator for our scaling matrix
-    interpolator_type interpolator(img_mtx);
-    // draw an anticlockwise polygon to render our image into
-    double scaled_width = target.width();
-    double scaled_height = target.height();
-    ras.reset();
-    ras.move_to_d(0.0, 0.0);
-    ras.line_to_d(scaled_width, 0.0);
-    ras.line_to_d(scaled_width, scaled_height);
-    ras.line_to_d(0.0, scaled_height);
-
-    switch (scaling_method)
-    {
-        case SCALING_NEAR:
-        {
-            using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_filter;
-            span_gen_type sg(img_src, interpolator);
-            agg::render_scanlines_aa(ras, sl, rb_dst_pre, sa, sg);
-        }
-        break;
-        case SCALING_BILINEAR_FAST:
-        {
-            mapnik::progress_timer __stats__(std::clog, "FAST");
-            scale_parallel(source, target, 4, image_ratio_x, image_ratio_y);
-        *
-            using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_filter_bilinear;
-            span_gen_type sg(img_src, interpolator);
-            agg::render_scanlines_aa(ras, sl, rb_dst_pre, sa, sg);
-            *
-        }
-        break;
-        default:
-        {
-            using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_resample_affine;
-            agg::image_filter_lut filter;
-            detail::set_scaling_method(filter, scaling_method, filter_factor);
-            boost::optional<typename span_gen_type::value_type> nodata;
-            if (nodata_value)
-            {
-                nodata = nodata_value;
-            }
-            span_gen_type sg(img_src, interpolator, filter, nodata);
-            agg::render_scanlines_aa(ras, sl, rb_dst_pre, sa, sg);
-        }
-    }
-    */
 }
 
 template MAPNIK_DECL void scale_image_agg(image_rgba8 &, image_rgba8 const&, scaling_method_e,
