@@ -59,7 +59,7 @@ struct chunk
 };
 
 template <typename Img>
-void scale(Img const& source,
+void scale_chunk(Img const& source,
            Img & dest,
            chunk ch,
            scaling_method_e scaling_method,
@@ -185,7 +185,7 @@ MAPNIK_DECL void scale_parallel(Img const& source,
         }
 
         futures[i] = std::async(launch,
-                                detail::scale<Img>,
+                                detail::scale_chunk<Img>,
                                 std::cref(source),
                                 std::ref(dest),
                                 ch,
