@@ -30,6 +30,9 @@
 #include <mapnik/util/hsl.hpp>
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/parallel_blur.hpp>
+#ifdef MAPNIK_STATS_RENDER
+#include <mapnik/log_render.hpp>
+#endif
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -936,6 +939,14 @@ struct filter_visitor
     template <typename T>
     void operator () (T const& filter) const
     {
+#ifdef MAPNIK_STATS_RENDER
+    std::stringstream ss;
+    ss << T::name << ' '
+        << std::to_string(src_.width()) << "x"
+        << std::to_string(src_.height());
+    log_render lr(ss.str());
+    timer_with_action<log_render> __stats__(lr);
+#endif
         apply_filter(src_, filter, scale_factor_);
     }
 

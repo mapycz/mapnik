@@ -45,19 +45,76 @@ struct image_filter_base
     }
 };
 
-struct blur : image_filter_base {};
-struct emboss : image_filter_base {};
-struct sharpen : image_filter_base {};
-struct edge_detect : image_filter_base {};
-struct sobel : image_filter_base {};
-struct gray : image_filter_base {};
-struct x_gradient : image_filter_base {};
-struct y_gradient : image_filter_base {};
-struct invert : image_filter_base {};
+struct blur : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "blur";
+#endif
+};
+
+struct emboss : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "emboss";
+#endif
+};
+
+struct sharpen : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "sharpen";
+#endif
+};
+
+struct edge_detect : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "edge_detect";
+#endif
+};
+
+struct sobel : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "sobel";
+#endif
+};
+
+struct gray : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "gray";
+#endif
+};
+
+struct x_gradient : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "x_gradient";
+#endif
+};
+
+struct y_gradient : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "y_gradient";
+#endif
+};
+
+struct invert : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "invert";
+#endif
+};
+
 
 // http://vision.psychol.cam.ac.uk/jdmollon/papers/colourmaps.pdf
 struct color_blind_protanope : image_filter_base 
 {
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "color_blind_protanope";
+#endif
     const double x = 0.7465;
     const double y = 0.2535;
     const double m = 1.273463;
@@ -66,6 +123,9 @@ struct color_blind_protanope : image_filter_base
 
 struct color_blind_deuteranope : image_filter_base
 {
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "color_blind_deuteranope";
+#endif
     const double x = 1.4;
     const double y = -0.4;
     const double m = 0.968437;
@@ -74,6 +134,9 @@ struct color_blind_deuteranope : image_filter_base
 
 struct color_blind_tritanope : image_filter_base
 {
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "color_blind_tritanope";
+#endif
     const double x = 0.1748;
     const double y = 0.0;
     const double m = 0.062921;
@@ -82,6 +145,9 @@ struct color_blind_tritanope : image_filter_base
 
 struct agg_stack_blur : image_filter_base
 {
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "agg_stack_blur";
+#endif
     agg_stack_blur(unsigned rx_, unsigned ry_)
         : rx(rx_),ry(ry_) {}
     inline bool operator==(agg_stack_blur const& rhs) const
@@ -94,6 +160,9 @@ struct agg_stack_blur : image_filter_base
 
 struct color_to_alpha : image_filter_base
 {
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "color_to_alpha";
+#endif
     color_to_alpha(mapnik::color const& c)
         : color(c) {}
     inline bool operator==(color_to_alpha const& rhs) const
@@ -105,6 +174,9 @@ struct color_to_alpha : image_filter_base
 
 struct scale_hsla : image_filter_base
 {
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "scale_hsla";
+#endif
     scale_hsla(double _h0, double _h1,
          double _s0, double _s1,
          double _l0, double _l1,
@@ -168,6 +240,9 @@ struct color_stop
 
 struct colorize_alpha : std::vector<color_stop>
 {
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "colorize-alpha";
+#endif
     colorize_alpha() {}
 };
 

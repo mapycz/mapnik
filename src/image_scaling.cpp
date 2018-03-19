@@ -25,6 +25,9 @@
 #include <mapnik/image_scaling.hpp>
 #include <mapnik/image_scaling_traits.hpp>
 #include <mapnik/util/parallelize.hpp>
+#ifdef MAPNIK_STATS_RENDER
+#include <mapnik/log_render.hpp>
+#endif
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -194,6 +197,16 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
                      double image_ratio_x, double image_ratio_y, double x_off_f, double y_off_f,
                      double filter_factor, boost::optional<double> const & nodata_value)
 {
+#ifdef MAPNIK_STATS_RENDER
+    std::stringstream ss;
+    ss << "scaling "
+        << std::to_string(source.width()) << "x"
+        << std::to_string(source.height()) << " -> "
+        << std::to_string(target.width()) << "x"
+        << std::to_string(target.height());
+    log_render lr(ss.str());
+    timer_with_action<log_render> __stats__(lr);
+#endif
     unsigned jobs = (target.width() * target.height() < 1024 * 1024) ? 1
         : std::thread::hardware_concurrency();
     scale_functor<T> scale_func{ source, target, scaling_method,
