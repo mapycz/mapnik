@@ -26,6 +26,7 @@
 #include <mapnik/image_any.hpp>
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/util/const_rendering_buffer.hpp>
+#include <mapnik/util/parallelize.hpp>
 #ifdef MAPNIK_STATS_RENDER
 #include <mapnik/log_render.hpp>
 #endif
@@ -127,6 +128,41 @@ For example, if you generate some pattern with AGG (premultiplied) and would lik
 
 */
 
+struct composite_functor
+{
+    image_rgba8 & dst;
+    image_rgba8 const& src;
+    composite_mode_e mode;
+    float opacity;
+    int dx;
+    int dy;
+
+    void operator()(unsigned begin, unsigned end)
+    {
+        using color = agg::rgba8;
+        using order = agg::order_rgba;
+        using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
+        using blender_type = agg::comp_op_adaptor_rgba_pre<color, order>;
+        using pixfmt_type = agg::pixfmt_custom_blend_rgba<blender_type, agg::rendering_buffer>;
+        using renderer_type = agg::renderer_base<pixfmt_type>;
+
+        agg::rendering_buffer dst_buffer(
+            dst.bytes(),
+            safe_cast<unsigned>(dst.width()),
+            safe_cast<unsigned>(dst.height()),
+            safe_cast<int>(dst.row_size()));
+        const_rendering_buffer src_buffer(src);
+        pixfmt_type pixf(dst_buffer);
+        pixf.comp_op(static_cast<agg::comp_op_e>(mode));
+        agg::pixfmt_alpha_blend_rgba<agg::blender_rgba32_pre,
+                                     const_rendering_buffer,
+                                     agg::pixel32_type> pixf_mask(src_buffer);
+        renderer_type ren(pixf);
+        agg::rect_i src_area(0, begin, src.width() - 1, end - 1);
+        ren.blend_from(pixf_mask, &src_area, dx, dy, safe_cast<agg::cover_type>(255 * opacity));
+    }
+};
+
 template <>
 MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_mode_e mode,
                float opacity,
@@ -145,19 +181,6 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
     log_render lr(ss.str());
     timer_with_action<log_render> __stats__(lr);
 #endif
-
-    using color = agg::rgba8;
-    using order = agg::order_rgba;
-    using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
-    using blender_type = agg::comp_op_adaptor_rgba_pre<color, order>;
-    using pixfmt_type = agg::pixfmt_custom_blend_rgba<blender_type, agg::rendering_buffer>;
-    using renderer_type = agg::renderer_base<pixfmt_type>;
-
-    agg::rendering_buffer dst_buffer(dst.bytes(),safe_cast<unsigned>(dst.width()),safe_cast<unsigned>(dst.height()),safe_cast<int>(dst.row_size()));
-    const_rendering_buffer src_buffer(src);
-    pixfmt_type pixf(dst_buffer);
-    pixf.comp_op(static_cast<agg::comp_op_e>(mode));
-    agg::pixfmt_alpha_blend_rgba<agg::blender_rgba32_pre, const_rendering_buffer, agg::pixel32_type> pixf_mask(src_buffer);
 #ifdef MAPNIK_DEBUG
     if (!src.get_premultiplied())
     {
@@ -168,8 +191,10 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
         throw std::runtime_error("DESTINATION MUST BE PREMULTIPLIED FOR COMPOSITING!");
     }
 #endif
-    renderer_type ren(pixf);
-    ren.blend_from(pixf_mask,0,dx,dy,safe_cast<agg::cover_type>(255*opacity));
+    unsigned jobs = (src.width() * src.height() < 1024 * 1024) ? 1
+        : std::thread::hardware_concurrency();
+    composite_functor comp_func{ dst, src, mode, opacity, dx, dy };
+    util::parallelize(comp_func, jobs, src.height());
 }
 
 template <>
