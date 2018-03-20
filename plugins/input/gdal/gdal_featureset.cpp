@@ -29,6 +29,9 @@
 #include <mapnik/view_transform.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/feature_factory.hpp>
+#ifdef MAPNIK_STATS_RENDER
+#include <mapnik/log_render.hpp>
+#endif
 
 // stl
 #include <cmath>
@@ -193,6 +196,15 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
     //calculate actual box2d of returned raster
     box2d<double> feature_raster_extent(x_off, y_off, x_off + width, y_off + height);
     feature_raster_extent = t.backward(feature_raster_extent);
+
+#ifdef MAPNIK_STATS_RENDER
+    std::stringstream ss;
+    ss << "gdal_featureset::get_feature" << ' '
+        << std::to_string(width) << "x"
+        << std::to_string(height);
+    mapnik::log_render lr(ss.str());
+    mapnik::timer_with_action<mapnik::log_render> __stats__(lr);
+#endif
 
     MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: Raster extent=" << raster_extent_;
     MAPNIK_LOG_DEBUG(gdal) << "gdal_featureset: View extent=" << intersect;

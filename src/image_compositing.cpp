@@ -26,6 +26,9 @@
 #include <mapnik/image_any.hpp>
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/util/const_rendering_buffer.hpp>
+#ifdef MAPNIK_STATS_RENDER
+#include <mapnik/log_render.hpp>
+#endif
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -130,6 +133,19 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
                int dx,
                int dy)
 {
+#ifdef MAPNIK_STATS_RENDER
+    boost::optional<std::string> mode_name = comp_op_to_string(mode);
+    std::stringstream ss;
+    ss << "comp-op" << ' '
+        << (mode_name ? *mode_name : "unknown") << ' '
+        << std::to_string(src.width()) << "x"
+        << std::to_string(src.height()) << " -> "
+        << std::to_string(dst.width()) << "x"
+        << std::to_string(dst.height());
+    log_render lr(ss.str());
+    timer_with_action<log_render> __stats__(lr);
+#endif
+
     using color = agg::rgba8;
     using order = agg::order_rgba;
     using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
