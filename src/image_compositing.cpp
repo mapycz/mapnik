@@ -29,6 +29,7 @@
 #ifdef MAPNIK_STATS_RENDER
 #include <mapnik/log_render.hpp>
 #endif
+#include <mapnik/fast-comp-op.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -145,6 +146,11 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
     log_render lr(ss.str());
     timer_with_action<log_render> __stats__(lr);
 #endif
+    if (mode == src_over)
+    {
+        composite_src_over(src, dst, dx, dy, opacity);
+        return;
+    }
 
     using color = agg::rgba8;
     using order = agg::order_rgba;
