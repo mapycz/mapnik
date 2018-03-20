@@ -27,6 +27,8 @@
 #include <mapnik/image.hpp>
 #include <mapnik/box2d.hpp>
 
+#include <emmintrin.h>
+
 namespace mapnik {
 
 void composite_src_over(image_rgba8 const& src,
@@ -43,12 +45,15 @@ void composite_src_over(image_rgba8 const& src,
         mapnik::box2d<int> box = ext0.intersect(ext1);
         for (std::size_t pix_y = box.miny(); pix_y < static_cast<std::size_t>(box.maxy()); ++pix_y)
         {
-            typename image_rgba8::pixel_type * row_to =  dst.get_row(pix_y);
+            typename image_rgba8::pixel_type * row_to = dst.get_row(pix_y);
             typename image_rgba8::pixel_type const * row_from = src.get_row(pix_y - y);
 
-            for (std::size_t pix_x = box.minx(); pix_x < static_cast<std::size_t>(box.maxx()); pix_x+=4)
+            for (std::size_t pix_x = box.minx(); pix_x < static_cast<std::size_t>(box.maxx()); pix_x += 4)
             {
                 row_to[pix_x] = row_from[pix_x - x];
+                row_to[pix_x + 1] = row_from[pix_x - x + 1];
+                row_to[pix_x + 2] = row_from[pix_x - x + 2];
+                row_to[pix_x + 3] = row_from[pix_x - x + 3];
             }
         }
     }
