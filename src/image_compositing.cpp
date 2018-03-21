@@ -191,8 +191,7 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
         throw std::runtime_error("DESTINATION MUST BE PREMULTIPLIED FOR COMPOSITING!");
     }
 #endif
-    unsigned jobs = (src.width() * src.height() < 1024 * 1024) ? 1
-        : std::thread::hardware_concurrency();
+    unsigned jobs = util::jobs_by_image_size(src.width(), src.height());
     composite_functor comp_func{ dst, src, mode, opacity, dx, dy };
     util::parallelize(comp_func, jobs, src.height());
 }

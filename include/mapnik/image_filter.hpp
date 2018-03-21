@@ -29,6 +29,7 @@
 #include <mapnik/image_util.hpp>
 #include <mapnik/util/hsl.hpp>
 #include <mapnik/safe_cast.hpp>
+#include <mapnik/util/parallelize.hpp>
 #include <mapnik/parallel_blur.hpp>
 #ifdef MAPNIK_STATS_RENDER
 #include <mapnik/log_render.hpp>
@@ -410,16 +411,8 @@ void apply_filter(Src & src, agg_stack_blur const& op, double scale_factor)
     const std::size_t parallel_threshold = 1024 * 1024;
     unsigned rx = safe_cast<unsigned>(op.rx * scale_factor);
     unsigned ry = safe_cast<unsigned>(op.ry * scale_factor);
-    if (src.width() * src.height() >= parallel_threshold)
-    {
-        stack_blur_rgba32_parallel(src, rx, ry, std::thread::hardware_concurrency());
-    }
-    else
-    {
-        agg::rendering_buffer buf(src.bytes(), src.width(), src.height(), src.row_size());
-        agg::pixfmt_rgba32_pre pixf(buf);
-        agg::stack_blur_rgba32(pixf, rx, ry);
-    }
+    unsigned jobs = util::jobs_by_image_size(src.width(), src.height());
+    stack_blur_rgba32_parallel(src, rx, ry, jobs);
 }
 
 inline double channel_delta(double source, double match)

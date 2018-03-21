@@ -207,8 +207,7 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
     log_render lr(ss.str());
     timer_with_action<log_render> __stats__(lr);
 #endif
-    unsigned jobs = (target.width() * target.height() < 1024 * 1024) ? 1
-        : std::thread::hardware_concurrency();
+    unsigned jobs = util::jobs_by_image_size(target.width(), target.height());
     scale_functor<T> scale_func{ source, target, scaling_method,
         image_ratio_x, image_ratio_y, x_off_f, y_off_f,
         filter_factor, nodata_value };
