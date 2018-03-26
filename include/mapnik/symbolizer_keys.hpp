@@ -104,6 +104,7 @@ enum class keys : std::uint8_t
     lacing,
     spacing_x,
     spacing_y,
+    contour,
     MAX_SYMBOLIZER_KEY
 };
 

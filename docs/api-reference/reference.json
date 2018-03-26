@@ -381,6 +381,12 @@
                 "range": "0-1",
                 "doc": "Smooths out geometry angles. 0 is no smoothing, 1 is fully smoothed. Values greater than 1 will produce wild, looping geometries."
             },
+            "contour": {
+                "type": "float",
+                "default-value": 0.0,
+                "default-meaning": "No contour.",
+                "doc": "Allows to extend or shrink polygons. The unit is pixel."
+            },
             "geometry-transform": {
                 "type": "functions",
                 "default-value": "none",

@@ -165,6 +165,7 @@ static const property_meta_type key_meta[const_max_key] =
                         property_types::target_lacing},
     property_meta_type{ "spacing-x", nullptr, property_types::target_double},
     property_meta_type{ "spacing-y", nullptr, property_types::target_double},
+    property_meta_type{ "contour", nullptr, property_types::target_double},
 
 };
 

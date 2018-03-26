@@ -50,6 +50,7 @@ void render_polygon_symbolizer(polygon_symbolizer const &sym,
     value_double simplify_tolerance = get<value_double,keys::simplify_tolerance>(sym, feature, common.vars_);
     value_double smooth = get<value_double,keys::smooth>(sym, feature, common.vars_);
     value_double opacity = get<value_double,keys::fill_opacity>(sym, feature, common.vars_);
+    value_double contour = get<value_double,keys::contour>(sym, feature, common.vars_);
 
     vertex_converter_type converter(clip_box, sym, common.t_, prj_trans, tr,
                                     feature,common.vars_,common.scale_factor_);
@@ -59,6 +60,7 @@ void render_polygon_symbolizer(polygon_symbolizer const &sym,
     converter.template set<affine_transform_tag>();
     if (simplify_tolerance > 0.0) converter.template set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter.template set<smooth_tag>(); // optional smooth converter
+    if (std::abs(contour) > 0.0) converter.template set<contour_tag>();
 
     using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type, rasterizer_type>;
     using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;

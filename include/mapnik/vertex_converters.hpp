@@ -48,6 +48,7 @@
 #include "agg_conv_stroke.h"
 #include "agg_conv_dash.h"
 #include "agg_conv_transform.h"
+#include "agg_conv_contour.h"
 #pragma GCC diagnostic pop
 
 // stl
@@ -67,6 +68,7 @@ struct dash_tag {};
 struct affine_transform_tag {};
 struct offset_transform_tag {};
 struct extend_tag {};
+struct contour_tag {};
 
 namespace  detail {
 
@@ -270,6 +272,24 @@ struct converter_traits<T, mapnik::extend_tag>
         auto const& vars = args.vars;
         double extend = get<value_double, keys::extend>(sym, feat, vars);
         geom.set_extend(extend * args.scale_factor);
+    }
+};
+
+template <typename T>
+struct converter_traits<T, mapnik::contour_tag>
+{
+    using geometry_type = T;
+    using conv_type = agg::conv_contour<geometry_type>;
+
+    template <typename Args>
+    static void setup(geometry_type & geom, Args const& args)
+    {
+        auto const& sym = args.sym;
+        auto const& feat = args.feature;
+        auto const& vars = args.vars;
+        double width = get<value_double, keys::contour>(sym, feat, vars);
+        // Polygon exterior is expected to be CCW.
+        geom.width(-width);
     }
 };
 

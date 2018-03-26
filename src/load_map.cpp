@@ -1413,6 +1413,7 @@ void map_parser::parse_polygon_symbolizer(rule & rule, xml_node const & node)
         set_symbolizer_property<symbolizer_base,double>(sym, keys::fill_opacity, node);
         set_symbolizer_property<symbolizer_base,double>(sym, keys::gamma, node);
         set_symbolizer_property<symbolizer_base,gamma_method_enum>(sym, keys::gamma_method, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::contour, node);
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
