@@ -108,6 +108,23 @@ struct invert : image_filter_base
 #endif
 };
 
+struct fill : image_filter_base
+{
+#ifdef MAPNIK_STATS_RENDER
+    static constexpr const char * name = "fill";
+#endif
+    fill(mapnik::color const& c)
+        : color(c)
+    {
+    }
+
+    inline bool operator==(fill const& rhs) const
+    {
+        return color == rhs.color;
+    }
+
+    mapnik::color color;
+};
 
 // http://vision.psychol.cam.ac.uk/jdmollon/papers/colourmaps.pdf
 struct color_blind_protanope : image_filter_base 
@@ -261,7 +278,8 @@ using filter_type =  util::variant<filter::blur,
                                    filter::color_to_alpha,
                                    filter::color_blind_protanope,
                                    filter::color_blind_deuteranope,
-                                   filter::color_blind_tritanope>;
+                                   filter::color_blind_tritanope,
+                                   filter::fill>;
 
 inline std::ostream& operator<< (std::ostream& os, blur)
 {
@@ -336,6 +354,12 @@ inline std::ostream& operator<< (std::ostream& os, y_gradient)
 inline std::ostream& operator<< (std::ostream& os, invert)
 {
     os << "invert";
+    return os;
+}
+
+inline std::ostream& operator<< (std::ostream& os, fill const& filter)
+{
+    os << "fill(" << filter.color << ')';
     return os;
 }
 

@@ -923,6 +923,12 @@ void apply_filter(Src & src, invert const& /*op*/, double /*scale_factor*/)
 }
 
 template <typename Src>
+void apply_filter(Src & src, fill const& op, double /*scale_factor*/)
+{
+    mapnik::fill(src, op.color.rgba());
+}
+
+template <typename Src>
 struct filter_visitor
 {
     filter_visitor(Src & src, double scale_factor=1.0)

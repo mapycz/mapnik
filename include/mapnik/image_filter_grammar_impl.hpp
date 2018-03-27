@@ -121,6 +121,11 @@ image_filter_grammar<Iterator,ContType>::image_filter_grammar()
         [push_back(_val, construct<filter::color_to_alpha>(_1))]
         ;
 
+    add("fill") =
+        hold[lit('(') >> css_color_ >> lit(')')]
+        [push_back(_val, construct<filter::fill>(_1))]
+        ;
+
     no_args = -(lit('(') >> lit(')'));
 }
 

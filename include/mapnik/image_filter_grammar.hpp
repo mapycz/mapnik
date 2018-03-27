@@ -77,7 +77,7 @@ struct image_filter_grammar :
 
 private:
     alternative_type & add(std::string const& symbol);
-    static constexpr unsigned max_alternatives = 16;
+    static constexpr unsigned max_alternatives = 17;
     unsigned num_alternatives = 0;
     alternative_type alternative_storage[max_alternatives];
 };
