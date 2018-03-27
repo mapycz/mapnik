@@ -775,6 +775,14 @@ void map_parser::parse_layer(Parent & parent,
         optional<double> opacity = node.get_opt_attr<double>("opacity");
         if (opacity) lyr.set_opacity(*opacity);
 
+        optional<std::string> direct_filters = node.get_opt_attr<std::string>("direct-image-filters");
+        if (direct_filters)
+        {
+            if (!parse_image_filters(*direct_filters, lyr.direct_image_filters())) {
+                throw config_error("failed to parse direct-image-filters: '" + *direct_filters + "'");
+            }
+        }
+
         for (auto const& child: node)
         {
 

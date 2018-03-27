@@ -47,7 +47,8 @@ layer::layer(std::string const& name, std::string const& srs)
       buffer_size_(),
       maximum_extent_(),
       comp_op_(),
-      opacity_(1.0f)
+      opacity_(1.0f),
+      direct_filters_()
 {}
 
 layer::layer(layer const& rhs)
@@ -66,7 +67,8 @@ layer::layer(layer const& rhs)
       buffer_size_(rhs.buffer_size_),
       maximum_extent_(rhs.maximum_extent_),
       comp_op_(rhs.comp_op_),
-      opacity_(rhs.opacity_)
+      opacity_(rhs.opacity_),
+      direct_filters_(rhs.direct_filters_)
 {}
 
 layer::layer(layer && rhs)
@@ -85,7 +87,8 @@ layer::layer(layer && rhs)
       buffer_size_(std::move(rhs.buffer_size_)),
       maximum_extent_(std::move(rhs.maximum_extent_)),
       comp_op_(std::move(rhs.comp_op_)),
-      opacity_(std::move(rhs.opacity_))
+      opacity_(std::move(rhs.opacity_)),
+      direct_filters_(std::move(rhs.direct_filters_))
 {}
 
 layer& layer::operator=(layer rhs)
@@ -106,6 +109,7 @@ layer& layer::operator=(layer rhs)
     std::swap(this->maximum_extent_, rhs.maximum_extent_);
     std::swap(this->comp_op_, rhs.comp_op_);
     std::swap(this->opacity_, rhs.opacity_);
+    std::swap(this->direct_filters_, rhs.direct_filters_);
     return *this;
 }
 
@@ -125,7 +129,8 @@ bool layer::operator==(layer const& rhs) const
         (buffer_size_ == rhs.buffer_size_) &&
         (maximum_extent_ == rhs.maximum_extent_) &&
         (comp_op_ == rhs.comp_op_) &&
-        (opacity_ == rhs.opacity_);
+        (opacity_ == rhs.opacity_) &&
+        (direct_filters_ == rhs.direct_filters_);
 }
 
 layer::~layer() {}
@@ -324,6 +329,16 @@ void layer::set_opacity(double opacity)
 double layer::get_opacity() const
 {
     return opacity_;
+}
+
+std::vector<filter::filter_type>& layer::direct_image_filters()
+{
+    return direct_filters_;
+}
+
+std::vector<filter::filter_type> const& layer::direct_image_filters() const
+{
+    return direct_filters_;
 }
 
 }

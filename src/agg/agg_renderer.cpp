@@ -253,6 +253,17 @@ void agg_renderer<T0,T1>::end_layer_processing(layer const& lyr)
                   comp_op, lyr.get_opacity(), 0, 0);
         internal_buffers_.pop();
     }
+
+    if (!lyr.direct_image_filters().empty())
+    {
+        // apply any 'direct' image filters
+        mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer, common_.scale_factor_);
+        for (mapnik::filter::filter_type const& filter_tag : lyr.direct_image_filters())
+        {
+            util::apply_visitor(visitor, filter_tag);
+        }
+        mapnik::premultiply_alpha(previous_buffer);
+    }
 }
 
 template <typename T0, typename T1>

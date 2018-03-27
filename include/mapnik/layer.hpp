@@ -27,6 +27,7 @@
 #include <mapnik/well_known_srs.hpp>
 #include <mapnik/box2d.hpp>
 #include <mapnik/image_compositing.hpp>
+#include <mapnik/image_filter_types.hpp>
 
 // stl
 #include <deque>
@@ -218,6 +219,9 @@ public:
     void set_opacity(double opacity);
     double get_opacity() const;
 
+    std::vector<filter::filter_type> const& direct_image_filters() const;
+    std::vector<filter::filter_type> & direct_image_filters();
+
     void set_maximum_extent(box2d<double> const& box);
     boost::optional<box2d<double> > const&  maximum_extent() const;
     void reset_maximum_extent();
@@ -242,6 +246,7 @@ private:
     boost::optional<box2d<double> > maximum_extent_;
     boost::optional<composite_mode_e> comp_op_;
     double opacity_;
+    std::vector<filter::filter_type> direct_filters_;
 };
 }
 
