@@ -691,8 +691,16 @@ void Map::pan_and_zoom(int x,int y,double factor)
 
 double Map::scale() const
 {
-    if (width_>0)
-        return current_extent_.width()/static_cast<double>(width_);
+    if (!current_extent_.valid())
+    {
+        return 1;
+    }
+
+    if (width_ > 0)
+    {
+        return current_extent_.width() / static_cast<double>(width_);
+    }
+
     return current_extent_.width();
 }
 
