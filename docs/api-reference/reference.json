@@ -323,6 +323,9 @@
         "opacity": {
             "see-also": "opacity"
         },
+        "direct-image-filters": {
+            "see-also": "direct-image-filters"
+        },
         "cache-features": {
             "type":"boolean",
             "default-value": "off",
