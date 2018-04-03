@@ -79,7 +79,7 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, double scale_factor
       gamma_(1.0),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor)
 {
-    setup(m, pixmap);
+    buffers_.emplace(pixmap);
 }
 
 template <typename T0, typename T1>
@@ -93,7 +93,7 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, request const& req, attributes c
       gamma_(1.0),
       common_(m, req, vars, offset_x, offset_y, req.width(), req.height(), scale_factor)
 {
-    setup(m, pixmap);
+    buffers_.emplace(pixmap);
 }
 
 template <typename T0, typename T1>
@@ -108,7 +108,7 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, std::shared_ptr<T1>
       gamma_(1.0),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor, detector)
 {
-    setup(m, pixmap);
+    buffers_.emplace(pixmap);
 }
 
 template <typename buffer_type>
@@ -156,8 +156,6 @@ struct setup_agg_bg_visitor
 template <typename T0, typename T1>
 void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
 {
-    buffers_.emplace(pixmap);
-
     mapnik::set_premultiplied_alpha(pixmap, true);
     boost::optional<color> const& bg = m.background();
     if (bg)
@@ -197,6 +195,7 @@ template <typename T0, typename T1>
 void agg_renderer<T0,T1>::start_map_processing(Map const& map)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start map processing bbox=" << map.get_current_extent();
+    setup(map, buffers_.top().get());
     ras_ptr->clip_box(0,0,common_.width_,common_.height_);
 }
 
