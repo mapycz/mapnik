@@ -32,8 +32,9 @@ namespace mapnik { namespace parallelizer {
 
 MAPNIK_DECL bool is_parallelizable(Map const& map)
 {
-    auto const& layers = map.layers();
-    return !layers.empty() && layers.front().name().find("__parallel") == 0;
+    parameters const & params = map.get_extra_parameters();
+    boost::optional<value_bool> parallel = params.get<value_bool>("parallel");
+    return parallel && *parallel;
 }
 
 image_rgba8 render_layer(Map const& map,
