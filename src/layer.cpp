@@ -316,6 +316,11 @@ void layer::set_comp_op(composite_mode_e comp_op)
     comp_op_ = comp_op;
 }
 
+void layer::reset_comp_op()
+{
+    comp_op_ = boost::none;
+}
+
 boost::optional<composite_mode_e> layer::comp_op() const
 {
     return comp_op_;

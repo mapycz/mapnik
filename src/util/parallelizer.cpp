@@ -64,10 +64,14 @@ image_rgba8 render_layer(Map const& map,
     }
     scale_denom *= ren.scale_factor();
 
-    if (lay.visible(scale_denom))
+    layer lay_copy(lay);
+    lay_copy.reset_comp_op();
+    lay_copy.set_opacity(1.0);
+
+    if (lay_copy.visible(scale_denom))
     {
         std::set<std::string> names;
-        ren.apply_to_layer(lay,
+        ren.apply_to_layer(lay_copy,
                            ren,
                            proj,
                            map.scale(),

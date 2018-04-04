@@ -215,6 +215,7 @@ public:
 
     // compositing
     void set_comp_op(composite_mode_e comp_op);
+    void reset_comp_op();
     boost::optional<composite_mode_e> comp_op() const;
     void set_opacity(double opacity);
     double get_opacity() const;
