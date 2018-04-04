@@ -69,7 +69,7 @@ void parallelize(Func func, unsigned jobs, unsigned work_size)
 inline unsigned jobs_by_image_size(unsigned width, unsigned height)
 {
     return (width * height < 1024 * 1024) ?
-        1 : std::thread::hardware_concurrency();
+        1 : std::min(4u, std::thread::hardware_concurrency());
 }
 
 }
