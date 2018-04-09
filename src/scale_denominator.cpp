@@ -33,6 +33,17 @@ static const double meters_per_degree = 6378137 * 2 * M_PI / 360;
 
 double scale_denominator(double map_scale, bool geographic)
 {
+    // What determines the actual scale of the map when printed, is
+    // determined by an additional factor which is the number of pixels that
+    // make up an inch--Pixels per inch(PPI). Various digital screens have
+    // different pixel sizes and therefore PPI differs in ways that software
+    // often cannot be aware of. Mapnik calculates it's default at about 90.7
+    // PPI, which originates from an assumed standard pixel size of 0.28
+    // millimeters as defined by the OGC (Open Geospatial Consortium) SLD
+    // (Styled Layer Descriptor) Specification.
+    //
+    // The value scale_denominator yields the map scale as given by the
+    // scale() method, divided by 0.00028.
     double denom = map_scale / 0.00028;
     if (geographic) denom *= meters_per_degree;
     return denom;
