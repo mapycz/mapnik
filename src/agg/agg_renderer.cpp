@@ -585,7 +585,6 @@ template <typename T0, typename T1>
 void agg_renderer<T0,T1>::painted(bool painted)
 {
     buffers_.top().get().painted(painted);
-    buffer_type const& current_buffer = buffers_.top().get();
 }
 
 template <typename T0, typename T1>
