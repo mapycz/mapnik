@@ -250,6 +250,7 @@ void agg_renderer<T0,T1>::end_layer_processing(layer const& lyr)
         composite_mode_e comp_op = lyr.comp_op() ? *lyr.comp_op() : src_over;
         composite(previous_buffer, current_buffer,
                   comp_op, lyr.get_opacity(), 0, 0);
+        previous_buffer.painted(previous_buffer.painted() || current_buffer.painted());
         internal_buffers_.pop();
     }
 
@@ -350,6 +351,7 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
                       -common_.t_.offset(),
                       -common_.t_.offset());
         }
+        previous_buffer.painted(previous_buffer.painted() || current_buffer.painted());
         if (internal_buffers_.in_range()
             && &current_buffer == &internal_buffers_.top())
         {
@@ -583,6 +585,7 @@ template <typename T0, typename T1>
 void agg_renderer<T0,T1>::painted(bool painted)
 {
     buffers_.top().get().painted(painted);
+    buffer_type const& current_buffer = buffers_.top().get();
 }
 
 template <typename T0, typename T1>

@@ -277,8 +277,38 @@ void layer::reset_buffer_size()
 
 box2d<double> layer::envelope() const
 {
-    if (ds_) return ds_->envelope();
-    return box2d<double>();
+    box2d<double> env;
+    bool first = true;
+
+    if (ds_)
+    {
+        first = false;
+        env = ds_->envelope();
+    }
+
+    for (auto const& sublayer : layers())
+    {
+        if (sublayer.active())
+        {
+            box2d<double> sublayer_env = sublayer.envelope();
+            if (first)
+            {
+                env = sublayer_env;
+                first = false;
+            }
+            else
+            {
+                env.expand_to_include(sublayer_env);
+            }
+        }
+    }
+
+    if (maximum_extent_ && !first)
+    {
+        env.clip(*maximum_extent_);
+    }
+
+    return env;
 }
 
 void layer::set_clear_label_cache(bool clear)
