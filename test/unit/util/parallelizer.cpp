@@ -27,6 +27,7 @@ SECTION("two layers") {
     mapnik::agg_renderer<mapnik::image_rgba8> ren(map, img, scale_factor);
     ren.apply();
 
+    CHECK(parallel_img.painted() == img.painted());
     CHECK(mapnik::compare(parallel_img, img) == 0);
 
     //mapnik::save_to_file(parallel_img, "/tmp/_p1.png", "png32");
@@ -51,6 +52,7 @@ SECTION("layer comp-op") {
     mapnik::agg_renderer<mapnik::image_rgba8> ren(map, img, scale_factor);
     ren.apply();
 
+    CHECK(parallel_img.painted() == img.painted());
     CHECK(mapnik::compare(parallel_img, img) == 0);
 
     //mapnik::save_to_file(parallel_img, "/tmp/_p1.png", "png32");

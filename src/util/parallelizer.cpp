@@ -114,6 +114,7 @@ MAPNIK_DECL void render(Map const& map,
         layer const& lay = map.layers()[i];
         composite_mode_e comp_op = lay.comp_op() ? *lay.comp_op() : src_over;
         composite(img, layer_img, comp_op, lay.get_opacity(), 0, 0);
+        img.painted(img.painted() || layer_img.painted());
     }
 
     mapnik::demultiply_alpha(img);
