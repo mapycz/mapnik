@@ -180,6 +180,12 @@ public:
                        double opacity=1.0,
                        bool recenter=true);
     void render_box(box2d<double> const& b);
+
+    inline renderer_common::detector_type const& collision_detector() const
+    {
+        return *common_.detector_;
+    }
+
 protected:
     Map const& m_;
     cairo_context context_;

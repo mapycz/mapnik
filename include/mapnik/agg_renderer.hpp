@@ -211,6 +211,12 @@ public:
     {
         return common_.vars_;
     }
+
+    inline renderer_common::detector_type const& collision_detector() const
+    {
+        return *common_.detector_;
+    }
+
 protected:
     template <typename R>
     void debug_draw_box(R& buf, box2d<double> const& extent,

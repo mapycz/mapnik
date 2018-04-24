@@ -24,7 +24,7 @@
 #define MAPNIK_LOG_RENDER_HPP
 
 #include <mapnik/timer.hpp>
-#include <iostream>
+#include <mapnik/debug.hpp>
 
 namespace mapnik {
 
@@ -42,8 +42,8 @@ struct log_render
         s << std::setw(31) << std::right << "| ";
         s << t.to_string();
         s << std::setw(60 - (int)s.tellp()) << std::right << "| ";
-        s << message << std::endl;
-        std::clog << s.str();
+        s << message;
+        MAPNIK_LOG_PERF() << s.str();
     }
 
     std::string message;

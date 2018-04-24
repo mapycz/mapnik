@@ -71,9 +71,11 @@ struct painted_features
 struct log_layer_stats
 {
     log_layer_stats(std::string const& layer_name,
-                    std::map<std::string, timer> const& datasource_query_times)
+                    std::map<std::string, timer> const& datasource_query_times,
+                    std::stringstream & output)
         : painted_features_(layer_name),
-          datasource_query_times_(datasource_query_times)
+          datasource_query_times_(datasource_query_times),
+          output_(output)
     {
     }
 
@@ -97,11 +99,12 @@ struct log_layer_stats
             << ", painted features: "
             << painted_features_.painted_ids.size() << "/"
             << painted_features_.all_features_count << std::endl;
-        std::clog << s.str();
+        output_ << s.str();
     }
 
     painted_features painted_features_;
     std::map<std::string, timer> const& datasource_query_times_;
+    std::stringstream & output_;
 };
 
 struct log_datasource_query_time
@@ -114,6 +117,38 @@ struct log_datasource_query_time
 
     std::string layer_name;
     std::map<std::string, timer> & datasource_query_times;
+};
+
+template <typename Processor>
+struct log_perf
+{
+    log_perf(Processor const& proc, Map const& m, std::stringstream & sink)
+        : proc(proc),
+          sink(sink)
+    {
+        sink << "EXTENT: " << m.get_current_extent() << std::endl;
+        sink << "Datasource query time        | Render time                |" << std::endl;
+    }
+
+    ~log_perf()
+    {
+        auto const& detector_cache = proc.collision_detector();
+        auto detector_keys = detector_cache.keys();
+
+        for (auto const& key : detector_keys)
+        {
+            auto const& detector = detector_cache.detector(key);
+            sink << "collision detector: '" << key
+                << "', nodes count: " << detector.count_items()
+                << ", query count: " << detector.query_count_
+                << std::endl;
+        }
+
+        MAPNIK_LOG_PERF() << sink.str();
+    }
+
+    Processor const& proc;
+    std::stringstream & sink;
 };
 #endif
 
@@ -147,10 +182,6 @@ template <typename Processor>
 feature_style_processor<Processor>::feature_style_processor(Map const& m, double scale_factor)
     : m_(m)
 {
-#ifdef MAPNIK_STATS_RENDER
-    std::clog << "EXTENT: " << m.get_current_extent() << std::endl;
-    std::clog << "Datasource query time        | Render time                |" << std::endl;
-#endif
     // https://github.com/mapnik/mapnik/issues/1100
     if (scale_factor <= 0)
     {
@@ -210,11 +241,13 @@ void feature_style_processor<Processor>::prepare_layers(layer_rendering_material
 template <typename Processor>
 void feature_style_processor<Processor>::apply(double scale_denom)
 {
+    Processor & p = static_cast<Processor&>(*this);
+
 #ifdef MAPNIK_STATS_RENDER
-            mapnik::progress_timer __stats__(std::clog, "map");
+    log_perf<Processor> __log_perf__(p, m_, log_perf_sink_);
+    mapnik::progress_timer __overall_time__(log_perf_sink_, "map");
 #endif
 
-    Processor & p = static_cast<Processor&>(*this);
     p.start_map_processing(m_);
 
     projection proj(m_.srs(),true);
@@ -257,6 +290,11 @@ void feature_style_processor<Processor>::apply(mapnik::layer const& lyr,
                                                double scale_denom)
 {
     Processor & p = static_cast<Processor&>(*this);
+
+#ifdef MAPNIK_STATS_RENDER
+    log_perf<Processor> __log_perf__(p, m_, log_perf_sink_);
+#endif
+
     p.start_map_processing(m_);
     projection proj(m_.srs(),true);
     if (scale_denom <= 0.0)
@@ -294,6 +332,10 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
                                                         int buffer_size,
                                                         std::set<std::string>& names)
 {
+#ifdef MAPNIK_STATS_RENDER
+    log_perf<Processor> __log_perf__(p, m_, log_perf_sink_);
+#endif
+
     feature_style_context_map ctx_map;
     layer_rendering_material  mat(lay, proj0);
 
@@ -324,7 +366,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
         p.start_layer_processing(mat.lay_, mat.layer_ext2_);
 
 #ifdef MAPNIK_STATS_RENDER
-        log_layer_stats lpf(mat.lay_.name(), datasource_query_times_);
+        log_layer_stats lpf(mat.lay_.name(), datasource_query_times_, log_perf_sink_);
         timer_with_action<log_layer_stats> __stats__(lpf);
 #endif
 
@@ -615,7 +657,7 @@ void feature_style_processor<Processor>::render_submaterials(layer_rendering_mat
         if (!mat.empty())
         {
 #ifdef MAPNIK_STATS_RENDER
-            log_layer_stats lpf(mat.lay_.name(), datasource_query_times_);
+            log_layer_stats lpf(mat.lay_.name(), datasource_query_times_, log_perf_sink_);
             timer_with_action<log_layer_stats> __stats__(lpf);
 #endif
             p.start_layer_processing(mat.lay_, mat.layer_ext2_);

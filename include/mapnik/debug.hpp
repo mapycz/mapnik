@@ -295,6 +295,7 @@ private:
 using base_log_debug = base_log<clog_sink, logger::debug>;
 using base_log_warn = base_log<clog_sink, logger::warn>;
 using base_log_error = base_log_always<clog_sink, logger::error>;
+using base_log_perf = base_log_always<clog_sink, logger::none>;
 
 } // namespace detail
 
@@ -321,10 +322,19 @@ public:
     error(const char* object_name) : detail::base_log_error(object_name) {}
 };
 
+class MAPNIK_DECL perf : public detail::base_log_perf
+{
+public:
+    perf() : detail::base_log_perf() {}
+    perf(const char* object_name) : detail::base_log_perf(object_name) {}
+};
+
 // logging helpers
 #define MAPNIK_LOG_DEBUG(s) mapnik::debug(#s)
 #define MAPNIK_LOG_WARN(s) mapnik::warn(#s)
 #define MAPNIK_LOG_ERROR(s) mapnik::error(#s)
+#define MAPNIK_LOG_PERF(s) mapnik::perf(#s)
+
 }
 
 #endif // MAPNIK_DEBUG_HPP

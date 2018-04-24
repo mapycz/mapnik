@@ -147,7 +147,9 @@ private:
     void render_submaterials(layer_rendering_material const & mat, Processor & p);
 
     Map const& m_;
+
 #ifdef MAPNIK_STATS_RENDER
+    std::stringstream log_perf_sink_;
     std::map<std::string, timer> datasource_query_times_;
 #endif
 };

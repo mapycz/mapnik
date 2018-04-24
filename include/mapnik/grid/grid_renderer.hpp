@@ -153,6 +153,11 @@ public:
         return common_.vars_;
     }
 
+    inline renderer_common::detector_type const& collision_detector() const
+    {
+        return *common_.detector_;
+    }
+
 private:
     buffer_type & pixmap_;
     const std::unique_ptr<grid_rasterizer> ras_ptr;

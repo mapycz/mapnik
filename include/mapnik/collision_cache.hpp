@@ -39,10 +39,16 @@ namespace mapnik
 template <typename Detector>
 class keyed_collision_cache
 {
-    std::map<std::string, Detector> cache_;
-    Detector & default_;
+public:
+    using detector_type = Detector;
 
-    Detector & get(boost::optional<std::string> const & key)
+private:
+    using cache_type = std::map<std::string, detector_type>;
+
+    cache_type cache_;
+    detector_type & default_;
+
+    detector_type & get(boost::optional<std::string> const & key)
     {
         if (!key)
         {
@@ -71,7 +77,7 @@ class keyed_collision_cache
             auto it = cache_.find(key);
             if (it != cache_.end())
             {
-                Detector & detector = it->second;
+                detector_type & detector = it->second;
                 if (!detector.has_placement(args...))
                 {
                     return false;
@@ -99,12 +105,12 @@ class keyed_collision_cache
                     std::forward_as_tuple(default_.extent())).first;
             }
 
-            Detector & detector = it->second;
+            detector_type & detector = it->second;
             detector.insert(args...);
         }
     }
 
-    Detector & create_default(box2d<double> const & extent)
+    detector_type & create_default(box2d<double> const & extent)
     {
         auto it = cache_.emplace(
             std::piecewise_construct,
@@ -118,18 +124,6 @@ public:
         : cache_(), default_(create_default(extent))
     {
     }
-
-#ifdef MAPNIK_STATS_RENDER
-    ~keyed_collision_cache()
-    {
-        for (auto const & pair : cache_)
-        {
-            Detector const & detector = pair.second;
-            std::clog << "collision cache: nodes count: " << detector.count_items() << std::endl;
-            std::clog << "collision cache: query count: " << detector.query_count_ << std::endl;
-        }
-    }
-#endif
 
     template <typename Keys>
     bool has_placement(
@@ -186,10 +180,22 @@ public:
         return default_.extent();
     }
 
-    Detector & detector(std::string const & key)
+    detector_type & detector(std::string const & key)
     {
         auto it = cache_.find(key);
         if (it == cache_.end())
+        {
+            MAPNIK_LOG_ERROR(detector) << "Collision cache '" <<
+                key << "' does not exist. Default cache is used instead.";
+            return default_;
+        }
+        return it->second;
+    }
+
+    detector_type const& detector(std::string const & key) const
+    {
+        auto it = cache_.find(key);
+        if (it == cache_.cend())
         {
             MAPNIK_LOG_ERROR(detector) << "Collision cache '" <<
                 key << "' does not exist. Default cache is used instead.";
@@ -209,7 +215,7 @@ public:
         return ns;
     }
 
-    Detector & get_default()
+    detector_type & get_default()
     {
         return default_;
     }

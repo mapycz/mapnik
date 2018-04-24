@@ -25,6 +25,9 @@
 #include <mapnik/projection.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/layer.hpp>
+#ifdef MAPNIK_STATS_RENDER
+#include <mapnik/log_render.hpp>
+#endif
 
 #include <future>
 
@@ -91,6 +94,11 @@ MAPNIK_DECL void render(Map const& map,
             double scale_denom,
             double scale_factor)
 {
+#ifdef MAPNIK_STATS_RENDER
+    log_render lr("map");
+    timer_with_action<log_render> __stats__(lr);
+#endif
+
     mapnik::set_premultiplied_alpha(img, true);
 
     std::vector<std::future<image_rgba8>> layer_jobs(map.layers().size());

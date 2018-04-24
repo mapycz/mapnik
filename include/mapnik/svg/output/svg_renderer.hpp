@@ -161,6 +161,11 @@ public:
         return output_iterator_;
     }
 
+    inline renderer_common::detector_type const& collision_detector() const
+    {
+        return *common_.detector_;
+    }
+
 private:
     OutputIterator& output_iterator_;
     svg::path_output_attributes path_attributes_;
