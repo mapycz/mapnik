@@ -72,7 +72,11 @@ MAPNIK_DECL void scale_image_agg(T & target, T const& source,
                                  double x_off_f,
                                  double y_off_f,
                                  double filter_factor,
-                                 boost::optional<double> const & nodata_value);
+                                 boost::optional<double> const & nodata_value
+#ifdef MAPNIK_STATS_RENDER
+                                 , std::ostream & perf_log_sink
+#endif
+                                 );
 template <typename T>
 inline void scale_image_agg(T & target, T const& source,
                                  scaling_method_e scaling_method,
@@ -80,12 +84,20 @@ inline void scale_image_agg(T & target, T const& source,
                                  double image_ratio_y,
                                  double x_off_f,
                                  double y_off_f,
-                                 double filter_factor)
+                                 double filter_factor
+#ifdef MAPNIK_STATS_RENDER
+                                 , std::ostream & perf_log_sink
+#endif
+                                 )
 {
     scale_image_agg(target, source, scaling_method,
                     image_ratio_x,image_ratio_y,
                     x_off_f, y_off_f, filter_factor,
-                    boost::optional<double>());
+                    boost::optional<double>()
+#ifdef MAPNIK_STATS_RENDER
+                    , perf_log_sink
+#endif
+                    );
 }
 
 }

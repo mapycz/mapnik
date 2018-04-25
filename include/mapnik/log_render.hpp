@@ -30,8 +30,9 @@ namespace mapnik {
 
 struct log_render
 {
-    log_render(std::string const& message)
-        : message(message)
+    log_render(std::string const& message, std::ostream & sink)
+        : message(message),
+          sink(sink)
     {
     }
 
@@ -43,10 +44,11 @@ struct log_render
         s << t.to_string();
         s << std::setw(60 - (int)s.tellp()) << std::right << "| ";
         s << message;
-        MAPNIK_LOG_PERF() << s.str();
+        sink << s.str();
     }
 
     std::string message;
+    std::ostream & sink;
 };
 
 }

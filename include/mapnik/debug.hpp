@@ -157,10 +157,16 @@ namespace detail {
 // Default sink, it regulates access to clog
 
 template<class Ch, class Tr, class A>
-class clog_sink
+struct ostream_sink
 {
-public:
     using stream_buffer = std::basic_ostringstream<Ch, Tr, A>;
+
+    std::ostream & os_;
+
+    ostream_sink(std::ostream & os)
+        os_(os)
+    {
+    }
 
     void operator()(logger::severity_type const& /*severity*/, stream_buffer const& s)
     {
@@ -168,7 +174,7 @@ public:
         static std::mutex mutex;
         std::lock_guard<std::mutex> lock(mutex);
 #endif
-        std::clog << logger::str() << " " << s.str() << std::endl;
+        os_ << logger::str() << " " << s.str() << std::endl;
     }
 };
 
@@ -190,7 +196,8 @@ public:
     base_log() {}
 
 #ifdef MAPNIK_LOG
-    base_log(const char* object_name)
+    base_log(std::ostream & os, const char* object_name)
+        : os_(os)
     {
         if (object_name != nullptr)
         {
@@ -198,7 +205,7 @@ public:
         }
     }
 #else
-    base_log(const char* /*object_name*/)
+    base_log(std::ostream & /*os*/, const char* /*object_name*/)
     {
     }
 #endif
@@ -208,7 +215,7 @@ public:
 #ifdef MAPNIK_LOG
         if (check_severity())
         {
-            output_policy()(Severity, streambuf_);
+            output_policy(os_)(Severity, streambuf_);
         }
 #endif
     }
@@ -238,6 +245,7 @@ private:
 
     typename output_policy::stream_buffer streambuf_;
     std::string object_name_;
+    std::ostream & os_;
 #endif
 };
 
@@ -295,7 +303,7 @@ private:
 using base_log_debug = base_log<clog_sink, logger::debug>;
 using base_log_warn = base_log<clog_sink, logger::warn>;
 using base_log_error = base_log_always<clog_sink, logger::error>;
-using base_log_perf = base_log_always<clog_sink, logger::none>;
+using base_log_perf = base_log<clog_sink, logger::none>;
 
 } // namespace detail
 

@@ -167,7 +167,11 @@ template <>
 MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_mode_e mode,
                float opacity,
                int dx,
-               int dy)
+               int dy
+#ifdef MAPNIK_STATS_RENDER
+               , std::ostream & perf_log_sink
+#endif
+               )
 {
 #ifdef MAPNIK_STATS_RENDER
     boost::optional<std::string> mode_name = comp_op_to_string(mode);
@@ -178,7 +182,7 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
         << std::to_string(src.height()) << " -> "
         << std::to_string(dst.width()) << "x"
         << std::to_string(dst.height());
-    log_render lr(ss.str());
+    log_render lr(ss.str(), perf_log_sink);
     timer_with_action<log_render> __stats__(lr);
 #endif
 #ifdef MAPNIK_DEBUG
@@ -200,7 +204,11 @@ template <>
 MAPNIK_DECL void composite(image_gray32f & dst, image_gray32f const& src, composite_mode_e /*mode*/,
                float /*opacity*/,
                int dx,
-               int dy)
+               int dy
+#ifdef MAPNIK_STATS_RENDER
+               , std::ostream & perf_log_sink
+#endif
+               )
 {
     using const_rendering_buffer = util::rendering_buffer<image_gray32f>;
     using src_pixfmt_type = agg::pixfmt_alpha_blend_gray<agg::blender_gray<agg::gray32>, const_rendering_buffer, 1, 0>;
@@ -223,12 +231,17 @@ struct composite_visitor
                       composite_mode_e mode,
                       float opacity,
                       int dx,
-                      int dy)
+                      int dy
+#ifdef MAPNIK_STATS_RENDER
+                      , std::ostream & perf_log_sink
+#endif
+                      )
         : src_(src),
           mode_(mode),
           opacity_(opacity),
           dx_(dx),
-          dy_(dy) {}
+          dy_(dy),
+          perf_log_sink_(perf_log_sink) {}
 
     template <typename T>
     void operator() (T & dst) const
@@ -238,12 +251,20 @@ struct composite_visitor
 
     void operator()(image_rgba8 & dst) const
     {
-        composite(dst, util::get<image_rgba8>(src_), mode_, opacity_, dx_, dy_);
+        composite(dst, util::get<image_rgba8>(src_), mode_, opacity_, dx_, dy_
+#ifdef MAPNIK_STATS_RENDER
+                 , perf_log_sink_
+#endif
+                              );
     }
 
     void operator() (image_gray32f & dst) const
     {
-        composite(dst, util::get<image_gray32f>(src_), mode_, opacity_, dx_, dy_);
+        composite(dst, util::get<image_gray32f>(src_), mode_, opacity_, dx_, dy_
+#ifdef MAPNIK_STATS_RENDER
+                  , perf_log_sink_
+#endif
+                  );
     }
 
   private:
@@ -252,7 +273,9 @@ struct composite_visitor
     float opacity_;
     int dx_;
     int dy_;
-
+#ifdef MAPNIK_STATS_RENDER
+    std::ostream & perf_log_sink_;
+#endif
 };
 
 } // end ns
@@ -261,9 +284,13 @@ template <>
 MAPNIK_DECL void composite(image_any & dst, image_any const& src, composite_mode_e mode,
                float opacity,
                int dx,
-               int dy)
+               int dy
+#ifdef MAPNIK_STATS_RENDER
+               , std::ostream & perf_log_sink
+#endif
+               )
 {
-    util::apply_visitor(detail::composite_visitor(src, mode, opacity, dx, dy), dst);
+    util::apply_visitor(detail::composite_visitor(src, mode, opacity, dx, dy, perf_log_sink), dst);
 }
 
 }

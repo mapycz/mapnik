@@ -87,9 +87,13 @@ MAPNIK_DECL boost::optional<std::string> comp_op_to_string(composite_mode_e comp
 template <typename T>
 MAPNIK_DECL void composite(T & dst, T const& src,
                            composite_mode_e mode,
-                           float opacity=1,
-                           int dx=0,
-                           int dy=0);
+                           float opacity,
+                           int dx,
+                           int dy
+#ifdef MAPNIK_STATS_RENDER
+                           , std::ostream & perf_log_sink
+#endif
+                           );
 
 }
 #endif // MAPNIK_IMAGE_COMPOSITING_HPP

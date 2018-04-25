@@ -195,7 +195,11 @@ struct scale_functor
 template <typename T>
 void scale_image_agg(T & target, T const& source, scaling_method_e scaling_method,
                      double image_ratio_x, double image_ratio_y, double x_off_f, double y_off_f,
-                     double filter_factor, boost::optional<double> const & nodata_value)
+                     double filter_factor, boost::optional<double> const & nodata_value
+#ifdef MAPNIK_STATS_RENDER
+                     , std::ostream & perf_log_sink
+#endif
+                     )
 {
 #ifdef MAPNIK_STATS_RENDER
     std::stringstream ss;
@@ -204,7 +208,7 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
         << std::to_string(source.height()) << " -> "
         << std::to_string(target.width()) << "x"
         << std::to_string(target.height());
-    log_render lr(ss.str());
+    log_render lr(ss.str(), perf_log_sink);
     timer_with_action<log_render> __stats__(lr);
 #endif
     unsigned jobs = util::jobs_by_image_size(target.width(), target.height());
@@ -215,35 +219,79 @@ void scale_image_agg(T & target, T const& source, scaling_method_e scaling_metho
 }
 
 template MAPNIK_DECL void scale_image_agg(image_rgba8 &, image_rgba8 const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray8 &, image_gray8 const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray8s &, image_gray8s const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray16 &, image_gray16 const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray16s &, image_gray16s const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray32 &, image_gray32 const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray32s &, image_gray32s const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray32f &, image_gray32f const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray64 &, image_gray64 const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray64s &, image_gray64s const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 
 template MAPNIK_DECL void scale_image_agg(image_gray64f &, image_gray64f const&, scaling_method_e,
-                              double, double , double, double , double, boost::optional<double> const &);
+                              double, double , double, double , double, boost::optional<double> const &
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & perf_log_sink
+#endif
+                              );
 }

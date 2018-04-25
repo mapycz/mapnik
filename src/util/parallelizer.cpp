@@ -95,8 +95,8 @@ MAPNIK_DECL void render(Map const& map,
             double scale_factor)
 {
 #ifdef MAPNIK_STATS_RENDER
-    log_render lr("map");
-    timer_with_action<log_render> __stats__(lr);
+    //log_render lr("map");
+    //timer_with_action<log_render> __stats__(lr);
 #endif
 
     mapnik::set_premultiplied_alpha(img, true);

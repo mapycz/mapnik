@@ -72,7 +72,7 @@ struct log_layer_stats
 {
     log_layer_stats(std::string const& layer_name,
                     std::map<std::string, timer> const& datasource_query_times,
-                    std::stringstream & output)
+                    std::ostream & output)
         : painted_features_(layer_name),
           datasource_query_times_(datasource_query_times),
           output_(output)
@@ -104,7 +104,7 @@ struct log_layer_stats
 
     painted_features painted_features_;
     std::map<std::string, timer> const& datasource_query_times_;
-    std::stringstream & output_;
+    std::ostream & output_;
 };
 
 struct log_datasource_query_time
