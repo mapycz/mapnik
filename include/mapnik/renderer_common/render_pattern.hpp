@@ -97,8 +97,8 @@ private:
           common_(common),
           sym_(sym),
           feature_(feature),
-          spacing_x_(spacing_x ? *spacing_x : (spacing ? *spacing : 0)),
-          spacing_y_(spacing_y ? *spacing_y : (spacing ? *spacing : 0)),
+          spacing_x_(common.scale_factor_ * (spacing_x ? *spacing_x : (spacing ? *spacing : 0))),
+          spacing_y_(common.scale_factor_ * (spacing_y ? *spacing_y : (spacing ? *spacing : 0))),
           lacing_(get<pattern_lacing_mode_enum>(sym_, keys::lacing))
     {
     }
