@@ -64,7 +64,7 @@ namespace mapnik
 
 //text_placements_angle class
 
-const box2d<double> text_placements_angle::empty_box;
+const box2d<double> text_placements_angle::empty_box(0, 0, 0, 0);
 
 text_placements_angle::text_placements_angle(text_placements_ptr list_placement,
                                              symbolizer_base::value_type const& angle,
