@@ -137,6 +137,9 @@ public:
 
     std::shared_ptr<PoolType> getPool(std::string const& key) const
     {
+#ifdef MAPNIK_THREADSAFE
+        std::lock_guard<std::mutex> lock(mutex_);
+#endif
         ContType::const_iterator itr=pools_.find(key);
         if (itr!=pools_.end())
         {
