@@ -39,6 +39,7 @@ MAPNIK_DECL bool is_parallelizable(Map const& map)
 
 image_rgba8 render_layer(Map const& map,
                          layer const& lay,
+                         projection const& proj,
                          double scale_denom,
                          double scale_factor,
                          std::size_t width,
@@ -57,34 +58,37 @@ image_rgba8 render_layer(Map const& map,
         mapnik::set_premultiplied_alpha(img, true);
     }
 
-    projection proj(map.srs(), true);
-    if (scale_denom <= 0.0)
-    {
-        scale_denom = mapnik::scale_denominator(map.scale(), proj.is_geographic());
-    }
-    scale_denom *= ren.scale_factor();
-
     layer lay_copy(lay);
     lay_copy.reset_comp_op();
     lay_copy.set_opacity(1.0);
 
-    if (lay_copy.visible(scale_denom))
-    {
-        std::set<std::string> names;
-        ren.apply_to_layer(lay_copy,
-                           ren,
-                           proj,
-                           map.scale(),
-                           scale_denom,
-                           map.width(),
-                           map.height(),
-                           map.get_current_extent(),
-                           map.buffer_size(),
-                           names);
-    }
+    std::set<std::string> names;
+    ren.apply_to_layer(lay_copy,
+                       ren,
+                       proj,
+                       map.scale(),
+                       scale_denom,
+                       map.width(),
+                       map.height(),
+                       map.get_current_extent(),
+                       map.buffer_size(),
+                       names);
 
     return img;
 }
+
+struct layer_job
+{
+    using future_type = std::future<image_rgba8>;
+
+    layer_job(future_type && future, layer const& lay)
+        : future(std::move(future)), lay(lay)
+    {
+    }
+
+    future_type future;
+    layer const& lay;
+};
 
 MAPNIK_DECL void render(Map const& map,
             image_rgba8 & img,
@@ -93,25 +97,42 @@ MAPNIK_DECL void render(Map const& map,
 {
     mapnik::set_premultiplied_alpha(img, true);
 
-    std::vector<std::future<image_rgba8>> layer_jobs(map.layers().size());
+    std::vector<layer_job> layer_jobs;
+    layer_jobs.reserve(map.layers().size());
 
-    for (std::size_t i = 0; i < layer_jobs.size(); ++i)
+    projection proj(map.srs(), true);
+    if (scale_denom <= 0.0)
     {
-        layer_jobs[i] = std::async(std::launch::async,
-                                   render_layer,
-                                   std::cref(map),
-                                   std::cref(map.layers()[i]),
-                                   scale_denom,
-                                   scale_factor,
-                                   img.width(),
-                                   img.height(),
-                                   i);
+        scale_denom = mapnik::scale_denominator(map.scale(), proj.is_geographic());
+    }
+    scale_denom *= scale_factor;
+
+    std::size_t index = 0;
+
+    for (auto const& lay : map.layers())
+    {
+        if (!lay.visible(scale_denom))
+        {
+            continue;
+        }
+
+        layer_jobs.emplace_back(std::async(std::launch::async,
+                                           render_layer,
+                                           std::cref(map),
+                                           std::cref(lay),
+                                           std::cref(proj),
+                                           scale_denom,
+                                           scale_factor,
+                                           img.width(),
+                                           img.height(),
+                                           index), lay);
+        ++index;
     }
 
-    for (std::size_t i = 0; i < layer_jobs.size(); ++i)
+    for (auto & lj : layer_jobs)
     {
-        image_rgba8 layer_img(std::move(layer_jobs[i].get()));
-        layer const& lay = map.layers()[i];
+        image_rgba8 layer_img(std::move(lj.future.get()));
+        layer const& lay = lj.lay;
         composite_mode_e comp_op = lay.comp_op() ? *lay.comp_op() : src_over;
         composite(img, layer_img, comp_op, lay.get_opacity(), 0, 0);
         img.painted(img.painted() || layer_img.painted());
