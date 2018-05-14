@@ -66,10 +66,14 @@ void parallelize(Func func, unsigned jobs, unsigned work_size)
     }
 }
 
-inline unsigned jobs_by_image_size(unsigned width, unsigned height)
+inline unsigned jobs_by_image_size(unsigned width,
+                                   unsigned height,
+                                   unsigned max_concurrency=0)
 {
-    return (width * height < 1024 * 1024) ?
-        1 : std::min(4u, std::thread::hardware_concurrency());
+    unsigned chunks = (width * height) / (1024u * 1024u);
+    unsigned max_jobs = max_concurrency ? max_concurrency :
+        std::max(1u, std::thread::hardware_concurrency() / 2);
+    return std::max(1u, std::min(chunks, max_jobs));
 }
 
 }
