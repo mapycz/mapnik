@@ -185,7 +185,9 @@ struct symbolizer_attributes
         else
         {
             boost::optional<scaling_method_e> scaling_method = get_optional<scaling_method_e>(sym, keys::scaling);
-            if (scaling_method && *scaling_method != SCALING_NEAR)
+            if (scaling_method
+                && *scaling_method != SCALING_NEAR
+                && *scaling_method != SCALING_BILINEAR_FAST)
             {
                 filter_factor_ = 2;
             }
