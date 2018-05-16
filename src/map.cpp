@@ -383,9 +383,7 @@ unsigned Map::height() const
 
 void Map::set_width(unsigned width)
 {
-    if (width != width_ &&
-        width >= MIN_MAPSIZE &&
-        width <= MAX_MAPSIZE)
+    if (width != width_ && width > 0)
     {
         width_=width;
         fixAspectRatio();
@@ -394,9 +392,7 @@ void Map::set_width(unsigned width)
 
 void Map::set_height(unsigned height)
 {
-    if (height != height_ &&
-        height >= MIN_MAPSIZE &&
-        height <= MAX_MAPSIZE)
+    if (height != height_ && height > 0)
     {
         height_=height;
         fixAspectRatio();
@@ -405,12 +401,8 @@ void Map::set_height(unsigned height)
 
 void Map::resize(unsigned width,unsigned height)
 {
-    if ((width != width_ ||
-         height != height_) &&
-        width >= MIN_MAPSIZE &&
-        width <= MAX_MAPSIZE &&
-        height >= MIN_MAPSIZE &&
-        height <= MAX_MAPSIZE)
+    if ((width != width_ || height != height_) &&
+        width > 0 && height > 0)
     {
         width_=width;
         height_=height;

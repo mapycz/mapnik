@@ -82,8 +82,6 @@ public:
     };
 
 private:
-    static const unsigned MIN_MAPSIZE=16;
-    static const unsigned MAX_MAPSIZE=MIN_MAPSIZE<<10;
     unsigned width_;
     unsigned height_;
     std::string srs_;
