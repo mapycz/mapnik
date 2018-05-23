@@ -154,6 +154,12 @@ public:
         pattern_ = cairo_pattern_create_for_surface(surface_);
     }
 
+    cairo_pattern(cairo_surface_t * surface)
+        surface_(surface),
+        pattern_(cairo_pattern_create_for_surface(surface_))
+    {
+    }
+
     ~cairo_pattern()
     {
         if (surface_) cairo_surface_destroy(surface_);

@@ -28,6 +28,7 @@
 #include <mapnik/cairo/cairo_renderer.hpp>
 #include <mapnik/cairo/cairo_render_vector.hpp>
 #include <mapnik/renderer_common/render_pattern.hpp>
+#include <mapnik/cairo/render_pattern.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/marker.hpp>

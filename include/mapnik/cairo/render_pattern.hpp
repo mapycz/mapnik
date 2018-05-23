@@ -49,16 +49,16 @@
 
 namespace mapnik {
 
-template <typename Symbolizer, typename Rasterizer>
-struct common_pattern_process_visitor
+template <typename Symbolizer>
+struct cairo_common_pattern_process_visitor
 {
     using image_type = image_rgba8;
 
-    common_pattern_process_visitor(
+    cairo_common_pattern_process_visitor(
         renderer_common const & common,
         Symbolizer const & sym,
         feature_impl const & feature)
-        : common_pattern_process_visitor(ras, common, sym, feature,
+        : cairo_common_pattern_process_visitor(ras, common, sym, feature,
             get_optional<value_double, keys::spacing>(
                 sym, feature, common.vars_),
             get_optional<value_double, keys::spacing_x>(
@@ -68,26 +68,34 @@ struct common_pattern_process_visitor
     {
     }
 
-    image_type operator() (marker_null const &) const
+    cairo_surface_t * surface() const
+    {
+        return surface_;
+    }
+
+    void operator() (marker_null const &) const
     {
         throw std::runtime_error("This should not have been reached.");
     }
 
     template <typename Marker>
-    image_type operator() (Marker const & marker) const
+    void operator() (Marker const & marker) const
     {
         box2d<double> bbox(marker.bounding_box());
         agg::trans_affine tr(transform(bbox));
 
         if (lacing_ == PATTERN_LACING_MODE_ALTERNATING_GRID)
         {
-            return render_pattern_alternating(ras_, marker, bbox, tr);
+            //return render_pattern_alternating(ras_, marker, bbox, tr);
         }
-        return render_pattern(ras_, marker, bbox, tr);
+        else
+        {
+            render_pattern(marker, bbox, tr);
+        }
     }
 
 private:
-    common_pattern_process_visitor(
+    cairo_common_pattern_process_visitor(
         renderer_common const & common,
         Symbolizer const & sym,
         feature_impl const & feature,
@@ -124,15 +132,24 @@ private:
         return tr * mtx;
     }
 
-    image_rgba8 render_pattern(rasterizer & ras,
-                               marker_svg const & marker,
-                               box2d<double> const & bbox,
-                               agg::trans_affine tr) const
+    void render_pattern(marker_svg const & marker,
+                        box2d<double> const & bbox,
+                        agg::trans_affine tr) const
     {
-        using pixfmt = agg::pixfmt_rgba32_pre;
-        using renderer_base = agg::renderer_base<pixfmt>;
-        using renderer_solid = agg::renderer_scanline_aa_solid<renderer_base>;
-        agg::scanline_u8 sl;
+        cairo_rectangle_t extent { 0, 0,
+            bbox.width() + spacing_x_,
+            bbox.height() + spacing_y_ };
+        surface_ = cairo_recording_surface_create(
+            CAIRO_CONTENT_COLOR_ALPHA,
+            &extent);
+
+    }
+
+/*
+            int width = std::max(1, static_cast<int>(
+                bbox.width() + spacing_x_)),
+            int height = std::max(1, static_cast<int>(
+                bbox.height() + spacing_y_)));
 
         image_rgba8 image(std::max(1, static_cast<int>(bbox.width() + spacing_x_)),
                           std::max(1, static_cast<int>(bbox.height() + spacing_y_)));
@@ -310,9 +327,9 @@ private:
 
         return image;
     }
+    */
 
     cairo_surface_t * surface_;
-    cairo_pattern_t * pattern_;
 
     renderer_common const & common_;
     Symbolizer const & sym_;
