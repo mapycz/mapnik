@@ -312,6 +312,14 @@ result_list runner::test_one(runner::path_type const& style_path,
         box.from_string(*bbox_string);
     }
 
+    boost::optional<std::string> scale_factor_string = params.get<std::string>("scale_factor");
+
+    if (scale_factor_string)
+    {
+        cfg.scales.clear();
+        parse_number_list(*scale_factor_string, cfg.scales);
+    }
+
     boost::optional<std::string> ignored_renderers = params.get<std::string>("ignored_renderers");
 
     if (ignored_renderers)
@@ -397,6 +405,17 @@ void runner::parse_name_list(std::string const & str, std::vector<std::string> &
     if (!boost::spirit::qi::phrase_parse(iter, end, name_list_parser_, space, list))
     {
         throw std::runtime_error("Failed to parse list of names: '" + str + "'");
+    }
+}
+
+void runner::parse_number_list(std::string const & str, std::vector<double> & list) const
+{
+    boost::spirit::ascii::space_type space;
+    std::string::const_iterator iter = str.begin();
+    std::string::const_iterator end = str.end();
+    if (!boost::spirit::qi::phrase_parse(iter, end, number_list_parser_, space, list))
+    {
+        throw std::runtime_error("Failed to parse list of numbers: '" + str + "'");
     }
 }
 
