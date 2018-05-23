@@ -26,13 +26,11 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/proj_transform.hpp>
 #include <mapnik/cairo/cairo_renderer.hpp>
-#include <mapnik/cairo/cairo_render_vector.hpp>
-#include <mapnik/renderer_common/render_pattern.hpp>
+#include <mapnik/cairo/render_pattern.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
-#include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/renderer_common/clipping_extent.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 #include <mapnik/renderer_common/pattern_alignment.hpp>
@@ -50,7 +48,6 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     value_bool clip = get<value_bool, keys::clip>(sym, feature, common_.vars_);
     value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym, feature, common_.vars_);
     value_double smooth = get<value_double, keys::smooth>(sym, feature, common_.vars_);
-    value_double opacity = get<value_double, keys::opacity>(sym, feature, common_.vars_);
 
     cairo_save_restore guard(context_);
     context_.set_operator(comp_op);
@@ -58,10 +55,9 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     std::shared_ptr<mapnik::marker const> marker = mapnik::marker_cache::instance().find(filename,true);
     if (marker->is<mapnik::marker_null>()) return;
 
-    mapnik::rasterizer ra;
-    common_pattern_process_visitor<polygon_pattern_symbolizer, mapnik::rasterizer> visitor(ra, common_, sym, feature);
-    image_rgba8 image(util::apply_visitor(visitor, *marker));
-    cairo_pattern pattern(image, opacity);
+    cairo_common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
+    cairo_surface_ptr surface(util::apply_visitor(visitor, *marker));
+    cairo_pattern pattern(surface);
     pattern.set_extend(CAIRO_EXTEND_REPEAT);
     box2d<double> clip_box = clipping_extent(common_);
     coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));

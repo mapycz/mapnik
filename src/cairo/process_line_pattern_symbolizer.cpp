@@ -26,12 +26,11 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/proj_transform.hpp>
 #include <mapnik/cairo/cairo_renderer.hpp>
-#include <mapnik/renderer_common/render_pattern.hpp>
+#include <mapnik/cairo/render_pattern.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
-#include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 
 namespace mapnik
@@ -61,14 +60,19 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
     cairo_save_restore guard(context_);
     context_.set_operator(comp_op);
 
-    mapnik::rasterizer ra;
-    common_pattern_process_visitor<line_pattern_symbolizer, mapnik::rasterizer> visitor(ra, common_, sym, feature);
+    cairo_common_pattern_process_visitor<line_pattern_symbolizer> visitor(common_, sym, feature);
+    cairo_surface_ptr surface(util::apply_visitor(visitor, *marker));
+    cairo_pattern pattern(surface);
 
-    image_rgba8 image(util::apply_visitor(visitor, *marker));
-    double opacity = get<value_double, keys::opacity>(sym, feature, common_.vars_);
-    cairo_pattern pattern(image, opacity);
+    cairo_rectangle_t pattern_extent;
+    if (!cairo_recording_surface_get_extents(
+        surface.get(), &pattern_extent))
+    {
+        MAPNIK_LOG_ERROR() << "Extent of the recording cairo "
+            "surface has not been set";
+    }
 
-    context_.set_line_width(image.height());
+    context_.set_line_width(pattern_extent.height);
 
     pattern.set_extend(CAIRO_EXTEND_REPEAT);
     pattern.set_filter(CAIRO_FILTER_BILINEAR);
@@ -81,7 +85,7 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
     if (clip)
     {
         double padding = (double)(common_.query_extent_.width()/common_.width_);
-        double half_stroke = image.width()/2.0;
+        double half_stroke = pattern_extent.width / 2.0;
         if (half_stroke > 1)
             padding *= half_stroke;
         if (std::fabs(offset) > 0)
@@ -91,7 +95,9 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
     }
 
     using rasterizer_type = line_pattern_rasterizer<cairo_context>;
-    rasterizer_type ras(context_, pattern, image.width(), image.height());
+    rasterizer_type ras(context_, pattern,
+        pattern_extent.width,
+        pattern_extent.height);
     using vertex_converter_type = vertex_converter<clip_line_tag, transform_tag,
                                                    affine_transform_tag,
                                                    simplify_tag, smooth_tag,
