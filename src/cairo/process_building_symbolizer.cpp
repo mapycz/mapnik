@@ -82,10 +82,8 @@ void cairo_renderer<T>::process(building_symbolizer const& sym,
         [&](path_type const& shadow)
         {
             vertex_adapter va(shadow);
-            agg::conv_contour<vertex_adapter> contour(va);
-            contour.width(0.5 * shadow_opacity * shadow_opacity);
             context_.set_color(0, 0, 0, shadow_opacity);
-            context_.add_path(contour);
+            context_.add_path(va);
             context_.fill();
         });
 }
