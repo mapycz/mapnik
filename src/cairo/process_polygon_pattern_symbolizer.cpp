@@ -61,6 +61,7 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
 
     mapnik::rasterizer ra;
     common_pattern_process_visitor<polygon_pattern_symbolizer, mapnik::rasterizer> visitor(ra, common_, sym, feature);
+    cairo_common_pattern_process_visitor<polygon_pattern_symbolizer> visitor_(common_, sym, feature);
     image_rgba8 image(util::apply_visitor(visitor, *marker));
     cairo_pattern pattern(image, opacity);
     pattern.set_extend(CAIRO_EXTEND_REPEAT);

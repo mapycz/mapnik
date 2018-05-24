@@ -20,8 +20,8 @@
  *
  *****************************************************************************/
 
-#ifndef MAPNIK_RENDER_PATTERN_HPP
-#define MAPNIK_RENDER_PATTERN_HPP
+#ifndef MAPNIK_CAIRO_RENDER_PATTERN_HPP
+#define MAPNIK_CAIRO_RENDER_PATTERN_HPP
 
 #include <mapnik/image.hpp>
 #include <mapnik/marker.hpp>
@@ -58,7 +58,7 @@ struct cairo_common_pattern_process_visitor
         renderer_common const & common,
         Symbolizer const & sym,
         feature_impl const & feature)
-        : cairo_common_pattern_process_visitor(ras, common, sym, feature,
+        : cairo_common_pattern_process_visitor(common, sym, feature,
             get_optional<value_double, keys::spacing>(
                 sym, feature, common.vars_),
             get_optional<value_double, keys::spacing_x>(
@@ -70,7 +70,7 @@ struct cairo_common_pattern_process_visitor
 
     cairo_surface_t * surface() const
     {
-        return surface_;
+        return nullptr;//surface_;
     }
 
     void operator() (marker_null const &) const
@@ -139,10 +139,29 @@ private:
         cairo_rectangle_t extent { 0, 0,
             bbox.width() + spacing_x_,
             bbox.height() + spacing_y_ };
-        surface_ = cairo_recording_surface_create(
-            CAIRO_CONTENT_COLOR_ALPHA,
-            &extent);
+        cairo_surface_ptr surface(cairo_recording_surface_create(
+            CAIRO_CONTENT_COLOR_ALPHA, &extent));
 
+        cairo_ptr cairo = create_context(surface);
+        cairo_context context(cairo);
+
+        svg_storage_type & svg = *marker.get_data();
+        svg_attribute_type const & svg_attributes = svg.attributes();
+        svg_attribute_type custom_attributes;
+        bool use_custom_attributes = push_explicit_style(
+            svg_attributes, custom_attributes, sym_, feature_, common_.vars_);
+        svg_attribute_type const & used_attributes =
+            use_custom_attributes ?  custom_attributes : svg_attributes;
+
+        svg::vertex_stl_adapter<svg::svg_path_storage> stl_storage(
+            svg.source());
+        svg::svg_path_adapter svg_path(stl_storage);
+
+        tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
+
+        double opacity = 1.0; // TODO: parametr?
+        render_vector_marker(context, svg_path, svg_attributes,
+            bbox, tr, opacity);
     }
 
 /*
@@ -329,7 +348,6 @@ private:
     }
     */
 
-    cairo_surface_t * surface_;
 
     renderer_common const & common_;
     Symbolizer const & sym_;
@@ -341,4 +359,4 @@ private:
 
 } // namespace mapnik
 
-#endif // MAPNIK_RENDER_PATTERN_HPP
+#endif // MAPNIK_CAIRO_RENDER_PATTERN_HPP
