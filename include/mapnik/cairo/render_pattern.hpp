@@ -172,12 +172,19 @@ private:
                                agg::trans_affine tr) const
     {
         cairo_rectangle_t extent { 0, 0,
-            bbox.width() + spacing_x_,
-            bbox.height() + spacing_y_ };
+            std::floor(bbox.width() + spacing_x_),
+            std::floor(bbox.height() + spacing_y_) };
         cairo_surface_ptr surface(
             cairo_recording_surface_create(
                 CAIRO_CONTENT_COLOR_ALPHA, &extent),
             cairo_surface_closer());
+
+        tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
+
+        cairo_ptr cairo = create_context(surface);
+        cairo_context context(cairo);
+
+        context.add_image(tr, marker.get_data(), opacity_);
 
         return surface;
     }
