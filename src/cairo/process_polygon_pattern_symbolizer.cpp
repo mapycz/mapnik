@@ -51,7 +51,6 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     value_bool clip = get<value_bool, keys::clip>(sym, feature, common_.vars_);
     value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym, feature, common_.vars_);
     value_double smooth = get<value_double, keys::smooth>(sym, feature, common_.vars_);
-    value_double opacity = get<value_double, keys::opacity>(sym, feature, common_.vars_);
 
     cairo_save_restore guard(context_);
     context_.set_operator(comp_op);
@@ -60,10 +59,7 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     if (marker->is<mapnik::marker_null>()) return;
 
     mapnik::rasterizer ra;
-    //common_pattern_process_visitor<polygon_pattern_symbolizer, mapnik::rasterizer> visitor(ra, common_, sym, feature);
     cairo_common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
-    //image_rgba8 image(util::apply_visitor(visitor, *marker));
-    //cairo_pattern pattern(image, opacity);
     cairo_surface_ptr surface(util::apply_visitor(visitor, *marker));
     cairo_pattern pattern(surface.get());
     pattern.set_extend(CAIRO_EXTEND_REPEAT);

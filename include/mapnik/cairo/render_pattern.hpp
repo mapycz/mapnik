@@ -101,6 +101,8 @@ private:
         : common_(common),
           sym_(sym),
           feature_(feature),
+          opacity_(get<value_double, keys::opacity>(
+            sym, feature, common_.vars_)),
           spacing_x_(common.scale_factor_ *
               (spacing_x ? *spacing_x : (spacing ? *spacing : 0))),
           spacing_y_(common.scale_factor_ *
@@ -132,6 +134,8 @@ private:
                         box2d<double> const & bbox,
                         agg::trans_affine tr) const
     {
+        // The std::floor should prevent from unexpected spaces
+        // between pattern tiles in cases when the bbox is not precise.
         cairo_rectangle_t extent { 0, 0,
             std::floor(bbox.width() + spacing_x_),
             std::floor(bbox.height() + spacing_y_) };
@@ -157,9 +161,8 @@ private:
 
         tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
 
-        double opacity = 1.0; // TODO: parametr?
         render_vector_marker(context, svg_path, used_attributes,
-            bbox, tr, opacity);
+            bbox, tr, opacity_);
 
         return surface;
     }
@@ -366,6 +369,7 @@ private:
     renderer_common const & common_;
     Symbolizer const & sym_;
     feature_impl const & feature_;
+    const value_double opacity_;
     const value_double spacing_x_;
     const value_double spacing_y_;
     const pattern_lacing_mode_enum lacing_;
