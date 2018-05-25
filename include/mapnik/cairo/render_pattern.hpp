@@ -114,9 +114,10 @@ private:
         return tr * mtx;
     }
 
-    cairo_surface_ptr render_pattern(marker_svg const & marker,
-                        box2d<double> const & bbox,
-                        agg::trans_affine tr) const
+    cairo_surface_ptr render_pattern(
+        marker_svg const & marker,
+        box2d<double> const & bbox,
+        agg::trans_affine tr) const
     {
         // The std::floor should prevent from unexpected spaces
         // between pattern tiles in cases when the bbox is not precise.
@@ -152,9 +153,10 @@ private:
         return surface;
     }
 
-    cairo_surface_ptr render_pattern(marker_rgba8 const& marker,
-                               box2d<double> const & bbox,
-                               agg::trans_affine tr) const
+    cairo_surface_ptr render_pattern(
+        marker_rgba8 const& marker,
+        box2d<double> const & bbox,
+        agg::trans_affine tr) const
     {
         cairo_rectangle_t extent { 0, 0,
             bbox.width() + spacing_x_,
@@ -175,9 +177,9 @@ private:
     }
 
     cairo_surface_ptr render_pattern_alternating(
-                               marker_svg const & marker,
-                               box2d<double> const & bbox,
-                               agg::trans_affine tr) const
+        marker_svg const & marker,
+        box2d<double> const & bbox,
+        agg::trans_affine tr) const
     {
         // The std::floor should prevent from unexpected spaces
         // between pattern tiles in cases when the bbox is not precise.
@@ -225,13 +227,13 @@ private:
     }
 
     cairo_surface_ptr render_pattern_alternating(
-                               marker_rgba8 const& marker,
-                               box2d<double> const & bbox,
-                               agg::trans_affine tr) const
+        marker_rgba8 const& marker,
+        box2d<double> const & bbox,
+        agg::trans_affine tr) const
     {
         cairo_rectangle_t extent { 0, 0,
             bbox.width() + spacing_x_,
-            bbox.height() + spacing_y_ * 2.0 };
+            (bbox.height() + spacing_y_) * 2.0 };
         cairo_surface_ptr surface(
             cairo_recording_surface_create(
                 CAIRO_CONTENT_COLOR_ALPHA, &extent),
