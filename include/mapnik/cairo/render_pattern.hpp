@@ -33,6 +33,7 @@
 #include <mapnik/agg_rasterizer.hpp>
 #include <mapnik/util/const_rendering_buffer.hpp>
 #include <mapnik/marker_helpers.hpp>
+#include <mapnik/cairo/cairo_context.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -68,18 +69,13 @@ struct cairo_common_pattern_process_visitor
     {
     }
 
-    cairo_surface_t * surface() const
-    {
-        return nullptr;//surface_;
-    }
-
-    void operator() (marker_null const &) const
+    cairo_surface_ptr operator() (marker_null const &) const
     {
         throw std::runtime_error("This should not have been reached.");
     }
 
     template <typename Marker>
-    void operator() (Marker const & marker) const
+    cairo_surface_ptr operator() (Marker const & marker) const
     {
         box2d<double> bbox(marker.bounding_box());
         agg::trans_affine tr(transform(bbox));
@@ -90,8 +86,8 @@ struct cairo_common_pattern_process_visitor
         }
         else
         {
-            render_pattern(marker, bbox, tr);
         }
+            return render_pattern(marker, bbox, tr);
     }
 
 private:
@@ -132,15 +128,17 @@ private:
         return tr * mtx;
     }
 
-    void render_pattern(marker_svg const & marker,
+    cairo_surface_ptr render_pattern(marker_svg const & marker,
                         box2d<double> const & bbox,
                         agg::trans_affine tr) const
     {
         cairo_rectangle_t extent { 0, 0,
             bbox.width() + spacing_x_,
             bbox.height() + spacing_y_ };
-        cairo_surface_ptr surface(cairo_recording_surface_create(
-            CAIRO_CONTENT_COLOR_ALPHA, &extent));
+        cairo_surface_ptr surface(
+            cairo_recording_surface_create(
+                CAIRO_CONTENT_COLOR_ALPHA, &extent),
+            cairo_surface_closer());
 
         cairo_ptr cairo = create_context(surface);
         cairo_context context(cairo);
@@ -162,6 +160,20 @@ private:
         double opacity = 1.0; // TODO: parametr?
         render_vector_marker(context, svg_path, svg_attributes,
             bbox, tr, opacity);
+    }
+
+    cairo_surface_ptr render_pattern(marker_rgba8 const& marker,
+                               box2d<double> const & bbox,
+                               agg::trans_affine tr) const
+    {
+        cairo_rectangle_t extent { 0, 0,
+            bbox.width() + spacing_x_,
+            bbox.height() + spacing_y_ };
+        cairo_surface_ptr surface(
+            cairo_recording_surface_create(
+                CAIRO_CONTENT_COLOR_ALPHA, &extent),
+            cairo_surface_closer());
+        return surface;
     }
 
 /*
@@ -347,7 +359,6 @@ private:
         return image;
     }
     */
-
 
     renderer_common const & common_;
     Symbolizer const & sym_;
