@@ -34,6 +34,9 @@
 
 namespace mapnik {
 
+// TODO: Shade code with common_pattern_process_visitor in
+// renderer_common
+// TODO: Move to cpp file
 template <typename Symbolizer>
 struct cairo_common_pattern_process_visitor
 {

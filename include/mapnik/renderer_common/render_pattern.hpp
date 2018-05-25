@@ -49,6 +49,7 @@
 
 namespace mapnik {
 
+// TODO: Move to cpp file ?
 template <typename Symbolizer, typename Rasterizer>
 struct common_pattern_process_visitor
 {
