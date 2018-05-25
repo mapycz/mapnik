@@ -122,11 +122,11 @@ private:
         box2d<double> const & bbox,
         agg::trans_affine tr) const
     {
-        // The std::floor should prevent from unexpected spaces
-        // between pattern tiles in cases when the bbox is not precise.
-        cairo_rectangle_t extent { 0, 0,
-            std::floor(bbox.width() + spacing_x_),
-            std::floor(bbox.height() + spacing_y_) };
+        double width = std::max(1.0,
+            std::round(bbox.width() + spacing_x_));
+        double height = std::max(1.0,
+            std::round(bbox.height() + spacing_y_));
+        cairo_rectangle_t extent { 0, 0, width, height };
         cairo_surface_ptr surface(
             cairo_recording_surface_create(
                 CAIRO_CONTENT_COLOR_ALPHA, &extent),
@@ -184,11 +184,11 @@ private:
         box2d<double> const & bbox,
         agg::trans_affine tr) const
     {
-        // The std::floor should prevent from unexpected spaces
-        // between pattern tiles in cases when the bbox is not precise.
-        cairo_rectangle_t extent { 0, 0,
-            std::floor(bbox.width() + spacing_x_),
-            std::floor(bbox.height() + spacing_y_) * 2.0 };
+        double width = std::max(1.0,
+            std::round(bbox.width() + spacing_x_));
+        double height = std::max(1.0,
+            std::round((bbox.height() + spacing_y_) * 2.0));
+        cairo_rectangle_t extent { 0, 0, width, height };
         cairo_surface_ptr surface(
             cairo_recording_surface_create(
                 CAIRO_CONTENT_COLOR_ALPHA, &extent),
