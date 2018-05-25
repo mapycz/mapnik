@@ -61,7 +61,7 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     mapnik::rasterizer ra;
     cairo_common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
     cairo_surface_ptr surface(util::apply_visitor(visitor, *marker));
-    cairo_pattern pattern(surface.get());
+    cairo_pattern pattern(surface);
     pattern.set_extend(CAIRO_EXTEND_REPEAT);
     box2d<double> clip_box = clipping_extent(common_);
     coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));
