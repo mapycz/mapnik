@@ -31,10 +31,11 @@
 #include <mapnik/svg/svg_path_adapter.hpp>
 #include <mapnik/marker_helpers.hpp>
 #include <mapnik/cairo/cairo_context.hpp>
+#include <mapnik/cairo/cairo_render_vector.hpp>
 
 namespace mapnik {
 
-// TODO: Shade code with common_pattern_process_visitor in
+// TODO: Share code with common_pattern_process_visitor in
 // renderer_common
 // TODO: Move to cpp file
 template <typename Symbolizer>

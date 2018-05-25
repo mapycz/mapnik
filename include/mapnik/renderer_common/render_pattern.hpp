@@ -127,8 +127,11 @@ private:
         using renderer_solid = agg::renderer_scanline_aa_solid<renderer_base>;
         agg::scanline_u8 sl;
 
-        image_rgba8 image(std::max(1, static_cast<int>(bbox.width() + spacing_x_)),
-                          std::max(1, static_cast<int>(bbox.height() + spacing_y_)));
+        image_rgba8 image(
+            std::max(1, static_cast<int>(
+                std::round(bbox.width() + spacing_x_))),
+            std::max(1, static_cast<int>(
+                std::round(bbox.height() + spacing_y_))));
         agg::rendering_buffer buf(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf(buf);
         renderer_base renb(pixf);
@@ -212,8 +215,10 @@ private:
         agg::scanline_u8 sl;
 
         image_rgba8 image(
-            std::max(1, static_cast<int>(std::round(bbox.width() + spacing_x_))),
-            std::max(1, static_cast<int>(std::round((bbox.height() + spacing_y_) * 2.0))));
+            std::max(1, static_cast<int>(
+                std::round(bbox.width() + spacing_x_))),
+            std::max(1, static_cast<int>(
+                std::round((bbox.height() + spacing_y_) * 2.0))));
         agg::rendering_buffer buf(image.bytes(), image.width(), image.height(), image.row_size());
         pixfmt pixf(buf);
         renderer_base renb(pixf);
