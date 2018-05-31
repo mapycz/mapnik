@@ -164,7 +164,29 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
         {
             mapnik::color bg_color = *bg;
             bg_color.premultiply();
-            mapnik::fill(pixmap, bg_color);
+
+            agg::rendering_buffer buf(pixmap.data(),
+                                      pixmap.width(),
+                                      pixmap.height(),
+                                      pixmap.row_size());
+            agg::pixfmt_rgba32_pre pixf(buf);
+            using ren_base = agg::renderer_base<agg::pixfmt_rgba32_pre>;
+            using renderer = agg::renderer_scanline_bin_solid<ren_base>;
+            renderer_base rb(pixf);
+            renderer_bin ren_bin(rb);
+            ren.color(agg::rgba8_pre(bg_color.red(),
+                                     bg_color.green(),
+                                     bg_color.blue(),
+                                     bg_color.alpha()));
+
+            agg::scanline_bin sl_bin;
+
+            ras.move_to_d(0, 0);
+            ras.line_to_d(pixmap.width(), 0);
+            ras.line_to_d(pixmap.width(), pixmap.height());
+            ras.line_to_d(0, pixmap.height());
+
+            agg::render_scanlines(ras, sl_bin, ren_bin);
         }
         else
         {

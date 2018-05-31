@@ -88,6 +88,7 @@ private:
     int buffer_size_;
     boost::optional<int> buffer_size_collisions_;
     boost::optional<color> background_;
+    composite_mode_e background_comp_op_;
     boost::optional<std::string> background_image_;
     composite_mode_e background_image_comp_op_;
     float background_image_opacity_;
@@ -323,6 +324,17 @@ public:
      *  object
      */
     boost::optional<color> const& background() const;
+
+    /*! \brief Set the compositing operation for the background color.
+     *  @param comp_op compositing operation.
+     */
+    void set_background_comp_op(composite_mode_e comp_op);
+
+    /*! \brief Get the map background color compositing operation
+     *  @return Background color compositing operation as composite_mode_e
+     *  object
+     */
+    composite_mode_e background_comp_op() const;
 
     /*! \brief Set the map background image filename.
      *  @param image_filename Background image filename.
