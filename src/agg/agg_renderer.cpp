@@ -156,11 +156,11 @@ struct setup_agg_bg_visitor
 template <typename T0, typename T1>
 void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
 {
-    mapnik::set_premultiplied_alpha(pixmap, true);
     boost::optional<color> const& bg = m.background();
     if (bg)
     {
-        if (bg->alpha() < 255)
+        composite_mode_e bg_comp_op = m.background_comp_op();
+        if (bg->alpha() == 255 || bg_comp_op == composite_mode_e::src)
         {
             mapnik::color bg_color = *bg;
             bg_color.premultiply();
@@ -168,10 +168,42 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
         }
         else
         {
-            mapnik::color bg_color = *bg;
-            bg_color.set_premultiplied(true);
-            mapnik::fill(pixmap, bg_color);
+            mapnik::premultiply_alpha(pixmap);
+
+            agg::rendering_buffer buf(pixmap.bytes(),
+                                      pixmap.width(),
+                                      pixmap.height(),
+                                      pixmap.row_size());
+            using color_type = agg::rgba8;
+            using order_type = agg::order_rgba;
+            using blender_type = agg::comp_op_adaptor_rgba_pre<
+                color_type, order_type>;
+            using pixfmt_comp_type = agg::pixfmt_custom_blend_rgba<
+                blender_type, agg::rendering_buffer>;
+            pixfmt_comp_type pixf(buf);
+            pixf.comp_op(static_cast<agg::comp_op_e>(bg_comp_op));
+            using ren_base = agg::renderer_base<pixfmt_comp_type>;
+            using renderer = agg::renderer_scanline_bin_solid<ren_base>;
+            ren_base rb(pixf);
+            renderer ren(rb);
+            ren.color(agg::rgba8_pre(bg->red(),
+                                     bg->green(),
+                                     bg->blue(),
+                                     bg->alpha()));
+
+            agg::scanline_bin sl;
+
+            ras_ptr->move_to_d(0, 0);
+            ras_ptr->line_to_d(pixmap.width(), 0);
+            ras_ptr->line_to_d(pixmap.width(), pixmap.height());
+            ras_ptr->line_to_d(0, pixmap.height());
+
+            agg::render_scanlines(*ras_ptr, sl, ren);
         }
+    }
+    else
+    {
+        mapnik::premultiply_alpha(pixmap);
     }
 
     boost::optional<std::string> const& image_filename = m.background_image();
