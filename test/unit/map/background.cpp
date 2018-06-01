@@ -13,11 +13,19 @@ mapnik::image_rgba8 solid_image(
     return image;
 }
 
+void render_agg(mapnik::Map const& map, mapnik::image_rgba8 & image)
+{
+    mapnik::agg_renderer<mapnik::image_rgba8> ren(map, image);
+    ren.apply();
+}
+
+template <typename RenderFunction>
 void test_background_blending(
     mapnik::color const& expected_color,
     mapnik::color const& background_color,
     mapnik::color const& original_color,
-    boost::optional<mapnik::composite_mode_e> const& comp_op)
+    boost::optional<mapnik::composite_mode_e> const& comp_op,
+    RenderFunction render)
 {
     const mapnik::image_rgba8 expected_image(
         solid_image(expected_color));
@@ -32,8 +40,7 @@ void test_background_blending(
     mapnik::image_rgba8 actual_image(map.width(), map.height());
     mapnik::fill(actual_image, original_color);
 
-    mapnik::agg_renderer<mapnik::image_rgba8> ren(map, actual_image);
-    ren.apply();
+    render(map, actual_image);
 
     CHECK(!actual_image.get_premultiplied());
 
@@ -50,7 +57,8 @@ TEST_CASE("map background")
             mapnik::color(127, 128, 0),
             mapnik::color(0, 255, 0, 128),
             mapnik::color(255, 0, 0),
-            boost::none);
+            boost::none,
+            render_agg);
     }
 
     SECTION("background blending: src")
@@ -59,7 +67,8 @@ TEST_CASE("map background")
             mapnik::color(0, 255, 0, 128),
             mapnik::color(0, 255, 0, 128),
             mapnik::color(255, 0, 0),
-            mapnik::composite_mode_e::src);
+            mapnik::composite_mode_e::src,
+            render_agg);
     }
 
     SECTION("background blending: multiply")
@@ -68,6 +77,7 @@ TEST_CASE("map background")
             mapnik::color(127, 0, 0),
             mapnik::color(0, 255, 0, 128),
             mapnik::color(255, 0, 0),
-            mapnik::composite_mode_e::multiply);
+            mapnik::composite_mode_e::multiply,
+            render_agg);
     }
 }
