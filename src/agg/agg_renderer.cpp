@@ -163,9 +163,6 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
         {
             mapnik::premultiply_alpha(pixmap);
 
-            mapnik::color bg_color = *bg;
-            bg_color.premultiply();
-
             agg::rendering_buffer buf(pixmap.bytes(),
                                       pixmap.width(),
                                       pixmap.height(),
@@ -183,10 +180,10 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
             using renderer = agg::renderer_scanline_bin_solid<ren_base>;
             ren_base rb(pixf);
             renderer ren(rb);
-            ren.color(agg::rgba8_pre(bg_color.red(),
-                                     bg_color.green(),
-                                     bg_color.blue(),
-                                     bg_color.alpha()));
+            ren.color(agg::rgba8_pre(bg->red(),
+                                     bg->green(),
+                                     bg->blue(),
+                                     bg->alpha()));
 
             agg::scanline_bin sl;
 
