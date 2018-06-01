@@ -62,4 +62,30 @@ TEST_CASE("map background")
             expected_image, 0, true);
         CHECK(diff == 0);
     }
+
+    SECTION("background blending: multiply")
+    {
+        const mapnik::color expected_color(127, 0, 0);
+        const mapnik::image_rgba8 expected_image(
+            solid_image(expected_color));
+
+        mapnik::Map map(expected_image.width(), expected_image.height());
+        map.set_background(mapnik::color(0, 255, 0, 128));
+        map.set_background_comp_op(mapnik::composite_mode_e::multiply);
+
+        mapnik::image_rgba8 actual_image(map.width(), map.height());
+        const mapnik::color original_color(255, 0, 0);
+        mapnik::fill(actual_image, original_color);
+
+        mapnik::agg_renderer<mapnik::image_rgba8> ren(map, actual_image);
+        ren.apply();
+
+        CHECK(!actual_image.get_premultiplied());
+        std::clog << mapnik::get_pixel<mapnik::color>(actual_image, 0,
+        0) << std::endl;
+
+        const std::size_t diff = mapnik::compare(actual_image,
+            expected_image, 0, true);
+        CHECK(diff == 0);
+    }
 }

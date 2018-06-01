@@ -159,7 +159,14 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
     boost::optional<color> const& bg = m.background();
     if (bg)
     {
-        if (bg->alpha() < 255)
+        composite_mode_e bg_comp_op = m.background_comp_op();
+        if (bg->alpha() == 255 || bg_comp_op == composite_mode_e::src)
+        {
+            mapnik::color bg_color = *bg;
+            bg_color.premultiply();
+            mapnik::fill(pixmap, bg_color);
+        }
+        else
         {
             mapnik::premultiply_alpha(pixmap);
 
@@ -174,8 +181,7 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
             using pixfmt_comp_type = agg::pixfmt_custom_blend_rgba<
                 blender_type, agg::rendering_buffer>;
             pixfmt_comp_type pixf(buf);
-            pixf.comp_op(static_cast<agg::comp_op_e>(
-                m.background_comp_op()));
+            pixf.comp_op(static_cast<agg::comp_op_e>(bg_comp_op));
             using ren_base = agg::renderer_base<pixfmt_comp_type>;
             using renderer = agg::renderer_scanline_bin_solid<ren_base>;
             ren_base rb(pixf);
@@ -193,12 +199,6 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
             ras_ptr->line_to_d(0, pixmap.height());
 
             agg::render_scanlines(*ras_ptr, sl, ren);
-        }
-        else
-        {
-            mapnik::color bg_color = *bg;
-            bg_color.set_premultiplied(true);
-            mapnik::fill(pixmap, bg_color);
         }
     }
     else
