@@ -3,6 +3,9 @@
 #include <mapnik/map.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/agg_renderer.hpp>
+#if defined(HAVE_CAIRO)
+#include <mapnik/cairo/cairo_renderer.hpp>
+#endif
 
 mapnik::image_rgba8 solid_image(
     mapnik::color const& color)
@@ -18,6 +21,23 @@ void render_agg(mapnik::Map const& map, mapnik::image_rgba8 & image)
     mapnik::agg_renderer<mapnik::image_rgba8> ren(map, image);
     ren.apply();
 }
+
+#if defined(HAVE_CAIRO)
+void render_cairo(mapnik::Map const& map, mapnik::image_rgba8 & image)
+{
+    mapnik::cairo_surface_ptr image_surface(
+        cairo_image_surface_create_for_data(
+            image.bytes(),
+            CAIRO_FORMAT_ARGB32,
+            image.width(),
+            image.height(),
+            image.row_size()),
+        mapnik::cairo_surface_closer());
+    mapnik::cairo_ptr image_context(mapnik::create_context(image_surface));
+    mapnik::cairo_renderer<mapnik::cairo_ptr> ren(map, image_context, 1.0);
+    ren.apply();
+}
+#endif
 
 template <typename RenderFunction>
 void test_background_blending(
@@ -51,7 +71,7 @@ void test_background_blending(
 
 TEST_CASE("map background")
 {
-    SECTION("background blending: src_over (default)")
+    SECTION("AGG: background blending: src_over (default)")
     {
         test_background_blending(
             mapnik::color(127, 128, 0),
@@ -61,7 +81,19 @@ TEST_CASE("map background")
             render_agg);
     }
 
-    SECTION("background blending: src")
+#if defined(HAVE_CAIRO)
+    SECTION("Cairo: background blending: src_over (default)")
+    {
+        test_background_blending(
+            mapnik::color(127, 128, 0),
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(255, 0, 0),
+            boost::none,
+            render_cairo);
+    }
+#endif
+
+    SECTION("AGG: background blending: src")
     {
         test_background_blending(
             mapnik::color(0, 255, 0, 128),
@@ -71,7 +103,19 @@ TEST_CASE("map background")
             render_agg);
     }
 
-    SECTION("background blending: multiply")
+#if defined(HAVE_CAIRO)
+    SECTION("Cairo: background blending: src")
+    {
+        test_background_blending(
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(255, 0, 0),
+            mapnik::composite_mode_e::src,
+            render_cairo);
+    }
+#endif
+
+    SECTION("AGG: background blending: multiply")
     {
         test_background_blending(
             mapnik::color(127, 0, 0),
@@ -80,4 +124,16 @@ TEST_CASE("map background")
             mapnik::composite_mode_e::multiply,
             render_agg);
     }
+
+#if defined(HAVE_CAIRO)
+    SECTION("Cairo: background blending: multiply")
+    {
+        test_background_blending(
+            mapnik::color(127, 0, 0),
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(255, 0, 0),
+            mapnik::composite_mode_e::multiply,
+            render_cairo);
+    }
+#endif
 }
