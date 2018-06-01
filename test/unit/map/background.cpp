@@ -1,6 +1,5 @@
 #include "catch.hpp"
 
-#include <iostream>
 #include <mapnik/map.hpp>
 #include <mapnik/image_util.hpp>
 #include <mapnik/agg_renderer.hpp>
@@ -14,78 +13,61 @@ mapnik::image_rgba8 solid_image(
     return image;
 }
 
+void test_background_blending(
+    mapnik::color const& expected_color,
+    mapnik::color const& background_color,
+    mapnik::color const& original_color,
+    boost::optional<mapnik::composite_mode_e> const& comp_op)
+{
+    const mapnik::image_rgba8 expected_image(
+        solid_image(expected_color));
+
+    mapnik::Map map(expected_image.width(), expected_image.height());
+    map.set_background(background_color);
+    if (comp_op)
+    {
+        map.set_background_comp_op(*comp_op);
+    }
+
+    mapnik::image_rgba8 actual_image(map.width(), map.height());
+    mapnik::fill(actual_image, original_color);
+
+    mapnik::agg_renderer<mapnik::image_rgba8> ren(map, actual_image);
+    ren.apply();
+
+    CHECK(!actual_image.get_premultiplied());
+
+    const std::size_t diff = mapnik::compare(actual_image,
+        expected_image, 0, true);
+    CHECK(diff == 0);
+}
+
 TEST_CASE("map background")
 {
     SECTION("background blending: src_over (default)")
     {
-        const mapnik::color expected_color(127, 128, 0);
-        const mapnik::image_rgba8 expected_image(
-            solid_image(expected_color));
-
-        mapnik::Map map(expected_image.width(), expected_image.height());
-        map.set_background(mapnik::color(0, 255, 0, 128));
-
-        mapnik::image_rgba8 actual_image(map.width(), map.height());
-        const mapnik::color original_color(255, 0, 0);
-        mapnik::fill(actual_image, original_color);
-
-        mapnik::agg_renderer<mapnik::image_rgba8> ren(map, actual_image);
-        ren.apply();
-
-        CHECK(!actual_image.get_premultiplied());
-
-        const std::size_t diff = mapnik::compare(actual_image,
-            expected_image, 0, true);
-        CHECK(diff == 0);
+        test_background_blending(
+            mapnik::color(127, 128, 0),
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(255, 0, 0),
+            boost::none);
     }
 
     SECTION("background blending: src")
     {
-        const mapnik::color expected_color(0, 255, 0, 128);
-        const mapnik::image_rgba8 expected_image(
-            solid_image(expected_color));
-
-        mapnik::Map map(expected_image.width(), expected_image.height());
-        map.set_background(mapnik::color(0, 255, 0, 128));
-        map.set_background_comp_op(mapnik::composite_mode_e::src);
-
-        mapnik::image_rgba8 actual_image(map.width(), map.height());
-        const mapnik::color original_color(255, 0, 0);
-        mapnik::fill(actual_image, original_color);
-
-        mapnik::agg_renderer<mapnik::image_rgba8> ren(map, actual_image);
-        ren.apply();
-
-        CHECK(!actual_image.get_premultiplied());
-
-        const std::size_t diff = mapnik::compare(actual_image,
-            expected_image, 0, true);
-        CHECK(diff == 0);
+        test_background_blending(
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(255, 0, 0),
+            mapnik::composite_mode_e::src);
     }
 
     SECTION("background blending: multiply")
     {
-        const mapnik::color expected_color(127, 0, 0);
-        const mapnik::image_rgba8 expected_image(
-            solid_image(expected_color));
-
-        mapnik::Map map(expected_image.width(), expected_image.height());
-        map.set_background(mapnik::color(0, 255, 0, 128));
-        map.set_background_comp_op(mapnik::composite_mode_e::multiply);
-
-        mapnik::image_rgba8 actual_image(map.width(), map.height());
-        const mapnik::color original_color(255, 0, 0);
-        mapnik::fill(actual_image, original_color);
-
-        mapnik::agg_renderer<mapnik::image_rgba8> ren(map, actual_image);
-        ren.apply();
-
-        CHECK(!actual_image.get_premultiplied());
-        std::clog << mapnik::get_pixel<mapnik::color>(actual_image, 0,
-        0) << std::endl;
-
-        const std::size_t diff = mapnik::compare(actual_image,
-            expected_image, 0, true);
-        CHECK(diff == 0);
+        test_background_blending(
+            mapnik::color(127, 0, 0),
+            mapnik::color(0, 255, 0, 128),
+            mapnik::color(255, 0, 0),
+            mapnik::composite_mode_e::multiply);
     }
 }

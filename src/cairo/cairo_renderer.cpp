@@ -148,7 +148,7 @@ void cairo_renderer<T>::setup(Map const& map)
     if (bg)
     {
         cairo_save_restore guard(context_);
-        context_.set_operator(composite_mode_e::src);
+        context_.set_operator(map.background_comp_op());
         context_.set_color(*bg);
         context_.paint();
     }
