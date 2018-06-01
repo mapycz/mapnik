@@ -25,6 +25,8 @@ void render_agg(mapnik::Map const& map, mapnik::image_rgba8 & image)
 #if defined(HAVE_CAIRO)
 void render_cairo(mapnik::Map const& map, mapnik::image_rgba8 & image)
 {
+    // We have to keep in mind here that Cairo uses
+    // reversed order of color components.
     mapnik::cairo_surface_ptr image_surface(
         cairo_image_surface_create_for_data(
             image.bytes(),
@@ -36,6 +38,9 @@ void render_cairo(mapnik::Map const& map, mapnik::image_rgba8 & image)
     mapnik::cairo_ptr image_context(mapnik::create_context(image_surface));
     mapnik::cairo_renderer<mapnik::cairo_ptr> ren(map, image_context, 1.0);
     ren.apply();
+    // Cairo ouput is premultiplied
+    set_premultiplied_alpha(image, true);
+    mapnik::demultiply_alpha(image);
 }
 #endif
 
