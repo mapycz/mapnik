@@ -242,7 +242,7 @@ void map_parser::parse_map(Map & map,
             }
 
             optional<std::string> bgcolor_comp_op_name =
-                map_node.get_opt_attr<std::string>("background-comp-op");
+                map_node.get_opt_attr<std::string>("background-color-comp-op");
             if (bgcolor_comp_op_name)
             {
                 optional<composite_mode_e> comp_op = comp_op_from_string(*bgcolor_comp_op_name);

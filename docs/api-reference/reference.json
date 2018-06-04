@@ -140,6 +140,12 @@
             "type": "color",
             "doc": "Map Background color."
         },
+        "background-color-comp-op": {
+            "doc": "Set the compositing operation used to blend the background color into the map.",
+            "default-value": "src-over",
+            "default-meaning": "The background-color will be blended with the map normally (placed on top).",
+            "see-also": "comp-op"
+        },
         "background-image": {
             "type": "uri",
             "default-value": "",
@@ -147,9 +153,9 @@
             "doc": "An image that is repeated below all features on a map as a background. Accepted formats: svg, jpg, png, tiff, and webp."
         },
         "background-image-comp-op": {
-            "doc": "Set the compositing operation used to blend the image into the background.",
+            "doc": "Set the compositing operation used to blend the image into the map.",
             "default-value": "src-over",
-            "default-meaning": "The background-image will be blended with the background normally (placed on top of any existing background-color).",
+            "default-meaning": "The background-image will be blended with the map normally (placed on top of any existing background-color).",
             "see-also": "comp-op"
         },
         "background-image-opacity": {
