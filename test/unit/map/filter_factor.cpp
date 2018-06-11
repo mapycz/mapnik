@@ -18,7 +18,7 @@ TEST_CASE("filter-factor")
             "raster_symbolizer_filter_factor_scaling_bilinear_fast.xml");
 
         boost::optional<mapnik::feature_type_style const&> raster_style =
-            map.find_style("raster");
+            const_cast<mapnik::Map const&>(map).find_style("raster");
 
         REQUIRE(raster_style);
 

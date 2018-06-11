@@ -257,6 +257,17 @@ boost::optional<feature_type_style const&> Map::find_style(std::string const& na
         return boost::optional<feature_type_style const&>() ;
 }
 
+boost::optional<feature_type_style &> Map::find_style(std::string const& name)
+{
+    using iterator_type = std::map<std::string,feature_type_style>::iterator;
+    iterator_type itr = styles_.find(name);
+    if (itr == styles_.end())
+    {
+        return boost::optional<feature_type_style &>();
+    }
+    return boost::optional<feature_type_style &>(itr->second);
+}
+
 bool Map::insert_fontset(std::string const& name, font_set const& fontset)
 {
     if (fontset.get_name() != name)

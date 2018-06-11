@@ -199,6 +199,12 @@ public:
      */
     boost::optional<feature_type_style const&> find_style(std::string const& name) const;
 
+    /*! \brief Find a style.
+     *  @param name The name of the style.
+     *  @return The style if found. If not found return the default map style.
+     */
+    boost::optional<feature_type_style &> find_style(std::string const& name);
+
     /*! \brief Insert a fontset into the map by copying.
      *  @param name The name of the fontset.
      *  @param fontset The fontset to insert.
