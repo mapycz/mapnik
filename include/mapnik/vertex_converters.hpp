@@ -37,6 +37,7 @@
 #include <mapnik/symbolizer_keys.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/extend_converter.hpp>
+#include <mapnik/debug_converter.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -69,6 +70,7 @@ struct affine_transform_tag {};
 struct offset_transform_tag {};
 struct extend_tag {};
 struct contour_tag {};
+struct debug_tag {};
 
 namespace  detail {
 
@@ -290,6 +292,18 @@ struct converter_traits<T, mapnik::contour_tag>
         double width = get<value_double, keys::contour>(sym, feat, vars);
         // Polygon exterior is expected to be CCW.
         geom.width(-width);
+    }
+};
+
+template <typename T>
+struct converter_traits<T, mapnik::debug_tag>
+{
+    using geometry_type = T;
+    using conv_type = debug_converter<geometry_type>;
+
+    template <typename Args>
+    static void setup(geometry_type & geom, Args const& args)
+    {
     }
 };
 
