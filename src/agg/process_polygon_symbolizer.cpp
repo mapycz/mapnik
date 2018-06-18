@@ -51,7 +51,8 @@ void agg_renderer<T0,T1>::process(polygon_symbolizer const& sym,
                               mapnik::feature_impl & feature,
                               proj_transform const& prj_trans)
 {
-    using vertex_converter_type = vertex_converter<clip_poly_tag,
+    using vertex_converter_type = vertex_converter<transform2_tag,
+                                                   clip_poly_tag,
                                                    transform_tag,
                                                    affine_transform_tag,
                                                    simplify_tag,
