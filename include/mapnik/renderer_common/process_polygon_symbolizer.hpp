@@ -62,8 +62,8 @@ void render_polygon_symbolizer(polygon_symbolizer const &sym,
             common.width_ + 1, common.height_ + 1);
     }
 
-    vertex_converter_type converter(final_clip_box, sym, common.t_, prj_trans, tr,
-                                    feature,common.vars_,common.scale_factor_);
+    vertex_converter_type converter(final_clip_box, sym, common.t_,
+        prj_trans, tr, feature, common.vars_, common.scale_factor_);
 
     if (transform2)
     {
@@ -74,7 +74,6 @@ void render_polygon_symbolizer(polygon_symbolizer const &sym,
         converter.template set<transform_tag>();
     }
 
-    converter.template set<debug_tag>();
     if (clip) converter.template set<clip_poly_tag>();
     converter.template set<affine_transform_tag>();
     if (simplify_tolerance > 0.0) converter.template set<simplify_tag>(); // optional simplify converter
