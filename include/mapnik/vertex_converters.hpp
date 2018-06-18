@@ -61,6 +61,7 @@
 namespace mapnik {
 
 struct transform_tag {};
+struct transform2_tag {};
 struct clip_line_tag {};
 struct clip_poly_tag {};
 struct smooth_tag {};
@@ -227,6 +228,14 @@ struct converter_traits<T,mapnik::transform_tag>
     }
 };
 
+// Second projection transform allows to choose at which point
+// of conversion to transform.
+template <typename T>
+struct converter_traits<T, mapnik::transform2_tag>
+    : converter_traits<T, mapnik::transform_tag>
+{
+};
+
 template <typename T>
 struct converter_traits<T,mapnik::affine_transform_tag>
 {
@@ -326,12 +335,6 @@ template <typename T0, typename T1>
 struct is_switchable
 {
     static constexpr bool value = true;
-};
-
-template <typename T>
-struct is_switchable<T, transform_tag>
-{
-    static constexpr bool value = false;
 };
 
 template <typename T>

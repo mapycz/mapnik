@@ -67,15 +67,36 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     agg::trans_affine tr;
     auto geom_transform = get_optional<transform_type>(sym, keys::geometry_transform);
     if (geom_transform) { evaluate_transform(tr, feature, common_.vars_, *geom_transform, common_.scale_factor_); }
-    using vertex_converter_type = vertex_converter<clip_poly_tag,
+    using vertex_converter_type = vertex_converter<transform2_tag,
+                                                   clip_poly_tag,
                                                    transform_tag,
                                                    affine_transform_tag,
                                                    simplify_tag,
                                                    smooth_tag>;
 
-    vertex_converter_type converter(clip_box,sym,common_.t_,prj_trans,tr,feature,common_.vars_,common_.scale_factor_);
-    if (prj_trans.equal() && clip) converter.set<clip_poly_tag>();
-    converter.set<transform_tag>(); //always transform
+    box2d<double> final_clip_box(clip_box);
+    bool transform2 = false;
+
+    if (clip && !prj_trans.equal())
+    {
+        transform2 = true;
+        final_clip_box = box2d<double>(-1, -1,
+            common_.width_ + 1, common_.height_ + 1);
+    }
+
+    vertex_converter_type converter(final_clip_box, sym, common_.t_,
+        prj_trans, tr, feature, common_.vars_, common_.scale_factor_);
+
+    if (transform2)
+    {
+        converter.template set<transform2_tag>();
+    }
+    else
+    {
+        converter.template set<transform_tag>();
+    }
+
+    if (clip) converter.set<clip_poly_tag>();
     converter.set<affine_transform_tag>();
     if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter

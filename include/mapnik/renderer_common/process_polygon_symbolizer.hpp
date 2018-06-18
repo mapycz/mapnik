@@ -52,11 +52,29 @@ void render_polygon_symbolizer(polygon_symbolizer const &sym,
     value_double opacity = get<value_double,keys::fill_opacity>(sym, feature, common.vars_);
     value_double contour = get<value_double,keys::contour>(sym, feature, common.vars_);
 
-    vertex_converter_type converter(clip_box, sym, common.t_, prj_trans, tr,
-                                    feature,common.vars_,common.scale_factor_);
+    box2d<double> final_clip_box(clip_box);
+    bool transform2 = false;
 
-    if (prj_trans.equal() && clip) converter.template set<clip_poly_tag>();
-    converter.template set<transform_tag>(); //always transform
+    if (clip && !prj_trans.equal())
+    {
+        transform2 = true;
+        final_clip_box = box2d<double>(-1, -1,
+            common.width_ + 1, common.height_ + 1);
+    }
+
+    vertex_converter_type converter(final_clip_box, sym, common.t_,
+        prj_trans, tr, feature, common.vars_, common.scale_factor_);
+
+    if (transform2)
+    {
+        converter.template set<transform2_tag>();
+    }
+    else
+    {
+        converter.template set<transform_tag>();
+    }
+
+    if (clip) converter.template set<clip_poly_tag>();
     converter.template set<affine_transform_tag>();
     if (simplify_tolerance > 0.0) converter.template set<simplify_tag>(); // optional simplify converter
     if (smooth > 0.0) converter.template set<smooth_tag>(); // optional smooth converter
