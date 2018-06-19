@@ -23,6 +23,8 @@
 #ifndef MAPNIK_CORRECT_CONVERTER_HPP
 #define MAPNIK_CORRECT_CONVERTER_HPP
 
+#ifdef MAPNIK_CORRECT_CONVERTER
+
 #include <mapnik/vertex.hpp>
 #include <mapnik/vertex_adapters.hpp>
 #include <mapnik/polygon_vertex_processor.hpp>
@@ -96,5 +98,7 @@ private:
 };
 
 }
+
+#endif
 
 #endif // MAPNIK_CORRECT_CONVERTER_HPP

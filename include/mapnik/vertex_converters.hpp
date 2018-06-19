@@ -38,7 +38,9 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/extend_converter.hpp>
 #include <mapnik/debug_converter.hpp>
+#ifdef MAPNIK_CORRECT_CONVERTER
 #include <mapnik/correct_converter.hpp>
+#endif
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -73,7 +75,9 @@ struct offset_transform_tag {};
 struct extend_tag {};
 struct contour_tag {};
 struct debug_tag {};
+#ifdef MAPNIK_CORRECT_CONVERTER
 struct correct_tag {};
+#endif
 
 namespace  detail {
 
@@ -318,6 +322,7 @@ struct converter_traits<T, mapnik::debug_tag>
     }
 };
 
+#ifdef MAPNIK_CORRECT_CONVERTER
 template <typename T>
 struct converter_traits<T, mapnik::correct_tag>
 {
@@ -329,6 +334,7 @@ struct converter_traits<T, mapnik::correct_tag>
     {
     }
 };
+#endif
 
 
 template <typename T0, typename T1>
