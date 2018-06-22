@@ -555,7 +555,7 @@ bool interior_position(PathType & path, double & x, double & y)
     // center of the widest intersection between the polygon and the line.
 
     std::vector<double> intersections; // only need to store the X as we know the y
-    geometry::point<double> p0, p1, move_to;
+    geometry::point<double> p0, p1(0, 0), move_to;
     unsigned command = SEG_END;
 
     path.rewind(0);
