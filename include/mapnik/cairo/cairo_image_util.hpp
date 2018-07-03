@@ -79,16 +79,16 @@ static inline void cairo_image_to_rgba8(mapnik::image_rgba8 & data,
 }
 
 static inline void rgba8_to_cairo_image(mapnik::image_rgba8 const& data,
-                                        cairo_surface_ptr & surface)
+                                        cairo_surface_t & surface)
 {
-    if (cairo_image_surface_get_format(&*surface) != CAIRO_FORMAT_ARGB32)
+    if (cairo_image_surface_get_format(&surface) != CAIRO_FORMAT_ARGB32)
     {
         throw std::runtime_error(
             "Unable to convert this Cairo format to rgba8 image");
     }
 
-    int surface_width = cairo_image_surface_get_width(&*surface);
-    int surface_height = cairo_image_surface_get_height(&*surface);
+    int surface_width = cairo_image_surface_get_width(&surface);
+    int surface_height = cairo_image_surface_get_height(&surface);
 
     if (surface_width != static_cast<int>(data.width()) ||
         surface_height != static_cast<int>(data.height()))
@@ -97,11 +97,11 @@ static inline void rgba8_to_cairo_image(mapnik::image_rgba8 const& data,
             "size of image must match size of cairo surface");
     }
 
-    int stride = cairo_image_surface_get_stride(&*surface) / 4;
+    int stride = cairo_image_surface_get_stride(&surface) / 4;
 
     using pixel_type = image_rgba8::pixel_type;
     pixel_type *out_buffer = reinterpret_cast<pixel_type *>(
-        cairo_image_surface_get_data(&*surface));
+        cairo_image_surface_get_data(&surface));
 
     for (std::size_t y = 0; y < data.height(); ++y)
     {

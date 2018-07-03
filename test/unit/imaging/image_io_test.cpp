@@ -233,4 +233,26 @@ SECTION("Quantising small (less than 3 pixel images preserve original colours")
 #endif
 } // END SECTION
 
+SECTION("rgba8_to_cairo_image")
+{
+#if defined(HAVE_CAIRO)
+    { // 1x1
+        mapnik::image_rgba8 im(1, 1);
+        im(0, 0) = mapnik::color(255, 0, 0, 127).rgba();
+        mapnik::cairo_surface_ptr surface(
+            cairo_image_surface_create(
+                CAIRO_FORMAT_ARGB32,
+                im.width(), im.height()),
+            mapnik::cairo_surface_closer());
+        mapnik::rgba8_to_cairo_image(im, *surface);
+        unsigned char *surface_buffer = reinterpret_cast<unsigned char *>(
+            cairo_image_surface_get_data(&*surface));
+        CHECK(surface_buffer[0] == 0);
+        CHECK(surface_buffer[1] == 0);
+        CHECK(surface_buffer[2] == 127);
+        CHECK(surface_buffer[3] == 127);
+    }
+#endif
+} // END SECTION
+
 } // END TEST_CASE
