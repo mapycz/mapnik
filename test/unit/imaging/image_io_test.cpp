@@ -252,6 +252,34 @@ SECTION("rgba8_to_cairo_image")
         CHECK(surface_buffer[2] == 127);
         CHECK(surface_buffer[3] == 127);
     }
+    { // 2x3
+        mapnik::image_rgba8 im(2, 3);
+        mapnik::fill(im, mapnik::color(127, 0, 255, 127));
+
+        CHECK(is_solid(im));
+
+        mapnik::cairo_surface_ptr surface(
+            cairo_image_surface_create(
+                CAIRO_FORMAT_ARGB32,
+                im.width(), im.height()),
+            mapnik::cairo_surface_closer());
+        mapnik::rgba8_to_cairo_image(im, *surface);
+        unsigned char *surface_buffer = reinterpret_cast<unsigned char *>(
+            cairo_image_surface_get_data(&*surface));
+        int stride = cairo_image_surface_get_stride(&*surface);
+
+        for (std::size_t y = 0; y < im.height(); ++y)
+        {
+            for (std::size_t x = 0; x < im.width(); ++x)
+            {
+                CHECK(surface_buffer[4 * x + 0] == 127);
+                CHECK(surface_buffer[4 * x + 1] == 0);
+                CHECK(surface_buffer[4 * x + 2] == 63);
+                CHECK(surface_buffer[4 * x + 3] == 127);
+            }
+            surface_buffer += stride;
+        }
+    }
 #endif
 } // END SECTION
 
