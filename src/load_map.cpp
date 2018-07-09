@@ -141,6 +141,7 @@ private:
     bool parse_raster_colorizer(raster_colorizer_ptr const& rc, xml_node const& node);
     void parse_stroke(symbolizer_base & symbol, xml_node const& node);
     void parse_svg_attributes(symbolizer_base & symbol, xml_node const& node);
+    void parse_extra_params(parameters & params, xml_node const& node);
     void ensure_font_face(std::string const& face_name);
     void find_unused_nodes(xml_node const& root);
     void find_unused_nodes_recursive(xml_node const& node, std::string & error_text);
@@ -443,21 +444,7 @@ void map_parser::parse_map_include(Map & map,
             else if (n.is("Parameters"))
             {
                 parameters & params = map.get_extra_parameters();
-                for (auto const& p: n)
-                {
-                    if (p.is("Parameter"))
-                    {
-                        std::string val = p.get_text();
-                        std::string key = p.get_attr<std::string>("name");
-                        mapnik::value_bool b;
-                        mapnik::value_integer i;
-                        mapnik::value_double d;
-                        if (mapnik::util::string2int(val,i)) params[key] = i;
-                        else if (mapnik::util::string2bool(val,b)) params[key] = b;
-                        else if (mapnik::util::string2double(val,d)) params[key] = d;
-                        else params[key] = val;
-                    }
-                }
+                this->parse_extra_params(params, n);
             }
         }
     }
@@ -865,6 +852,11 @@ void map_parser::parse_layer(Parent & parent,
                 std::future<void> datasource_future = std::async(
                     datasource_init_, create_datasource, std::ref(lyr), params);
                 datasource_futures.emplace_back(std::move(datasource_future));
+            }
+            else if (child.is("Parameters"))
+            {
+                parameters & params = lyr.get_extra_parameters();
+                this->parse_extra_params(params, child);
             }
             else if (child.is("Layer"))
             {
@@ -1767,6 +1759,25 @@ void map_parser::parse_pair_layout(group_symbolizer_properties & prop, xml_node 
     if (max_difference) layout.set_max_difference(*max_difference);
 
     prop.set_layout(std::move(layout));
+}
+
+void map_parser::parse_extra_params(parameters & params, xml_node const& node)
+{
+    for (auto const& p: node)
+    {
+        if (p.is("Parameter"))
+        {
+            std::string val = p.get_text();
+            std::string key = p.get_attr<std::string>("name");
+            mapnik::value_bool b;
+            mapnik::value_integer i;
+            mapnik::value_double d;
+            if (mapnik::util::string2int(val,i)) params[key] = i;
+            else if (mapnik::util::string2bool(val,b)) params[key] = b;
+            else if (mapnik::util::string2double(val,d)) params[key] = d;
+            else params[key] = val;
+        }
+    }
 }
 
 void map_parser::ensure_font_face(std::string const& face_name)

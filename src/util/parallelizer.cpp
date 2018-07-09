@@ -25,6 +25,7 @@
 #include <mapnik/projection.hpp>
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/layer.hpp>
+#include <mapnik/image_scaling.hpp>
 
 #include <future>
 
@@ -37,6 +38,12 @@ MAPNIK_DECL bool is_parallelizable(Map const& map)
     return parallel && *parallel;
 }
 
+boost::optional<value_double> layer_scale_factor(layer const& lyr)
+{
+    parameters const & params = lyr.get_extra_parameters();
+    return params.get<value_double>("scale_factor");
+}
+
 image_rgba8 render_layer(Map const& map,
                          layer const& lay,
                          projection const& proj,
@@ -46,6 +53,15 @@ image_rgba8 render_layer(Map const& map,
                          std::size_t height,
                          std::size_t index)
 {
+    boost::optional<value_double> lay_scale_factor = layer_scale_factor(lay);
+    if (lay_scale_factor)
+    {
+        double scale_factor_ratio = *lay_scale_factor / scale_factor;
+        width = std::round(scale_factor_ratio * width);
+        height = std::round(scale_factor_ratio * height);
+        scale_factor = *lay_scale_factor;
+    }
+
     image_rgba8 img(width, height);
     mapnik::agg_renderer<image_rgba8> ren(map, img, scale_factor);
 
@@ -68,8 +84,8 @@ image_rgba8 render_layer(Map const& map,
                        proj,
                        map.scale(),
                        scale_denom,
-                       map.width(),
-                       map.height(),
+                       width,
+                       height,
                        map.get_current_extent(),
                        map.buffer_size(),
                        names);
@@ -132,6 +148,16 @@ MAPNIK_DECL void render(Map const& map,
     for (auto & lj : layer_jobs)
     {
         image_rgba8 layer_img(std::move(lj.future.get()));
+        if (layer_img.width() != img.width() ||
+            layer_img.height() != img.height())
+        {
+            image_rgba8 scaled(img.width(), img.height());
+            scale_image_agg(scaled, layer_img, SCALING_BILINEAR_FAST,
+                static_cast<double>(img.width()) / layer_img.width(),
+                static_cast<double>(img.height()) / layer_img.height(),
+                0, 0, 1);
+            layer_img = std::move(scaled);
+        }
         layer const& lay = lj.lay;
         composite_mode_e comp_op = lay.comp_op() ? *lay.comp_op() : src_over;
         composite(img, layer_img, comp_op, lay.get_opacity(), 0, 0);

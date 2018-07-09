@@ -48,7 +48,8 @@ layer::layer(std::string const& name, std::string const& srs)
       maximum_extent_(),
       comp_op_(),
       opacity_(1.0f),
-      direct_filters_()
+      direct_filters_(),
+      extra_params_()
 {}
 
 layer::layer(layer const& rhs)
@@ -68,7 +69,8 @@ layer::layer(layer const& rhs)
       maximum_extent_(rhs.maximum_extent_),
       comp_op_(rhs.comp_op_),
       opacity_(rhs.opacity_),
-      direct_filters_(rhs.direct_filters_)
+      direct_filters_(rhs.direct_filters_),
+      extra_params_(rhs.extra_params_)
 {}
 
 layer::layer(layer && rhs)
@@ -88,7 +90,8 @@ layer::layer(layer && rhs)
       maximum_extent_(std::move(rhs.maximum_extent_)),
       comp_op_(std::move(rhs.comp_op_)),
       opacity_(std::move(rhs.opacity_)),
-      direct_filters_(std::move(rhs.direct_filters_))
+      direct_filters_(std::move(rhs.direct_filters_)),
+      extra_params_(std::move(rhs.extra_params_))
 {}
 
 layer& layer::operator=(layer rhs)
@@ -110,6 +113,7 @@ layer& layer::operator=(layer rhs)
     std::swap(this->comp_op_, rhs.comp_op_);
     std::swap(this->opacity_, rhs.opacity_);
     std::swap(this->direct_filters_, rhs.direct_filters_);
+    std::swap(this->extra_params_, rhs.extra_params_);
     return *this;
 }
 
@@ -130,7 +134,8 @@ bool layer::operator==(layer const& rhs) const
         (maximum_extent_ == rhs.maximum_extent_) &&
         (comp_op_ == rhs.comp_op_) &&
         (opacity_ == rhs.opacity_) &&
-        (direct_filters_ == rhs.direct_filters_);
+        (direct_filters_ == rhs.direct_filters_) &&
+        (extra_params_ == rhs.extra_params_);
 }
 
 layer::~layer() {}
@@ -339,6 +344,21 @@ void layer::set_group_by(std::string const& column)
 std::string const& layer::group_by() const
 {
     return group_by_;
+}
+
+parameters const& layer::get_extra_parameters() const
+{
+    return extra_params_;
+}
+
+parameters& layer::get_extra_parameters()
+{
+    return extra_params_;
+}
+
+void layer::set_extra_parameters(parameters& params)
+{
+    extra_params_ = params;
 }
 
 void layer::set_comp_op(composite_mode_e comp_op)

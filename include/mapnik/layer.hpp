@@ -28,6 +28,7 @@
 #include <mapnik/box2d.hpp>
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/image_filter_types.hpp>
+#include <mapnik/params.hpp>
 
 // stl
 #include <deque>
@@ -213,6 +214,21 @@ public:
      */
     box2d<double> envelope() const;
 
+    /*!
+     * @brief Get extra, arbitrary Parameters attached to the Layer
+     */
+    parameters const& get_extra_parameters() const;
+
+    /*!
+     * @brief Get non-const extra, arbitrary Parameters attached to the Layer
+     */
+    parameters& get_extra_parameters();
+
+    /*!
+     * @brief Set extra, arbitary Parameters of the Layer
+     */
+    void set_extra_parameters(parameters& params);
+
     // compositing
     void set_comp_op(composite_mode_e comp_op);
     void reset_comp_op();
@@ -248,6 +264,7 @@ private:
     boost::optional<composite_mode_e> comp_op_;
     double opacity_;
     std::vector<filter::filter_type> direct_filters_;
+    parameters extra_params_;
 };
 }
 
