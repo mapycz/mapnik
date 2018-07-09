@@ -106,6 +106,22 @@ struct layer_job
     layer const& lay;
 };
 
+void scale_if_needed(image_rgba8 & layer_img,
+                     std::size_t width,
+                     std::size_t height)
+{
+    if (layer_img.width() != width ||
+        layer_img.height() != height)
+    {
+        image_rgba8 scaled(width, height);
+        scale_image_agg(scaled, layer_img, SCALING_BILINEAR_FAST,
+            static_cast<double>(width) / layer_img.width(),
+            static_cast<double>(height) / layer_img.height(),
+            0, 0, 1);
+        layer_img = std::move(scaled);
+    }
+}
+
 MAPNIK_DECL void render(Map const& map,
             image_rgba8 & img,
             double scale_denom,
@@ -148,16 +164,7 @@ MAPNIK_DECL void render(Map const& map,
     for (auto & lj : layer_jobs)
     {
         image_rgba8 layer_img(std::move(lj.future.get()));
-        if (layer_img.width() != img.width() ||
-            layer_img.height() != img.height())
-        {
-            image_rgba8 scaled(img.width(), img.height());
-            scale_image_agg(scaled, layer_img, SCALING_BILINEAR_FAST,
-                static_cast<double>(img.width()) / layer_img.width(),
-                static_cast<double>(img.height()) / layer_img.height(),
-                0, 0, 1);
-            layer_img = std::move(scaled);
-        }
+        scale_if_needed(layer_img, img.width(), img.height());
         layer const& lay = lj.lay;
         composite_mode_e comp_op = lay.comp_op() ? *lay.comp_op() : src_over;
         composite(img, layer_img, comp_op, lay.get_opacity(), 0, 0);
