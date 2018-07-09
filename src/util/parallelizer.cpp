@@ -44,7 +44,7 @@ boost::optional<value_double> layer_scale_factor(layer const& lyr)
     return params.get<value_double>("scale_factor");
 }
 
-image_rgba8 render_layer(Map const& map,
+image_rgba8 render_layer(Map map,
                          layer const& lay,
                          projection const& proj,
                          double scale_denom,
@@ -60,6 +60,7 @@ image_rgba8 render_layer(Map const& map,
         width = std::round(scale_factor_ratio * width);
         height = std::round(scale_factor_ratio * height);
         scale_factor = *lay_scale_factor;
+        map.resize(width, height);
     }
 
     image_rgba8 img(width, height);
@@ -113,11 +114,12 @@ void scale_if_needed(image_rgba8 & layer_img,
     if (layer_img.width() != width ||
         layer_img.height() != height)
     {
-        image_rgba8 scaled(width, height);
+        image_rgba8 scaled(width, height, true, true);
         scale_image_agg(scaled, layer_img, SCALING_BILINEAR_FAST,
             static_cast<double>(width) / layer_img.width(),
             static_cast<double>(height) / layer_img.height(),
             0, 0, 1);
+        scaled.painted(layer_img.painted());
         layer_img = std::move(scaled);
     }
 }
