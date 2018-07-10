@@ -169,7 +169,7 @@ MAPNIK_DECL void render(Map const& map,
 
         layer_jobs.emplace_back(std::async(std::launch::async,
                                            render_layer,
-                                           std::cref(map),
+                                           map,
                                            std::cref(lay),
                                            std::cref(proj),
                                            scale_denom,
