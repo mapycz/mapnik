@@ -97,6 +97,11 @@ static inline void rgba8_to_cairo_image(mapnik::image_rgba8 const& data,
             "size of image must match size of cairo surface");
     }
 
+    // This function must be called before switching from drawing on the
+    // surface with cairo to drawing on it directly with native APIs, or
+    // accessing its memory outside of Cairo.
+    cairo_surface_flush(&surface);
+
     int stride = cairo_image_surface_get_stride(&surface) / 4;
 
     using pixel_type = image_rgba8::pixel_type;
@@ -121,6 +126,11 @@ static inline void rgba8_to_cairo_image(mapnik::image_rgba8 const& data,
         }
         out_buffer += stride;
     }
+
+    // Tells cairo that drawing has been done to surface using means other
+    // than cairo, and that cairo should reread any cached areas. Note that
+    // you must call cairo_surface_flush() before doing such drawing.
+    cairo_surface_mark_dirty(&surface);
 }
 
 }
