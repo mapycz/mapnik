@@ -60,7 +60,8 @@ void grid_renderer<T>::process(polygon_symbolizer const& sym,
                                                    transform_tag,
                                                    affine_transform_tag,
                                                    simplify_tag,
-                                                   smooth_tag>;
+                                                   smooth_tag,
+                                                   contour_tag>;
 
     ras_ptr->reset();
 
