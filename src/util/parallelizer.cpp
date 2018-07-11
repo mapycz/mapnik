@@ -41,7 +41,7 @@ MAPNIK_DECL bool is_parallelizable(Map const& map)
 boost::optional<value_double> layer_scale_factor(layer const& lyr)
 {
     parameters const & params = lyr.get_extra_parameters();
-    return params.get<value_double>("scale_factor");
+    return params.get<value_double>("scale-factor");
 }
 
 scaling_method_e layer_scaling_method(layer const& lyr)
@@ -59,6 +59,16 @@ scaling_method_e layer_scaling_method(layer const& lyr)
     return scaling_method ? *scaling_method : default_method;
 }
 
+bool is_layer_scale_factor_active(layer const& lyr, double scale_denom)
+{
+    parameters const & params = lyr.get_extra_parameters();
+    boost::optional<value_double> min(params.get<value_double>(
+        "scale-factor-minimum-scale-denominator"));
+    boost::optional<value_double> max(params.get<value_double>(
+        "scale-factor-maximum-scale-denominator"));
+    return !((min && scale_denom < *min) || (max && scale_denom > *max));
+}
+
 image_rgba8 render_layer(Map map,
                          layer const& lay,
                          projection const& proj,
@@ -69,7 +79,9 @@ image_rgba8 render_layer(Map map,
                          std::size_t index)
 {
     boost::optional<value_double> lay_scale_factor = layer_scale_factor(lay);
-    if (lay_scale_factor)
+    if (lay_scale_factor &&
+        std::abs(*lay_scale_factor - scale_factor) > 0.1 &&
+        is_layer_scale_factor_active(lay, scale_denom))
     {
         double scale_factor_ratio = *lay_scale_factor / scale_factor;
         width = std::round(scale_factor_ratio * width);
