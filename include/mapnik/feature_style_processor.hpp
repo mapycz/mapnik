@@ -39,6 +39,7 @@
 #include <string>
 #ifdef MAPNIK_STATS_RENDER
 #include <deque>
+#include <mutex>
 #endif
 
 namespace mapnik
@@ -60,6 +61,15 @@ enum eAttributeCollectionPolicy
 
 #ifdef MAPNIK_STATS_RENDER
 struct painted_features;
+
+// For readable log even with parallel rendering in multiple threads
+struct log_sink
+{
+    std::stringstream stream_;
+    static std::mutex mutex_;
+
+    ~log_sink();
+};
 #endif
 
 template <typename Processor>
@@ -149,6 +159,7 @@ private:
     Map const& m_;
 #ifdef MAPNIK_STATS_RENDER
     std::map<std::string, timer> datasource_query_times_;
+    log_sink sink_;
 #endif
 };
 }
