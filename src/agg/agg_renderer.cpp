@@ -230,7 +230,12 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
 }
 
 template <typename T0, typename T1>
-agg_renderer<T0,T1>::~agg_renderer() {}
+agg_renderer<T0,T1>::~agg_renderer()
+{
+#ifdef MAPNIK_STATS_RENDER
+    common_.detector_->stats_stream_ = nullptr;
+#endif
+}
 
 template <typename T0, typename T1>
 void agg_renderer<T0,T1>::start_map_processing(Map const& map)
