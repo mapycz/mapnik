@@ -158,6 +158,7 @@ private:
 
     Map const& m_;
 #ifdef MAPNIK_STATS_RENDER
+protected:
     std::map<std::string, timer> datasource_query_times_;
     log_sink sink_;
 #endif

@@ -80,6 +80,9 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, double scale_factor
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor)
 {
     buffers_.emplace(pixmap);
+#ifdef MAPNIK_STATS_RENDER
+    common_.detector_->stats_stream_ = &this->sink_.stream_;
+#endif
 }
 
 template <typename T0, typename T1>
@@ -94,6 +97,9 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, request const& req, attributes c
       common_(m, req, vars, offset_x, offset_y, req.width(), req.height(), scale_factor)
 {
     buffers_.emplace(pixmap);
+#ifdef MAPNIK_STATS_RENDER
+    common_.detector_->stats_stream_ = &this->sink_.stream_;
+#endif
 }
 
 template <typename T0, typename T1>
@@ -109,6 +115,9 @@ agg_renderer<T0,T1>::agg_renderer(Map const& m, T0 & pixmap, std::shared_ptr<T1>
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor, detector)
 {
     buffers_.emplace(pixmap);
+#ifdef MAPNIK_STATS_RENDER
+    common_.detector_->stats_stream_ = &this->sink_.stream_;
+#endif
 }
 
 template <typename buffer_type>

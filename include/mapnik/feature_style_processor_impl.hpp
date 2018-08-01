@@ -68,10 +68,19 @@ struct painted_features
     unsigned all_features_count = 0;
 };
 
+bool is_stats_render_allowed()
+{
+    char const* value = std::getenv("MAPNIK_STATS_RENDER");
+    return value != nullptr;
+}
+
 log_sink::~log_sink()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    std::clog << stream_.str();
+    if (is_stats_render_allowed())
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        std::clog << stream_.str();
+    }
 }
 
 std::mutex log_sink::mutex_;

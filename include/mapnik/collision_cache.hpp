@@ -120,13 +120,20 @@ public:
     }
 
 #ifdef MAPNIK_STATS_RENDER
+    std::ostream * stats_stream_ = nullptr;
+
     ~keyed_collision_cache()
     {
-        for (auto const & pair : cache_)
+        if (stats_stream_ != nullptr)
         {
-            Detector const & detector = pair.second;
-            std::clog << "collision cache: nodes count: " << detector.count_items() << std::endl;
-            std::clog << "collision cache: query count: " << detector.query_count_ << std::endl;
+            for (auto const & pair : cache_)
+            {
+                Detector const & detector = pair.second;
+                *stats_stream_ << "collision cache: nodes count: "
+                               << detector.count_items() << std::endl;
+                *stats_stream_ << "collision cache: query count: "
+                               << detector.query_count_ << std::endl;
+            }
         }
     }
 #endif
