@@ -48,6 +48,9 @@ void cairo_renderer<T>::process(raster_symbolizer const& sym,
             context_.set_operator(comp_op);
             context_.add_image(start_x, start_y, target, opacity);
         }
+#ifdef MAPNIK_STATS_RENDER
+       , this->sink_.stream_
+#endif
     );
 }
 

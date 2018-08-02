@@ -939,18 +939,22 @@ struct filter_visitor
     void operator () (T const& filter) const
     {
 #ifdef MAPNIK_STATS_RENDER
-    std::stringstream ss;
-    ss << T::name << ' '
-        << std::to_string(src_.width()) << "x"
-        << std::to_string(src_.height());
-    log_render lr(ss.str());
-    timer_with_action<log_render> __stats__(lr);
+        std::stringstream ss;
+        ss << T::name << ' '
+            << std::to_string(src_.width()) << "x"
+            << std::to_string(src_.height());
+        mapnik::log_render lr(ss.str(), this->stats_stream_ ?
+            *this->stats_stream_ : std::clog);
+        timer_with_action<log_render> __stats__(lr);
 #endif
         apply_filter(src_, filter, scale_factor_);
     }
 
     Src & src_;
     double scale_factor_;
+#ifdef MAPNIK_STATS_RENDER
+    std::ostream * stats_stream_ = nullptr;
+#endif
 };
 
 struct filter_radius_visitor

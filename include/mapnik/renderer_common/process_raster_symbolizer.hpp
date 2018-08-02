@@ -57,7 +57,11 @@ struct image_dispatcher
                           scaling_method_e method, double filter_factor,
                           double opacity, composite_mode_e comp_op,
                           raster_symbolizer const& sym, feature_impl const& feature,
-                          F & composite, boost::optional<double> const& nodata, bool need_scaling)
+                          F & composite, boost::optional<double> const& nodata, bool need_scaling
+#ifdef MAPNIK_STATS_RENDER
+                          , std::ostream & log_stream
+#endif
+                      )
         : start_x_(start_x),
           start_y_(start_y),
           width_(width),
@@ -74,7 +78,11 @@ struct image_dispatcher
           feature_(feature),
           composite_(composite),
           nodata_(nodata),
-          need_scaling_(need_scaling) {}
+          need_scaling_(need_scaling)
+#ifdef MAPNIK_STATS_RENDER
+          , log_stream_(log_stream)
+#endif
+                       {}
 
     void operator() (image_null const&) const {}  //no-op
     void operator() (image_rgba8 const& data_in) const
@@ -82,7 +90,11 @@ struct image_dispatcher
         if (need_scaling_)
         {
             image_rgba8 data_out(width_, height_, true, true);
-            scale_image_agg(data_out, data_in,  method_, scale_x_, scale_y_, offset_x_, offset_y_, filter_factor_, nodata_);
+            scale_image_agg(data_out, data_in,  method_, scale_x_, scale_y_, offset_x_, offset_y_, filter_factor_, nodata_
+#ifdef MAPNIK_STATS_RENDER
+                            , &log_stream_
+#endif
+                           );
             composite_(data_out, comp_op_, opacity_, start_x_, start_y_);
         }
         else
@@ -100,7 +112,11 @@ struct image_dispatcher
         if (need_scaling_)
         {
             image_type data_out(width_, height_);
-            scale_image_agg(data_out, data_in,  method_, scale_x_, scale_y_, offset_x_, offset_y_, filter_factor_, nodata_);
+            scale_image_agg(data_out, data_in,  method_, scale_x_, scale_y_, offset_x_, offset_y_, filter_factor_, nodata_
+#ifdef MAPNIK_STATS_RENDER
+                            , &log_stream_
+#endif
+                           );
             if (colorizer) colorizer->colorize(dst, data_out, nodata_, feature_);
         }
         else
@@ -128,6 +144,9 @@ private:
     composite_function & composite_;
     boost::optional<double> const& nodata_;
     bool need_scaling_;
+#ifdef MAPNIK_STATS_RENDER
+    std::ostream & log_stream_;
+#endif
 };
 
 template <typename F>
@@ -209,7 +228,11 @@ void render_raster_symbolizer(raster_symbolizer const& sym,
                               mapnik::feature_impl& feature,
                               proj_transform const& prj_trans,
                               renderer_common& common,
-                              F composite)
+                              F composite
+#ifdef MAPNIK_STATS_RENDER
+                              , std::ostream & log_stream
+#endif
+                     )
 {
     raster_ptr const& source = feature.get_raster();
     if (source)
@@ -274,7 +297,11 @@ void render_raster_symbolizer(raster_symbolizer const& sym,
                                                             image_ratio_x, image_ratio_y,
                                                             offset_x, offset_y,
                                                             scaling_method, source->get_filter_factor(),
-                                                            opacity, comp_op, sym, feature, composite, source->nodata(), scale);
+                                                            opacity, comp_op, sym, feature, composite, source->nodata(), scale
+#ifdef MAPNIK_STATS_RENDER
+                                                            , log_stream
+#endif
+                                                      );
                 util::apply_visitor(dispatcher, source->data_);
             }
         }

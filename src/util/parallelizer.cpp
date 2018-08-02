@@ -29,6 +29,22 @@
 
 #include <future>
 
+#ifdef MAPNIK_STATS_RENDER
+struct log_operation
+{
+    std::stringstream log_stream;
+
+    ~log_operation()
+    {
+        std::string label("Parallel layer: ");
+        std::string log_value(log_stream.str());
+        std::string::size_type pos = (label.size() > log_value.size()) ?
+            0 :  label.size();
+        std::clog << log_value.replace(0, pos, label);
+    }
+};
+#endif
+
 namespace mapnik { namespace parallelizer {
 
 MAPNIK_DECL bool is_parallelizable(Map const& map)
@@ -144,10 +160,17 @@ void scale_if_needed(layer const& lay,
     {
         image_rgba8 scaled(width, height, true, true);
         scaling_method_e scaling_method = layer_scaling_method(lay);
+#ifdef MAPNIK_STATS_RENDER
+        log_operation log;
+#endif
         scale_image_agg(scaled, layer_img, scaling_method,
             static_cast<double>(width) / layer_img.width(),
             static_cast<double>(height) / layer_img.height(),
-            0, 0, 1);
+            0, 0, 1
+#ifdef MAPNIK_STATS_RENDER
+            , &log.log_stream
+#endif
+            );
         scaled.painted(layer_img.painted());
         layer_img = std::move(scaled);
     }
@@ -198,7 +221,14 @@ MAPNIK_DECL void render(Map const& map,
         image_rgba8 layer_img(std::move(lj.future.get()));
         scale_if_needed(lay, layer_img, img.width(), img.height());
         composite_mode_e comp_op = lay.comp_op() ? *lay.comp_op() : src_over;
-        composite(img, layer_img, comp_op, lay.get_opacity(), 0, 0);
+#ifdef MAPNIK_STATS_RENDER
+        log_operation log;
+#endif
+        composite(img, layer_img, comp_op, lay.get_opacity(), 0, 0
+#ifdef MAPNIK_STATS_RENDER
+                  , &log.log_stream
+#endif
+                 );
         img.painted(img.painted() || layer_img.painted());
     }
 

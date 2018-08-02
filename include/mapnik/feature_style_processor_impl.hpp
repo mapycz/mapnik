@@ -618,12 +618,18 @@ void feature_style_processor<Processor>::prepare_layer(layer_rendering_material 
     if (!group_by.empty() || cache_features)
     {
         featureset_ptr_list.push_back(ds->features_with_context(q,current_ctx));
+#ifdef MAPNIK_STATS_RENDER
+        featureset_ptr_list.back()->stats_stream_ = &sink_.stream_;
+#endif
     }
     else
     {
         for(std::size_t i = 0; i < active_styles.size(); ++i)
         {
             featureset_ptr_list.push_back(ds->features_with_context(q,current_ctx));
+#ifdef MAPNIK_STATS_RENDER
+        featureset_ptr_list.back()->stats_stream_ = &sink_.stream_;
+#endif
         }
     }
 }

@@ -39,6 +39,9 @@ struct MAPNIK_DECL Featureset : private util::noncopyable
 {
     virtual feature_ptr next() = 0;
     virtual ~Featureset() {}
+#ifdef MAPNIK_STATS_RENDER
+    std::ostream * stats_stream_ = nullptr;
+#endif
 };
 
 struct MAPNIK_DECL invalid_featureset final : Featureset
