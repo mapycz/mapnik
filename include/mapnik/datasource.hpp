@@ -115,6 +115,10 @@ public:
     virtual ~datasource() {}
 protected:
     parameters params_;
+#ifdef MAPNIK_STATS_RENDER
+public:
+    std::ostream * stats_stream_ = nullptr;
+#endif
 };
 
 using datasource_name = const char* (*)();

@@ -56,8 +56,15 @@ void agg_renderer<T0,T1>::process(raster_symbolizer const& sym,
         [&](image_rgba8 const & target, composite_mode_e comp_op, double opacity,
             int start_x, int start_y) {
             composite(buffers_.top().get(), target,
-                      comp_op, opacity, start_x, start_y);
+                      comp_op, opacity, start_x, start_y
+#ifdef MAPNIK_STATS_RENDER
+                      , &this->sink_.stream_
+#endif
+            );
         }
+#ifdef MAPNIK_STATS_RENDER
+       , this->sink_.stream_
+#endif
     );
 }
 

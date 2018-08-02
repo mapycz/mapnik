@@ -150,7 +150,11 @@ struct setup_agg_bg_visitor
             {
                 for (std::size_t y=0;y<y_steps;++y)
                 {
-                    composite(pixmap_, bg_image, mode_, opacity_, x*w, y*h);
+                    composite(pixmap_, bg_image, mode_, opacity_, x*w, y*h
+#ifdef MAPNIK_STATS_RENDER
+                              , stats_stream_
+#endif
+                     );
                 }
             }
         }
@@ -160,6 +164,10 @@ struct setup_agg_bg_visitor
     renderer_common const& common_;
     composite_mode_e mode_;
     double opacity_;
+#ifdef MAPNIK_STATS_RENDER
+public:
+    std::ostream * stats_stream_ = nullptr;
+#endif
 };
 
 template <typename T0, typename T1>
@@ -224,6 +232,9 @@ void agg_renderer<T0,T1>::setup(Map const &m, buffer_type & pixmap)
                                      common_,
                                      m.background_image_comp_op(),
                                      m.background_image_opacity());
+#ifdef MAPNIK_STATS_RENDER
+        visitor.stats_stream_ = &this->sink_.stream_;
+#endif
         util::apply_visitor(visitor, *bg_marker);
     }
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Scale=" << m.scale();
@@ -295,7 +306,11 @@ void agg_renderer<T0,T1>::end_layer_processing(layer const& lyr)
     {
         composite_mode_e comp_op = lyr.comp_op() ? *lyr.comp_op() : src_over;
         composite(previous_buffer, current_buffer,
-                  comp_op, lyr.get_opacity(), 0, 0);
+                  comp_op, lyr.get_opacity(), 0, 0
+#ifdef MAPNIK_STATS_RENDER
+                  , &this->sink_.stream_
+#endif
+                 );
         previous_buffer.painted(previous_buffer.painted() || current_buffer.painted());
         internal_buffers_.pop();
     }
@@ -304,6 +319,9 @@ void agg_renderer<T0,T1>::end_layer_processing(layer const& lyr)
     {
         // apply any 'direct' image filters
         mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer, common_.scale_factor_);
+#ifdef MAPNIK_STATS_RENDER
+        visitor.stats_stream_ = &this->sink_.stream_;
+#endif
         for (mapnik::filter::filter_type const& filter_tag : lyr.direct_image_filters())
         {
             util::apply_visitor(visitor, filter_tag);
@@ -377,6 +395,9 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
         {
             blend_from = true;
             mapnik::filter::filter_visitor<buffer_type> visitor(current_buffer, common_.scale_factor_);
+#ifdef MAPNIK_STATS_RENDER
+            visitor.stats_stream_ = &this->sink_.stream_;
+#endif
             for (mapnik::filter::filter_type const& filter_tag : st.image_filters())
             {
                 util::apply_visitor(visitor, filter_tag);
@@ -388,14 +409,22 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
             composite(previous_buffer, current_buffer,
                       *st.comp_op(), st.get_opacity(),
                       -common_.t_.offset(),
-                      -common_.t_.offset());
+                      -common_.t_.offset()
+#ifdef MAPNIK_STATS_RENDER
+                      , &this->sink_.stream_
+#endif
+                 );
         }
         else if (blend_from || st.get_opacity() < 1.0)
         {
             composite(previous_buffer, current_buffer,
                       src_over, st.get_opacity(),
                       -common_.t_.offset(),
-                      -common_.t_.offset());
+                      -common_.t_.offset()
+#ifdef MAPNIK_STATS_RENDER
+                      , &this->sink_.stream_
+#endif
+                 );
         }
         previous_buffer.painted(previous_buffer.painted() || current_buffer.painted());
         if (internal_buffers_.in_range()
@@ -409,6 +438,9 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
     {
         // apply any 'direct' image filters
         mapnik::filter::filter_visitor<buffer_type> visitor(previous_buffer, common_.scale_factor_);
+#ifdef MAPNIK_STATS_RENDER
+        visitor.stats_stream_ = &this->sink_.stream_;
+#endif
         for (mapnik::filter::filter_type const& filter_tag : st.direct_image_filters())
         {
             util::apply_visitor(visitor, filter_tag);
@@ -530,7 +562,11 @@ struct agg_render_marker_visitor
             composite(current_buffer_, marker.get_data(),
                       comp_op_, opacity_,
                       std::floor(pos_.x - cx + .5),
-                      std::floor(pos_.y - cy + .5));
+                      std::floor(pos_.y - cy + .5)
+#ifdef MAPNIK_STATS_RENDER
+                      , stats_stream_
+#endif
+                     );
         }
         else
         {
@@ -599,7 +635,10 @@ struct agg_render_marker_visitor
     agg::trans_affine const& tr_;
     double opacity_;
     composite_mode_e comp_op_;
-
+#ifdef MAPNIK_STATS_RENDER
+public:
+    std::ostream * stats_stream_ = nullptr;
+#endif
 };
 
 template <typename T0, typename T1>
@@ -618,6 +657,9 @@ void agg_renderer<T0,T1>::render_marker(pixel_position const& pos,
                                                    tr,
                                                    opacity,
                                                    comp_op);
+#ifdef MAPNIK_STATS_RENDER
+    visitor.stats_stream_ = &this->sink_.stream_;
+#endif
     util::apply_visitor(visitor, marker);
 }
 

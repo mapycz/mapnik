@@ -147,7 +147,11 @@ void scale_if_needed(layer const& lay,
         scale_image_agg(scaled, layer_img, scaling_method,
             static_cast<double>(width) / layer_img.width(),
             static_cast<double>(height) / layer_img.height(),
-            0, 0, 1);
+            0, 0, 1
+#ifdef MAPNIK_STATS_RENDER
+            , &std::clog
+#endif
+            );
         scaled.painted(layer_img.painted());
         layer_img = std::move(scaled);
     }

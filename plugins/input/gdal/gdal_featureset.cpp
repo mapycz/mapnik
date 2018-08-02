@@ -202,7 +202,8 @@ feature_ptr gdal_featureset::get_feature(mapnik::query const& q)
     ss << "gdal_featureset::get_feature" << ' '
         << std::to_string(width) << "x"
         << std::to_string(height);
-    mapnik::log_render lr(ss.str());
+    mapnik::log_render lr(ss.str(), this->stats_stream_ ?
+        *this->stats_stream_ : std::clog);
     mapnik::timer_with_action<mapnik::log_render> __stats__(lr);
 #endif
 
