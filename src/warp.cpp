@@ -139,27 +139,37 @@ MAPNIK_DECL void warp_image (T & target, T const& source, proj_transform const& 
             if (tr.is_valid())
             {
                 interpolator_type interpolator(tr);
-                if (scaling_method == SCALING_NEAR)
+                switch (scaling_method)
                 {
-                    using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_filter;
-                    span_gen_type sg(ia, interpolator);
-                    agg::render_scanlines_bin(rasterizer, scanline, rb, sa, sg);
-                }
-                else
-                {
-                    using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_resample_affine;
-                    agg::image_filter_lut filter;
-                    detail::set_scaling_method(filter, scaling_method, filter_factor);
-                    boost::optional<typename span_gen_type::value_type> nodata;
-                    if (nodata_value)
+                    case SCALING_NEAR:
                     {
-                        nodata = nodata_value;
+                        using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_filter;
+                        span_gen_type sg(ia, interpolator);
+                        agg::render_scanlines_bin(rasterizer, scanline, rb, sa, sg);
                     }
-                    span_gen_type sg(ia, interpolator, filter, nodata);
-                    agg::render_scanlines_bin(rasterizer, scanline, rb, sa, sg);
+                    break;
+                    case SCALING_BILINEAR_FAST:
+                    {
+                        using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_filter_bilinear;
+                        span_gen_type sg(ia, interpolator);
+                        agg::render_scanlines_bin(rasterizer, scanline, rb, sa, sg);
+                    }
+                    break;
+                    default:
+                    {
+                        using span_gen_type = typename detail::agg_scaling_traits<image_type>::span_image_resample_affine;
+                        agg::image_filter_lut filter;
+                        detail::set_scaling_method(filter, scaling_method, filter_factor);
+                        boost::optional<typename span_gen_type::value_type> nodata;
+                        if (nodata_value)
+                        {
+                            nodata = nodata_value;
+                        }
+                        span_gen_type sg(ia, interpolator, filter, nodata);
+                        agg::render_scanlines_bin(rasterizer, scanline, rb, sa, sg);
+                    }
                 }
             }
-
         }
     }
 }
