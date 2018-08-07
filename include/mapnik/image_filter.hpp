@@ -408,7 +408,6 @@ template <typename Src>
 void apply_filter(Src & src, agg_stack_blur const& op, double scale_factor)
 {
     premultiply_alpha(src);
-    const std::size_t parallel_threshold = 1024 * 1024;
     unsigned rx = safe_cast<unsigned>(op.rx * scale_factor);
     unsigned ry = safe_cast<unsigned>(op.ry * scale_factor);
     unsigned jobs = util::jobs_by_image_size(src.width(), src.height());
