@@ -277,6 +277,7 @@ source = Split(
     map_set_layer_buffer_size.cpp
     parallel_blur.cpp
     util/parallelizer.cpp
+    grid_index.cpp
     """
     )
 
