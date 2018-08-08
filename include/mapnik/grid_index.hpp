@@ -12,7 +12,7 @@ namespace mapnik {
 
 /*
  grid_index is a data structure for testing the intersection of
- circles and rectangles in a 2d plane.
+ rectangles in a 2d plane.
  It is optimized for rapid insertion and querying.
  grid_index splits the plane into a set of "cells" and keeps track
  of which geometries intersect with each cell. At query time,
@@ -31,6 +31,7 @@ public:
     using BBox = box2d<double>;
 
     void insert(T&& t, const BBox&);
+    void clear();
     
     std::vector<T> query(const BBox&) const;
     std::vector<std::pair<T,BBox>> queryWithBoxes(const BBox&) const;
@@ -38,6 +39,7 @@ public:
     bool hitTest(const BBox&) const;
     
     bool empty() const;
+    std::size_t size() const;
 
 private:
     bool noIntersection(const BBox& queryBBox) const;

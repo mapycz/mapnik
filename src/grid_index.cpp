@@ -1,7 +1,13 @@
 #include <mapnik/grid_index.hpp>
+#include <mapnik/value_types.hpp>
 
 #include <unordered_set>
 #include <cmath>
+
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore.hpp>
+#include <unicode/unistr.h>
+#pragma GCC diagnostic pop
 
 namespace mapnik {
 
@@ -35,6 +41,12 @@ void grid_index<T>::insert(T&& t, const BBox& bbox) {
     }
 
     boxElements.emplace_back(t, bbox);
+}
+
+template <class T>
+void grid_index<T>::clear() {
+    boxElements.clear();
+    boxCells.clear();
 }
 
 template <class T>
@@ -145,8 +157,13 @@ bool grid_index<T>::empty() const {
     return boxElements.empty();
 }
 
+template <class T>
+std::size_t grid_index<T>::size() const {
+    return boxElements.size();
+}
 
-template class grid_index<std::string>;
+
+template class grid_index<mapnik::value_unicode_string>;
 template class grid_index<int16_t>;
 
 } // namespace mapnik

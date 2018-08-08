@@ -278,6 +278,7 @@ source = Split(
     parallel_blur.cpp
     util/parallelizer.cpp
     grid_index.cpp
+    grid_index_collision_detector.cpp
     """
     )
 
