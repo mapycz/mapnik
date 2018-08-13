@@ -166,8 +166,8 @@ void render_thunk_extractor::operator()(markers_symbolizer const& sym) const
 {
     auto renderer_context = std::tie(thunks_);
     using context_type = decltype(renderer_context);
-    using vector_dispatch_type = detail::vector_marker_thunk_dispatch<label_collision_detector4, context_type>;
-    using raster_dispatch_type = detail::raster_marker_thunk_dispatch<label_collision_detector4, context_type>;
+    using vector_dispatch_type = detail::vector_marker_thunk_dispatch<collision_detector_type, context_type>;
+    using raster_dispatch_type = detail::raster_marker_thunk_dispatch<collision_detector_type, context_type>;
 
     render_markers_symbolizer<vector_dispatch_type, raster_dispatch_type>(
             sym, feature_, prj_trans_, common_, clipping_extent_, renderer_context);
@@ -215,7 +215,7 @@ void render_thunk_extractor::extract_text_thunk(helper_ptr && helper, text_symbo
 
 void render_thunk_extractor::update_box() const
 {
-    label_collision_detector4 & detector = *common_.detector_;
+    collision_detector_type & detector = *common_.detector_;
 
     for (auto const& label : detector)
     {

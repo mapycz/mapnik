@@ -64,7 +64,7 @@ struct virtual_renderer_common : private util::noncopyable
         font_manager_(common.font_manager_),
         query_extent_(common.query_extent_),
         t_(common.t_),
-        detector_(std::make_shared<label_collision_detector4>(common.detector_->extent())) {}
+        detector_(std::make_shared<collision_detector_type>(common.detector_->extent())) {}
 
     unsigned & width_;
     unsigned & height_;
@@ -76,7 +76,7 @@ struct virtual_renderer_common : private util::noncopyable
     face_manager_freetype & font_manager_;
     box2d<double> & query_extent_;
     view_transform & t_;
-    std::shared_ptr<label_collision_detector4> detector_;
+    std::shared_ptr<collision_detector_type> detector_;
     symbol_cache symbol_cache_;
 };
 

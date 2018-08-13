@@ -225,6 +225,9 @@ public:
 std::vector<std::string> parse_collision_detector_keys(
     boost::optional<std::string> const & keys);
 
+using collision_detector_type = keyed_collision_cache<
+                                    label_collision_detector4>;
+
 }
 
 #endif // MAPNIK_LABEL_COLLISION_CACHE_HPP

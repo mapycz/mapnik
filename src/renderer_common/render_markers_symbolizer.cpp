@@ -311,7 +311,7 @@ void render_marker(
     std::string const & filename,
     std::shared_ptr<marker const> const & mark)
 {
-    using Detector = label_collision_detector4;
+    using Detector = collision_detector_type;
     using RendererType = renderer_common;
     using ContextType = markers_renderer_context;
     using VisitorType = detail::render_marker_symbolizer_visitor<Detector,

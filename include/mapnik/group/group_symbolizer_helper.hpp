@@ -51,7 +51,7 @@ struct box_element
 struct group_layout_generator : util::noncopyable
 {
     using params_type = label_placement::placement_params;
-    using detector_type = keyed_collision_cache<label_collision_detector4>;
+    using detector_type = collision_detector_type;
 
     group_layout_generator(
         params_type const & params,

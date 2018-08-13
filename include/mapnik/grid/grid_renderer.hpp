@@ -47,7 +47,6 @@ namespace mapnik {
   class Map;
   class feature_impl;
   class feature_type_style;
-  class label_collision_detector4;
   class layer;
   struct marker;
   class proj_transform;
