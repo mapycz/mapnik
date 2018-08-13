@@ -24,7 +24,7 @@ grid_index<T>::grid_index(const double width_, const double height_, const int16
     }
 
 template <class T>
-void grid_index<T>::insert(T&& t, const BBox& bbox) {
+void grid_index<T>::insert(T const& t, const bbox_type& bbox) {
     size_t uid = boxElements.size();
 
     auto cx1 = convertToXCellCoord(bbox.minx());
@@ -40,7 +40,7 @@ void grid_index<T>::insert(T&& t, const BBox& bbox) {
         }
     }
 
-    boxElements.emplace_back(t, bbox);
+    boxElements.emplace_back(bbox, t);
 }
 
 template <class T>
@@ -50,29 +50,31 @@ void grid_index<T>::clear() {
 }
 
 template <class T>
-std::vector<T> grid_index<T>::query(const BBox& queryBBox) const {
+std::vector<T> grid_index<T>::query(const bbox_type& queryBBox) const {
     std::vector<T> result;
-    query(queryBBox, [&](const T& t, const BBox&) -> bool {
-        result.push_back(t);
+    query(queryBBox, [&](typename grid_index<T>::element const& e) -> bool {
+        result.push_back(e.id);
         return false;
     });
     return result;
 }
 
 template <class T>
-std::vector<std::pair<T, typename grid_index<T>::BBox>> grid_index<T>::queryWithBoxes(const BBox& queryBBox) const {
-    std::vector<std::pair<T, BBox>> result;
-    query(queryBBox, [&](const T& t, const BBox& bbox) -> bool {
-        result.push_back(std::make_pair(t, bbox));
+std::vector<typename grid_index<T>::element> grid_index<T>::queryWithBoxes(
+    const bbox_type& queryBBox) const
+{
+    std::vector<typename grid_index<T>::element> result;
+    query(queryBBox, [&](typename grid_index<T>::element const& e) -> bool {
+        result.push_back(e);
         return false;
     });
     return result;
 }
 
 template <class T>
-bool grid_index<T>::hitTest(const BBox& queryBBox) const {
+bool grid_index<T>::hitTest(const bbox_type& queryBBox) const {
     bool hit = false;
-    query(queryBBox, [&](const T&, const BBox&) -> bool {
+    query(queryBBox, [&](typename grid_index<T>::element const&) -> bool {
         hit = true;
         return true;
     });
@@ -80,19 +82,22 @@ bool grid_index<T>::hitTest(const BBox& queryBBox) const {
 }
 
 template <class T>
-bool grid_index<T>::noIntersection(const BBox& queryBBox) const {
+bool grid_index<T>::noIntersection(const bbox_type& queryBBox) const {
     return queryBBox.maxx() < 0 || queryBBox.minx() >= width ||
     queryBBox.maxy() < 0 || queryBBox.miny() >= height;
 }
 
 template <class T>
-bool grid_index<T>::completeIntersection(const BBox& queryBBox) const {
+bool grid_index<T>::completeIntersection(const bbox_type& queryBBox) const {
     return queryBBox.minx() <= 0 && queryBBox.miny() <= 0 && width <=
     queryBBox.maxx() && height <= queryBBox.maxy();
 }
 
 template <class T>
-void grid_index<T>::query(const BBox& queryBBox, std::function<bool (const T&, const BBox&)> resultFn) const {
+void grid_index<T>::query(
+    const bbox_type& queryBBox,
+    std::function<bool (typename grid_index<T>::element const&)> resultFn) const
+{
     std::unordered_set<size_t> seenBoxes;
     std::unordered_set<size_t> seenCircles;
     
@@ -100,7 +105,7 @@ void grid_index<T>::query(const BBox& queryBBox, std::function<bool (const T&, c
         return;
     } else if (completeIntersection(queryBBox)) {
         for (auto& element : boxElements) {
-            if (resultFn(element.first, element.second)) {
+            if (resultFn(element)) {
                 return;
             }
         }
@@ -121,10 +126,9 @@ void grid_index<T>::query(const BBox& queryBBox, std::function<bool (const T&, c
                 if (seenBoxes.count(uid) == 0) {
                     seenBoxes.insert(uid);
 
-                    auto& pair = boxElements.at(uid);
-                    auto& bbox = pair.second;
-                    if (boxesCollide(queryBBox, bbox)) {
-                        if (resultFn(pair.first, bbox)) {
+                    auto& lbl = boxElements.at(uid);
+                    if (boxesCollide(queryBBox, lbl.box)) {
+                        if (resultFn(lbl)) {
                             return;
                         }
                     }
@@ -145,7 +149,7 @@ int16_t grid_index<T>::convertToYCellCoord(const double y) const {
 }
 
 template <class T>
-bool grid_index<T>::boxesCollide(const BBox& first, const BBox& second) const {
+bool grid_index<T>::boxesCollide(const bbox_type& first, const bbox_type& second) const {
 	return first.minx() <= second.maxx() &&
            first.miny() <= second.maxy() &&
            first.maxx() >= second.minx() &&
@@ -160,6 +164,18 @@ bool grid_index<T>::empty() const {
 template <class T>
 std::size_t grid_index<T>::size() const {
     return boxElements.size();
+}
+
+template <class T>
+typename grid_index<T>::elements_iterator grid_index<T>::begin() const
+{
+    return boxElements.cbegin();
+}
+
+template <class T>
+typename grid_index<T>::elements_iterator grid_index<T>::end() const
+{
+    return boxElements.cend();
 }
 
 

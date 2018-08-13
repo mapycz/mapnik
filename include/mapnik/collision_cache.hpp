@@ -23,7 +23,7 @@
 #ifndef MAPNIK_LABEL_COLLISION_CACHE_HPP
 #define MAPNIK_LABEL_COLLISION_CACHE_HPP
 
-#include <mapnik/label_collision_detector.hpp>
+#include <mapnik/grid_index_collision_detector.hpp>
 #include <mapnik/debug.hpp>
 
 #include <map>
@@ -114,6 +114,8 @@ class keyed_collision_cache
     }
 
 public:
+    using detector_type = Detector;
+
     keyed_collision_cache(box2d<double> const & extent)
         : cache_(), default_(create_default(extent))
     {
@@ -226,7 +228,7 @@ std::vector<std::string> parse_collision_detector_keys(
     boost::optional<std::string> const & keys);
 
 using collision_detector_type = keyed_collision_cache<
-                                    label_collision_detector4>;
+                                    grid_index_collision_detector>;
 
 }
 

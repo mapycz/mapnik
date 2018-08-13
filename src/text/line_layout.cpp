@@ -32,6 +32,7 @@
 #include <mapnik/text/glyph_bbox.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/util/math.hpp>
+#include <mapnik/make_unique.hpp>
 
 // stl
 #include <vector>

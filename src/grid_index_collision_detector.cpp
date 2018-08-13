@@ -71,13 +71,11 @@ bool grid_index_collision_detector::has_placement(
             box.maxx() + margin, box.maxy() + margin)
         : box);
 
-    auto boxes = grid_.queryWithBoxes(repeat_box);
+    auto elements = grid_.queryWithBoxes(repeat_box);
 
-    for (auto const& key_box_pair : boxes)
+    for (auto const& element : elements)
     {
-        box2d<double> const& b = key_box_pair.second;
-        mapnik::value_unicode_string const& t = key_box_pair.first;
-        if (b.intersects(margin_box) || t == text)
+        if (element.box.intersects(margin_box) || element.id == text)
         {
             return false;
         }
@@ -96,12 +94,29 @@ void grid_index_collision_detector::insert(
     box2d<double> const& box,
     mapnik::value_unicode_string const& text)
 {
-    grid_.insert(mapnik::value_unicode_string(text), box);
+    grid_.insert(text, box);
 }
 
 void grid_index_collision_detector::clear()
 {
     grid_.clear();
+}
+
+box2d<double> const& grid_index_collision_detector::extent() const
+{
+    return extent_;
+}
+
+grid_index_collision_detector::grid_index_type::elements_iterator
+grid_index_collision_detector::begin() const
+{
+    return grid_.begin();
+}
+
+grid_index_collision_detector::grid_index_type::elements_iterator
+grid_index_collision_detector::end() const
+{
+    return grid_.end();
 }
 
 } // namespace mapnik

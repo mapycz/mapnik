@@ -140,6 +140,8 @@ public:
         mapnik::value_unicode_string text;
     };
 
+    using element_type = label;
+
 private:
     using tree_t = quad_tree< label >;
     tree_t tree_;

@@ -245,9 +245,13 @@ void agg_renderer<T0,T1>::process(debug_symbolizer const& sym,
 
         for (auto const & key : keys)
         {
-            for (auto & n : common_.detector_->detector(key))
+            auto & detector = common_.detector_->detector(key);
+            using element_type = collision_detector_type::detector_type::element_type;
+
+            for (auto & n : detector)
             {
-                draw_rect(buffers_.top().get(), n.get().box);
+                element_type const& element = n;
+                draw_rect(buffers_.top().get(), n.box);
             }
         }
     }

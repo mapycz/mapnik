@@ -20,10 +20,17 @@ public:
     void insert(box2d<double> const& box,
                 mapnik::value_unicode_string const& text);
     void clear();
+    box2d<double> const& extent() const;
+
+    using grid_index_type = grid_index<mapnik::value_unicode_string>;
+    using element_type = grid_index_type::element;
+
+    grid_index_type::elements_iterator begin() const;
+    grid_index_type::elements_iterator end() const;
 
 private:
     box2d<double> extent_;
-    grid_index<mapnik::value_unicode_string> grid_;
+    grid_index_type grid_;
 
 #ifdef MAPNIK_STATS_RENDER
 public:

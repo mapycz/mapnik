@@ -34,6 +34,7 @@
 #include <mapnik/util/math.hpp>
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/marker.hpp>
+#include <mapnik/make_unique.hpp>
 
 #include <vector>
 

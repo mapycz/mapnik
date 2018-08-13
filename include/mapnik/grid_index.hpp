@@ -25,32 +25,48 @@ namespace mapnik {
 template <class T>
 class MAPNIK_DECL grid_index {
 public:
+    using bbox_type = box2d<double>;
+
+    struct element
+    {
+        element(bbox_type const& box, T const& id)
+            : box(box), id(id)
+        {
+        }
+
+        bbox_type box;
+        T id;
+    };
+
+    using elements_type = std::vector<element>;
+    using elements_iterator = typename std::vector<element>::const_iterator;
 
     grid_index(const double width_, const double height_, const int16_t cellSize_);
 
-    using BBox = box2d<double>;
-
-    void insert(T&& t, const BBox&);
+    void insert(T const& t, const bbox_type&);
     void clear();
     
-    std::vector<T> query(const BBox&) const;
-    std::vector<std::pair<T,BBox>> queryWithBoxes(const BBox&) const;
+    std::vector<T> query(const bbox_type&) const;
+    std::vector<element> queryWithBoxes(const bbox_type&) const;
     
-    bool hitTest(const BBox&) const;
+    bool hitTest(const bbox_type&) const;
     
     bool empty() const;
     std::size_t size() const;
 
-private:
-    bool noIntersection(const BBox& queryBBox) const;
-    bool completeIntersection(const BBox& queryBBox) const;
+    elements_iterator begin() const;
+    elements_iterator end() const;
 
-    void query(const BBox&, std::function<bool (const T&, const BBox&)>) const;
+private:
+    bool noIntersection(const bbox_type& queryBBox) const;
+    bool completeIntersection(const bbox_type& queryBBox) const;
+
+    void query(const bbox_type&, std::function<bool (element const&)>) const;
 
     int16_t convertToXCellCoord(const double x) const;
     int16_t convertToYCellCoord(const double y) const;
     
-    bool boxesCollide(const BBox&, const BBox&) const;
+    bool boxesCollide(const bbox_type&, const bbox_type&) const;
 
     const double width;
     const double height;
@@ -60,7 +76,7 @@ private:
     const double xScale;
     const double yScale;
 
-    std::vector<std::pair<T, BBox>> boxElements;
+    std::vector<element> boxElements;
     
     std::vector<std::vector<size_t>> boxCells;
 };

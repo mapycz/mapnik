@@ -131,17 +131,19 @@ void render_thunk_extractor::extract_text_thunk(text_symbolizer const& sym) cons
 
 void render_thunk_extractor::update_box() const
 {
-    auto & detector = *common_.detector_;
+    auto & detector = common_.detector_->get_default();
+    using element_type = collision_detector_type::detector_type::element_type;
 
-    for (auto const& label : detector.get_default())
+    for (auto const& label : detector)
     {
+        element_type const& element = label;
         if (box_.width() > 0 && box_.height() > 0)
         {
-            box_.expand_to_include(label.get().box);
+            box_.expand_to_include(element.box);
         }
         else
         {
-            box_ = label.get().box;
+            box_ = element.box;
         }
     }
 

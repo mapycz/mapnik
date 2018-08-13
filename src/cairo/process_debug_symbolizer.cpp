@@ -118,9 +118,13 @@ void cairo_renderer<T>::process(debug_symbolizer const& sym,
 
         for (auto const & key : keys)
         {
-            for (auto & n : common_.detector_->detector(key))
+            auto & detector = common_.detector_->detector(key);
+            using element_type = collision_detector_type::detector_type::element_type;
+
+            for (auto & n : detector)
             {
-                render_debug_box(context_, n.get().box);
+                element_type const& element = n;
+                render_debug_box(context_, n.box);
             }
         }
     }
