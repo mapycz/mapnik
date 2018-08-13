@@ -19,9 +19,9 @@ grid_index<T>::grid_index(const double width_, const double height_, const int16
     yCellCount(std::ceil(height_ / cellSize_)),
     xScale(xCellCount / width_),
     yScale(yCellCount / height_)
-    {
-        boxCells.resize(xCellCount * yCellCount);
-    }
+{
+    boxCells.resize(xCellCount * yCellCount);
+}
 
 template <class T>
 void grid_index<T>::insert(T const& t, const bbox_type& bbox) {
@@ -46,7 +46,10 @@ void grid_index<T>::insert(T const& t, const bbox_type& bbox) {
 template <class T>
 void grid_index<T>::clear() {
     boxElements.clear();
-    boxCells.clear();
+    for (auto & cell : boxCells)
+    {
+        cell.clear();
+    }
 }
 
 template <class T>
