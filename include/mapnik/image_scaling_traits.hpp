@@ -97,7 +97,7 @@ struct agg_scaling_traits<image_gray16s>
     using interpolator_type = agg::span_interpolator_linear<>;
     using img_src_type = agg::image_accessor_clone<pixfmt_pre>;
     using span_image_filter = agg::span_image_filter_gray_nn<img_src_type,interpolator_type>;
-    using span_image_resample_affine = span_image_resample_gray_affine<img_src_type>;
+    using span_image_resample_affine = span_image_resample_gray_affine<img_src_type, std::int16_t>;
 };
 
 template <>

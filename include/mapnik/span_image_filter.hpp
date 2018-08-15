@@ -41,11 +41,12 @@
 namespace mapnik
 {
 
-template<class Source>
+template<class Source, class Calc=typename Source::color_type::value_type>
 class span_image_resample_gray_affine : public agg::span_image_resample_affine<Source>
 {
 public:
     using source_type = Source;
+    using calc_type = Calc;
     using color_type = typename source_type::color_type;
     using base_type = agg::span_image_resample_affine<source_type>;
     using interpolator_type = typename base_type::interpolator_type;
@@ -91,8 +92,8 @@ public:
             {
                 int src_x = x >> agg::image_subpixel_shift;
                 int src_y = y >> agg::image_subpixel_shift;
-                const value_type* pix = reinterpret_cast<const value_type*>(base_type::source().span(src_x, src_y, 1));
-                if (*nodata_value_ == *pix)
+                const calc_type* pix = reinterpret_cast<const calc_type*>(base_type::source().span(src_x, src_y, 1));
+                if (static_cast<calc_type>(*nodata_value_) == *pix)
                 {
                     span->v = *nodata_value_;
                     span->a = base_mask;
@@ -118,7 +119,7 @@ public:
                                 agg::image_subpixel_shift;
 
             int x_hr2 = x_hr;
-            const value_type* fg_ptr = reinterpret_cast<const value_type*>(base_type::source().span(x_lr, y_lr, len_x_lr));
+            const calc_type* fg_ptr = reinterpret_cast<const calc_type*>(base_type::source().span(x_lr, y_lr, len_x_lr));
             for(;;)
             {
                 int weight_y = weight_array[y_hr];
@@ -128,18 +129,18 @@ public:
                     int weight = (weight_y * weight_array[x_hr] +
                                  agg::image_filter_scale) >>
                                  downscale_shift;
-                    if (!nodata_value_ || *nodata_value_ != *fg_ptr)
+                    if (!nodata_value_ || static_cast<calc_type>(*nodata_value_) != *fg_ptr)
                     {
                         fg += *fg_ptr * weight;
                         total_weight += weight;
                     }
                     x_hr  += base_type::m_rx_inv;
                     if (x_hr >= filter_scale) break;
-                    fg_ptr = reinterpret_cast<const value_type*>(base_type::source().next_x());
+                    fg_ptr = reinterpret_cast<const calc_type*>(base_type::source().next_x());
                 }
                 y_hr += base_type::m_ry_inv;
                 if (y_hr >= filter_scale) break;
-                fg_ptr = reinterpret_cast<const value_type*>(base_type::source().next_y());
+                fg_ptr = reinterpret_cast<const calc_type*>(base_type::source().next_y());
             }
 
             if (total_weight == 0)
