@@ -24,6 +24,7 @@
 #define MAPNIK_LABEL_COLLISION_CACHE_HPP
 
 #include <mapnik/grid_index_collision_detector.hpp>
+#include <mapnik/label_collision_detector.hpp>
 #include <mapnik/debug.hpp>
 
 #include <map>

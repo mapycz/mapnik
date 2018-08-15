@@ -124,7 +124,7 @@ void cairo_renderer<T>::process(debug_symbolizer const& sym,
             for (auto & n : detector)
             {
                 element_type const& element = n;
-                render_debug_box(context_, n.box);
+                render_debug_box(context_, element.box);
             }
         }
     }
