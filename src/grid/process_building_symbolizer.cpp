@@ -68,12 +68,13 @@ void grid_renderer<T>::process(building_symbolizer const& sym,
 
     ras_ptr->reset();
 
+    value_double opacity = get<value_double,keys::fill_opacity>(sym,feature, common_.vars_);
     value_double height = get<value_double>(sym, keys::height, feature, common_.vars_, 0.0) * common_.scale_factor_;
     value_double shadow_angle = get<value_double, keys::shadow_angle>(sym, feature, common_.vars_);
     value_double shadow_length = get<value_double, keys::shadow_length>(sym, feature, common_.vars_) * common_.scale_factor_;
 
     render_building_symbolizer::apply(
-        feature, prj_trans, common_.t_, height, shadow_angle, shadow_length,
+        feature, prj_trans, common_.t_, height, shadow_angle, shadow_length, opacity,
         [&](path_type const& faces)
         {
             vertex_adapter va(faces);

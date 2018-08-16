@@ -90,7 +90,7 @@ void agg_renderer<T0,T1>::process(building_symbolizer const& sym,
     value_double shadow_opacity = get<value_double, keys::shadow_opacity>(sym, feature, common_.vars_);
 
     render_building_symbolizer::apply(
-        feature, prj_trans, common_.t_, height, shadow_angle, shadow_length,
+        feature, prj_trans, common_.t_, height, shadow_angle, shadow_length, opacity,
         [&,r,g,b,a,opacity](path_type const& faces)
         {
             vertex_adapter va(faces);

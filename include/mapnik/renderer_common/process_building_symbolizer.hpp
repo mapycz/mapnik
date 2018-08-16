@@ -52,6 +52,7 @@ struct render_building_symbolizer
                       double height,
                       double shadow_angle,
                       double shadow_length,
+                      double opacity,
                       F1 const & face_func,
                       F2 const & frame_func,
                       F3 const & roof_func,
@@ -64,7 +65,7 @@ struct render_building_symbolizer
             vertex_adapter_type va(poly);
             transform_path_type transformed(view_trans, va, prj_trans);
             make_building(transformed, height, shadow_angle, shadow_length,
-                face_func, frame_func, roof_func, shadow_func);
+                opacity, face_func, frame_func, roof_func, shadow_func);
         }
         else if (geom.is<geometry::multi_polygon<double>>())
         {
@@ -74,7 +75,7 @@ struct render_building_symbolizer
                 vertex_adapter_type va(poly);
                 transform_path_type transformed(view_trans, va, prj_trans);
                 make_building(transformed, height, shadow_angle, shadow_length,
-                    face_func, frame_func, roof_func, shadow_func);
+                    opacity, face_func, frame_func, roof_func, shadow_func);
             }
         }
     }
@@ -85,6 +86,7 @@ private:
             double height,
             double shadow_angle,
             double shadow_length,
+            double opacity,
             F1 const& face_func,
             F2 const& frame_func,
             F3 const& roof_func,
@@ -150,43 +152,46 @@ private:
             }
         }
 
-        for (auto const& seg : face_segments)
+        if (opacity > 0)
         {
-            path_type faces(path_type::types::Polygon);
-            faces.move_to(std::get<0>(seg),std::get<1>(seg));
-            faces.line_to(std::get<2>(seg),std::get<3>(seg));
-            faces.line_to(std::get<2>(seg),std::get<3>(seg) - height);
-            faces.line_to(std::get<0>(seg),std::get<1>(seg) - height);
+            for (auto const& seg : face_segments)
+            {
+                path_type faces(path_type::types::Polygon);
+                faces.move_to(std::get<0>(seg),std::get<1>(seg));
+                faces.line_to(std::get<2>(seg),std::get<3>(seg));
+                faces.line_to(std::get<2>(seg),std::get<3>(seg) - height);
+                faces.line_to(std::get<0>(seg),std::get<1>(seg) - height);
 
-            face_func(faces);
+                face_func(faces);
 
-            frame.move_to(std::get<0>(seg),std::get<1>(seg));
-            frame.line_to(std::get<0>(seg),std::get<1>(seg) - height);
+                frame.move_to(std::get<0>(seg),std::get<1>(seg));
+                frame.line_to(std::get<0>(seg),std::get<1>(seg) - height);
+            }
+
+            geom.rewind(0);
+            for (unsigned cm = geom.vertex(&x, &y); cm != SEG_END;
+                 cm = geom.vertex(&x, &y))
+            {
+                if (cm == SEG_MOVETO)
+                {
+                    frame.move_to(x,y - height);
+                    roof.move_to(x,y - height);
+                }
+                else if (cm == SEG_LINETO)
+                {
+                    frame.line_to(x,y - height);
+                    roof.line_to(x,y - height);
+                }
+                else if (cm == SEG_CLOSE)
+                {
+                    frame.close_path();
+                    roof.close_path();
+                }
+            }
+
+            frame_func(frame);
+            roof_func(roof);
         }
-
-        geom.rewind(0);
-        for (unsigned cm = geom.vertex(&x, &y); cm != SEG_END;
-             cm = geom.vertex(&x, &y))
-        {
-            if (cm == SEG_MOVETO)
-            {
-                frame.move_to(x,y - height);
-                roof.move_to(x,y - height);
-            }
-            else if (cm == SEG_LINETO)
-            {
-                frame.line_to(x,y - height);
-                roof.line_to(x,y - height);
-            }
-            else if (cm == SEG_CLOSE)
-            {
-                frame.close_path();
-                roof.close_path();
-            }
-        }
-
-        frame_func(frame);
-        roof_func(roof);
     }
 };
 

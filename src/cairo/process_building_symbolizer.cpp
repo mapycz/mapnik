@@ -54,7 +54,7 @@ void cairo_renderer<T>::process(building_symbolizer const& sym,
     context_.set_operator(comp_op);
 
     render_building_symbolizer::apply(
-        feature, prj_trans, common_.t_, height, shadow_angle, shadow_length,
+        feature, prj_trans, common_.t_, height, shadow_angle, shadow_length, opacity,
         [&](path_type const& faces)
         {
             vertex_adapter va(faces);
