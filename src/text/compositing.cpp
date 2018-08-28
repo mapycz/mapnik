@@ -33,17 +33,17 @@ namespace mapnik
 {
 
 void composite_bitmap_src_over(
-    image_rgba8 & pixmap,
-    FT_Bitmap *bitmap,
+    image_rgba8 & dst,
+    FT_Bitmap *src,
     unsigned rgba,
     int x,
     int y,
     double opacity)
 {
-    int x_max = std::min(static_cast<std::size_t>(x + bitmap->width),
-                         pixmap.width());
-    int y_max = std::min(static_cast<std::size_t>(y + bitmap->rows),
-                         pixmap.height());
+    int x_max = std::min(static_cast<std::size_t>(x + src->width),
+                         dst.width());
+    int y_max = std::min(static_cast<std::size_t>(y + src->rows),
+                         dst.height());
 
     using color_type = agg::rgba8;
     using value_type = color_type::value_type;
@@ -51,7 +51,9 @@ void composite_bitmap_src_over(
     using blender_type = agg::comp_op_rgba_src_over<color_type, order_type>;
 
     color c(rgba);
-    unsigned ca = safe_cast<unsigned>(c.alpha() * opacity);
+    c.set_alpha(safe_cast<unsigned>(c.alpha() * opacity));
+    c.premultiply();
+    unsigned ca = c.alpha();
     unsigned cb = c.blue();
     unsigned cg = c.green();
     unsigned cr = c.red();
@@ -60,10 +62,10 @@ void composite_bitmap_src_over(
     {
         for (int j = y, q = 0; j < y_max; ++j, ++q)
         {
-            unsigned gray = bitmap->buffer[q * bitmap->width + p];
+            unsigned gray = src->buffer[q * src->width + p];
             if (gray)
             {
-                image_rgba8::pixel_type & pix = pixmap(i, j);
+                image_rgba8::pixel_type & pix = dst(i, j);
                 blender_type::blend_pix(reinterpret_cast<value_type*>(&pix),
                                         cr, cg, cb, ca, gray);
             }
@@ -72,8 +74,8 @@ void composite_bitmap_src_over(
 }
 
 void composite_bitmap(
-    image_rgba8 & pixmap,
-    FT_Bitmap *bitmap,
+    image_rgba8 & dst,
+    FT_Bitmap *src,
     unsigned rgba,
     int x,
     int y,
@@ -82,21 +84,21 @@ void composite_bitmap(
 {
     if (comp_op == src_over)
     {
-        composite_bitmap_src_over(pixmap, bitmap, rgba, x, y, opacity);
+        composite_bitmap_src_over(dst, src, rgba, x, y, opacity);
         return;
     }
 
-    int x_max = x + bitmap->width;
-    int y_max = y + bitmap->rows;
+    int x_max = x + src->width;
+    int y_max = y + src->rows;
 
     for (int i = x, p = 0; i < x_max; ++i, ++p)
     {
         for (int j = y, q = 0; j < y_max; ++j, ++q)
         {
-            unsigned gray = bitmap->buffer[q * bitmap->width + p];
+            unsigned gray = src->buffer[q * src->width + p];
             if (gray)
             {
-                mapnik::composite_pixel(pixmap, comp_op, i, j, rgba, gray, opacity);
+                mapnik::composite_pixel(dst, comp_op, i, j, rgba, gray, opacity);
             }
         }
     }

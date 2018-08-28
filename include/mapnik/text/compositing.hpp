@@ -38,8 +38,8 @@ namespace mapnik
 {
 
 void composite_bitmap(
-    image_rgba8 & pixmap,
-    FT_Bitmap *bitmap,
+    image_rgba8 & dst,
+    FT_Bitmap *src,
     unsigned rgba,
     int x,
     int y,
