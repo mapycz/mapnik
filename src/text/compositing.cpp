@@ -23,6 +23,7 @@
 #include <mapnik/text/compositing.hpp>
 #include <mapnik/color.hpp>
 #include <mapnik/safe_cast.hpp>
+#include <mapnik/box2d.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -40,10 +41,15 @@ void composite_bitmap_src_over(
     int y,
     double opacity)
 {
-    int x_max = std::min(static_cast<std::size_t>(x + src->width),
-                         dst.width());
-    int y_max = std::min(static_cast<std::size_t>(y + src->rows),
-                         dst.height());
+    box2d<int> dst_ext(0, 0, dst.width(), dst.height());
+    box2d<int> src_ext(x, y, x + src->width, y + src->rows);
+
+    if (!dst_ext.intersects(src_ext))
+    {
+        return;
+    }
+
+    box2d<int> box = dst_ext.intersect(src_ext);
 
     using color_type = agg::rgba8;
     using value_type = color_type::value_type;
@@ -58,9 +64,9 @@ void composite_bitmap_src_over(
     unsigned cg = c.green();
     unsigned cr = c.red();
 
-    for (int i = x, p = 0; i < x_max; ++i, ++p)
+    for (int i = box.minx(), p = box.minx() - x; i < box.maxx(); ++i, ++p)
     {
-        for (int j = y, q = 0; j < y_max; ++j, ++q)
+        for (int j = box.miny(), q = box.miny() - y; j < box.maxy(); ++j, ++q)
         {
             unsigned gray = src->buffer[q * src->width + p];
             if (gray)
