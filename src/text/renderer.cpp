@@ -22,6 +22,7 @@
 
 // mapnik
 #include <mapnik/text/renderer.hpp>
+#include <mapnik/text/compositing.hpp>
 #include <mapnik/grid/grid.hpp>
 #include <mapnik/text/text_properties.hpp>
 #include <mapnik/font_engine_freetype.hpp>
@@ -130,25 +131,6 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
         if (error) continue;
         box2d<double> bbox(0, glyph_pos.glyph.ymin(), 1, glyph_pos.glyph.ymax());
         glyphs_.emplace_back(glyph, image, pos, glyph_pos.rot, size, bbox);
-    }
-}
-
-template <typename T>
-void composite_bitmap(T & pixmap, FT_Bitmap *bitmap, unsigned rgba, int x, int y, double opacity, composite_mode_e comp_op)
-{
-    int x_max = x + bitmap->width;
-    int y_max = y + bitmap->rows;
-
-    for (int i = x, p = 0; i < x_max; ++i, ++p)
-    {
-        for (int j = y, q = 0; j < y_max; ++j, ++q)
-        {
-            unsigned gray = bitmap->buffer[q * bitmap->width + p];
-            if (gray)
-            {
-                mapnik::composite_pixel(pixmap, comp_op, i, j, rgba, gray, opacity);
-            }
-        }
     }
 }
 

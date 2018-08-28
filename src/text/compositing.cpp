@@ -1,0 +1,105 @@
+/*****************************************************************************
+ *
+ * This file is part of Mapnik (c++ mapping toolkit)
+ *
+ * Copyright (C) 2015 Artem Pavlenko
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ *****************************************************************************/
+
+#include <mapnik/text/compositing.hpp>
+#include <mapnik/color.hpp>
+#include <mapnik/safe_cast.hpp>
+
+#pragma GCC diagnostic push
+#include <mapnik/warning_ignore_agg.hpp>
+#include "agg_pixfmt_rgba.h"
+#pragma GCC diagnostic pop
+
+namespace mapnik
+{
+
+void composite_bitmap_src_over(
+    image_rgba8 & pixmap,
+    FT_Bitmap *bitmap,
+    unsigned rgba,
+    int x,
+    int y,
+    double opacity)
+{
+    int x_max = std::min(static_cast<std::size_t>(x + bitmap->width),
+                         pixmap.width());
+    int y_max = std::min(static_cast<std::size_t>(y + bitmap->rows),
+                         pixmap.height());
+
+    using color_type = agg::rgba8;
+    using value_type = color_type::value_type;
+    using order_type = agg::order_rgba;
+    using blender_type = agg::comp_op_rgba_src_over<color_type, order_type>;
+
+    color c(rgba);
+    unsigned ca = safe_cast<unsigned>(c.alpha() * opacity);
+    unsigned cb = c.blue();
+    unsigned cg = c.green();
+    unsigned cr = c.red();
+
+    for (int i = x, p = 0; i < x_max; ++i, ++p)
+    {
+        for (int j = y, q = 0; j < y_max; ++j, ++q)
+        {
+            unsigned gray = bitmap->buffer[q * bitmap->width + p];
+            if (gray)
+            {
+                image_rgba8::pixel_type & pix = pixmap(i, j);
+                blender_type::blend_pix(reinterpret_cast<value_type*>(&pix),
+                                        cr, cg, cb, ca, gray);
+            }
+        }
+    }
+}
+
+void composite_bitmap(
+    image_rgba8 & pixmap,
+    FT_Bitmap *bitmap,
+    unsigned rgba,
+    int x,
+    int y,
+    double opacity,
+    composite_mode_e comp_op)
+{
+    if (comp_op == src_over)
+    {
+        composite_bitmap_src_over(pixmap, bitmap, rgba, x, y, opacity);
+        return;
+    }
+
+    int x_max = x + bitmap->width;
+    int y_max = y + bitmap->rows;
+
+    for (int i = x, p = 0; i < x_max; ++i, ++p)
+    {
+        for (int j = y, q = 0; j < y_max; ++j, ++q)
+        {
+            unsigned gray = bitmap->buffer[q * bitmap->width + p];
+            if (gray)
+            {
+                mapnik::composite_pixel(pixmap, comp_op, i, j, rgba, gray, opacity);
+            }
+        }
+    }
+}
+
+}
