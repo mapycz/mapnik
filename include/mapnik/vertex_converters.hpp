@@ -29,7 +29,6 @@
 #include <mapnik/view_transform.hpp>
 #include <mapnik/transform_path_adapter.hpp>
 #include <mapnik/offset_converter.hpp>
-#include <mapnik/simplify.hpp>
 #include <mapnik/simplify_converter.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/value/types.hpp>
@@ -95,7 +94,7 @@ struct converter_traits<T,mapnik::simplify_tag>
     template <typename Args>
     static void setup(geometry_type & geom, Args const& args)
     {
-        geom.set_simplify_algorithm(get<simplify_algorithm_e,keys::simplify_algorithm>(args.sym, args.feature, args.vars));
+        geom.set_simplify_algorithm(get<simplify_algorithm_enum,keys::simplify_algorithm>(args.sym, args.feature, args.vars));
         geom.set_simplify_tolerance(get<value_double,keys::simplify_tolerance>(args.sym,args.feature, args.vars));
     }
 };

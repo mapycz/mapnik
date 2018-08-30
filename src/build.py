@@ -215,7 +215,6 @@ source = Split(
     projection.cpp
     proj_transform.cpp
     scale_denominator.cpp
-    simplify.cpp
     parse_transform.cpp
     memory_datasource.cpp
     symbolizer.cpp

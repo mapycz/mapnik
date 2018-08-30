@@ -27,7 +27,6 @@
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/image_scaling.hpp>
-#include <mapnik/simplify.hpp>
 #include <mapnik/color.hpp>
 #include <mapnik/value/types.hpp>
 #include <type_traits>
@@ -292,9 +291,9 @@ struct symbolizer_default<value_double, keys::smooth>
 
 // simplify-algorithm
 template <>
-struct symbolizer_default<simplify_algorithm_e, keys::simplify_algorithm>
+struct symbolizer_default<simplify_algorithm_enum, keys::simplify_algorithm>
 {
-    static simplify_algorithm_e value() { return radial_distance; }
+    static simplify_algorithm_enum value() { return RADIAL_DISTANCE; }
 };
 
 // simplify

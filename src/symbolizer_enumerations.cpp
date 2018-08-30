@@ -207,4 +207,14 @@ static const char * gamma_method_strings[] = {
 
 IMPLEMENT_ENUM( gamma_method_e, gamma_method_strings )
 
+static const char * simplify_algorithm_strings[] = {
+    "radial-distance",
+    "douglas-peucker",
+    "visvalingam-whyatt",
+    "zhao-saalfeld",
+    ""
+};
+
+IMPLEMENT_ENUM( simplify_algorithm_e, simplify_algorithm_strings )
+
 } // namespace mapnik

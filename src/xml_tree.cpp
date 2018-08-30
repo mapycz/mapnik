@@ -424,6 +424,7 @@ compile_get_opt_attr(float);
 compile_get_opt_attr(double);
 compile_get_opt_attr(color);
 compile_get_opt_attr(gamma_method_e);
+compile_get_opt_attr(simplify_algorithm_e);
 compile_get_opt_attr(line_join_e);
 compile_get_opt_attr(line_cap_e);
 compile_get_opt_attr(text_transform_e);

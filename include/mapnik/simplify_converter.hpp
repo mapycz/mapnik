@@ -4,7 +4,7 @@
 // mapnik
 #include <mapnik/config.hpp>
 #include <mapnik/vertex.hpp>
-#include <mapnik/simplify.hpp>
+#include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/util/noncopyable.hpp>
 
 // stl
@@ -97,7 +97,7 @@ public:
         : geom_(geom),
         tolerance_(0.0),
         status_(initial),
-        algorithm_(radial_distance),
+        algorithm_(RADIAL_DISTANCE),
         pos_(0)
     {}
 
@@ -172,12 +172,12 @@ private:
     {
         switch (algorithm_)
         {
-        case visvalingam_whyatt:
-        case douglas_peucker:
+        case VISVALINGAM_WHYATT:
+        case DOUGLAS_PEUCKER:
             return output_vertex_cached(x, y);
-        case radial_distance:
+        case RADIAL_DISTANCE:
             return output_vertex_distance(x, y);
-        case zhao_saalfeld:
+        case ZHAO_SAALFELD:
             return output_vertex_sleeve(x, y);
         default:
             throw std::runtime_error("simplification algorithm not yet implemented");
@@ -389,15 +389,15 @@ private:
         reset();
 
         switch (algorithm_) {
-            case visvalingam_whyatt:
+            case VISVALINGAM_WHYATT:
                 return init_vertices_visvalingam_whyatt();
-            case radial_distance:
+            case RADIAL_DISTANCE:
                 // Use
                 vertices_.push_back(vertex2d(vertex2d::no_init));
                 return status_ = process;
-            case zhao_saalfeld:
+            case ZHAO_SAALFELD:
                 return status_ = cache;
-            case douglas_peucker:
+            case DOUGLAS_PEUCKER:
                 return init_vertices_RDP();
             default:
                 throw std::runtime_error("simplification algorithm not yet implemented");

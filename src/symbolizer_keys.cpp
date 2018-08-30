@@ -22,7 +22,6 @@
 
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/color.hpp>
-#include <mapnik/simplify.hpp>
 
 // stl
 #include <algorithm>
@@ -98,7 +97,7 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "simplify-algorithm",
                         [](enumeration_wrapper e)
                         {
-                            return *simplify_algorithm_to_string(simplify_algorithm_e(e.value));
+                            return enumeration<simplify_algorithm_enum, simplify_algorithm_enum_MAX>(simplify_algorithm_enum(e.value)).as_string();
                         },
                         property_types::target_simplify_algorithm },
     property_meta_type{ "simplify", nullptr, property_types::target_double },

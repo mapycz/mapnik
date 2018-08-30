@@ -222,6 +222,16 @@ enum gamma_method_enum : std::uint8_t
 
 DEFINE_ENUM (gamma_method_e, gamma_method_enum );
 
+enum simplify_algorithm_enum : std::uint8_t
+{
+    RADIAL_DISTANCE,
+    DOUGLAS_PEUCKER,
+    VISVALINGAM_WHYATT,
+    ZHAO_SAALFELD,
+    simplify_algorithm_enum_MAX
+};
+
+DEFINE_ENUM (simplify_algorithm_e, simplify_algorithm_enum );
 
 }
 

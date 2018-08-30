@@ -27,7 +27,6 @@
 #include <mapnik/config.hpp>
 #include <mapnik/image_scaling.hpp>
 #include <mapnik/image_compositing.hpp>
-#include <mapnik/simplify.hpp>
 #include <mapnik/enumeration.hpp>
 #include <mapnik/expression.hpp>
 #include <mapnik/expression_evaluator.hpp>
@@ -144,16 +143,6 @@ struct enum_traits<scaling_method_e>
     }
 };
 
-template <>
-struct enum_traits<simplify_algorithm_e>
-{
-    using result_type = boost::optional<simplify_algorithm_e>;
-    static result_type from_string(std::string const& str)
-    {
-        return simplify_algorithm_from_string(str);
-    }
-};
-
 #define ENUM_FROM_STRING( e ) \
 template <> struct enum_traits<e> { \
     using result_type = boost::optional<e>; \
@@ -189,6 +178,7 @@ ENUM_FROM_STRING( text_transform_enum )
 ENUM_FROM_STRING( text_upright_enum )
 ENUM_FROM_STRING( direction_enum )
 ENUM_FROM_STRING( gamma_method_enum )
+ENUM_FROM_STRING( simplify_algorithm_enum )
 
 // enum
 template <typename T, bool is_enum = true>
