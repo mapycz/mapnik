@@ -396,7 +396,8 @@
             "simplify-algorithm": {
                 "type": ["radial-distance",
                          "zhao-saalfeld",
-                         "visvalingam-whyatt"
+                         "visvalingam-whyatt",
+                         "douglas-peucker"
                         ],
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
@@ -526,7 +527,8 @@
             "simplify-algorithm": {
                 "type": ["radial-distance",
                          "zhao-saalfeld",
-                         "visvalingam-whyatt"
+                         "visvalingam-whyatt",
+                         "douglas-peucker"
                         ],
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
@@ -711,7 +713,8 @@
             "simplify-algorithm": {
                 "type": ["radial-distance",
                          "zhao-saalfeld",
-                         "visvalingam-whyatt"
+                         "visvalingam-whyatt",
+                         "douglas-peucker"
                         ],
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
@@ -1056,7 +1059,8 @@
             "simplify-algorithm": {
                 "type": ["radial-distance",
                          "zhao-saalfeld",
-                         "visvalingam-whyatt"
+                         "visvalingam-whyatt",
+                         "douglas-peucker"
                         ],
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
@@ -1136,7 +1140,8 @@
             "simplify-algorithm": {
                 "type": ["radial-distance",
                          "zhao-saalfeld",
-                         "visvalingam-whyatt"
+                         "visvalingam-whyatt",
+                         "douglas-peucker"
                         ],
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
@@ -1271,7 +1276,8 @@
             "simplify-algorithm": {
                 "type": ["radial-distance",
                          "zhao-saalfeld",
-                         "visvalingam-whyatt"
+                         "visvalingam-whyatt",
+                         "douglas-peucker"
                         ],
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
@@ -1752,7 +1758,8 @@
             "simplify-algorithm": {
                 "type": ["radial-distance",
                          "zhao-saalfeld",
-                         "visvalingam-whyatt"
+                         "visvalingam-whyatt",
+                         "douglas-peucker"
                         ],
                 "default-value": "radial-distance",
                 "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
