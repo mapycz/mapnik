@@ -131,6 +131,22 @@
                 ["fill", 1]
             ],
             "doc": "A list of image filters to apply to the main canvas (see the `image-filters` doc for how they work on a separate canvas)."
+        },
+        "simplify": {
+            "type": "float",
+            "default-value": 0.0,
+            "default-meaning": "Geometry will not be simplified.",
+            "doc": "Geometries are simplified by the given tolerance."
+        },
+        "simplify-algorithm": {
+            "type": ["radial-distance",
+                     "zhao-saalfeld",
+                     "visvalingam-whyatt",
+                     "douglas-peucker"
+                    ],
+            "default-value": "radial-distance",
+            "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
+            "doc": "Geometries are simplified by the given algorithm."
         }
     },
     "map": {
@@ -388,20 +404,10 @@
                 "see-also": "clip"
             },
             "simplify": {
-                "type": "float",
-                "default-value": 0.0,
-                "default-meaning": "geometry will not be simplified.",
-                "doc": "Simplify geometries by the given tolerance."
+                "see-also": "simplify"
             },
             "simplify-algorithm": {
-                "type": ["radial-distance",
-                         "zhao-saalfeld",
-                         "visvalingam-whyatt",
-                         "douglas-peucker"
-                        ],
-                "default-value": "radial-distance",
-                "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
-                "doc": "Simplify geometries by the given algorithm."
+                "see-also": "simplify-algorithm"
             },
             "smooth": {
                 "type": "float",
@@ -519,20 +525,10 @@
                 "see-also": "clip"
             },
             "simplify": {
-                "type": "float",
-                "default-value": 0.0,
-                "default-meaning": "geometry will not be simplified.",
-                "doc": "Simplify geometries by the given tolerance."
+                "see-also": "simplify"
             },
             "simplify-algorithm": {
-                "type": ["radial-distance",
-                         "zhao-saalfeld",
-                         "visvalingam-whyatt",
-                         "douglas-peucker"
-                        ],
-                "default-value": "radial-distance",
-                "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
-                "doc": "Simplify geometries by the given algorithm."
+                "see-also": "simplify-algorithm"
             },
             "smooth": {
                 "type": "float",
@@ -705,20 +701,10 @@
                 "see-also": "clip"
             },
             "simplify": {
-                "type": "float",
-                "default-value": 0.0,
-                "default-meaning": "Geometry will not be simplified.",
-                "doc": "geometries are simplified by the given tolerance."
+                "see-also": "simplify"
             },
             "simplify-algorithm": {
-                "type": ["radial-distance",
-                         "zhao-saalfeld",
-                         "visvalingam-whyatt",
-                         "douglas-peucker"
-                        ],
-                "default-value": "radial-distance",
-                "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
-                "doc": "geometries are simplified by the given algorithm."
+                "see-also": "simplify-algorithm"
             },
             "smooth": {
                 "type": "float",
@@ -1051,20 +1037,10 @@
                 "see-also": "clip"
             },
             "simplify": {
-                "type": "float",
-                "default-value": 0.0,
-                "default-meaning": "geometry will not be simplified.",
-                "doc": "Simplify the geometries used for shield placement by the given tolerance."
+                "see-also": "simplify"
             },
             "simplify-algorithm": {
-                "type": ["radial-distance",
-                         "zhao-saalfeld",
-                         "visvalingam-whyatt",
-                         "douglas-peucker"
-                        ],
-                "default-value": "radial-distance",
-                "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
-                "doc": "Simplify the geometries used for shield placement by the given algorithm."
+                "see-also": "simplify-algorithm"
             },
             "smooth": {
                 "type": "float",
@@ -1132,20 +1108,10 @@
                 "see-also": "clip"
             },
             "simplify": {
-                "type": "float",
-                "default-value": 0.0,
-                "default-meaning": "geometry will not be simplified.",
-                "doc": "geometries are simplified by the given tolerance."
+                "see-also": "simplify"
             },
             "simplify-algorithm": {
-                "type": ["radial-distance",
-                         "zhao-saalfeld",
-                         "visvalingam-whyatt",
-                         "douglas-peucker"
-                        ],
-                "default-value": "radial-distance",
-                "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
-                "doc": "geometries are simplified by the given algorithm."
+                "see-also": "simplify-algorithm"
             },
             "smooth": {
                 "type": "float",
@@ -1268,20 +1234,10 @@
                 "see-also": "clip"
             },
             "simplify": {
-                "type": "float",
-                "default-value": 0.0,
-                "default-meaning": "geometry will not be simplified.",
-                "doc": "geometries are simplified by the given tolerance."
+                "see-also": "simplify"
             },
             "simplify-algorithm": {
-                "type": ["radial-distance",
-                         "zhao-saalfeld",
-                         "visvalingam-whyatt",
-                         "douglas-peucker"
-                        ],
-                "default-value": "radial-distance",
-                "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
-                "doc": "geometries are simplified by the given algorithm."
+                "see-also": "simplify-algorithm"
             },
             "smooth": {
                 "type": "float",
@@ -1750,20 +1706,10 @@
                 "see-also": "clip"
             },
             "simplify": {
-                "type": "float",
-                "default-value": 0.0,
-                "default-meaning": "geometry will not be simplified.",
-                "doc": "Simplify the geometries used for text placement by the given tolerance."
+                "see-also": "simplify"
             },
             "simplify-algorithm": {
-                "type": ["radial-distance",
-                         "zhao-saalfeld",
-                         "visvalingam-whyatt",
-                         "douglas-peucker"
-                        ],
-                "default-value": "radial-distance",
-                "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
-                "doc": "Simplify the geometries used for text placement by the given algorithm."
+                "see-also": "simplify-algorithm"
             },
             "smooth": {
                 "type": "float",
