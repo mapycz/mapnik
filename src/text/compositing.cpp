@@ -59,10 +59,10 @@ void composite_bitmap_src_over(
     color c(rgba);
     c.set_alpha(safe_cast<unsigned>(c.alpha() * opacity));
     c.premultiply();
-    unsigned ca = c.alpha();
-    unsigned cb = c.blue();
-    unsigned cg = c.green();
-    unsigned cr = c.red();
+    const unsigned ca = c.alpha();
+    const unsigned cb = c.blue();
+    const unsigned cg = c.green();
+    const unsigned cr = c.red();
 
     for (int i = box.minx(), p = box.minx() - x; i < box.maxx(); ++i, ++p)
     {
@@ -72,8 +72,23 @@ void composite_bitmap_src_over(
             if (gray)
             {
                 image_rgba8::pixel_type & pix = dst(i, j);
-                blender_type::blend_pix(reinterpret_cast<value_type*>(&pix),
-                                        cr, cg, cb, ca, gray);
+                value_type *p = reinterpret_cast<value_type*>(&pix);
+
+                const unsigned sr = (cr * gray + 255) >> 8;
+                const unsigned sg = (cg * gray + 255) >> 8;
+                const unsigned sb = (cb * gray + 255) >> 8;
+                const unsigned sa = (ca * gray + 255) >> 8;
+
+                const color_type::calc_type s1a = color_type::base_mask - sa;
+
+                p[order_type::R] = (value_type)(sr + ((p[order_type::R] * s1a +
+                    color_type::base_mask) >> color_type::base_shift));
+                p[order_type::G] = (value_type)(sg + ((p[order_type::G] * s1a +
+                    color_type::base_mask) >> color_type::base_shift));
+                p[order_type::B] = (value_type)(sb + ((p[order_type::B] * s1a +
+                    color_type::base_mask) >> color_type::base_shift));
+                p[order_type::A] = (value_type)(sa + ((p[order_type::A] * s1a +
+                    color_type::base_mask) >> color_type::base_shift));
             }
         }
     }
