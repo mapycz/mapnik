@@ -75,6 +75,18 @@ bool point_layout::try_placement(
     return try_placement(layout_generator, pos.coords);
 }
 
+bool point_layout::is_reachable(
+    detector_type const & detector,
+    pixel_position const & pos,
+    text_layout const & layout) const
+{
+    // FIXME: Marker is not counted into the size. Text can be empty.
+    double layout_max_dimension = std::max(layout.width(), layout.height());
+    box2d<double> layout_max_box(0, 0, layout_max_dimension * 2, layout_max_dimension * 2);
+    layout_max_box.re_center(pos.x, pos.y);
+    return detector.extent().intersects(layout_max_box);
+}
+
 bool point_layout::try_placement(
     layout_container const & layouts,
     detector_type & detector,
@@ -86,6 +98,13 @@ bool point_layout::try_placement(
     for (auto const& layout_wrapper : layouts)
     {
         text_layout const& layout = layout_wrapper.get();
+
+        if (!is_reachable(detector, pos, layout))
+        {
+            // Placements beyond collision extent are assumed to be unsuccessful.
+            return false;
+        }
+
         rotation const& orientation = layout.orientation();
 
         // Find text origin.
