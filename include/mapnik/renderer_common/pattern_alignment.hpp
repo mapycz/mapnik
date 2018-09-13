@@ -20,69 +20,26 @@
  *
  *****************************************************************************/
 
-
 #ifndef MAPNIK_PATTERN_ALIGNMENT_HPP
 #define MAPNIK_PATTERN_ALIGNMENT_HPP
 
-#include <mapnik/geometry.hpp>
+#include <mapnik/coord.hpp>
 
-namespace mapnik { namespace detail {
+namespace mapnik {
 
-struct apply_local_alignment
-{
-    apply_local_alignment(view_transform const& t,
-                          proj_transform const& prj_trans,
-                          box2d<double> const& clip_box,
-                          double & x, double & y)
-        : t_(t),
-          prj_trans_(prj_trans),
-          clip_box_(clip_box),
-          x_(x),
-          y_(y) {}
+class symbolizer_base;
+class feature_impl;
+class proj_transform;
+class renderer_common;
 
-    void operator() (geometry::polygon_vertex_adapter<double> & va)
-    {
-        using clipped_geometry_type = agg::conv_clip_polygon<geometry::polygon_vertex_adapter<double> >;
-        using path_type = transform_path_adapter<view_transform,clipped_geometry_type>;
-        clipped_geometry_type clipped(va);
-        clipped.clip_box(clip_box_.minx(),clip_box_.miny(),clip_box_.maxx(),clip_box_.maxy());
-        path_type path(t_, clipped, prj_trans_);
-        path.vertex(&x_,&y_);
-    }
+coord<double, 2> pattern_offset(
+    symbolizer_base const & sym,
+    feature_impl const & feature,
+    proj_transform const & prj_trans,
+    renderer_common const & common,
+    unsigned pattern_width,
+    unsigned pattern_height);
 
-    template <typename Adapter>
-    void operator() (Adapter &)
-    {
-        // no-op
-    }
-
-    view_transform const& t_;
-    proj_transform const& prj_trans_;
-    box2d<double> const& clip_box_;
-    double & x_;
-    double & y_;
-};
-
-template <typename Sym>
-coord<unsigned, 2> offset(Sym const & sym,
-                          mapnik::feature_impl const & feature,
-                          proj_transform const & prj_trans,
-                          renderer_common const & common,
-                          box2d<double> const & clip_box)
-{
-    coord<unsigned, 2> off(0, 0);
-    pattern_alignment_enum alignment = get<pattern_alignment_enum, keys::alignment>(sym, feature, common.vars_);
-    if (alignment == LOCAL_ALIGNMENT)
-    {
-        coord<double, 2> alignment(0, 0);
-        apply_local_alignment apply(common.t_, prj_trans, clip_box, alignment.x, alignment.y);
-        util::apply_visitor(geometry::vertex_processor<apply_local_alignment>(apply), feature.get_geometry());
-        off.x = std::abs(clip_box.width() - alignment.x);
-        off.y = std::abs(clip_box.height() - alignment.y);
-    }
-    return off;
 }
-
-}}
 
 #endif // MAPNIK_PATTERN_ALIGNMENT_HPP

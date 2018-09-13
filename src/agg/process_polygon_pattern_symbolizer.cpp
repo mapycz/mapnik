@@ -39,6 +39,7 @@
 #include <mapnik/renderer_common/render_pattern.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 #include <mapnik/renderer_common/pattern_alignment.hpp>
+#include <mapnik/safe_cast.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -223,8 +224,8 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     img_source_type img_src(pixf_pattern);
 
     box2d<double> clip_box = clipping_extent(common_);
-    coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));
-    span_gen_type sg(img_src, offset.x, offset.y);
+    coord<double, 2> offset(pattern_offset(sym, feature, prj_trans, common_, w, h));
+    span_gen_type sg(img_src, safe_cast<unsigned>(offset.x), safe_cast<unsigned>(offset.y));
 
     agg::span_allocator<agg::rgba8> sa;
     renderer_type rp(renb,sa, sg, unsigned(opacity * 255));

@@ -267,6 +267,7 @@ source = Split(
     renderer_common/render_markers_symbolizer.cpp
     renderer_common/render_thunk_extractor.cpp
     renderer_common/process_collision_symbolizer.cpp
+    renderer_common/pattern_alignment.cpp
     math.cpp
     symbol_cache.cpp
     value.cpp

@@ -57,11 +57,20 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
 
     cairo_common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
     cairo_surface_ptr surface(util::apply_visitor(visitor, *marker));
+
+    box2d<double> clip_box = clipping_extent(common_);
+    coord<double, 2> offset(0, 0);
+
+    cairo_rectangle_t pattern_surface_extent;
+    if (cairo_recording_surface_get_extents(surface.get(), &pattern_surface_extent))
+    {
+        offset = pattern_offset(sym, feature, prj_trans, common_,
+            pattern_surface_extent.width, pattern_surface_extent.height);
+    }
+
     cairo_pattern pattern(surface);
     pattern.set_extend(CAIRO_EXTEND_REPEAT);
-    box2d<double> clip_box = clipping_extent(common_);
-    coord<unsigned, 2> offset(detail::offset(sym, feature, prj_trans, common_, clip_box));
-    pattern.set_origin(offset.x, offset.y);
+    pattern.set_origin(-offset.x, -offset.y);
     context_.set_pattern(pattern);
 
     agg::trans_affine tr;
