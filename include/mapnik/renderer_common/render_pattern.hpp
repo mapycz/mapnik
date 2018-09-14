@@ -50,17 +50,16 @@
 namespace mapnik {
 
 // TODO: Move to cpp file ?
-template <typename Symbolizer, typename Rasterizer>
+template <typename Symbolizer>
 struct common_pattern_process_visitor
 {
     using image_type = image_rgba8;
 
     common_pattern_process_visitor(
-        Rasterizer & ras,
         renderer_common const & common,
         Symbolizer const & sym,
         feature_impl const & feature)
-        : common_pattern_process_visitor(ras, common, sym, feature,
+        : common_pattern_process_visitor(common, sym, feature,
             get_optional<value_double, keys::spacing>(sym, feature, common.vars_),
             get_optional<value_double, keys::spacing_x>(sym, feature, common.vars_),
             get_optional<value_double, keys::spacing_y>(sym, feature, common.vars_))
@@ -80,22 +79,20 @@ struct common_pattern_process_visitor
 
         if (lacing_ == PATTERN_LACING_MODE_ALTERNATING_GRID)
         {
-            return render_pattern_alternating(ras_, marker, bbox, tr);
+            return render_pattern_alternating(marker, bbox, tr);
         }
-        return render_pattern(ras_, marker, bbox, tr);
+        return render_pattern(marker, bbox, tr);
     }
 
 private:
     common_pattern_process_visitor(
-        Rasterizer & ras,
         renderer_common const & common,
         Symbolizer const & sym,
         feature_impl const & feature,
         boost::optional<value_double> spacing,
         boost::optional<value_double> spacing_x,
         boost::optional<value_double> spacing_y)
-        : ras_(ras),
-          common_(common),
+        : common_(common),
           sym_(sym),
           feature_(feature),
           spacing_x_(common.scale_factor_ * (spacing_x ? *spacing_x : (spacing ? *spacing : 0))),
@@ -117,8 +114,7 @@ private:
         return tr * mtx;
     }
 
-    image_rgba8 render_pattern(rasterizer & ras,
-                               marker_svg const & marker,
+    image_rgba8 render_pattern(marker_svg const & marker,
                                box2d<double> const & bbox,
                                agg::trans_affine tr) const
     {
@@ -150,13 +146,13 @@ private:
             agg::pod_bvector<svg::path_attributes>, renderer_solid, pixfmt>;
         renderer_type svg_renderer(svg_path, used_attributes);
 
+        rasterizer ras;
         tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
         return image;
     }
 
-    image_rgba8 render_pattern(rasterizer & ras,
-                               marker_rgba8 const& marker,
+    image_rgba8 render_pattern(marker_rgba8 const& marker,
                                box2d<double> const & bbox,
                                agg::trans_affine tr) const
     {
@@ -193,21 +189,21 @@ private:
         img_accessor_type ia(pixf);
         span_gen_type sg(ia, interpolator, filter);
 
-        agg::scanline_u8 sl;
+        rasterizer ras;
         ras.move_to_d(0, 0);
         ras.line_to_d(image.width(), 0);
         ras.line_to_d(image.width(), image.height());
         ras.line_to_d(0, image.height());
 
+        agg::scanline_u8 sl;
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
         return image;
     }
 
-    image_rgba8 render_pattern_alternating(rasterizer & ras,
-                               marker_svg const & marker,
-                               box2d<double> const & bbox,
-                               agg::trans_affine tr) const
+    image_rgba8 render_pattern_alternating(marker_svg const & marker,
+                                           box2d<double> const & bbox,
+                                           agg::trans_affine tr) const
     {
         using pixfmt = agg::pixfmt_rgba32_pre;
         using renderer_base = agg::renderer_base<pixfmt>;
@@ -237,6 +233,7 @@ private:
             agg::pod_bvector<svg::path_attributes>, renderer_solid, pixfmt>;
         renderer_type svg_renderer(svg_path, used_attributes);
 
+        rasterizer ras;
         tr.translate(spacing_x_ / 2.0, spacing_y_ / 2.0);
         svg_renderer.render(ras, sl, renb, tr, 1.0, bbox);
         tr.translate(std::round(-(bbox.width() / 2.0 + spacing_x_ / 2.0)),
@@ -247,10 +244,9 @@ private:
         return image;
     }
 
-    image_rgba8 render_pattern_alternating(rasterizer & ras,
-                               marker_rgba8 const& marker,
-                               box2d<double> const & bbox,
-                               agg::trans_affine tr) const
+    image_rgba8 render_pattern_alternating(marker_rgba8 const& marker,
+                                           box2d<double> const & bbox,
+                                           agg::trans_affine tr) const
     {
         using pixfmt = agg::pixfmt_rgba32_pre;
         using renderer_base = agg::renderer_base<pixfmt>;
@@ -287,12 +283,13 @@ private:
         img_accessor_type ia(pixf);
         span_gen_type sg(ia, interpolator, filter);
 
-        agg::scanline_u8 sl;
+        rasterizer ras;
         ras.move_to_d(0, 0);
         ras.line_to_d(image.width(), 0);
         ras.line_to_d(image.width(), image.height());
         ras.line_to_d(0, image.height());
 
+        agg::scanline_u8 sl;
         agg::render_scanlines_aa(ras, sl, rb, sa, sg);
 
         tr.invert();
@@ -309,7 +306,6 @@ private:
         return image;
     }
 
-    Rasterizer & ras_;
     renderer_common const & common_;
     Symbolizer const & sym_;
     feature_impl const & feature_;

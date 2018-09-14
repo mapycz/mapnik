@@ -100,7 +100,7 @@ void  agg_renderer<T0,T1>::process(line_pattern_symbolizer const& sym,
 
     std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
 
-    common_pattern_process_visitor<line_pattern_symbolizer, rasterizer> visitor(*ras_ptr, common_, sym, feature);
+    common_pattern_process_visitor<line_pattern_symbolizer> visitor(common_, sym, feature);
     image_rgba8 image(util::apply_visitor(visitor, *marker));
 
     pattern_source source(image, opacity);

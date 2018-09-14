@@ -213,7 +213,7 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
     pixf.comp_op(static_cast<agg::comp_op_e>(get<composite_mode_e, keys::comp_op>(sym, feature, common_.vars_)));
     ren_base renb(pixf);
 
-    common_pattern_process_visitor<polygon_pattern_symbolizer, rasterizer> visitor(*ras_ptr, common_, sym, feature);
+    common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
     image_rgba8 image(util::apply_visitor(visitor, *marker));
 
     unsigned w = image.width();
