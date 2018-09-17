@@ -38,14 +38,13 @@ namespace mapnik {
 // TODO: Share code with common_pattern_process_visitor in
 // renderer_common
 // TODO: Move to cpp file
-template <typename Symbolizer>
 struct cairo_common_pattern_process_visitor
 {
     using image_type = image_rgba8;
 
     cairo_common_pattern_process_visitor(
         renderer_common const & common,
-        Symbolizer const & sym,
+        symbolizer_base const & sym,
         feature_impl const & feature)
         : cairo_common_pattern_process_visitor(common, sym, feature,
             get_optional<value_double, keys::spacing>(
@@ -81,7 +80,7 @@ struct cairo_common_pattern_process_visitor
 private:
     cairo_common_pattern_process_visitor(
         renderer_common const & common,
-        Symbolizer const & sym,
+        symbolizer_base const & sym,
         feature_impl const & feature,
         boost::optional<value_double> spacing,
         boost::optional<value_double> spacing_x,
@@ -263,7 +262,7 @@ private:
     }
 
     renderer_common const & common_;
-    Symbolizer const & sym_;
+    symbolizer_base const & sym_;
     feature_impl const & feature_;
     const value_double opacity_;
     const value_double spacing_x_;
