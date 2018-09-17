@@ -168,6 +168,9 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "contour", nullptr, property_types::target_double},
     property_meta_type{ "max-line-angle", nullptr, property_types::target_double},
     property_meta_type{ "max-line-angle-distance", nullptr, property_types::target_double},
+    property_meta_type{ "line-pattern",  [](enumeration_wrapper e)
+                        {return enumeration<line_pattern_enum,line_pattern_enum_MAX>(line_pattern_enum(e.value)).as_string();},
+                        property_types::target_line_pattern},
 
 };
 

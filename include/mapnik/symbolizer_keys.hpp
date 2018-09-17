@@ -107,6 +107,7 @@ enum class keys : std::uint8_t
     contour,
     max_line_angle,
     max_line_angle_distance,
+    line_pattern,
     MAX_SYMBOLIZER_KEY
 };
 

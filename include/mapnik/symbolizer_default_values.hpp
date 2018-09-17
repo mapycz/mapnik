@@ -451,6 +451,13 @@ struct symbolizer_default<value_double, keys::max_line_angle>
     static value_double value() { return 30.0; }
 };
 
+// line-pattern
+template <>
+struct symbolizer_default<line_pattern_enum, keys::line_pattern>
+{
+    static line_pattern_enum value() { return LINE_PATTERN_WARP; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP

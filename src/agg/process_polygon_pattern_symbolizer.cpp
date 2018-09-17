@@ -26,6 +26,7 @@
 #include <mapnik/agg_renderer.hpp>
 #include <mapnik/agg_helpers.hpp>
 #include <mapnik/agg_rasterizer.hpp>
+#include <mapnik/agg/render_polygon_pattern.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/vertex_converters.hpp>
@@ -35,11 +36,7 @@
 #include <mapnik/svg/svg_converter.hpp>
 #include <mapnik/svg/svg_renderer_agg.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
-#include <mapnik/renderer_common/clipping_extent.hpp>
 #include <mapnik/renderer_common/render_pattern.hpp>
-#include <mapnik/renderer_common/apply_vertex_converter.hpp>
-#include <mapnik/renderer_common/pattern_alignment.hpp>
-#include <mapnik/safe_cast.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -169,8 +166,11 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
                                   proj_transform const& prj_trans)
 {
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
-    if (filename.empty()) return;
     std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
+    if (marker->is<marker_null>())
+    {
+        return;
+    }
 
     buffer_type & current_buffer = buffers_.top().get();
     agg::rendering_buffer buf(current_buffer.bytes(), current_buffer.width(),
@@ -185,95 +185,43 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
         gamma_ = gamma;
     }
 
-    value_bool clip = get<value_bool, keys::clip>(sym, feature, common_.vars_);
-    value_double opacity = get<double, keys::opacity>(sym, feature, common_.vars_);
-    value_double simplify_tolerance = get<value_double, keys::simplify_tolerance>(sym, feature, common_.vars_);
-    value_double smooth = get<value_double, keys::smooth>(sym, feature, common_.vars_);
-
-    using color = agg::rgba8;
-    using order = agg::order_rgba;
-    using blender_type = agg::comp_op_adaptor_rgba_pre<color, order>;
-    using pixfmt_type = agg::pixfmt_custom_blend_rgba<blender_type, agg::rendering_buffer>;
-
-    using wrap_x_type = agg::wrap_mode_repeat;
-    using wrap_y_type = agg::wrap_mode_repeat;
-    using img_source_type = agg::image_accessor_wrap<agg::pixfmt_rgba32_pre,
-                                                     wrap_x_type,
-                                                     wrap_y_type>;
-    //using img_source_type = image_accessor_wrap<agg::pixfmt_rgba32_pre,
-                                                     //wrap_mode_alternating>;
-
-    using span_gen_type = agg::span_pattern_rgba<img_source_type>;
-    using ren_base = agg::renderer_base<pixfmt_type>;
-
-    using renderer_type = agg::renderer_scanline_aa_alpha<ren_base,
-                                                          agg::span_allocator<agg::rgba8>,
-                                                          span_gen_type>;
-
-    pixfmt_type pixf(buf);
-    pixf.comp_op(static_cast<agg::comp_op_e>(get<composite_mode_e, keys::comp_op>(sym, feature, common_.vars_)));
-    ren_base renb(pixf);
-
-    common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
-    image_rgba8 image(util::apply_visitor(visitor, *marker));
-
-    unsigned w = image.width();
-    unsigned h = image.height();
-    agg::rendering_buffer pattern_rbuf((agg::int8u*)image.bytes(),w,h,w*4);
-    agg::pixfmt_rgba32_pre pixf_pattern(pattern_rbuf);
-    img_source_type img_src(pixf_pattern);
-
-    box2d<double> clip_box = clipping_extent(common_);
-    coord<double, 2> offset(pattern_offset(sym, feature, prj_trans, common_, w, h));
-    span_gen_type sg(img_src, safe_cast<unsigned>(offset.x), safe_cast<unsigned>(offset.y));
-
-    agg::span_allocator<agg::rgba8> sa;
-    renderer_type rp(renb,sa, sg, unsigned(opacity * 255));
-
-    agg::trans_affine tr;
-    auto transform = get_optional<transform_type>(sym, keys::geometry_transform);
-    if (transform) evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
     using vertex_converter_type = vertex_converter<transform2_tag,
                                                    clip_poly_tag,
                                                    transform_tag,
                                                    affine_transform_tag,
                                                    simplify_tag,
                                                    smooth_tag>;
+    using pattern_type = agg_polygon_pattern<vertex_converter_type>;
 
-    box2d<double> final_clip_box(clip_box);
-    bool transform2 = false;
+    common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
+    image_rgba8 image(util::apply_visitor(visitor, *marker));
 
-    if (clip && !prj_trans.equal())
+    pattern_type pattern(image, common_, sym, feature, prj_trans);
+
+    pattern_type::pixfmt_type pixf(buf);
+    pixf.comp_op(static_cast<agg::comp_op_e>(get<composite_mode_e, keys::comp_op>(sym, feature, common_.vars_)));
+    pattern_type::renderer_base renb(pixf);
+
+    unsigned w = image.width();
+    unsigned h = image.height();
+    agg::rendering_buffer pattern_rbuf((agg::int8u*)image.bytes(),w,h,w*4);
+    agg::pixfmt_rgba32_pre pixf_pattern(pattern_rbuf);
+    pattern_type::img_source_type img_src(pixf_pattern);
+
+    if (pattern.clip_ && !pattern.prj_trans_.equal())
     {
-        transform2 = true;
-        final_clip_box = box2d<double>(-1, -1,
-            common_.width_ + 1, common_.height_ + 1);
-    }
-
-    vertex_converter_type converter(final_clip_box, sym, common_.t_,
-        prj_trans, tr, feature, common_.vars_, common_.scale_factor_);
-
-    if (transform2)
-    {
-        converter.template set<transform2_tag>();
+        pattern.converter_.template set<transform2_tag>();
     }
     else
     {
-        converter.template set<transform_tag>();
+        pattern.converter_.template set<transform_tag>();
     }
 
-    if (clip) converter.set<clip_poly_tag>();
-    converter.set<affine_transform_tag>(); // optional affine transform
-    if (simplify_tolerance > 0.0) converter.set<simplify_tag>(); // optional simplify converter
-    if (smooth > 0.0) converter.set<smooth_tag>(); // optional smooth converter
+    if (pattern.clip_) pattern.converter_.set<clip_poly_tag>();
 
-    using apply_vertex_converter_type = detail::apply_vertex_converter<vertex_converter_type, rasterizer>;
-    using vertex_processor_type = geometry::vertex_processor<apply_vertex_converter_type>;
-    apply_vertex_converter_type apply(converter, *ras_ptr);
-    mapnik::util::apply_visitor(vertex_processor_type(apply),feature.get_geometry());
-    agg::scanline_u8 sl;
-    ras_ptr->filling_rule(agg::fill_non_zero);
-    agg::render_scanlines(*ras_ptr, sl, rp);
+    ras_ptr->filling_rule(agg::fill_even_odd);
+
+    pattern.render(renb, *ras_ptr);
 }
 
 template void agg_renderer<image_rgba8>::process(polygon_pattern_symbolizer const&,
