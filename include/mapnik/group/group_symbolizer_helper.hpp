@@ -24,13 +24,14 @@
 
 #include <mapnik/value_types.hpp>
 #include <mapnik/vertex_cache.hpp>
+#include <mapnik/collision_cache.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/label_placements/base.hpp>
 #include <mapnik/text/text_line_policy.hpp>
-#include <mapnik/text/line_layout.hpp>
+#include <mapnik/label_placements/line_layout.hpp>
 
 #include <list>
 
@@ -88,7 +89,7 @@ struct group_line_policy : text_line_policy<group_layout_generator>
 };
 
 template <typename SubLayout>
-class group_line_layout : line_layout<SubLayout>
+class group_line_layout : label_placement::line_layout<SubLayout>
 {
 public:
     using params_type = label_placement::placement_params;
@@ -96,7 +97,7 @@ public:
     using detector_type = layout_generator_type::detector_type;
 
     group_line_layout(params_type const & params)
-        : line_layout<SubLayout>(params)
+        : label_placement::line_layout<SubLayout>(params)
     {
     }
 
@@ -107,9 +108,56 @@ public:
     {
         vertex_cache path(geom);
         group_line_policy policy(path, layout_generator, 0, this->params_);
-        return line_layout<SubLayout>::try_placement(
+        return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);
     }
+};
+
+struct group_max_angle_line_policy : text_max_line_angle_policy<group_layout_generator>
+{
+    using text_max_line_angle_policy<group_layout_generator>::text_max_line_angle_policy;
+
+    inline bool align()
+    {
+        return path_.forward(this->get_spacing() / 2.0);
+    }
+};
+
+template <typename SubLayout>
+class group_max_angle_line_layout : label_placement::line_layout<SubLayout>
+{
+public:
+    using params_type = label_placement::placement_params;
+    using layout_generator_type = group_layout_generator;
+    using detector_type = layout_generator_type::detector_type;
+
+    group_max_angle_line_layout(params_type const & params)
+        : label_placement::line_layout<SubLayout>(params),
+          max_angle_diff_((M_PI / 180.0) * params.get<value_double, keys::max_line_angle>()),
+          max_angle_distance_(params.get_optional<value_double, keys::max_line_angle_distance>())
+
+    {
+    }
+
+    template <typename Geom>
+    bool try_placement(
+        group_layout_generator & layout_generator,
+        Geom & geom)
+    {
+        double layout_width = this->sublayout_.get_length(layout_generator);
+        double distance = max_angle_distance_ ?
+            (this->params_.scale_factor * *max_angle_distance_) :
+            layout_width;
+        vertex_cache path(geom);
+        group_max_angle_line_policy policy(path, layout_generator,
+            layout_width, this->params_, max_angle_diff_, distance);
+        return label_placement::line_layout<SubLayout>::try_placement(
+            layout_generator, path, policy);
+    }
+
+protected:
+    const double max_angle_diff_;
+    const boost::optional<double> max_angle_distance_;
 };
 
 class group_point_layout : util::noncopyable

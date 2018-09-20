@@ -70,6 +70,8 @@ struct finder
                 return dsp.template apply<typename T::alternating_grid>();
             case LINE_PLACEMENT:
                 return dsp.template apply<typename T::line>();
+            case LINE_MAX_ANGLE_PLACEMENT:
+                return dsp.template apply<typename T::line_max_angle>();
             case VERTEX_FIRST_PLACEMENT:
                 return dsp.template apply<typename T::vertex_first>();
             case VERTEX_LAST_PLACEMENT:

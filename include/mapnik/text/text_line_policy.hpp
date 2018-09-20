@@ -23,6 +23,7 @@
 #define MAPNIK_TEXT_LINE_POLICY_HPP
 
 #include <mapnik/vertex_cache.hpp>
+#include <mapnik/label_placements/max_line_angle_mover.hpp>
 
 namespace mapnik
 {
@@ -138,6 +139,36 @@ struct text_line_policy
     const double minimum_path_length_;
     const double spacing_;
     const double position_tolerance_;
+};
+
+template <typename LayoutGenerator>
+struct text_max_line_angle_policy : text_line_policy<LayoutGenerator>
+{
+    using params_type = label_placement::placement_params;
+
+    text_max_line_angle_policy(
+        vertex_cache & path,
+        LayoutGenerator const & lg,
+        double layout_width,
+        params_type const & params,
+        double max_angle_diff,
+        double max_angle_distance)
+        : text_line_policy<LayoutGenerator>(path, lg, layout_width, params),
+          mover_(path, max_angle_diff, max_angle_distance)
+    {
+    }
+
+    bool move(double distance)
+    {
+        if (!text_line_policy<LayoutGenerator>::move(distance))
+        {
+            return false;
+        }
+
+        return mover_.move(distance);
+    }
+
+    max_line_angle_mover mover_;
 };
 
 }//ns mapnik

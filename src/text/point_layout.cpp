@@ -37,8 +37,7 @@
 
 #include <vector>
 
-namespace mapnik
-{
+namespace mapnik { namespace text {
 
 point_layout::point_layout(params_type const & params)
     : params_(params),
@@ -284,4 +283,4 @@ void shield_layout::process_bboxes(
     }
 }
 
-}// ns mapnik
+} }

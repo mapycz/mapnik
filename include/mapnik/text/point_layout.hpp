@@ -33,8 +33,7 @@
 #include <mapnik/text/text_layout_generator.hpp>
 #include <mapnik/label_placements/base.hpp>
 
-namespace mapnik
-{
+namespace mapnik { namespace text {
 
 class point_layout : util::noncopyable
 {
@@ -114,6 +113,6 @@ private:
     const pixel_position marker_displacement_;
 };
 
-}//ns mapnik
+} }
 
 #endif // MAPNIK_POINT_LAYOUT_HPP

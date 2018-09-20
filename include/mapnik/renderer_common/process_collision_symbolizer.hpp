@@ -24,7 +24,6 @@
 #define MAPNIK_RENDERER_COMMON_PROCESS_COLLISION_SYMBOLIZER_HPP
 
 #include <mapnik/renderer_common.hpp>
-#include <mapnik/text/line_layout.hpp>
 #include <mapnik/marker_grid_layout.hpp>
 #include <mapnik/grid_vertex_adapter.hpp>
 #include <mapnik/label_placement.hpp>
@@ -38,6 +37,8 @@
 #include <mapnik/label_placements/point_layout.hpp>
 #include <mapnik/label_placements/point_geometry_visitor.hpp>
 #include <mapnik/label_placements/interior_geometry_visitor.hpp>
+#include <mapnik/label_placements/line_layout.hpp>
+#include <mapnik/label_placements/point_position_accessor.hpp>
 #include <mapnik/marker_line_policy.hpp>
 
 namespace mapnik {
@@ -96,7 +97,7 @@ public:
 
     inline double get_length(layout_generator_type const &) const
     {
-        return 0;
+        return size_.width();
     }
 
 protected:
@@ -107,13 +108,13 @@ protected:
 };
 
 template <typename SubLayout>
-class line_layout : mapnik::line_layout<SubLayout>
+class line_layout : protected label_placement::line_layout<SubLayout>
 {
 public:
     using params_type = label_placement::placement_params;
 
     line_layout(params_type const & params)
-        : mapnik::line_layout<SubLayout>(params),
+        : label_placement::line_layout<SubLayout>(params),
           spacing_(get_spacing())
     {
     }
@@ -125,7 +126,7 @@ public:
     {
         vertex_cache path(geom);
         marker_line_policy policy(path, 0, spacing_, 0);
-        return mapnik::line_layout<SubLayout>::try_placement(
+        return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);
     }
 
@@ -138,6 +139,40 @@ protected:
     }
 
     const double spacing_;
+};
+
+template <typename SubLayout>
+class max_angle_line_layout : protected line_layout<SubLayout>
+{
+public:
+    using params_type = label_placement::placement_params;
+
+    max_angle_line_layout(params_type const & params)
+        : line_layout<SubLayout>(params),
+          max_angle_diff_((M_PI / 180.0) * params.get<value_double, keys::max_line_angle>()),
+          max_angle_distance_(params.get_optional<value_double, keys::max_line_angle_distance>())
+    {
+    }
+
+    template <typename LayoutGenerator, typename Geom>
+    bool try_placement(
+        LayoutGenerator & layout_generator,
+        Geom & geom)
+    {
+        double layout_width = this->sublayout_.get_length(layout_generator);
+        double distance = max_angle_distance_ ?
+            (this->params_.scale_factor * *max_angle_distance_) :
+            layout_width;
+        vertex_cache path(geom);
+        marker_line_max_angle_policy policy(path, layout_width,
+            this->spacing_, 0, max_angle_diff_, distance);
+        return label_placement::line_layout<SubLayout>::try_placement(
+            layout_generator, path, policy);
+    }
+
+protected:
+    const double max_angle_diff_;
+    const boost::optional<double> max_angle_distance_;
 };
 
 }
@@ -179,6 +214,12 @@ struct collision_symbolizer_traits
             vertex_converter<
                 set_line_clip_geometry_visitor,
                 collision::line_layout<
+                    collision::point_layout>>>>;
+    using line_max_angle = split_multi<
+        geom_iterator<
+            vertex_converter<
+                set_line_clip_geometry_visitor,
+                collision::max_angle_line_layout<
                     collision::point_layout>>>>;
     using vertex_first = split_multi<
         geom_iterator<

@@ -444,6 +444,13 @@ struct symbolizer_default<value_double, keys::contour>
     static value_double value() { return 0.0; }
 };
 
+// max_line_angle
+template <>
+struct symbolizer_default<value_double, keys::max_line_angle>
+{
+    static value_double value() { return 30.0; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP

@@ -27,6 +27,7 @@
 #include <mapnik/debug.hpp>
 #include <mapnik/config.hpp>
 #include <mapnik/util/noncopyable.hpp>
+#include <mapnik/util/math.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -123,8 +124,10 @@ public:
     bool backward(double length);
     // Move in any direction (based on sign of length). Returns false if it reaches either end of the path.
     bool move(double length);
+    bool move(double length, double max_angle_diff);
     // Move to given distance.
     bool move_to_distance(double distance);
+    bool move_to_distance(double distance, double max_angle_diff);
     // Work on next subpath. Returns false if the is no next subpath.
     bool next_subpath();
 
@@ -142,6 +145,12 @@ public:
     double position_closest_to(pixel_position const &target_pos);
 
 private:
+    template <typename SegmentMover>
+    bool move_by(double length, SegmentMover & mover);
+
+    template <typename SegmentMover>
+    bool move_to_distance_by(double distance, SegmentMover & mover);
+
     void rewind_subpath();
     bool next_segment();
     bool previous_segment();
@@ -177,6 +186,64 @@ private:
     offseted_lines_map offseted_lines_;
     // Linear position, i.e distance from start of line.
     double position_;
+
+    struct segment_mover
+    {
+        bool next()
+        {
+            return vc_.next_segment();
+        }
+
+        bool previous()
+        {
+            return vc_.previous_segment();
+        }
+
+        vertex_cache & vc_;
+    };
+
+    struct max_angle_diff_segment_mover
+    {
+        bool next()
+        {
+            if (!vc_.next_segment())
+            {
+                return false;
+            }
+
+            if (angle_diff() > max_angle_diff_)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool previous()
+        {
+            if (!vc_.previous_segment())
+            {
+                return false;
+            }
+
+            if (angle_diff() > max_angle_diff_)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        double angle_diff()
+        {
+            return std::fabs(util::normalize_angle(
+                vc_.current_segment_angle() - reference_angle_));
+        }
+
+        const double reference_angle_;
+        const double max_angle_diff_;
+        vertex_cache & vc_;
+    };
 };
 
 

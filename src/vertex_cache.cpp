@@ -245,7 +245,8 @@ bool vertex_cache::backward(double length)
     return move(-length);
 }
 
-bool vertex_cache::move(double length)
+template <typename SegmentMover>
+bool vertex_cache::move_by(double length, SegmentMover & mover)
 {
     if (current_segment_ == current_subpath_->vector.end()) return false;
 
@@ -254,11 +255,11 @@ bool vertex_cache::move(double length)
     while (length >= current_segment_->length)
     {
         length -= current_segment_->length;
-        if (!next_segment()) return false; //Skip all complete segments
+        if (!mover.next()) return false; //Skip all complete segments
     }
     while (length < 0)
     {
-        if (!previous_segment()) return false;
+        if (!mover.previous()) return false;
         length += current_segment_->length;
     }
     double factor = length / current_segment_->length;
@@ -267,7 +268,24 @@ bool vertex_cache::move(double length)
     return true;
 }
 
-bool vertex_cache::move_to_distance(double distance)
+bool vertex_cache::move(double length)
+{
+    segment_mover mover{*this};
+    this->move_by(length, mover);
+}
+
+bool vertex_cache::move(double length, double max_angle_diff)
+{
+    max_angle_diff_segment_mover mover{
+        this->current_segment_angle(),
+        max_angle_diff,
+        *this
+    };
+    this->move_by(length, mover);
+}
+
+template <typename SegmentMover>
+bool vertex_cache::move_to_distance_by(double distance, SegmentMover & mover)
 {
     if (current_segment_ == current_subpath_->vector.end()) return false;
 
@@ -288,7 +306,7 @@ bool vertex_cache::move_to_distance(double distance)
             do
             {
                 position_ += current_segment_->length;
-                if (!next_segment()) return false;
+                if (!mover.next()) return false;
                 new_abs_distance = (current_position_ - current_segment_->pos).length();
             }
             while (new_abs_distance < abs_distance);
@@ -300,7 +318,7 @@ bool vertex_cache::move_to_distance(double distance)
         {
             do
             {
-                if (!previous_segment()) return false;
+                if (!mover.previous()) return false;
                 position_ -= current_segment_->length;
                 new_abs_distance = (current_position_ - segment_starting_point_).length();
             }
@@ -326,6 +344,22 @@ bool vertex_cache::move_to_distance(double distance)
         current_position_ = segment_starting_point_ + (current_segment_->pos - segment_starting_point_) * factor;
     }
     return true;
+}
+
+bool vertex_cache::move_to_distance(double distance)
+{
+    segment_mover mover{*this};
+    this->move_to_distance_by(distance, mover);
+}
+
+bool vertex_cache::move_to_distance(double distance, double max_angle_diff)
+{
+    max_angle_diff_segment_mover mover{
+        this->current_segment_angle(),
+        max_angle_diff,
+        *this
+    };
+    this->move_to_distance_by(distance, mover);
 }
 
 void vertex_cache::rewind(unsigned)
@@ -416,5 +450,9 @@ void vertex_cache::find_line_circle_intersection(
         return;
     }
 }
+
+template bool vertex_cache::move_by(double length, segment_mover & mover);
+template bool vertex_cache::move_by(double length, max_angle_diff_segment_mover & mover);
+
 
 } //ns mapnik

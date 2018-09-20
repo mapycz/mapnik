@@ -31,44 +31,14 @@
 #include <mapnik/extend_converter.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/text/point_layout.hpp>
-#include <mapnik/tolerance_iterator.hpp>
 #include <mapnik/text/text_line_policy.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_adapters.hpp>
+#include <mapnik/label_placements/line_layout.hpp>
+#include <mapnik/label_placements/point_position_accessor.hpp>
 
 namespace mapnik
 {
-
-template <typename Layout>
-struct position_accessor
-{
-    template <typename T>
-    static T & get(T & geom)
-    {
-        return geom;
-    }
-};
-
-template <>
-struct position_accessor<point_layout>
-{
-    static pixel_position const & get(vertex_cache const & geom)
-    {
-        return geom.current_position();
-    }
-
-    static pixel_position const & get(pixel_position const & geom)
-    {
-        return geom;
-    }
-};
-
-template <>
-struct position_accessor<shield_layout> : position_accessor<point_layout>
-{
-};
-
-// ===========================================
 
 static const double halign_adjust_extend = 1000;
 
@@ -86,6 +56,7 @@ public:
         LayoutGenerator & layout_generator,
         Geom & geom);
 
+    // TODO: needed?
     inline double get_length(text_layout_generator const & layout_generator) const
     {
         return layout_generator.layouts_->width();
@@ -124,90 +95,29 @@ bool text_extend_line_layout<SubLayout>::try_placement(
     return sublayout_.try_placement(layout_generator, geom);
 }
 
+// ===========================================
+
 template <typename SubLayout>
-class line_layout : util::noncopyable
+class text_line_layout : label_placement::line_layout<SubLayout>
 {
 public:
-    using box_type = box2d<double>;
-    using params_type = label_placement::placement_params;
-
-    line_layout(params_type const & params);
+    using label_placement::line_layout<SubLayout>::line_layout;
 
     template <typename LayoutGenerator, typename Geom>
     bool try_placement(
         LayoutGenerator & layout_generator,
-        Geom & geom);
-
-protected:
-    template <typename LayoutGenerator, typename LineLayoutPolicy>
-    bool try_placement(
-        LayoutGenerator & layout_generator,
-        vertex_cache & path,
-        LineLayoutPolicy & policy);
-
-    SubLayout sublayout_;
-    params_type const & params_;
+        Geom & geom)
+    {
+        vertex_cache path(geom);
+        double layout_width = this->sublayout_.get_length(layout_generator);
+        text_line_policy<LayoutGenerator> policy(path,
+            layout_generator, layout_width, this->params_);
+        return label_placement::line_layout<SubLayout>::try_placement(
+            layout_generator, path, policy);
+    }
 };
 
-template <typename SubLayout>
-line_layout<SubLayout>::line_layout(params_type const & params)
-    : sublayout_(params),
-      params_(params)
-{
-}
-
-template <typename SubLayout>
-template <typename LayoutGenerator, typename Geom>
-bool line_layout<SubLayout>::try_placement(
-    LayoutGenerator & layout_generator,
-    Geom & geom)
-{
-    vertex_cache path(geom);
-    double layout_width = sublayout_.get_length(layout_generator);
-    text_line_policy<LayoutGenerator> policy(path, layout_generator, layout_width, params_);
-    return try_placement(layout_generator, path, policy);
-}
-
-template <typename SubLayout>
-template <typename LayoutGenerator, typename LineLayoutPolicy>
-bool line_layout<SubLayout>::try_placement(
-    LayoutGenerator & layout_generator,
-    vertex_cache & path,
-    LineLayoutPolicy & policy)
-{
-    bool success = false;
-    while (path.next_subpath())
-    {
-        if (!policy.check_size())
-        {
-            continue;
-        }
-
-        if (!policy.align())
-        {
-            continue;
-        }
-
-        do
-        {
-            tolerance_iterator<exponential_function> tolerance_offset(
-                policy.position_tolerance());
-            while (tolerance_offset.next())
-            {
-                vertex_cache::scoped_state state(path);
-                if (policy.move(tolerance_offset.get()) &&
-                    sublayout_.try_placement(layout_generator,
-                        position_accessor<SubLayout>::get(path)))
-                {
-                    success = true;
-                    break;
-                }
-            }
-        } while (policy.forward(success));
-    }
-    return success;
-}
-
+// ===========================================
 
 class single_line_layout : util::noncopyable
 {
