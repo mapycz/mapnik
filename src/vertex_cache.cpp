@@ -75,7 +75,7 @@ double vertex_cache::angle(double width)
             angle_ = current_segment_angle();
         }
     }
-    return width >= 0 ? angle_ : angle_ + M_PI;
+    return width >= 0 ? angle_ : (angle_ + M_PI);
 }
 
 bool vertex_cache::next_subpath()
