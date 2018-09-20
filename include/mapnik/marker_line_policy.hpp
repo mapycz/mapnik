@@ -23,6 +23,7 @@
 #define MAPNIK_MARKER_LINE_POLICY_HPP
 
 #include <mapnik/vertex_cache.hpp>
+#include <mapnik/label_placements/max_line_angle_mover.hpp>
 
 namespace mapnik
 {
@@ -73,6 +74,33 @@ struct marker_line_policy
     const double layout_width_;
     const double spacing_;
     const double position_tolerance_;
+};
+
+struct marker_line_max_angle_policy : marker_line_policy
+{
+    marker_line_max_angle_policy(
+        vertex_cache & path,
+        double layout_width,
+        double spacing,
+        double position_tolerance,
+        double max_angle_diff,
+        double max_angle_distance)
+        : marker_line_policy(path, layout_width, spacing, position_tolerance),
+          mover_(path, max_angle_diff, max_angle_distance)
+    {
+    }
+
+    inline bool move(double distance)
+    {
+        if (!marker_line_policy::move(distance))
+        {
+            return false;
+        }
+
+        return mover_.move(distance);
+    }
+
+    max_line_angle_mover mover_;
 };
 
 

@@ -109,6 +109,7 @@ static const char * label_placement_strings[] = {
     "vertex-last",
     "centroid",
     "alternating-grid",
+    "line-max-angle",
     ""
 };
 

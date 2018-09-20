@@ -29,13 +29,18 @@
 #include <mapnik/renderer_common/render_group_symbolizer.hpp>
 #include <mapnik/renderer_common/render_thunk_extractor.hpp>
 #include <mapnik/util/conversions.hpp>
+#include <mapnik/label_placements/point_position_accessor.hpp>
 
 namespace mapnik {
 
+namespace label_placement {
+
 template <>
-struct position_accessor<group_point_layout> : position_accessor<point_layout>
+struct position_accessor<group_point_layout> : position_accessor<text::point_layout>
 {
 };
+
+}
 
 void render_group_symbolizer(group_symbolizer const& sym,
                              feature_impl & feature,

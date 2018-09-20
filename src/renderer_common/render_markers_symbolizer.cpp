@@ -86,6 +86,11 @@ struct marker_symbolizer_traits
             vertex_converter<
                 set_line_clip_geometry_visitor,
                 marker_line_layout<marker_layout>>>>;
+    using line_max_angle = split_multi<
+        geom_iterator<
+            vertex_converter<
+                set_line_clip_geometry_visitor,
+                marker_line_max_angle_layout<marker_layout>>>>;
     using vertex_first = split_multi<
         geom_iterator<
             vertex_converter<
