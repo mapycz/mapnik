@@ -45,8 +45,14 @@ vertex_cache::vertex_cache(vertex_cache && rhs)
 
 double vertex_cache::current_segment_angle()
 {
-    return std::atan2(current_segment_->pos.y - segment_starting_point_.y,
-                      current_segment_->pos.x - segment_starting_point_.x);
+    if (!angle_valid_)
+    {
+        angle_ = std::atan2(
+            current_segment_->pos.y - segment_starting_point_.y,
+            current_segment_->pos.x - segment_starting_point_.x);
+        angle_valid_ = true;
+    }
+    return angle_;
 }
 
 double vertex_cache::angle(double width)
@@ -54,11 +60,7 @@ double vertex_cache::angle(double width)
     double tmp = width + position_in_segment_;
     if ((tmp <= current_segment_->length) && (tmp >= 0))
     {
-        //Only calculate angle on request as it is expensive
-        if (!angle_valid_)
-        {
-            angle_ = current_segment_angle();
-        }
+        current_segment_angle();
     }
     else
     {
@@ -72,7 +74,7 @@ double vertex_cache::angle(double width)
         else
         {
             s.restore();
-            angle_ = current_segment_angle();
+            current_segment_angle();
         }
     }
     return width >= 0 ? angle_ : (angle_ + M_PI);
