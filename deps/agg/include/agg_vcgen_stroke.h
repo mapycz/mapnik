@@ -39,6 +39,7 @@ namespace agg
             outline1,
             close_first,
             outline2,
+            point_cap2,
             out_vertices,
             end_poly1,
             end_poly2,

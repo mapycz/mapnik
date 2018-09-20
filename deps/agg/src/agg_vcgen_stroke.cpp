@@ -95,10 +95,19 @@ unsigned vcgen_stroke::vertex(double* x, double* y)
         case ready:
             if(m_src_vertices.size() < 2 + unsigned(m_closed != 0))
             {
-                cmd = path_cmd_stop;
-                break;
+                vertex_dist v2(m_src_vertices[0].x + vertex_dist_epsilon,
+                               m_src_vertices[0].y);
+                m_stroker.calc_cap(m_out_vertices,
+                                   m_src_vertices[0],
+                                   v2,
+                                   vertex_dist_epsilon);
+                m_status = out_vertices;
+                m_prev_status = point_cap2;
             }
-            m_status = m_closed ? outline1 : cap1;
+            else
+            {
+                m_status = m_closed ? outline1 : cap1;
+            }
             cmd = path_cmd_move_to;
             m_src_vertex = 0;
             m_out_vertex = 0;
@@ -193,6 +202,20 @@ unsigned vcgen_stroke::vertex(double* x, double* y)
                 return cmd;
             }
             break;
+
+        case point_cap2:
+        {
+            vertex_dist v2(m_src_vertices[0].x - vertex_dist_epsilon,
+                           m_src_vertices[0].y);
+            m_stroker.calc_cap(m_out_vertices,
+                               m_src_vertices[0],
+                               v2,
+                               vertex_dist_epsilon);
+            m_status = out_vertices;
+            m_prev_status = outline2;
+            m_out_vertex = 0;
+            break;
+        }
 
         case end_poly1:
             m_status = m_prev_status;
