@@ -30,8 +30,7 @@ marker_layout_generator::marker_layout_generator(
     detector_type & detector,
     box2d<double> marker_box,
     agg::trans_affine const & marker_trans)
-    : size_(marker_box),
-      tr_(marker_trans),
+    : size_(marker_box, marker_trans),
       multi_policy_(params.get<multi_policy_enum, keys::multipolicy>()),
       detector_(detector)
 {

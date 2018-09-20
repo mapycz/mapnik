@@ -73,7 +73,6 @@ struct marker_layout_generator : util::noncopyable
     }
 
     const box2d<double> size_;
-    const agg::trans_affine tr_;
     const multi_policy_enum multi_policy_;
     marker_positions_type placements_;
     detector_type & detector_;

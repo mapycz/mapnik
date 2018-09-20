@@ -84,7 +84,7 @@ bool marker_layout::push_to_detector(
     {
         return false;
     }
-    auto tr = lg.tr_ * agg::trans_affine_rotation(angle).translate(pos.x, pos.y);
+    auto tr = agg::trans_affine_rotation(angle).translate(pos.x, pos.y);
     box2d<double> box(lg.size_, tr);
     detector_type & detector = lg.detector_;
     if (avoid_edges_ && !detector.extent().contains(box))

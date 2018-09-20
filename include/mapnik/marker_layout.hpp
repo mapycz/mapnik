@@ -54,8 +54,7 @@ public:
 
     inline double get_length(marker_layout_generator const & lg) const
     {
-        box2d<double> box(lg.size_, lg.tr_);
-        return box.width();
+        return lg.size_.width();
     }
 
 protected:
