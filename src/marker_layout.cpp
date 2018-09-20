@@ -50,11 +50,8 @@ bool marker_layout::try_placement(
     marker_layout_generator & layout_generator,
     vertex_cache & path)
 {
-    vertex_cache::scoped_state state(path);
-    pixel_position pos = path.current_position();
-    double marker_width = get_length(layout_generator);
-    path.move_to_distance(-marker_width / 2.0);
-    double angle = path.angle(marker_width);
+    pixel_position const & pos = path.current_position();
+    double angle = path.angle();
     return push_to_detector(pos, angle, layout_generator);
 }
 
