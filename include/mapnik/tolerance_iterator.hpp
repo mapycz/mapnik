@@ -32,7 +32,8 @@ struct exponential_function
 {
     double operator()(double const& linear_position, double const& tolerance) const
     {
-        return std::pow(1.3, linear_position) * linear_position / (4.0 * tolerance) + linear_position;
+        return std::pow(1.3, linear_position) * linear_position /
+            (4.0 * tolerance) + linear_position;
     }
 };
 
