@@ -77,8 +77,8 @@ public:
              * 255 is an arbitrarily chosen limit.
              */
             MAPNIK_LOG_WARN(placement_finder) << "Tried a huge number of placements. Please check "
-                                                 "'label-position-tolerance' and 'spacing' parameters "
-                                                 "of your TextSymbolizers.\n";
+                                                 "'position-tolerance' and 'spacing' parameters "
+                                                 "of your symbolizer.\n";
             return false;
         }
         if (!initialized_)
