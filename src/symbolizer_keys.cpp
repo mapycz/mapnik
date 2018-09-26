@@ -171,6 +171,11 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "line-pattern",  [](enumeration_wrapper e)
                         {return enumeration<line_pattern_enum,line_pattern_enum_MAX>(line_pattern_enum(e.value)).as_string();},
                         property_types::target_line_pattern},
+    property_meta_type{ "svg-fill", nullptr, property_types::target_color},
+    property_meta_type{ "svg-fill-opacity", nullptr, property_types::target_double},
+    property_meta_type{ "svg-stroke", nullptr, property_types::target_color},
+    property_meta_type{ "svg-stroke-width", nullptr, property_types::target_double},
+    property_meta_type{ "svg-stroke-opacity", nullptr, property_types::target_double},
 
 };
 

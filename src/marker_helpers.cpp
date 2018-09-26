@@ -79,11 +79,11 @@ bool push_explicit_style(svg_attribute_type const& src,
                          feature_impl const & feature,
                          attributes const& vars)
 {
-    auto fill_color = get_optional<color>(sym, keys::fill, feature, vars);
-    auto fill_opacity = get_optional<double>(sym, keys::fill_opacity, feature, vars);
-    auto stroke_color = get_optional<color>(sym, keys::stroke, feature, vars);
-    auto stroke_width = get_optional<double>(sym, keys::stroke_width, feature, vars);
-    auto stroke_opacity = get_optional<double>(sym, keys::stroke_opacity, feature, vars);
+    auto fill_color = get_optional<color>(sym, keys::svg_fill, feature, vars);
+    auto fill_opacity = get_optional<double>(sym, keys::svg_fill_opacity, feature, vars);
+    auto stroke_color = get_optional<color>(sym, keys::svg_stroke, feature, vars);
+    auto stroke_width = get_optional<double>(sym, keys::svg_stroke_width, feature, vars);
+    auto stroke_opacity = get_optional<double>(sym, keys::svg_stroke_opacity, feature, vars);
     if (fill_color ||
         fill_opacity ||
         stroke_color ||

@@ -1012,6 +1012,61 @@ void map_parser::parse_symbolizer_base(symbolizer_base &sym, xml_node const& nod
     }
 }
 
+void svg_attributes_compatibility(symbolizer_base & sym)
+{
+    using value_type = symbolizer_base::value_type;
+
+    if (auto fill= get_value_optional(sym, keys::fill))
+    {
+        MAPNIK_LOG_WARN(svg_attributes_compatibility) << "'fill' is deprecated "
+            "and will be removed in favor of 'svg-fill'";
+        if (!has_key(sym, keys::svg_fill))
+        {
+            sym.properties[keys::svg_fill] = *fill;
+        }
+    }
+
+    if (auto fill_opacity = get_value_optional(sym, keys::fill_opacity))
+    {
+        MAPNIK_LOG_WARN(svg_attributes_compatibility) << "'fill-opacity' is deprecated "
+            "and will be removed in favor of 'svg-fill-opacity'";
+        if (!has_key(sym, keys::svg_fill_opacity))
+        {
+            sym.properties[keys::svg_fill_opacity] = *fill_opacity;
+        }
+    }
+
+    if (auto stroke = get_value_optional(sym, keys::stroke))
+    {
+        MAPNIK_LOG_WARN(svg_attributes_compatibility) << "'stroke' is deprecated "
+            "and will be removed in favor of 'svg-stroke'";
+        if (!has_key(sym, keys::svg_stroke))
+        {
+            sym.properties[keys::svg_stroke] = *stroke;
+        }
+    }
+
+    if (auto stroke_width = get_value_optional(sym, keys::stroke_width))
+    {
+        MAPNIK_LOG_WARN(svg_attributes_compatibility) << "'stroke-width' is deprecated "
+            "and will be removed in favor of 'svg-stroke-width'";
+        if (!has_key(sym, keys::svg_stroke_width))
+        {
+            sym.properties[keys::svg_stroke_width] = *stroke_width;
+        }
+    }
+
+    if (auto stroke_opacity = get_value_optional(sym, keys::stroke_opacity))
+    {
+        MAPNIK_LOG_WARN(svg_attributes_compatibility) << "'stroke-opacity' is deprecated "
+            "and will be removed in favor of 'svg-stroke-opacity'";
+        if (!has_key(sym, keys::svg_stroke_opacity))
+        {
+            sym.properties[keys::svg_stroke_opacity] = *stroke_opacity;
+        }
+    }
+}
+
 void map_parser::parse_point_symbolizer(rule & rule, xml_node const & node)
 {
     try
@@ -1177,6 +1232,9 @@ void map_parser::parse_markers_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle, node);
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle_distance, node);
         parse_stroke(sym,node);
+        parse_svg_attributes(sym, node);
+        // TODO: Backward compatible svg attributes. Should be removed at some point.
+        svg_attributes_compatibility(sym);
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
@@ -1269,7 +1327,16 @@ void map_parser::parse_polygon_pattern_symbolizer(rule & rule,
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::spacing_x, node);
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::spacing_y, node);
         set_symbolizer_property<symbolizer_base,pattern_lacing_mode_enum>(sym, keys::lacing, node);
+
         parse_svg_attributes(sym, node);
+        // TODO: Backward compatible svg attributes. Should be removed at some point.
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::fill_opacity, node);
+        set_symbolizer_property<symbolizer_base,color>(sym, keys::fill, node);
+        set_symbolizer_property<symbolizer_base,color>(sym, keys::stroke, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_width, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_opacity, node);
+        svg_attributes_compatibility(sym);
+
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
@@ -1413,11 +1480,11 @@ void map_parser::parse_stroke(symbolizer_base & sym, xml_node const & node)
 
 void map_parser::parse_svg_attributes(symbolizer_base & sym, xml_node const & node)
 {
-    set_symbolizer_property<symbolizer_base,double>(sym, keys::fill_opacity, node);
-    set_symbolizer_property<symbolizer_base,color>(sym, keys::fill, node);
-    set_symbolizer_property<symbolizer_base,color>(sym, keys::stroke, node);
-    set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_width, node);
-    set_symbolizer_property<symbolizer_base,double>(sym, keys::stroke_opacity, node);
+    set_symbolizer_property<symbolizer_base, color>(sym, keys::svg_fill, node);
+    set_symbolizer_property<symbolizer_base, value_double>(sym, keys::svg_fill_opacity, node);
+    set_symbolizer_property<symbolizer_base, color>(sym, keys::svg_stroke, node);
+    set_symbolizer_property<symbolizer_base, value_double>(sym, keys::svg_stroke_width, node);
+    set_symbolizer_property<symbolizer_base, value_double>(sym, keys::svg_stroke_opacity, node);
 }
 
 void map_parser::parse_line_symbolizer(rule & rule, xml_node const & node)
