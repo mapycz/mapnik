@@ -218,7 +218,7 @@ void  agg_renderer<T0,T1>::process(
 
     buffer_type & current_buffer = buffers_.top().get();
 
-    common_pattern_process_visitor<line_pattern_symbolizer> visitor(common_, sym, feature);
+    common_pattern_process_visitor visitor(common_, sym, feature);
     image_rgba8 pattern_image(util::apply_visitor(visitor, *marker));
 
     line_pattern_enum pattern = get<line_pattern_enum, keys::line_pattern>(sym, feature, common_.vars_);

@@ -193,7 +193,7 @@ void agg_renderer<T0,T1>::process(polygon_pattern_symbolizer const& sym,
                                                    smooth_tag>;
     using pattern_type = agg_polygon_pattern<vertex_converter_type>;
 
-    common_pattern_process_visitor<polygon_pattern_symbolizer> visitor(common_, sym, feature);
+    common_pattern_process_visitor visitor(common_, sym, feature);
     image_rgba8 image(util::apply_visitor(visitor, *marker));
 
     pattern_type pattern(image, common_, sym, feature, prj_trans);
