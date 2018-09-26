@@ -338,6 +338,7 @@ if env['HAS_CAIRO']:
     cairo/cairo_context.cpp
     cairo/cairo_renderer.cpp
     cairo/cairo_render_vector.cpp
+    cairo/render_pattern.cpp
     cairo/process_text_symbolizer.cpp
     cairo/process_line_symbolizer.cpp
     cairo/process_line_pattern_symbolizer.cpp
