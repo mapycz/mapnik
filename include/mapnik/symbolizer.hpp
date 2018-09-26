@@ -500,6 +500,18 @@ boost::optional<T> get_optional(symbolizer_base const& sym, keys key)
     return boost::optional<T>();
 }
 
+inline boost::optional<symbolizer_base::value_type> get_value_optional(
+    symbolizer_base const& sym, keys key)
+{
+    using const_iterator = symbolizer_base::cont_type::const_iterator;
+    const_iterator itr = sym.properties.find(key);
+    if (itr != sym.properties.end())
+    {
+        return itr->second;
+    }
+    return boost::none;
+}
+
 }
 
 #endif // MAPNIK_SYMBOLIZER_HPP

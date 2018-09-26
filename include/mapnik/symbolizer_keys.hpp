@@ -108,6 +108,11 @@ enum class keys : std::uint8_t
     max_line_angle,
     max_line_angle_distance,
     line_pattern,
+    svg_fill,
+    svg_fill_opacity,
+    svg_stroke,
+    svg_stroke_width,
+    svg_stroke_opacity,
     MAX_SYMBOLIZER_KEY
 };
 
