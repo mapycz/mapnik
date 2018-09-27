@@ -271,7 +271,7 @@ bool vertex_cache::move_by(double length, SegmentMover & mover)
 bool vertex_cache::move(double length)
 {
     segment_mover mover{*this};
-    this->move_by(length, mover);
+    return this->move_by(length, mover);
 }
 
 bool vertex_cache::move(double length, double max_angle_diff)
@@ -281,7 +281,7 @@ bool vertex_cache::move(double length, double max_angle_diff)
         max_angle_diff,
         *this
     };
-    this->move_by(length, mover);
+    return this->move_by(length, mover);
 }
 
 template <typename SegmentMover>
@@ -349,7 +349,7 @@ bool vertex_cache::move_to_distance_by(double distance, SegmentMover & mover)
 bool vertex_cache::move_to_distance(double distance)
 {
     segment_mover mover{*this};
-    this->move_to_distance_by(distance, mover);
+    return this->move_to_distance_by(distance, mover);
 }
 
 bool vertex_cache::move_to_distance(double distance, double max_angle_diff)
@@ -359,7 +359,7 @@ bool vertex_cache::move_to_distance(double distance, double max_angle_diff)
         max_angle_diff,
         *this
     };
-    this->move_to_distance_by(distance, mover);
+    return this->move_to_distance_by(distance, mover);
 }
 
 void vertex_cache::rewind(unsigned)
