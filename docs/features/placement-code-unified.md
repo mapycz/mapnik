@@ -1,6 +1,8 @@
 # Unification of placement options
 
-All these symbolizers have common purpose - placing labels on geometric positions:
+All symbolizers with `placement` option share the same placement code and a set of placement options.
+
+### Symbolizers with `placement` option
 
 * `TextSymbolizer`
 * `ShieldSymbolizer`
@@ -9,7 +11,7 @@ All these symbolizers have common purpose - placing labels on geometric position
 * `PointSymbolizer`
 * `CollisionSymbolizer`
 
-It makes sense to allow all possible placement options for all these symbolizers. Therefore all these symbolizers now support all these placement options:
+### Placement options
 
 * `point`
 * `interior`
@@ -20,5 +22,4 @@ It makes sense to allow all possible placement options for all these symbolizers
 * `vertex-last`
 * `grid`
 * `alternating-grid`
-
-This unification is a result of great code sharing and simple [declarative description](https://github.com/mapycz/mapnik/blob/63ed040a3c1817db8b5a3f1333dccc9fb5d42f8b/include/mapnik/text/symbolizer_helpers.hpp#L57-L106) of each symbolizer.
+* `line-max-angle`

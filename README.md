@@ -2,18 +2,19 @@
 
 This repository contains a fork of [github.com/mapnik/mapnik](https://github.com/mapnik/mapnik), used mostly for rendering maps on [mapy.cz](https://mapy.cz). Main differences against upstream are:
 
-* [Unification of placement options](docs/features/placement-code-unified.md)
-* [Placement `grid` and `alternating-grid`](docs/features/placement-grid.md)
-* [CollisionSymbolizer](docs/features/collision-symbolizer.md)
-* [Keyed collision caches](docs/features/keyed-collision-caches.md)
+* [Placement `line-max-angle`](docs/features/placement-line-max-angle.md)
 * [Text placement method `combined`](docs/features/text-placement-combined.md)
 * [Text placement method `angle`](docs/features/text-placement-angle.md)
+* [Unification of placement options](docs/features/placement-code-unified.md)
+* [CollisionSymbolizer](docs/features/collision-symbolizer.md)
+* [Keyed collision caches](docs/features/keyed-collision-caches.md)
 * [Anchors](docs/features/anchors.md)
 * [Pattern symbolizers improvements](docs/features/pattern-symbolizers.md)
 * [Shadows with building symbolizer](docs/features/building-symbolizer-shadow.md)
 * [XSLT preprocessing](docs/features/xslt-preprocessing.md)
 
 Recently merged:
+* [Placement `grid` and `alternating-grid`](docs/features/placement-grid.md) ([#3847](https://github.com/mapnik/mapnik/pull/3847))
 * [Tree-like layer structure](docs/features/layer-structure.md) ([#3474](https://github.com/mapnik/mapnik/pull/3474))
 * [Layer level compositing](docs/features/layer-level-compositing.md) ([#3474](https://github.com/mapnik/mapnik/pull/3474))
 * [Text on extended geometry](docs/features/text-extend.md) ([#3512](https://github.com/mapnik/mapnik/pull/3512))
