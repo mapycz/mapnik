@@ -78,7 +78,8 @@
                 "vertex-first",
                 "vertex-last",
                 "grid",
-                "alternating-grid"
+                "alternating-grid",
+                "line-max-angle"
             ],
             "default-value": "point",
             "default-meaning": "Make placement at the center point (centroid) of the geometry.",
@@ -187,6 +188,18 @@
             "default-value": "global",
             "doc": "Specify whether to align pattern fills to the layer's geometry (local) or to the map (global).",
             "default-meaning":"Patterns will be aligned to the map (or tile boundaries) when being repeated across polygons. This is ideal for seamless patterns in tiled rendering."
+        },
+        "max-line-angle": {
+            "type": "float",
+            "default-value": 30,
+            "default-meaning": "Maximum angle is 30 degrees.",
+            "doc": "Maximum angle between currect line segment and all other segments closer than `max-line-angle-distance`. Works only with `placement` set to `line-max-angle`."
+        },
+        "max-line-angle-distance": {
+            "type": "float",
+            "default-value": "none",
+            "default-meaning": "Distance is a symbol or a text width, depending on type of symbolizer.",
+            "doc": "Distance from current point on line where `max-line-angle` is applied. Works only with `placement` set to `line-max-angle`."
         }
     },
     "map": {
@@ -743,6 +756,12 @@
                 "default-meaning": "N/A: not intended to be changed.",
                 "doc": "N/A: not intended to be changed."
             },
+            "max-line-angle": {
+                "see-also": "max-line-angle"
+            },
+            "max-line-angle-distance": {
+                "see-also": "max-line-angle-distance"
+            },
             "transform": {
                 "type": "functions",
                 "functions": [
@@ -1078,6 +1097,12 @@
                 "doc": "Define how text in a shield's label is justified.",
                 "default-meaning": "TODO.",
                 "default-value": "auto"
+            },
+            "max-line-angle": {
+                "see-also": "max-line-angle"
+            },
+            "max-line-angle-distance": {
+                "see-also": "max-line-angle-distance"
             },
             "transform": {
                 "type": "functions",
@@ -1500,6 +1525,12 @@
             "grid-cell-height": {
                 "see-also": "grid-cell-height"
             },
+            "max-line-angle": {
+                "see-also": "max-line-angle"
+            },
+            "max-line-angle-distance": {
+                "see-also": "max-line-angle-distance"
+            },
             "transform": {
                 "type": "functions",
                 "functions": [
@@ -1811,6 +1842,12 @@
                 "default-value": "auto",
                 "default-meaning": "Auto alignment means that text will be centered by default except when using the `placement-type` parameter - in that case either right or left justification will be used automatically depending on where the text could be fit given the `text-placements` directives."
             },
+            "max-line-angle": {
+                "see-also": "max-line-angle"
+            },
+            "max-line-angle-distance": {
+                "see-also": "max-line-angle-distance"
+            },
             "clip": {
                 "see-also": "clip"
             },
@@ -1995,6 +2032,12 @@
                 "default-value": "each",
                 "default-meaning": "If a feature contains multiple geometries all of them will get a placement.",
                 "doc": "A special setting to allow the user to control rendering behavior for 'multi-geometries' (when a feature contains multiple geometries). The 'each' policy is default and means all geometries will get a placement. The 'whole' policy means that the aggregate position between all geometries will be used. The 'largest' policy means that only the largest (by bounding box areas) feature will get a placement."
+            },
+            "max-line-angle": {
+                "see-also": "max-line-angle"
+            },
+            "max-line-angle-distance": {
+                "see-also": "max-line-angle-distance"
             },
             "clip": {
                 "see-also": "clip"
