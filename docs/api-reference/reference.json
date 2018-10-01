@@ -147,6 +147,46 @@
             "default-value": "radial-distance",
             "default-meaning": "The geometry will be simplified using the radial distance algorithm.",
             "doc": "Geometries are simplified by the given algorithm."
+        },
+        "svg-stroke": {
+            "doc": "This option will set the `stroke` property of elements in an SVG.",
+            "default-value": "none",
+            "type": "color",
+            "default-meaning": "No custom `stroke-color` used."
+        },
+        "svg-stroke-width": {
+            "default-value": "none",
+            "default-meaning": "No custom `stroke-width` used.",
+            "doc": "This option will set the `stroke-width` property of elements in an SVG.",
+            "type": "float"
+        },
+        "svg-stroke-opacity": {
+            "default-value": "none",
+            "default-meaning": "No custom `stroke-opacity` used.",
+            "doc": "This option will set the `stroke-opacity` property of elements in an SVG.",
+            "type": "float",
+            "see-also": "opacity"
+        },
+        "svg-fill": {
+            "default-value": "none",
+            "doc": "This option will set the `fill` property of elements in an SVG.",
+            "type": "color",
+            "default-meaning": "No custom `fill` used."
+        },
+        "svg-fill-opacity": {
+            "doc": "This option will set the `fill-opacity` property of elements in an SVG.",
+            "default-value": "none",
+            "default-meaning": "No custom `fill-opacity` used.",
+            "type": "float"
+        },
+        "alignment": {
+            "type": [
+                "global",
+                "local"
+            ],
+            "default-value": "global",
+            "doc": "Specify whether to align pattern fills to the layer's geometry (local) or to the map (global).",
+            "default-meaning":"Patterns will be aligned to the map (or tile boundaries) when being repeated across polygons. This is ideal for seamless patterns in tiled rendering."
         }
     },
     "map": {
@@ -584,27 +624,53 @@
                 "default-meaning": "An ellipse or circle, if width equals height.",
                 "type": "uri"
             },
+            "fill": {
+                "default-value": "blue",
+                "doc": "The color of the area of the marker. This property will also set the `fill` of elements in an SVG loaded from a file.",
+                "type": "color",
+                "default-meaning": "The marker fill color is blue.",
+                "status": "deprecated"
+            },
             "fill-opacity": {
                 "doc": "The fill opacity of the marker. This property will also set the `fill-opacity` of elements in an SVG loaded from a file.",
-                "see-also": "opacity"
+                "see-also": "opacity",
+                "status": "deprecated"
             },
             "stroke": {
                 "doc": "The color of the stroke around the marker. This property will also set the `stroke` of elements in an SVG loaded from a file.",
                 "default-value": "black",
                 "type": "color",
-                "default-meaning": "The marker will be drawn with a black outline."
+                "default-meaning": "The marker will be drawn with a black outline.",
+                "status": "deprecated"
             },
             "stroke-width": {
                 "default-value": 0.5,
                 "doc": "The width of the stroke around the marker, in pixels. This is positioned on the boundary, so high values can cover the area itself. This property will also set the `stroke-width` of elements in an SVG loaded from a file.",
                 "type": "float",
-                "default-meaning": "The marker will be drawn with an outline of .5 pixels wide."
+                "default-meaning": "The marker will be drawn with an outline of .5 pixels wide.",
+                "status": "deprecated"
             },
             "stroke-opacity": {
                 "default-meaning": "Color is fully opaque.",
                 "default-value": 1.0,
                 "doc": "The opacity of stroke around the marker. This property will also set the `stroke-opacity` of elements in an SVG loaded from a file.",
-                "see-also": "opacity"
+                "see-also": "opacity",
+                "status": "deprecated"
+            },
+            "svg-fill": {
+                "see-also": "svg-fill"
+            },
+            "svg-fill-opacity": {
+                "see-also": "svg-fill-opacity"
+            },
+            "svg-stroke": {
+                "see-also": "svg-stroke"
+            },
+            "svg-stroke-width": {
+                "see-also": "svg-stroke-width"
+            },
+            "svg-stroke-opacity": {
+                "see-also": "svg-stroke-opacity"
             },
             "placement": {
                 "see-also": "placement"
@@ -646,12 +712,6 @@
                 "doc": "The height of the marker, if using one of the default types.",
                 "type": "float",
                 "default-meaning": "The marker height is 10 pixels."
-            },
-            "fill": {
-                "default-value": "blue",
-                "doc": "The color of the area of the marker. This property will also set the `fill` of elements in an SVG loaded from a file.",
-                "type": "color",
-                "default-meaning": "The marker fill color is blue."
             },
             "allow-overlap": {
                 "type": "boolean",
@@ -1073,36 +1133,71 @@
                 "doc": "An image file to be repeated and warped along a line. Accepted formats: svg, jpg, png, tiff, and webp.",
                 "default-meaning": ""
             },
-            "stroke": {
-                "doc": "This property will set the `stroke` of elements in an SVG loaded from a file.",
-                "default-value": "none",
-                "type": "color",
-                "default-meaning": "No custom `stroke-color` used."
+            "line-pattern": {
+                "type": [
+                    "warp",
+                    "repeat"
+                ],
+                "doc": "Pattern type",
+                "default-meaning": "The pattern image is warped along the line.",
+                "default-value": "warp"
+            },
+            "alignment": {
+                "see-also": "alignment"
             },
             "stroke-width": {
-                "default-value": "none",
-                "default-meaning": "No custom `stroke-width` used.",
-                "doc": "This property will set the `stroke-width` of elements in an SVG loaded from a file.",
-                "type": "float"
-            },
-            "stroke-opacity": {
-                "default-value": "none",
-                "default-meaning": "No custom `stroke-opacity` used.",
-                "doc": "This property will set the `stroke-opacity` of elements in an SVG loaded from a file.",
+                "default-value": 1.0,
                 "type": "float",
-                "see-also": "opacity"
+                "doc": "The width of a line in pixels if `line-pattern` is set to `repeat`.",
+                "default-meaning": "The line will be rendered 1 pixel wide."
             },
-            "fill": {
-                "default-value": "none",
-                "doc": "This property will set the `fill` of elements in an SVG loaded from a file.",
-                "type": "color",
-                "default-meaning": "No custom `fill` used."
+            "stroke-linejoin": {
+                "default-value": "miter",
+                "type": [
+                    "miter",
+                    "miter-revert",
+                    "round",
+                    "bevel"
+                ],
+                "doc": "The behavior of lines when joining if `line-pattern` is set to `repeat`.",
+                "default-meaning": "The line joins will be rendered using a miter look."
             },
-            "fill-opacity": {
-                "doc": "This property will set the `fill-opacity` of elements in an SVG loaded from a file.",
+            "stroke-linecap": {
+                "default-value": "butt",
+                "type": [
+                    "butt",
+                    "round",
+                    "square"
+                ],
+                "doc": "The display of line endings if `line-pattern` is set to `repeat`.",
+                "default-meaning": "The line endings will be rendered using a butt look."
+            },
+            "stroke-miterlimit": {
+                "type": "float",
+                "doc": "The limit on the ratio of the miter length to the stroke-width if `line-pattern` is set to `repeat`. Used to automatically convert miter joins to bevel joins for sharp angles to avoid the miter extending beyond the thickness of the stroking path. Normally will not need to be set, but a larger value can sometimes help avoid jaggy artifacts.",
+                "default-value": 4.0,
+                "default-meaning": "Will auto-convert miters to bevel line joins when theta is less than 29 degrees as per the SVG spec: 'miterLength / stroke-width = 1 / sin ( theta / 2 )'."
+            },
+            "stroke-dasharray": {
+                "type": "numbers",
+                "doc": " Only works for `line-pattern` set to `repeat`. A pair of length values [a,b], where (a) is the dash length and (b) is the gap length respectively. More than two values are supported for more complex patterns.",
                 "default-value": "none",
-                "default-meaning": "No custom `fill-opacity` used.",
-                "type": "float"
+                "default-meaning": "The line will be drawn without dashes."
+            },
+            "svg-fill": {
+                "see-also": "svg-fill"
+            },
+            "svg-fill-opacity": {
+                "see-also": "svg-fill-opacity"
+            },
+            "svg-stroke": {
+                "see-also": "svg-stroke"
+            },
+            "svg-stroke-width": {
+                "see-also": "svg-stroke-width"
+            },
+            "svg-stroke-opacity": {
+                "see-also": "svg-stroke-opacity"
             },
             "clip": {
                 "see-also": "clip"
@@ -1200,28 +1295,42 @@
                 "doc": "Spacing between tiles in `y` direction. Has priority over `spacing` parameter."
             },
             "stroke": {
-                "see-also": "line-pattern/stroke"
+                "see-also": "markers/stroke",
+                "status": "deprecated"
             },
             "stroke-width": {
-                "see-also": "line-pattern/stroke-width"
+                "see-also": "markers/stroke-width",
+                "status": "deprecated"
             },
             "stroke-opacity": {
-                "see-also": "line-pattern/stroke-opacity"
+                "see-also": "markers/stroke-opacity",
+                "status": "deprecated"
             },
             "fill": {
-                "see-also": "line-pattern/fill"
+                "see-also": "markers/fill",
+                "status": "deprecated"
             },
             "fill-opacity": {
-                "see-also": "line-pattern/fill-opacity"
+                "see-also": "markers/fill-opacity",
+                "status": "deprecated"
+            },
+            "svg-fill": {
+                "see-also": "svg-fill"
+            },
+            "svg-fill-opacity": {
+                "see-also": "svg-fill-opacity"
+            },
+            "svg-stroke": {
+                "see-also": "svg-stroke"
+            },
+            "svg-stroke-width": {
+                "see-also": "svg-stroke-width"
+            },
+            "svg-stroke-opacity": {
+                "see-also": "svg-stroke-opacity"
             },
             "alignment": {
-                "type": [
-                    "global",
-                    "local"
-                ],
-                "default-value": "global",
-                "doc": "Specify whether to align pattern fills to the layer's geometry (local) or to the map (global).",
-                "default-meaning":"Patterns will be aligned to the map (or tile boundaries) when being repeated across polygons. This is ideal for seamless patterns in tiled rendering."
+                "see-also": "alignment"
             },
             "gamma": {
                 "type": "float",
