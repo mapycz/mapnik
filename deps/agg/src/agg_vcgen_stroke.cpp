@@ -95,14 +95,27 @@ unsigned vcgen_stroke::vertex(double* x, double* y)
         case ready:
             if(m_src_vertices.size() < 2 + unsigned(m_closed != 0))
             {
-                vertex_dist v2(m_src_vertices[0].x + vertex_dist_epsilon,
-                               m_src_vertices[0].y);
-                m_stroker.calc_cap(m_out_vertices,
-                                   m_src_vertices[0],
-                                   v2,
-                                   vertex_dist_epsilon);
-                m_status = out_vertices;
-                m_prev_status = point_cap2;
+                /*
+                if (line_cap() == round_cap)
+                {
+                    vertex_dist v2(m_src_vertices[0].x + vertex_dist_epsilon,
+                                   m_src_vertices[0].y);
+                    m_stroker.calc_cap(m_out_vertices,
+                                       m_src_vertices[0],
+                                       v2,
+                                       vertex_dist_epsilon);
+                    m_status = out_vertices;
+                    m_prev_status = point_cap2;
+                }
+                else
+                */
+                {
+                    cmd = path_cmd_stop;
+                    break;
+                }
+            }
+            else if(m_src_vertices.size() < 2 + unsigned(m_closed != 0))
+            {
             }
             else
             {

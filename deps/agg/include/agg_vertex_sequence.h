@@ -80,7 +80,7 @@ namespace agg
     template<class T, unsigned S> 
     void vertex_sequence<T, S>::add(const T& val)
     {
-        if(base_type::size() > 1)
+        if(base_type::size() > 2)
         {
             if(!(*this)[base_type::size() - 2]((*this)[base_type::size() - 1])) 
             {
@@ -105,6 +105,7 @@ namespace agg
     template<class T, unsigned S> 
     void vertex_sequence<T, S>::close(bool closed)
     {
+        /*
         while(base_type::size() > 1)
         {
             if((*this)[base_type::size() - 2]((*this)[base_type::size() - 1])) break;
@@ -112,6 +113,7 @@ namespace agg
             base_type::remove_last();
             modify_last(t);
         }
+        */
 
         if(closed)
         {
