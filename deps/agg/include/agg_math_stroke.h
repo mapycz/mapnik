@@ -324,7 +324,7 @@ namespace agg
         double dx1 = (len > 0) ? ((v1.y - v0.y) / len) :
             0;
         double dy1 = (len > 0) ? ((v1.x - v0.x) / len) :
-            ((&v0 < &v1) ? vertex_dist_epsilon : -vertex_dist_epsilon);
+            ((&v0 < &v1) ? 1 : -1);
         double dx2 = 0;
         double dy2 = 0;
 
