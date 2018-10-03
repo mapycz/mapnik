@@ -10,3 +10,7 @@ The `<Placement />` can also be used.
 [angle-anchor-distance.xml](https://github.com/mapycz/test-data-visual/blob/master/styles/angle-anchor-distance.xml)
 
 ![angle-anchor-distance](https://raw.githubusercontent.com/mapycz/test-data-visual/master/images/angle-anchor-distance-400-400-1.0-agg-reference.png)
+
+[angle-anchor-distance-shield.xml](https://github.com/mapycz/test-data-visual/blob/master/styles/angle-anchor-distance-shield.xml)
+
+![angle-anchor-distance-shield](https://raw.githubusercontent.com/mapycz/test-data-visual/master/images/angle-anchor-distance-shield-400-400-1.0-agg-reference.png)

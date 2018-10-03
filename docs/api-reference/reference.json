@@ -83,7 +83,7 @@
             ],
             "default-value": "point",
             "default-meaning": "Make placement at the center point (centroid) of the geometry.",
-            "doc": "Attempt to make a placement on a point, in the center of a polygon, or if placement=line, then multiple times along a line. `interior` placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The `vertex-first` and `vertex-last` options can be used to make a placement at the first or last vertex of lines or polygons. `grid` allows placing repeated labels on area of a polygon, where all possible placements create grid of points. Only placements within given polygon are rendered. `alternating-grid` creates pattern similar to bricks in a wall."
+            "doc": "Attempt to make a placement on a point, in the center of a polygon, or if value is `line`, then multiple times along a line. `interior` placement can be used to ensure that points placed on polygons are forced to be inside the polygon interior. The `vertex-first` and `vertex-last` options can be used to make a placement at the first or last vertex of lines or polygons. `grid` allows placing repeated labels on area of a polygon, where all possible placements create grid of points. Only placements within given polygon are rendered. `alternating-grid` creates pattern similar to bricks in a wall. `line-max-angle` allows placements on straght line sections only, controlled by `max-line-angle` and `max-line-angle-distance` options."
         },
         "grid-cell-width": {
             "doc": "Horizontal spacing between grid placements.",
@@ -200,6 +200,24 @@
             "default-value": "none",
             "default-meaning": "Distance is a symbol or a text width, depending on type of symbolizer.",
             "doc": "Distance from current point on line where `max-line-angle` is applied. Works only with `placement` set to `line-max-angle`."
+        },
+        "angle": {
+            "type": "float",
+            "default-value": 0,
+            "default-meaning": "Zero angle has the same meaning as north.",
+            "doc": "An angle in degrees from north counterclockwise. This option is intended for `placement-type` `angle`."
+        },
+        "tolerance": {
+            "type": "float",
+            "default-value": 0,
+            "default-meaning": "No tolerance.",
+            "doc": "Maximum angle in degress between position given by `angle` parameter and position of actual placement. This option is intended for `placement-type` `angle`."
+        },
+        "step": {
+            "type": "float",
+            "default-value": 15,
+            "default-meaning": "The step is 15 degrees.",
+            "doc": "An angle in degrees by which angle of placement will be iterated. The first placement is at exact position given by `angle` option. Subsequent placements oscilate around `angle` by `n * step` angle, where integer `n` grows until `tolerance` is reached. This option is intended for `placement-type` `angle`."
         }
     },
     "map": {
@@ -1098,6 +1116,15 @@
                 "default-meaning": "TODO.",
                 "default-value": "auto"
             },
+            "angle": {
+                "see-also": "angle"
+            },
+            "tolerance": {
+                "see-also": "tolerance"
+            },
+            "step": {
+                "see-also": "step"
+            },
             "max-line-angle": {
                 "see-also": "max-line-angle"
             },
@@ -1842,6 +1869,15 @@
                 "default-value": "auto",
                 "default-meaning": "Auto alignment means that text will be centered by default except when using the `placement-type` parameter - in that case either right or left justification will be used automatically depending on where the text could be fit given the `text-placements` directives."
             },
+            "angle": {
+                "see-also": "angle"
+            },
+            "tolerance": {
+                "see-also": "tolerance"
+            },
+            "step": {
+                "see-also": "step"
+            },
             "max-line-angle": {
                 "see-also": "max-line-angle"
             },
@@ -1907,24 +1943,6 @@
                 "default-meaning": "No marker is referenced.",
                 "doc": "Can be used for referencing markers with the `key` property of the same value. `dx` and `dy` properties of the text symbolizer will be set according to the size of the marker so one doesn't have to adjust these properties if size of the marker changes.",
                 "status": "experimental"
-            },
-            "angle": {
-                "type": "float",
-                "default-value": 0,
-                "default-meaning": "Zero angle has the same meaning as north.",
-                "doc": "An angle in degrees from north counterclockwise. This option is intended for `placement-type` `angle`."
-            },
-            "tolerance": {
-                "type": "float",
-                "default-value": 0,
-                "default-meaning": "No tolerance.",
-                "doc": "Maximum angle in degress between position given by `angle` parameter and position of actual placement. This option is intended for `placement-type` `angle`."
-            },
-            "step": {
-                "type": "float",
-                "default-value": 15,
-                "default-meaning": "The step is 15 degrees.",
-                "doc": "An angle in degrees by which angle of placement will be iterated. The first placement is at exact position given by `angle` option. Subsequent placements oscilate around `angle` by `n * step` angle, where integer `n` grows until `tolerance` is reached. This option is intended for `placement-type` `angle`."
             }
         },
         "building": {
