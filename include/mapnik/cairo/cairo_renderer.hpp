@@ -74,20 +74,23 @@ public:
                    T const& obj,
                    double scale_factor=1.0,
                    unsigned offset_x=0,
-                   unsigned offset_y=0);
+                   unsigned offset_y=0,
+                   bool text_outlines=false);
     cairo_renderer(Map const& m,
                    request const& req,
                    attributes const& vars,
                    T const& obj,
                    double scale_factor=1.0,
                    unsigned offset_x=0,
-                   unsigned offset_y=0);
+                   unsigned offset_y=0,
+                   bool text_outlines=false);
     cairo_renderer(Map const& m,
                    T const& obj,
                    std::shared_ptr<renderer_common::detector_type> detector,
                    double scale_factor=1.0,
                    unsigned offset_x=0,
-                   unsigned offset_y=0);
+                   unsigned offset_y=0,
+                   bool text_outlines=false);
 
     ~cairo_renderer();
     void start_map_processing(Map const& map);

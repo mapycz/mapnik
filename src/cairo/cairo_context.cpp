@@ -50,8 +50,12 @@ cairo_font_face_t * cairo_face::face() const
     return c_face_;
 }
 
-cairo_context::cairo_context(cairo_ptr const& cairo)
-    : cairo_(cairo)
+cairo_context::cairo_context(cairo_ptr const& cairo,
+                             bool text_outlines)
+    : cairo_(cairo),
+      render_glyph_(text_outlines ?
+          &cairo_context::fill_glyph :
+          &cairo_context::show_glyph)
 {}
 
 void cairo_context::clip()
@@ -432,6 +436,12 @@ void cairo_context::glyph_path(unsigned long index, pixel_position const &pos)
     check_object_status_and_throw_exception(*this);
 }
 
+void cairo_context::fill_glyph(unsigned long index, pixel_position const &pos)
+{
+    glyph_path(index, pos);
+    fill();
+}
+
 void cairo_context::add_text(glyph_positions const& pos,
                              cairo_face_manager & manager,
                              composite_mode_e comp_op,
@@ -490,7 +500,7 @@ void cairo_context::add_text(glyph_positions const& pos,
         set_font_face(manager, glyph.face);
         pixel_position new_pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
         set_color(glyph.format->fill, glyph.format->text_opacity);
-        show_glyph(glyph.glyph_index, pixel_position(sx + new_pos.x, sy - new_pos.y));
+        (this->*render_glyph_)(glyph.glyph_index, pixel_position(sx + new_pos.x, sy - new_pos.y));
     }
 
 }

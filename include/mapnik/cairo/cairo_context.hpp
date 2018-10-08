@@ -293,7 +293,8 @@ private:
 class cairo_context : private util::noncopyable
 {
 public:
-    cairo_context(cairo_ptr const& cairo);
+    cairo_context(cairo_ptr const& cairo,
+                  bool text_outlines=false); // Render text as outlines
 
     inline ErrorStatus get_status() const
     {
@@ -333,6 +334,7 @@ public:
     void restore();
     void show_glyph(unsigned long index, pixel_position const& pos);
     void glyph_path(unsigned long index, pixel_position const& pos);
+    void fill_glyph(unsigned long index, pixel_position const& pos);
     void add_text(glyph_positions const& pos,
                   cairo_face_manager & manager,
                   composite_mode_e comp_op = src_over,
@@ -426,6 +428,9 @@ public:
 
 private:
     cairo_ptr cairo_;
+    void (cairo_context::*render_glyph_)(
+        unsigned long,
+        pixel_position const &);
 };
 
 template <typename Context>
