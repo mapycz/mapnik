@@ -51,13 +51,13 @@ void vcgen_stroke::add_vertex(double x, double y, unsigned cmd)
     m_status = initial;
     if(is_move_to(cmd))
     {
-        m_src_vertices.modify_last(vertex_dist(x, y));
+        m_src_vertices.modify_last(stroke_vertex_dist(x, y));
     }
     else
     {
         if(is_vertex(cmd))
         {
-            m_src_vertices.add(vertex_dist(x, y));
+            m_src_vertices.add(stroke_vertex_dist(x, y));
         }
         else
         {

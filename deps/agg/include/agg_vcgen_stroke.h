@@ -17,6 +17,7 @@
 #define AGG_VCGEN_STROKE_INCLUDED
 
 #include "agg_math_stroke.h"
+#include "agg_stroke_vertex_sequence.h"
 #include <mapnik/config.hpp>
 
 namespace agg
@@ -46,7 +47,7 @@ namespace agg
         };
 
     public:
-        typedef vertex_sequence<vertex_dist, 6> vertex_storage;
+        typedef stroke_vertex_sequence<stroke_vertex_dist, 6> vertex_storage;
         typedef pod_bvector<point_d, 6>         coord_storage;
 
         vcgen_stroke();
