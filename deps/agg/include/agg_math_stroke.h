@@ -326,13 +326,16 @@ namespace agg
         double dx2 = 0;
         double dy2 = 0;
 
-        if (len > 0)
+        if (len > vertex_dist_epsilon)
         {
             dx1 = (v1.y - v0.y) / len;
             dy1 = (v1.x - v0.x) / len;
         }
-        else if(m_line_cap == square_cap)
+        else if(m_line_cap != round_cap)
         {
+            // In case of butt_cap and square_cap a degenerate
+            // sub-path will not be drawn at all,
+            // since the correct orientation is indeterminate.
             return;
         }
         else
