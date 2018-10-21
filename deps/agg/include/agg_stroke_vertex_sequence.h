@@ -12,6 +12,7 @@ namespace agg
         typedef vertex_sequence<T, S> base_type;
 
         void add(const T& val);
+        void modify_last(const T& val);
         void close(bool remove_flag);
 
     private:
@@ -30,6 +31,13 @@ namespace agg
             }
         }
         base_type::add(val);
+    }
+
+    template<class T, unsigned S>
+    void stroke_vertex_sequence<T, S>::modify_last(const T& val)
+    {
+        base_type::remove_last();
+        add(val);
     }
 
     template<class T, unsigned S>

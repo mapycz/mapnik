@@ -321,10 +321,24 @@ namespace agg
     {
         vc.remove_all();
 
-        double dx1 = (len > 0) ? ((v1.y - v0.y) / len) : 0;
-        double dy1 = (len > 0) ? ((v1.x - v0.x) / len) : ((&v0 < &v1) ? 1 : -1);
+        double dx1 = 0;
+        double dy1 = 0;
         double dx2 = 0;
         double dy2 = 0;
+
+        if (len > 0)
+        {
+            dx1 = (v1.y - v0.y) / len;
+            dy1 = (v1.x - v0.x) / len;
+        }
+        else if(m_line_cap == square_cap)
+        {
+            return;
+        }
+        else
+        {
+            dy1 = (&v0 < &v1) ? 1 : -1;
+        }
 
         dx1 *= m_width;
         dy1 *= m_width;
