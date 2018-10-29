@@ -139,6 +139,7 @@ struct MAPNIK_DECL text_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL shield_symbolizer : public text_symbolizer {};
 struct MAPNIK_DECL line_pattern_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL polygon_pattern_symbolizer : public symbolizer_base {};
+struct MAPNIK_DECL point_pattern_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL markers_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL raster_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL building_symbolizer : public symbolizer_base {};
@@ -152,6 +153,7 @@ using symbolizer = util::variant<point_symbolizer,
                                  line_pattern_symbolizer,
                                  polygon_symbolizer,
                                  polygon_pattern_symbolizer,
+                                 point_pattern_symbolizer,
                                  raster_symbolizer,
                                  shield_symbolizer,
                                  text_symbolizer,

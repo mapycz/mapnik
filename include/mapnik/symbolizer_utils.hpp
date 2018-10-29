@@ -85,6 +85,12 @@ struct symbolizer_traits<polygon_pattern_symbolizer>
 };
 
 template<>
+struct symbolizer_traits<point_pattern_symbolizer>
+{
+    static char const* name() { return "PointPatternSymbolizer";}
+};
+
+template<>
 struct symbolizer_traits<markers_symbolizer>
 {
     static char const* name() { return "MarkersSymbolizer";}

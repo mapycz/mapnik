@@ -114,6 +114,7 @@ private:
     void parse_point_symbolizer(rule & rule, xml_node const& node);
     void parse_line_pattern_symbolizer(rule & rule, xml_node const& node);
     void parse_polygon_pattern_symbolizer(rule & rule, xml_node const& node);
+    void parse_point_pattern_symbolizer(rule & rule, xml_node const& node);
     void parse_text_symbolizer(rule & rule, xml_node const& node);
     void parse_shield_symbolizer(rule & rule, xml_node const& node);
     void parse_line_symbolizer(rule & rule, xml_node const& node);
@@ -157,6 +158,7 @@ struct allow_overlap_visitor
     bool operator()(line_pattern_symbolizer const&)     { return false; }
     bool operator()(polygon_symbolizer const&)          { return false; }
     bool operator()(polygon_pattern_symbolizer const&)  { return false; }
+    bool operator()(point_pattern_symbolizer const&)    { return false; }
     bool operator()(raster_symbolizer const&)           { return false; }
     bool operator()(shield_symbolizer const&)           { return false; }
     bool operator()(text_symbolizer const&)             { return true; }
@@ -955,6 +957,10 @@ void map_parser::parse_symbolizers(rule & rule, xml_node const & node)
             parse_polygon_pattern_symbolizer(rule, sym_node);
             sym_node.set_processed(true);
             break;
+        case "PointPatternSymbolizer"_case:
+            parse_point_pattern_symbolizer(rule, sym_node);
+            sym_node.set_processed(true);
+            break;
         case "TextSymbolizer"_case:
             parse_text_symbolizer(rule, sym_node);
             sym_node.set_processed(true);
@@ -1216,6 +1222,48 @@ void map_parser::parse_polygon_pattern_symbolizer(rule & rule,
         file = ensure_relative_to_xml(file);
         ensure_exists(file);
         polygon_pattern_symbolizer sym;
+        parse_symbolizer_base(sym, node);
+        put(sym, keys::file, parse_path(file));
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::opacity, node);
+        set_symbolizer_property<symbolizer_base,double>(sym, keys::gamma, node);
+        set_symbolizer_property<symbolizer_base,transform_type>(sym, keys::image_transform, node);
+        set_symbolizer_property<symbolizer_base,pattern_alignment_enum>(sym, keys::alignment, node);
+        set_symbolizer_property<symbolizer_base,gamma_method_enum>(sym, keys::gamma_method, node);
+        rule.append(std::move(sym));
+    }
+    catch (config_error const& ex)
+    {
+        ex.append_context(node);
+        throw;
+    }
+}
+
+void map_parser::parse_point_pattern_symbolizer(rule & rule,
+                                                xml_node const & node)
+{
+    try
+    {
+        std::string file = node.get_attr<std::string>("file");
+
+        if (file.empty())
+        {
+            throw config_error("empty file attribute");
+        }
+
+        optional<std::string> base = node.get_opt_attr<std::string>("base");
+
+        if (base)
+        {
+            std::map<std::string,std::string>::const_iterator itr = file_sources_.find(*base);
+            if (itr!=file_sources_.end())
+            {
+                file = itr->second + "/" + file;
+            }
+        }
+
+        file = ensure_relative_to_xml(file);
+        ensure_exists(file);
+        point_pattern_symbolizer sym;
         parse_symbolizer_base(sym, node);
         put(sym, keys::file, parse_path(file));
         set_symbolizer_property<symbolizer_base,double>(sym, keys::opacity, node);
