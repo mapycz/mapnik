@@ -87,7 +87,6 @@ struct cairo_polygon_pattern : cairo_pattern_base
 
     void render(cairo_fill_rule_t fill_rule, cairo_context & context)
     {
-        value_double opacity = get<value_double, keys::opacity>(sym_, feature_, common_.vars_);
         agg::trans_affine image_tr = agg::trans_affine_scaling(common_.scale_factor_);
         auto image_transform = get_optional<transform_type>(sym_, keys::image_transform);
         if (image_transform)
