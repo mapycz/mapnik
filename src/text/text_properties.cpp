@@ -63,6 +63,7 @@ evaluated_text_properties_ptr evaluate_text_properties(text_symbolizer_propertie
     prop->upright = util::apply_visitor(extract_value<text_upright_enum>(feature,attrs), text_prop.expressions.upright);
     prop->grid_cell_width = util::apply_visitor(extract_value<value_double>(feature,attrs), text_prop.expressions.grid_cell_width);
     prop->grid_cell_height = util::apply_visitor(extract_value<value_double>(feature,attrs), text_prop.expressions.grid_cell_height);
+    prop->collision_cache_detect = parse_collision_detector_keys(util::apply_visitor(extract_value<std::string>(feature,attrs), text_prop.expressions.collision_cache_detect));
     return prop;
 }
 
@@ -112,6 +113,7 @@ void text_symbolizer_properties::text_properties_from_xml(xml_node const& node)
     set_property_from_xml<text_upright_e>(expressions.upright, "upright", node);
     set_property_from_xml<value_double>(expressions.grid_cell_width, "grid-cell-width", node);
     set_property_from_xml<value_double>(expressions.grid_cell_height, "grid-cell-height", node);
+    set_property_from_xml<std::string>(expressions.collision_cache_detect, "collision-cache-detect", node);
 }
 
 void text_symbolizer_properties::from_xml(xml_node const& node, fontset_map const& fontsets, bool is_shield)
@@ -187,6 +189,10 @@ void text_symbolizer_properties::to_xml(boost::property_tree::ptree &node,
     {
         serialize_property("grid-cell-height", expressions.grid_cell_height, node);
     }
+    if (!(expressions.grid_cell_height == dfl.expressions.grid_cell_height) || explicit_defaults)
+    {
+        serialize_property("collision-cache-detect", expressions.collision_cache_detect, node);
+    }
 
     layout_defaults.to_xml(node, explicit_defaults, dfl.layout_defaults);
     format_defaults.to_xml(node, explicit_defaults, dfl.format_defaults);
@@ -211,6 +217,7 @@ void text_symbolizer_properties::add_expressions(expression_set & output) const
     if (is_expression(expressions.upright)) output.insert(util::get<expression_ptr>(expressions.upright));
     if (is_expression(expressions.grid_cell_width)) output.insert(util::get<expression_ptr>(expressions.grid_cell_width));
     if (is_expression(expressions.grid_cell_height)) output.insert(util::get<expression_ptr>(expressions.grid_cell_height));
+    if (is_expression(expressions.collision_cache_detect)) output.insert(util::get<expression_ptr>(expressions.collision_cache_detect));
 
     layout_defaults.add_expressions(output);
     format_defaults.add_expressions(output);

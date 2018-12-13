@@ -63,9 +63,7 @@ text_upright_e simplify_upright(text_upright_e upright, double angle)
 single_line_layout::single_line_layout(params_type const & params)
     : params_(params),
       collision_cache_insert_(parse_collision_detector_keys(
-          params.get_optional<std::string, keys::collision_cache_insert>())),
-      collision_cache_detect_(parse_collision_detector_keys(
-          params.get_optional<std::string, keys::collision_cache_detect>()))
+          params.get_optional<std::string, keys::collision_cache_insert>()))
 {
 }
 
@@ -297,9 +295,9 @@ bool single_line_layout::collision(
          !params_.dims.contains(box + (params_.scale_factor * text_props.minimum_padding)))
         ||
         (!text_props.allow_overlap &&
-         ((repeat_key.length() == 0 && !detector.has_placement(box, margin, collision_cache_detect_))
+         ((repeat_key.length() == 0 && !detector.has_placement(box, margin, text_props.collision_cache_detect))
           ||
-          (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance, collision_cache_detect_))));
+          (repeat_key.length() > 0 && !detector.has_placement(box, margin, repeat_key, repeat_distance, text_props.collision_cache_detect))));
 }
 
 }// ns mapnik

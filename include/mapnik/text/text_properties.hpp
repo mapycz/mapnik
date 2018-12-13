@@ -32,6 +32,7 @@
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/text/font_feature_settings.hpp>
+#include <mapnik/collision_cache.hpp>
 
 // stl
 #include <map>
@@ -80,6 +81,7 @@ struct evaluated_text_properties : util::noncopyable
     text_upright_e upright;
     double grid_cell_width;
     double grid_cell_height;
+    std::vector<std::string> collision_cache_detect;
 };
 
 using evaluated_text_properties_ptr = std::unique_ptr<evaluated_text_properties>;
@@ -173,6 +175,7 @@ struct text_properties_expressions
     symbolizer_base::value_type upright = enumeration_wrapper(UPRIGHT_AUTO);
     symbolizer_base::value_type grid_cell_width = 0.0;
     symbolizer_base::value_type grid_cell_height = 0.0;
+    symbolizer_base::value_type collision_cache_detect = std::string();
 };
 
 // Contains all text symbolizer properties which are not directly related to text formatting and layout.
