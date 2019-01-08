@@ -46,12 +46,14 @@ struct marker_line_policy
 
     inline bool check_size() const
     {
-        return true;
+        return path_.length() > layout_width_;
     }
 
     inline bool align()
     {
-        return path_.forward(spacing_ / 2.0);
+        double pos = ((spacing_ > path_.length()) ?
+            path_.length() : spacing_) / 2.0;
+        return path_.forward(pos);
     }
 
     inline bool move(double distance)
