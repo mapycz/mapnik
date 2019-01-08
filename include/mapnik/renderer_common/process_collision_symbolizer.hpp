@@ -125,7 +125,7 @@ public:
         Geom & geom)
     {
         vertex_cache path(geom);
-        marker_line_policy policy(path, 0, spacing_, 0);
+        marker_line_policy policy(path, 0, spacing_, 0, 0);
         return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);
     }
@@ -165,7 +165,7 @@ public:
             layout_width;
         vertex_cache path(geom);
         marker_line_max_angle_policy policy(path, layout_width,
-            this->spacing_, 0, max_angle_diff_, distance);
+            this->spacing_, 0, 0, max_angle_diff_, distance);
         return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);
     }

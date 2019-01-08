@@ -36,22 +36,27 @@ struct marker_line_policy
         vertex_cache & path,
         double layout_width,
         double spacing,
-        double position_tolerance)
+        double position_tolerance,
+        double minimum_path_length)
         : path_(path),
           layout_width_(layout_width),
           spacing_(spacing),
-          position_tolerance_(position_tolerance)
+          position_tolerance_(position_tolerance),
+          minimum_path_length_(minimum_path_length)
     {
     }
 
     inline bool check_size() const
     {
-        return true;
+        return path_.length() >= minimum_path_length_  &&
+            path_.length() > layout_width_;
     }
 
     inline bool align()
     {
-        return path_.forward(spacing_ / 2.0);
+        double pos = ((spacing_ > path_.length()) ?
+            path_.length() : spacing_) / 2.0;
+        return path_.forward(pos);
     }
 
     inline bool move(double distance)
@@ -74,6 +79,7 @@ struct marker_line_policy
     const double layout_width_;
     const double spacing_;
     const double position_tolerance_;
+    const double minimum_path_length_;
 };
 
 struct marker_line_max_angle_policy : marker_line_policy
@@ -83,9 +89,10 @@ struct marker_line_max_angle_policy : marker_line_policy
         double layout_width,
         double spacing,
         double position_tolerance,
+        double minimum_path_length,
         double max_angle_diff,
         double max_angle_distance)
-        : marker_line_policy(path, layout_width, spacing, position_tolerance),
+        : marker_line_policy(path, layout_width, spacing, position_tolerance, minimum_path_length),
           mover_(path, max_angle_diff, max_angle_distance)
     {
     }
