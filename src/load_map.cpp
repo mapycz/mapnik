@@ -1231,6 +1231,7 @@ void map_parser::parse_markers_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle, node);
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle_distance, node);
+        set_symbolizer_property<symbolizer_base,value_double>(sym, keys::minimum_path_length, node);
         parse_stroke(sym,node);
         parse_svg_attributes(sym, node);
         // TODO: Backward compatible svg attributes. Should be removed at some point.

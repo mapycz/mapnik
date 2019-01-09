@@ -780,6 +780,12 @@
             "max-line-angle-distance": {
                 "see-also": "max-line-angle-distance"
             },
+            "minimum-path-length": {
+                "type": "float",
+                "default-value": "spacing / 2",
+                "default-meaning": "Place markers on all geometries if length greater than half of spacing.",
+                "doc": "Place markers only on polygons and lines longer than this value in pixels."
+            },
             "transform": {
                 "type": "functions",
                 "functions": [

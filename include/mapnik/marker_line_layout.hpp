@@ -38,7 +38,8 @@ public:
     marker_line_layout(params_type const & params)
         : label_placement::line_layout<SubLayout>(params),
           spacing_(get_spacing()),
-          position_tolerance_(spacing_ * params.get<value_double, keys::max_error>())
+          position_tolerance_(spacing_ * params.get<value_double, keys::max_error>()),
+          minimum_path_length_(get_minimum_path_length(spacing_))
     {
     }
 
@@ -61,21 +62,33 @@ public:
 
         double layout_width = this->sublayout_.get_length(layout_generator);
         vertex_cache path(geom);
-        marker_line_policy policy(path, layout_width, spacing_, position_tolerance_);
+        marker_line_policy policy(path, layout_width, spacing_,
+            position_tolerance_, minimum_path_length_);
         return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);
     }
 
 protected:
-    double get_spacing()
+    double get_spacing() const
     {
         double spacing = this->params_.template get<value_double, keys::spacing>() *
             this->params_.scale_factor;
         return spacing < 1 ? 100 : spacing;
     }
 
+    double get_minimum_path_length(double spacing) const
+    {
+        boost::optional<double> minimum_path_length =
+            this->params_.template get_optional<
+                value_double, keys::minimum_path_length>();
+        return minimum_path_length ?
+            (this->params_.scale_factor * *minimum_path_length) :
+            (spacing / 2.0);
+    }
+
     const double spacing_;
     const double position_tolerance_;
+    const double minimum_path_length_;
 };
 
 template <typename SubLayout>
@@ -102,7 +115,8 @@ public:
             layout_width;
         vertex_cache path(geom);
         marker_line_max_angle_policy policy(path, layout_width, this->spacing_,
-            this->position_tolerance_, max_angle_diff_, distance);
+            this->position_tolerance_, this->minimum_path_length_,
+            max_angle_diff_, distance);
         return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);
     }
