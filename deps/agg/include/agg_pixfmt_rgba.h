@@ -26,6 +26,7 @@
 
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 #include "agg_basics.h"
 #include "agg_color_rgba.h"
 #include "agg_rendering_buffer.h"
@@ -1492,7 +1493,7 @@ struct comp_op_rgba_grain_extract
 };
 
 template <typename ColorT, typename Order>
-struct comp_op_rgba_grain_merge_over
+struct comp_op_rgba_grain_merge_soft_alpha
 {
     typedef ColorT color_type;
     typedef Order order_type;
@@ -1518,44 +1519,15 @@ struct comp_op_rgba_grain_merge_over
         }
         if (sa > 0)
         {
-            if (sa < 255)
-            {
-                // Demultiply
-                calc_type r = (calc_type(sr) * base_mask) / sa;
-                calc_type g = (calc_type(sg) * base_mask) / sa;
-                calc_type b = (calc_type(sb) * base_mask) / sa;
-                sr = value_type((r > base_mask) ? base_mask : r);
-                sg = value_type((g > base_mask) ? base_mask : g);
-                sb = value_type((b > base_mask) ? base_mask : b);
-
-                // Grain merge
-                int dr = sr + p[Order::R] - 128;
-                int dg = sg + p[Order::G] - 128;
-                int db = sb + p[Order::B] - 128;
-                dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-                dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-                db = db < 0 ? 0 : (db > 255 ? 255 : db);
-
-                // Premultiply
-                dr = value_type((dr * sa + base_mask) >> base_shift);
-                dg = value_type((dg * sa + base_mask) >> base_shift);
-                db = value_type((db * sa + base_mask) >> base_shift);
-
-                // Src over
-                calc_type s1a = base_mask - sa;
-                p[Order::R] = (value_type)(dr + ((p[Order::R] * s1a + base_mask) >> base_shift));
-                p[Order::G] = (value_type)(dg + ((p[Order::G] * s1a + base_mask) >> base_shift));
-                p[Order::B] = (value_type)(db + ((p[Order::B] * s1a + base_mask) >> base_shift));
-            }
-            else
-            {
-                int dr = sr + p[Order::R] - 128;
-                int dg = sg + p[Order::G] - 128;
-                int db = sb + p[Order::B] - 128;
-                p[Order::R] = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-                p[Order::G] = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-                p[Order::B] = db < 0 ? 0 : (db > 255 ? 255 : db);
-            }
+            calc_type x = std::min(sa, 128u);
+            calc_type da = p[Order::A];
+            calc_type dr = sr + p[Order::R] - x;
+            calc_type dg = sg + p[Order::G] - x;
+            calc_type db = sb + p[Order::B] - x;
+            p[Order::R] = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+            p[Order::G] = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+            p[Order::B] = db < 0 ? 0 : (db > 255 ? 255 : db);
+            p[Order::A] = (value_type)(sa + da - ((sa * da + base_mask) >> base_shift));
         }
     }
 };
@@ -1809,7 +1781,7 @@ comp_op_table_rgba<ColorT, Order>::g_comp_op_func[] =
     comp_op_rgba_linear_burn<ColorT,Order>::blend_pix,
     comp_op_rgba_divide<ColorT,Order>::blend_pix,
     //comp_op_rgba_colorize_alpha<ColorT,Order>::blend_pix,
-    comp_op_rgba_grain_merge_over<ColorT,Order>::blend_pix,
+    comp_op_rgba_grain_merge_soft_alpha<ColorT,Order>::blend_pix,
     0
 };
 
@@ -1855,7 +1827,7 @@ enum comp_op_e
     comp_op_linear_dodge, // comp_op_linear_dodge
     comp_op_linear_burn, // comp_op_linear_burn
     comp_op_divide, // comp_op_divide
-    comp_op_grain_merge_over,
+    comp_op_grain_merge_soft_alpha,
     end_of_comp_op_e
 };
 

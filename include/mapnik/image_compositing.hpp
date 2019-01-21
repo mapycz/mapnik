@@ -79,7 +79,7 @@ enum composite_mode_e
     linear_dodge,
     linear_burn,
     divide,
-    grain_merge_over,
+    grain_merge_soft_alpha,
 };
 
 MAPNIK_DECL boost::optional<composite_mode_e> comp_op_from_string(std::string const& name);
