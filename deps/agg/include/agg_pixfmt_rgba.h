@@ -1492,8 +1492,8 @@ struct comp_op_rgba_grain_extract
     }
 };
 
-template <typename ColorT, typename Order>
-struct comp_op_rgba_grain_merge_soft_alpha
+template <typename ColorT, typename Order, int Grain=127>
+struct comp_op_rgba_grain_merge_gimp
 {
     typedef ColorT color_type;
     typedef Order order_type;
@@ -1517,20 +1517,59 @@ struct comp_op_rgba_grain_merge_soft_alpha
             sb = (sb * cover + 255) >> 8;
             sa = (sa * cover + 255) >> 8;
         }
-        if (sa > 0)
+        if (sa > 0 && p[Order::A] > 0)
         {
-            calc_type x = std::min(sa, 128u);
-            calc_type da = p[Order::A];
-            calc_type dr = sr + p[Order::R] - x;
-            calc_type dg = sg + p[Order::G] - x;
-            calc_type db = sb + p[Order::B] - x;
-            p[Order::R] = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-            p[Order::G] = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-            p[Order::B] = db < 0 ? 0 : (db > 255 ? 255 : db);
-            p[Order::A] = (value_type)(sa + da - ((sa * da + base_mask) >> base_shift));
+            // Demultiply
+            int c1r = (calc_type(p[Order::R]) * base_mask) / p[Order::A];
+            int c1g = (calc_type(p[Order::G]) * base_mask) / p[Order::A];
+            int c1b = (calc_type(p[Order::B]) * base_mask) / p[Order::A];
+            c1r = value_type((c1r > base_mask) ? base_mask : c1r);
+            c1g = value_type((c1g > base_mask) ? base_mask : c1g);
+            c1b = value_type((c1b > base_mask) ? base_mask : c1b);
+
+            int c2r = (calc_type(sr) * base_mask) / sa;
+            int c2g = (calc_type(sg) * base_mask) / sa;
+            int c2b = (calc_type(sb) * base_mask) / sa;
+            c2r = value_type((c2r > base_mask) ? base_mask : c2r);
+            c2g = value_type((c2g > base_mask) ? base_mask : c2g);
+            c2b = value_type((c2b > base_mask) ? base_mask : c2b);
+
+            // Grain merge
+            int dr = c1r + c2r - Grain;
+            int dg = c1g + c2g - Grain;
+            int db = c1b + c2b - Grain;
+            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+            db = db < 0 ? 0 : (db > 255 ? 255 : db);
+
+            int in_alpha = p[Order::A];
+            int layer_alpha = sa;
+            int new_alpha = layer_alpha + ((255 - layer_alpha) * in_alpha) / 255;
+
+            int ratio = (255 * layer_alpha) / new_alpha;
+
+            dr = (ratio * ((in_alpha * (dr - c2r)) / 255 + c2r - c1r)) / 255 + c1r;
+            dg = (ratio * ((in_alpha * (dg - c2g)) / 255 + c2g - c1g)) / 255 + c1g;
+            db = (ratio * ((in_alpha * (db - c2b)) / 255 + c2b - c1b)) / 255 + c1b;
+            int da = in_alpha ? in_alpha : new_alpha;
+
+            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+            db = db < 0 ? 0 : (db > 255 ? 255 : db);
+            da = da < 0 ? 0 : (da > 255 ? 255 : da);
+
+            // Premultiply
+            p[Order::R] = value_type((dr * da + base_mask) >> base_shift);
+            p[Order::G] = value_type((dg * da + base_mask) >> base_shift);
+            p[Order::B] = value_type((db * da + base_mask) >> base_shift);
+            p[Order::A] = da;
         }
     }
 };
+
+// 214 to mimic original grain-merge from Mapnik
+template <typename ColorT, typename Order>
+using comp_op_rgba_grain_merge_gimp_darker = comp_op_rgba_grain_merge_gimp<ColorT, Order, 214>;
 
 template <typename ColorT, typename Order>
 struct comp_op_rgba_hue
@@ -1781,7 +1820,8 @@ comp_op_table_rgba<ColorT, Order>::g_comp_op_func[] =
     comp_op_rgba_linear_burn<ColorT,Order>::blend_pix,
     comp_op_rgba_divide<ColorT,Order>::blend_pix,
     //comp_op_rgba_colorize_alpha<ColorT,Order>::blend_pix,
-    comp_op_rgba_grain_merge_soft_alpha<ColorT,Order>::blend_pix,
+    comp_op_rgba_grain_merge_gimp<ColorT,Order>::blend_pix,
+    comp_op_rgba_grain_merge_gimp_darker<ColorT,Order>::blend_pix,
     0
 };
 
@@ -1827,7 +1867,8 @@ enum comp_op_e
     comp_op_linear_dodge, // comp_op_linear_dodge
     comp_op_linear_burn, // comp_op_linear_burn
     comp_op_divide, // comp_op_divide
-    comp_op_grain_merge_soft_alpha,
+    comp_op_grain_merge_gimp,
+    comp_op_grain_merge_gimp_darker,
     end_of_comp_op_e
 };
 
