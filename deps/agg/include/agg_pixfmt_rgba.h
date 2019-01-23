@@ -1519,15 +1519,53 @@ struct comp_op_rgba_grain_merge_soft_alpha
         }
         if (sa > 0)
         {
-            calc_type x = std::min(sa, 128u);
-            calc_type da = p[Order::A];
-            calc_type dr = sr + p[Order::R] - x;
-            calc_type dg = sg + p[Order::G] - x;
-            calc_type db = sb + p[Order::B] - x;
-            p[Order::R] = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-            p[Order::G] = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-            p[Order::B] = db < 0 ? 0 : (db > 255 ? 255 : db);
-            p[Order::A] = (value_type)(sa + da - ((sa * da + base_mask) >> base_shift));
+            // Demultiply
+            calc_type r = (calc_type(sr) * base_mask) / sa;
+            calc_type g = (calc_type(sg) * base_mask) / sa;
+            calc_type b = (calc_type(sb) * base_mask) / sa;
+            sr = value_type((r > base_mask) ? base_mask : r);
+            sg = value_type((g > base_mask) ? base_mask : g);
+            sb = value_type((b > base_mask) ? base_mask : b);
+
+            r = (calc_type(p[Order::R]) * base_mask) / p[Order::A];
+            g = (calc_type(p[Order::G]) * base_mask) / p[Order::A];
+            b = (calc_type(p[Order::B]) * base_mask) / p[Order::A];
+            p[Order::R] = value_type((r > base_mask) ? base_mask : r);
+            p[Order::G] = value_type((g > base_mask) ? base_mask : g);
+            p[Order::B] = value_type((b > base_mask) ? base_mask : b);
+
+            // Grain merge
+            int dr = sr + p[Order::R] - 128;
+            int dg = sg + p[Order::G] - 128;
+            int db = sb + p[Order::B] - 128;
+            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+            db = db < 0 ? 0 : (db > 255 ? 255 : db);
+
+            calc_type in_alpha = p[Order::A];
+            calc_type layer_alpha = sa;
+            calc_type new_alpha = layer_alpha + (((base_mask - layer_alpha) * in_alpha) + base_mask) >> base_shift;
+
+            calc_type ratio = (layer_alpha * base_mask + base_mask) / new_alpha;
+
+            dr = ratio * ((in_alpha * (dr - p[Order::R]) + base_mask) >> base_shift + p[Order::R] - dr) >> base_shift + dr;
+            dg = ratio * ((in_alpha * (dg - p[Order::G]) + base_mask) >> base_shift + p[Order::G] - dg) >> base_shift + dg;
+            db = ratio * ((in_alpha * (db - p[Order::B]) + base_mask) >> base_shift + p[Order::B] - db) >> base_shift + db;
+            //da = new_alpha;
+            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+            db = db < 0 ? 0 : (db > 255 ? 255 : db);
+
+            //r = r < 0 ? 0 : r > 1 ? 1 : r;
+            //g = g < 0 ? 0 : g > 1 ? 1 : g;
+            //b = b < 0 ? 0 : b > 1 ? 1 : b;
+            //a = a < 0 ? 0 : a > 1 ? 1 : a;
+
+            // Premultiply
+            p[Order::R] = value_type((dr * new_alpha + base_mask) >> base_shift);
+            p[Order::G] = value_type((dg * new_alpha + base_mask) >> base_shift);
+            p[Order::B] = value_type((db * new_alpha + base_mask) >> base_shift);
+            p[Order::A] = new_alpha;
         }
     }
 };
