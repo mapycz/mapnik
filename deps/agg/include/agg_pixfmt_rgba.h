@@ -1535,23 +1535,23 @@ struct comp_op_rgba_grain_merge_soft_alpha
             p[Order::B] = value_type((b > base_mask) ? base_mask : b);
 
             // Grain merge
-            int dr = sr + p[Order::R] - 128;
-            int dg = sg + p[Order::G] - 128;
-            int db = sb + p[Order::B] - 128;
+            int dr = sr + p[Order::R] - 216;
+            int dg = sg + p[Order::G] - 216;
+            int db = sb + p[Order::B] - 216;
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
             dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
             db = db < 0 ? 0 : (db > 255 ? 255 : db);
 
-            calc_type in_alpha = p[Order::A];
-            calc_type layer_alpha = sa;
-            calc_type new_alpha = layer_alpha + (((base_mask - layer_alpha) * in_alpha) + base_mask) >> base_shift;
+            int in_alpha = p[Order::A];
+            int layer_alpha = sa;
+            int new_alpha = layer_alpha + (((base_mask - layer_alpha) * in_alpha) + base_mask) >> base_shift;
 
-            calc_type ratio = (layer_alpha * base_mask + base_mask) / new_alpha;
+            float ratio = (float)layer_alpha / new_alpha;
 
-            dr = ratio * ((in_alpha * (dr - p[Order::R]) + base_mask) >> base_shift + p[Order::R] - dr) >> base_shift + dr;
-            dg = ratio * ((in_alpha * (dg - p[Order::G]) + base_mask) >> base_shift + p[Order::G] - dg) >> base_shift + dg;
-            db = ratio * ((in_alpha * (db - p[Order::B]) + base_mask) >> base_shift + p[Order::B] - db) >> base_shift + db;
-            //da = new_alpha;
+            dr = ratio * ((in_alpha * (dr - p[Order::R]) + base_mask) >> base_shift + p[Order::R] - dr) + dr;
+            dg = ratio * ((in_alpha * (dg - p[Order::G]) + base_mask) >> base_shift + p[Order::G] - dg) + dg;
+            db = ratio * ((in_alpha * (db - p[Order::B]) + base_mask) >> base_shift + p[Order::B] - db) + db;
+            int da = in_alpha ? in_alpha : new_alpha;
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
             dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
             db = db < 0 ? 0 : (db > 255 ? 255 : db);
@@ -1562,10 +1562,10 @@ struct comp_op_rgba_grain_merge_soft_alpha
             //a = a < 0 ? 0 : a > 1 ? 1 : a;
 
             // Premultiply
-            p[Order::R] = value_type((dr * new_alpha + base_mask) >> base_shift);
-            p[Order::G] = value_type((dg * new_alpha + base_mask) >> base_shift);
-            p[Order::B] = value_type((db * new_alpha + base_mask) >> base_shift);
-            p[Order::A] = new_alpha;
+            p[Order::R] = value_type((dr * da + base_mask) >> base_shift);
+            p[Order::G] = value_type((dg * da + base_mask) >> base_shift);
+            p[Order::B] = value_type((db * da + base_mask) >> base_shift);
+            p[Order::A] = da;
         }
     }
 };
