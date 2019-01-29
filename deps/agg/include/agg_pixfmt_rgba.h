@@ -1535,26 +1535,28 @@ struct comp_op_rgba_grain_merge_soft_alpha
             p[Order::B] = value_type((b > base_mask) ? base_mask : b);
 
             // Grain merge
-            int dr = sr + p[Order::R] - 216;
-            int dg = sg + p[Order::G] - 216;
-            int db = sb + p[Order::B] - 216;
+            int dr = (int)p[Order::R] + (int)sr - 216;
+            int dg = (int)p[Order::G] + (int)sg - 216;
+            int db = (int)p[Order::B] + (int)sb - 216;
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
             dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
             db = db < 0 ? 0 : (db > 255 ? 255 : db);
 
             int in_alpha = p[Order::A];
             int layer_alpha = sa;
-            int new_alpha = layer_alpha + (((base_mask - layer_alpha) * in_alpha) + base_mask) >> base_shift;
+            int new_alpha = layer_alpha + ((255 - layer_alpha) * in_alpha) / 255;
 
-            float ratio = (float)layer_alpha / new_alpha;
+            int ratio = (255 * layer_alpha) / new_alpha;
 
-            dr = ratio * ((in_alpha * (dr - p[Order::R]) + base_mask) >> base_shift + p[Order::R] - dr) + dr;
-            dg = ratio * ((in_alpha * (dg - p[Order::G]) + base_mask) >> base_shift + p[Order::G] - dg) + dg;
-            db = ratio * ((in_alpha * (db - p[Order::B]) + base_mask) >> base_shift + p[Order::B] - db) + db;
+            dr = (ratio * ((in_alpha * (dr - (int)sr)) / 255 + (int)sr - (int)p[Order::R])) / 255 + p[Order::R];
+            dg = (ratio * ((in_alpha * (dg - (int)sg)) / 255 + (int)sg - (int)p[Order::G])) / 255 + p[Order::G];
+            db = (ratio * ((in_alpha * (db - (int)sb)) / 255 + (int)sb - (int)p[Order::B])) / 255 + p[Order::B];
             int da = in_alpha ? in_alpha : new_alpha;
+
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
             dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
             db = db < 0 ? 0 : (db > 255 ? 255 : db);
+            da = da < 0 ? 0 : (da > 255 ? 255 : da);
 
             //r = r < 0 ? 0 : r > 1 ? 1 : r;
             //g = g < 0 ? 0 : g > 1 ? 1 : g;
