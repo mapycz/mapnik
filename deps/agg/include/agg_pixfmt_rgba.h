@@ -1492,8 +1492,8 @@ struct comp_op_rgba_grain_extract
     }
 };
 
-template <typename ColorT, typename Order>
-struct comp_op_rgba_grain_merge_over
+template <typename ColorT, typename Order, int Grain=127>
+struct comp_op_rgba_grain_merge_gimp
 {
     typedef ColorT color_type;
     typedef Order order_type;
@@ -1517,7 +1517,7 @@ struct comp_op_rgba_grain_merge_over
             sb = (sb * cover + 255) >> 8;
             sa = (sa * cover + 255) >> 8;
         }
-        if (sa > 0)
+        if (sa > 0 && p[Order::A] > 0)
         {
             // Demultiply
             int c1r = (calc_type(p[Order::R]) * base_mask) / p[Order::A];
@@ -1535,9 +1535,9 @@ struct comp_op_rgba_grain_merge_over
             c2b = value_type((c2b > base_mask) ? base_mask : c2b);
 
             // Grain merge
-            int dr = c1r + c2r - 214; // 214 to mimic original grain-merge from Mapnik
-            int dg = c1g + c2g - 214;
-            int db = c1b + c2b - 214;
+            int dr = c1r + c2r - Grain;
+            int dg = c1g + c2g - Grain;
+            int db = c1b + c2b - Grain;
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
             dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
             db = db < 0 ? 0 : (db > 255 ? 255 : db);
@@ -1566,6 +1566,10 @@ struct comp_op_rgba_grain_merge_over
         }
     }
 };
+
+// 214 to mimic original grain-merge from Mapnik
+template <typename ColorT, typename Order>
+using comp_op_rgba_grain_merge_gimp_darker = comp_op_rgba_grain_merge_gimp<ColorT, Order, 214>;
 
 template <typename ColorT, typename Order>
 struct comp_op_rgba_hue
@@ -1816,7 +1820,8 @@ comp_op_table_rgba<ColorT, Order>::g_comp_op_func[] =
     comp_op_rgba_linear_burn<ColorT,Order>::blend_pix,
     comp_op_rgba_divide<ColorT,Order>::blend_pix,
     //comp_op_rgba_colorize_alpha<ColorT,Order>::blend_pix,
-    comp_op_rgba_grain_merge_over<ColorT,Order>::blend_pix,
+    comp_op_rgba_grain_merge_gimp<ColorT,Order>::blend_pix,
+    comp_op_rgba_grain_merge_gimp_darker<ColorT,Order>::blend_pix,
     0
 };
 
@@ -1862,7 +1867,8 @@ enum comp_op_e
     comp_op_linear_dodge, // comp_op_linear_dodge
     comp_op_linear_burn, // comp_op_linear_burn
     comp_op_divide, // comp_op_divide
-    comp_op_grain_merge_over,
+    comp_op_grain_merge_gimp,
+    comp_op_grain_merge_gimp_darker,
     end_of_comp_op_e
 };
 
