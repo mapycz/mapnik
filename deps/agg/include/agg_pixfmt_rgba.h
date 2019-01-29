@@ -1493,7 +1493,7 @@ struct comp_op_rgba_grain_extract
 };
 
 template <typename ColorT, typename Order>
-struct comp_op_rgba_grain_merge_soft_alpha
+struct comp_op_rgba_grain_merge_over
 {
     typedef ColorT color_type;
     typedef Order order_type;
@@ -1535,9 +1535,9 @@ struct comp_op_rgba_grain_merge_soft_alpha
             c2b = value_type((c2b > base_mask) ? base_mask : c2b);
 
             // Grain merge
-            int dr = c1r + c2r - 216;
-            int dg = c1g + c2g - 216;
-            int db = c1b + c2b - 216;
+            int dr = c1r + c2r - 214; // 214 to mimic original grain-merge from Mapnik
+            int dg = c1g + c2g - 214;
+            int db = c1b + c2b - 214;
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
             dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
             db = db < 0 ? 0 : (db > 255 ? 255 : db);
@@ -1816,7 +1816,7 @@ comp_op_table_rgba<ColorT, Order>::g_comp_op_func[] =
     comp_op_rgba_linear_burn<ColorT,Order>::blend_pix,
     comp_op_rgba_divide<ColorT,Order>::blend_pix,
     //comp_op_rgba_colorize_alpha<ColorT,Order>::blend_pix,
-    comp_op_rgba_grain_merge_soft_alpha<ColorT,Order>::blend_pix,
+    comp_op_rgba_grain_merge_over<ColorT,Order>::blend_pix,
     0
 };
 
@@ -1862,7 +1862,7 @@ enum comp_op_e
     comp_op_linear_dodge, // comp_op_linear_dodge
     comp_op_linear_burn, // comp_op_linear_burn
     comp_op_divide, // comp_op_divide
-    comp_op_grain_merge_soft_alpha,
+    comp_op_grain_merge_over,
     end_of_comp_op_e
 };
 
