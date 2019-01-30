@@ -1510,64 +1510,38 @@ struct comp_op_rgba_grain_merge_gimp
                                      unsigned sr, unsigned sg, unsigned sb,
                                      unsigned sa, unsigned cover)
     {
-        if (cover < 255)
+        if (cover < base_mask)
         {
-            sr = (sr * cover + 255) >> 8;
-            sg = (sg * cover + 255) >> 8;
-            sb = (sb * cover + 255) >> 8;
-            sa = (sa * cover + 255) >> 8;
+            sr = (sr * cover + base_mask) >> base_shift;
+            sg = (sg * cover + base_mask) >> base_shift;
+            sb = (sb * cover + base_mask) >> base_shift;
+            sa = (sa * cover + base_mask) >> base_shift;
         }
         if (sa > 0 && p[Order::A] > 0)
         {
-            // Demultiply
-            int c1r = (calc_type(p[Order::R]) * base_mask) / p[Order::A];
-            int c1g = (calc_type(p[Order::G]) * base_mask) / p[Order::A];
-            int c1b = (calc_type(p[Order::B]) * base_mask) / p[Order::A];
-            c1r = value_type((c1r > base_mask) ? base_mask : c1r);
-            c1g = value_type((c1g > base_mask) ? base_mask : c1g);
-            c1b = value_type((c1b > base_mask) ? base_mask : c1b);
+            int dr = p[Order::R];
+            int dg = p[Order::G];
+            int db = p[Order::B];
+            int da = p[Order::A];
 
-            int c2r = (calc_type(sr) * base_mask) / sa;
-            int c2g = (calc_type(sg) * base_mask) / sa;
-            int c2b = (calc_type(sb) * base_mask) / sa;
-            c2r = value_type((c2r > base_mask) ? base_mask : c2r);
-            c2g = value_type((c2g > base_mask) ? base_mask : c2g);
-            c2b = value_type((c2b > base_mask) ? base_mask : c2b);
+            const int layer_alpha = sa;
+            const int new_alpha = layer_alpha + (((base_mask - layer_alpha) * da + base_mask) >> base_shift);
+            const int grain = (da * layer_alpha * Grain + Grain * base_mask + base_mask) >> (2 * base_shift);
 
-            // Grain merge
-            int dr = c1r + c2r - Grain;
-            int dg = c1g + c2g - Grain;
-            int db = c1b + c2b - Grain;
-            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-            db = db < 0 ? 0 : (db > 255 ? 255 : db);
+            dr = (da * ((int)sr + dr - grain)) / new_alpha;
+            dg = (da * ((int)sg + dg - grain)) / new_alpha;
+            db = (da * ((int)sb + db - grain)) / new_alpha;
+            //da = da ? da : new_alpha;
 
-            int in_alpha = p[Order::A];
-            int layer_alpha = sa;
-            int new_alpha = layer_alpha + ((255 - layer_alpha) * in_alpha) / 255;
-
-            int ratio = (255 * layer_alpha) / new_alpha;
-
-            dr = (ratio * ((in_alpha * (dr - c2r)) / 255 + c2r - c1r)) / 255 + c1r;
-            dg = (ratio * ((in_alpha * (dg - c2g)) / 255 + c2g - c1g)) / 255 + c1g;
-            db = (ratio * ((in_alpha * (db - c2b)) / 255 + c2b - c1b)) / 255 + c1b;
-            int da = in_alpha ? in_alpha : new_alpha;
-
-            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-            db = db < 0 ? 0 : (db > 255 ? 255 : db);
-            da = da < 0 ? 0 : (da > 255 ? 255 : da);
-
-            // Premultiply
-            p[Order::R] = value_type((dr * da + base_mask) >> base_shift);
-            p[Order::G] = value_type((dg * da + base_mask) >> base_shift);
-            p[Order::B] = value_type((db * da + base_mask) >> base_shift);
-            p[Order::A] = da;
+            p[Order::R] = dr < 0 ? 0 : (dr > base_mask ? base_mask : dr);
+            p[Order::G] = dg < 0 ? 0 : (dg > base_mask ? base_mask : dg);
+            p[Order::B] = db < 0 ? 0 : (db > base_mask ? base_mask : db);
+            //p[Order::A] = da < 0 ? 0 : (da > base_mask ? base_mask : da);
         }
     }
 };
 
-// 214 to mimic original grain-merge from Mapnik
+// Grain = 214 to mimic original grain-merge from Mapnik
 template <typename ColorT, typename Order>
 using comp_op_rgba_grain_merge_gimp_darker = comp_op_rgba_grain_merge_gimp<ColorT, Order, 214>;
 
