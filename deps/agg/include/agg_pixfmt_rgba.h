@@ -1525,28 +1525,17 @@ struct comp_op_rgba_grain_merge_gimp
             int da = p[Order::A];
 
             int layer_alpha = sa;
-            int new_alpha = layer_alpha + ((255 - layer_alpha) * da) / 255;
-            //int ratio = (255 * layer_alpha) / new_alpha;
+            int new_alpha = layer_alpha + (((255 - layer_alpha) * da + base_mask) >> base_shift);
 
-            dr = ((dr * layer_alpha * da) / 255 - (da * da * layer_alpha * Grain) / (255 * 255) + (((int)sr * da) - (dr * layer_alpha) + new_alpha * dr)) / (new_alpha);
-            dg = ((dg * layer_alpha * da) / 255 - (da * da * layer_alpha * Grain) / (255 * 255) + (((int)sg * da) - (dg * layer_alpha) + new_alpha * dg)) / (new_alpha);
-            db = ((db * layer_alpha * da) / 255 - (da * da * layer_alpha * Grain) / (255 * 255) + (((int)sb * da) - (db * layer_alpha) + new_alpha * db)) / (new_alpha);
-
-            //dr = (ratio * (dr - (da * Grain) / 255 + ((int)sr * 255) / layer_alpha - (dr * 255) / da)) / 255 + (dr * 255) / da;
-            //dg = (ratio * (dg - (da * Grain) / 255 + ((int)sg * 255) / layer_alpha - (dg * 255) / da)) / 255 + (dg * 255) / da;
-            //db = (ratio * (db - (da * Grain) / 255 + ((int)sb * 255) / layer_alpha - (db * 255) / da)) / 255 + (db * 255) / da;
+            dr = (((dr * layer_alpha * da + base_mask) >> base_shift) - ((da * da * layer_alpha * Grain + 2 * base_mask) >> (2 * base_shift)) + (((int)sr * da) - (dr * layer_alpha) + new_alpha * dr)) / new_alpha;
+            dg = (((dg * layer_alpha * da + base_mask) >> base_shift) - ((da * da * layer_alpha * Grain + 2 * base_mask) >> (2 * base_shift)) + (((int)sg * da) - (dg * layer_alpha) + new_alpha * dg)) / new_alpha;
+            db = (((db * layer_alpha * da + base_mask) >> base_shift) - ((da * da * layer_alpha * Grain + 2 * base_mask) >> (2 * base_shift)) + (((int)sb * da) - (db * layer_alpha) + new_alpha * db)) / new_alpha;
             da = da ? da : new_alpha;
 
-            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-            db = db < 0 ? 0 : (db > 255 ? 255 : db);
-            da = da < 0 ? 0 : (da > 255 ? 255 : da);
-
-            // Premultiply
-            p[Order::R] = dr;
-            p[Order::G] = dg;
-            p[Order::B] = db;
-            p[Order::A] = da;
+            p[Order::R] = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
+            p[Order::G] = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
+            p[Order::B] = db < 0 ? 0 : (db > 255 ? 255 : db);
+            p[Order::A] = da < 0 ? 0 : (da > 255 ? 255 : da);
         }
     }
 };
