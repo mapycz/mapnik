@@ -1519,20 +1519,19 @@ struct comp_op_rgba_grain_merge_gimp
         }
         if (sa > 0 && p[Order::A] > 0)
         {
-            int in_alpha = p[Order::A];
-            int layer_alpha = sa;
-            int new_alpha = layer_alpha + ((255 - layer_alpha) * in_alpha) / 255;
-            int ratio = (255 * layer_alpha) / new_alpha;
-
             int dr = p[Order::R];
             int dg = p[Order::G];
             int db = p[Order::B];
             int da = p[Order::A];
 
-            dr = (ratio * (dr - (da * Grain) / 255 + ((int)sr * 255) / (int)sa - (dr * 255) / da)) / 255 + (dr * 255) / da;
-            dg = (ratio * (dg - (da * Grain) / 255 + ((int)sg * 255) / (int)sa - (dg * 255) / da)) / 255 + (dg * 255) / da;
-            db = (ratio * (db - (da * Grain) / 255 + ((int)sb * 255) / (int)sa - (db * 255) / da)) / 255 + (db * 255) / da;
-            da = in_alpha ? in_alpha : new_alpha;
+            int layer_alpha = sa;
+            int new_alpha = layer_alpha + ((255 - layer_alpha) * da) / 255;
+            int ratio = (255 * layer_alpha) / new_alpha;
+
+            dr = (ratio * (dr - (da * Grain) / 255 + ((int)sr * 255) / layer_alpha - (dr * 255) / da)) / 255 + (dr * 255) / da;
+            dg = (ratio * (dg - (da * Grain) / 255 + ((int)sg * 255) / layer_alpha - (dg * 255) / da)) / 255 + (dg * 255) / da;
+            db = (ratio * (db - (da * Grain) / 255 + ((int)sb * 255) / layer_alpha - (db * 255) / da)) / 255 + (db * 255) / da;
+            da = da ? da : new_alpha;
 
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
             dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
