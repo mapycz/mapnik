@@ -1519,38 +1519,15 @@ struct comp_op_rgba_grain_merge_gimp
         }
         if (sa > 0 && p[Order::A] > 0)
         {
-            // Demultiply
-            int c1r = (calc_type(p[Order::R]) * base_mask) / p[Order::A];
-            int c1g = (calc_type(p[Order::G]) * base_mask) / p[Order::A];
-            int c1b = (calc_type(p[Order::B]) * base_mask) / p[Order::A];
-            c1r = value_type((c1r > base_mask) ? base_mask : c1r);
-            c1g = value_type((c1g > base_mask) ? base_mask : c1g);
-            c1b = value_type((c1b > base_mask) ? base_mask : c1b);
-
-            int c2r = (calc_type(sr) * base_mask) / sa;
-            int c2g = (calc_type(sg) * base_mask) / sa;
-            int c2b = (calc_type(sb) * base_mask) / sa;
-            c2r = value_type((c2r > base_mask) ? base_mask : c2r);
-            c2g = value_type((c2g > base_mask) ? base_mask : c2g);
-            c2b = value_type((c2b > base_mask) ? base_mask : c2b);
-
-            // Grain merge
-            int dr = c1r + c2r - Grain;
-            int dg = c1g + c2g - Grain;
-            int db = c1b + c2b - Grain;
-            dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
-            dg = dg < 0 ? 0 : (dg > 255 ? 255 : dg);
-            db = db < 0 ? 0 : (db > 255 ? 255 : db);
-
             int in_alpha = p[Order::A];
             int layer_alpha = sa;
             int new_alpha = layer_alpha + ((255 - layer_alpha) * in_alpha) / 255;
-
             int ratio = (255 * layer_alpha) / new_alpha;
 
-            dr = (ratio * ((in_alpha * (dr - c2r)) / 255 + c2r - c1r)) / 255 + c1r;
-            dg = (ratio * ((in_alpha * (dg - c2g)) / 255 + c2g - c1g)) / 255 + c1g;
-            db = (ratio * ((in_alpha * (db - c2b)) / 255 + c2b - c1b)) / 255 + c1b;
+            // Grain merge
+            int dr = (ratio * ((int)p[Order::R] - (int)(p[Order::A] * Grain) / 255 + ((int)sr * 255) / (int)sa - (int)(p[Order::R] * 255) / (int)p[Order::A])) / 255 + (int)(p[Order::R] * 255) / (int)p[Order::A];
+            int dg = (ratio * ((int)p[Order::G] - (int)(p[Order::A] * Grain) / 255 + ((int)sg * 255) / (int)sa - (int)(p[Order::G] * 255) / (int)p[Order::A])) / 255 + (int)(p[Order::G] * 255) / (int)p[Order::A];
+            int db = (ratio * ((int)p[Order::B] - (int)(p[Order::A] * Grain) / 255 + ((int)sb * 255) / (int)sa - (int)(p[Order::B] * 255) / (int)p[Order::A])) / 255 + (int)(p[Order::B] * 255) / (int)p[Order::A];
             int da = in_alpha ? in_alpha : new_alpha;
 
             dr = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
@@ -1567,7 +1544,7 @@ struct comp_op_rgba_grain_merge_gimp
     }
 };
 
-// 214 to mimic original grain-merge from Mapnik
+// Grain = 214 to mimic original grain-merge from Mapnik
 template <typename ColorT, typename Order>
 using comp_op_rgba_grain_merge_gimp_darker = comp_op_rgba_grain_merge_gimp<ColorT, Order, 214>;
 
