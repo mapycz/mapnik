@@ -1524,12 +1524,13 @@ struct comp_op_rgba_grain_merge_gimp
             int db = p[Order::B];
             int da = p[Order::A];
 
-            int layer_alpha = sa;
-            int new_alpha = layer_alpha + (((255 - layer_alpha) * da + base_mask) >> base_shift);
+            const int layer_alpha = sa;
+            const int new_alpha = layer_alpha + (((255 - layer_alpha) * da + base_mask) >> base_shift);
+            const int grain = (da * da * layer_alpha * Grain + 2 * base_mask) >> (2 * base_shift);
 
-            dr = (((dr * layer_alpha * da + base_mask) >> base_shift) - ((da * da * layer_alpha * Grain + 2 * base_mask) >> (2 * base_shift)) + (((int)sr * da) - (dr * layer_alpha) + new_alpha * dr)) / new_alpha;
-            dg = (((dg * layer_alpha * da + base_mask) >> base_shift) - ((da * da * layer_alpha * Grain + 2 * base_mask) >> (2 * base_shift)) + (((int)sg * da) - (dg * layer_alpha) + new_alpha * dg)) / new_alpha;
-            db = (((db * layer_alpha * da + base_mask) >> base_shift) - ((da * da * layer_alpha * Grain + 2 * base_mask) >> (2 * base_shift)) + (((int)sb * da) - (db * layer_alpha) + new_alpha * db)) / new_alpha;
+            dr = (((dr * layer_alpha * da + base_mask) >> base_shift) - grain + ((int)sr * da - dr * layer_alpha + new_alpha * dr)) / new_alpha;
+            dg = (((dg * layer_alpha * da + base_mask) >> base_shift) - grain + ((int)sg * da - dg * layer_alpha + new_alpha * dg)) / new_alpha;
+            db = (((db * layer_alpha * da + base_mask) >> base_shift) - grain + ((int)sb * da - db * layer_alpha + new_alpha * db)) / new_alpha;
             da = da ? da : new_alpha;
 
             p[Order::R] = dr < 0 ? 0 : (dr > 255 ? 255 : dr);
