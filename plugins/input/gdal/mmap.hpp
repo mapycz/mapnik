@@ -26,6 +26,7 @@
 #include <mapnik/util/fs.hpp>
 #include <mapnik/make_unique.hpp>
 #include <mapnik/debug.hpp>
+#include <mapnik/util/singleton.hpp>
 
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
@@ -34,16 +35,15 @@
 #include <gdal_priv.h>
 
 #include <sstream>
+#include <mutex>
 
 struct mmapped_vsifile
 {
-    mmapped_vsifile(std::string const& filepath,
-                    std::string const& unique_path)
+    mmapped_vsifile(std::string const& filepath)
         : mapping(filepath.c_str(), boost::interprocess::read_only),
           region(mapping, boost::interprocess::read_only)
     {
         boost::filesystem::path vsimem_path("/vsimem");
-        vsimem_path /= unique_path.empty() ? unique_id() : unique_path;
         vsimem_path /= filepath;
 
         virt_file = VSIFileFromMemBuffer(
@@ -61,13 +61,6 @@ struct mmapped_vsifile
         name = vsimem_path.string();
     }
 
-    std::string unique_id() const
-    {
-        std::stringstream ss;
-        ss << region.get_address();
-        return ss.str();
-    }
-
     ~mmapped_vsifile()
     {
         VSIFCloseL(virt_file);
@@ -83,7 +76,7 @@ struct mmapped_vsifile
 struct mmapped_tiff_dataset
 {
     mmapped_tiff_dataset(std::string const& filepath)
-        : tiff_file_mapping(filepath, std::string()),
+        : tiff_file_mapping(filepath),
           overviews_file_mapping()
     {
         std::string ovr_file_name = filepath + ".ovr";
@@ -91,8 +84,7 @@ struct mmapped_tiff_dataset
         {
             try
             {
-                overviews_file_mapping = std::make_unique<mmapped_vsifile>(
-                    ovr_file_name, tiff_file_mapping.unique_id());
+                overviews_file_mapping = std::make_unique<mmapped_vsifile>(ovr_file_name);
             }
             catch (std::exception const& e)
             {
@@ -106,6 +98,85 @@ struct mmapped_tiff_dataset
 
     mmapped_vsifile tiff_file_mapping;
     std::unique_ptr<mmapped_vsifile> overviews_file_mapping;
+};
+
+class mmapped_tiff_dataset_register
+    : public mapnik::singleton<mmapped_tiff_dataset_register, mapnik::CreateStatic>,
+      private mapnik::util::noncopyable
+{
+    friend class mapnik::CreateStatic<mmapped_tiff_dataset_register>;
+
+    struct counted_dataset
+    {
+        counted_dataset(std::string const& filepath)
+            : dataset_(filepath), counter_(1)
+        {
+        }
+
+        mmapped_tiff_dataset dataset_;
+        unsigned counter_;
+    };
+
+    std::map<std::string, counted_dataset> datasets_;
+#ifdef MAPNIK_THREADSAFE
+    std::mutex mutex_;
+#endif
+
+    mmapped_tiff_dataset_register() = default;
+    ~mmapped_tiff_dataset_register() = default;
+
+    void decrement(std::string const& filepath)
+    {
+#ifdef MAPNIK_THREADSAFE
+        std::lock_guard<std::mutex> lock(mutex_);
+#endif
+        auto it = datasets_.find(filepath);
+        if (--it->second.counter_ == 0)
+        {
+            datasets_.erase(it);
+        }
+    }
+
+public:
+    struct handle
+    {
+        std::string const& name;
+        std::string const& mapping;
+
+        handle(std::string const& name, mmapped_tiff_dataset & dataset)
+            : name(name), mapping(dataset.tiff_file_mapping.name)
+        {
+        }
+
+        ~handle()
+        {
+            mmapped_tiff_dataset_register::instance().decrement(name);
+        }
+    };
+
+    friend class handle;
+
+    std::shared_ptr<handle> get(std::string const& filepath)
+    {
+#ifdef MAPNIK_THREADSAFE
+        std::lock_guard<std::mutex> lock(mutex_);
+#endif
+        auto it = datasets_.find(filepath);
+        if (it != datasets_.end())
+        {
+            counted_dataset & cd = it->second;
+            cd.counter_++;
+            return std::make_shared<handle>(filepath, cd.dataset_);
+        }
+
+        auto ret = datasets_.emplace(filepath, filepath);
+        if (ret.second)
+        {
+            return std::make_shared<handle>(filepath, ret.first->second.dataset_);
+        }
+
+        throw std::runtime_error("mmapped_tiff_dataset_register: error allocating new item.");
+    }
 };
 
 #endif // GDAL_DATASOURCE_MMAP_HPP
