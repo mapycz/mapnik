@@ -35,7 +35,10 @@
 #include <gdal_priv.h>
 
 #include <sstream>
+
+#ifdef MAPNIK_THREADSAFE
 #include <mutex>
+#endif
 
 struct mmapped_vsifile
 {
@@ -101,14 +104,13 @@ struct mmapped_tiff_dataset
 };
 
 class mmapped_tiff_dataset_register
-    : public mapnik::singleton<mmapped_tiff_dataset_register, mapnik::CreateStatic>,
-      private mapnik::util::noncopyable
+    : public mapnik::singleton<mmapped_tiff_dataset_register, mapnik::CreateStatic>
 {
     friend class mapnik::CreateStatic<mmapped_tiff_dataset_register>;
 
-    struct counted_dataset
+    struct ref_counted_dataset
     {
-        counted_dataset(std::string const& filepath)
+        ref_counted_dataset(std::string const& filepath)
             : dataset_(filepath), counter_(1)
         {
         }
@@ -117,13 +119,15 @@ class mmapped_tiff_dataset_register
         unsigned counter_;
     };
 
-    std::map<std::string, counted_dataset> datasets_;
+    std::map<std::string, ref_counted_dataset> datasets_;
 #ifdef MAPNIK_THREADSAFE
     std::mutex mutex_;
 #endif
 
     mmapped_tiff_dataset_register() = default;
     ~mmapped_tiff_dataset_register() = default;
+
+    mmapped_tiff_dataset_register(mmapped_tiff_dataset_register const &) = delete;
 
     void decrement(std::string const& filepath)
     {
@@ -138,15 +142,20 @@ class mmapped_tiff_dataset_register
     }
 
 public:
-    struct handle
+    class handle
     {
-        std::string const& name;
-        std::string const& mapping;
+        friend class mmapped_tiff_dataset_register;
 
         handle(std::string const& name, mmapped_tiff_dataset & dataset)
             : name(name), mapping(dataset.tiff_file_mapping.name)
         {
         }
+
+        handle(handle const &) = delete;
+
+    public:
+        std::string const& name;
+        std::string const& mapping;
 
         ~handle()
         {
@@ -156,7 +165,7 @@ public:
 
     friend class handle;
 
-    std::shared_ptr<handle> get(std::string const& filepath)
+    std::unique_ptr<handle> get(std::string const& filepath)
     {
 #ifdef MAPNIK_THREADSAFE
         std::lock_guard<std::mutex> lock(mutex_);
@@ -164,15 +173,15 @@ public:
         auto it = datasets_.find(filepath);
         if (it != datasets_.end())
         {
-            counted_dataset & cd = it->second;
-            cd.counter_++;
-            return std::make_shared<handle>(filepath, cd.dataset_);
+            ref_counted_dataset & rfd = it->second;
+            rfd.counter_++;
+            return std::unique_ptr<handle>(new handle(filepath, rfd.dataset_));
         }
 
         auto ret = datasets_.emplace(filepath, filepath);
         if (ret.second)
         {
-            return std::make_shared<handle>(filepath, ret.first->second.dataset_);
+            return std::unique_ptr<handle>(new handle(filepath, ret.first->second.dataset_));
         }
 
         throw std::runtime_error("mmapped_tiff_dataset_register: error allocating new item.");

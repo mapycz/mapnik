@@ -58,7 +58,7 @@ public:
 private:
     void mmap_tiff();
 
-    std::shared_ptr<mmapped_tiff_dataset_register::handle> mmapped_dataset_;
+    std::unique_ptr<mmapped_tiff_dataset_register::handle> mmapped_dataset_;
     std::unique_ptr<GDALDataset, decltype(&GDALClose)> dataset_;
     mapnik::box2d<double> extent_;
     std::string dataset_name_;
