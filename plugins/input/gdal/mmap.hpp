@@ -178,7 +178,10 @@ public:
             return std::unique_ptr<handle>(new handle(filepath, rfd.dataset_));
         }
 
-        auto ret = datasets_.emplace(filepath, filepath);
+        auto ret = datasets_.emplace(
+            std::piecewise_construct, // To fix compilation with GCC 4.9
+            std::forward_as_tuple(filepath),
+            std::forward_as_tuple(filepath));
         if (ret.second)
         {
             return std::unique_ptr<handle>(new handle(filepath, ret.first->second.dataset_));
