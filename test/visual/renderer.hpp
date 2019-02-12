@@ -309,11 +309,12 @@ public:
         return ren.render(map, scale_factor);
     }
 
-    image_type render(mapnik::Map & map, double scale_factor, map_size const & tiles) const
+    image_type render(mapnik::Map const & map, double scale_factor, map_size const & tiles) const
     {
-        mapnik::box2d<double> box = map.get_current_extent();
-        image_type image(map.width(), map.height());
-        map.resize(image.width() / tiles.width, image.height() / tiles.height);
+        mapnik::Map tile_map(map);
+        mapnik::box2d<double> box = tile_map.get_current_extent();
+        image_type image(tile_map.width(), tile_map.height());
+        tile_map.resize(image.width() / tiles.width, image.height() / tiles.height);
         double tile_box_width = box.width() / tiles.width;
         double tile_box_height = box.height() / tiles.height;
         for (std::size_t tile_y = 0; tile_y < tiles.height; tile_y++)
@@ -325,8 +326,8 @@ public:
                     box.miny() + tile_y * tile_box_height,
                     box.minx() + (tile_x + 1) * tile_box_width,
                     box.miny() + (tile_y + 1) * tile_box_height);
-                map.zoom_to_box(tile_box);
-                image_type tile(ren.render(map, scale_factor));
+                tile_map.zoom_to_box(tile_box);
+                image_type tile(ren.render(tile_map, scale_factor));
                 set_rectangle(tile, image, tile_x * tile.width(), (tiles.height - 1 - tile_y) * tile.height());
             }
         }
