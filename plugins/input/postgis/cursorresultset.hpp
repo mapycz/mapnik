@@ -25,14 +25,16 @@
 
 #include <mapnik/debug.hpp>
 
-#include "connection.hpp"
+#include "connection_manager.hpp"
 #include "resultset.hpp"
 
 class CursorResultSet : public IResultSet, private mapnik::util::noncopyable
 {
 public:
-    CursorResultSet(std::shared_ptr<Connection> const &conn, std::string cursorName, int fetch_count)
-        : conn_(conn),
+    CursorResultSet(std::unique_ptr<ConnectionManager::PoolType::handle> && conn_handle,
+                    std::string cursorName,
+                    int fetch_count)
+        : conn_handle_(std::move(conn_handle)),
           cursorName_(cursorName),
           fetch_size_(fetch_count),
           is_closed_(false)
@@ -57,9 +59,9 @@ public:
 
             MAPNIK_LOG_DEBUG(postgis) << "postgis_cursor_resultset: " << s.str();
 
-            conn_->execute(s.str());
+            conn_handle_->get().execute(s.str());
             is_closed_ = true;
-            conn_.reset();
+            conn_handle_.reset();
         }
     }
 
@@ -129,13 +131,13 @@ private:
 
         MAPNIK_LOG_DEBUG(postgis) << "postgis_cursor_resultset: " << s.str();
 
-        rs_ = conn_->executeQuery(s.str());
+        rs_ = conn_handle_->get().executeQuery(s.str());
         is_closed_ = false;
 
         MAPNIK_LOG_DEBUG(postgis) << "postgis_cursor_resultset: FETCH result (" << cursorName_ << "): " << rs_->size() << " rows";
     }
 
-    std::shared_ptr<Connection> conn_;
+    std::unique_ptr<ConnectionManager::PoolType::handle> conn_handle_;
     std::string cursorName_;
     std::shared_ptr<ResultSet> rs_;
     int fetch_size_;

@@ -38,11 +38,12 @@ class AsyncResultSet : public IResultSet, private mapnik::util::noncopyable
 {
 public:
     AsyncResultSet(postgis_processor_context_ptr const& ctx,
-                     std::shared_ptr< Pool<Connection,ConnectionCreator> > const& pool,
-                     std::shared_ptr<Connection> const& conn, std::string const& sql )
+                     std::shared_ptr<ConnectionManager::PoolType> const& pool,
+                     std::unique_ptr<ConnectionManager::PoolType::handle> && conn_handle,
+                     std::string const& sql)
         : ctx_(ctx),
           pool_(pool),
-          conn_(conn),
+          conn_handle_(std::move(conn_handle)),
           sql_(sql),
           is_closed_(false)
     {
@@ -58,12 +59,13 @@ public:
 
     void abort()
     {
-        if(conn_ && conn_->isPending() )
+        if(conn_handle_ && conn_handle_->get().isPending())
         {
-            MAPNIK_LOG_DEBUG(postgis) << "AsyncResultSet: aborting pending connection - " << conn_.get();
+            Connection & conn = conn_handle_->get();
+            MAPNIK_LOG_DEBUG(postgis) << "AsyncResultSet: aborting pending connection - " << &conn;
             // there is no easy way to abort a pending connection, so we close it : this will ensure that
             // the connection will be recycled in the pool
-            conn_->close();
+            conn.close();
         }
     }
 
@@ -73,13 +75,13 @@ public:
         {
             rs_.reset();
             is_closed_ = true;
-            if (conn_)
+            if (conn_handle_)
             {
-                if(conn_->isPending())
+                if(conn_handle_->get().isPending())
                 {
                     abort();
                 }
-                conn_.reset();
+                conn_handle_.reset();
             }
         }
     }
@@ -94,10 +96,11 @@ public:
         bool next_res = false;
         if (!rs_)
         {
+            Connection & conn = conn_handle_->get();
             // Ensure connection is valid
-            if (conn_ && conn_->isOK())
+            if (conn_handle_ && conn_handle_->get().isOK())
             {
-                rs_ = conn_->getAsyncResult();
+                rs_ = conn_handle_->get().getAsyncResult();
             }
             else
             {
@@ -109,7 +112,7 @@ public:
         if (!next_res)
         {
             rs_.reset();
-            rs_ = conn_->getNextAsyncResult();
+            rs_ = conn_handle_->get().getNextAsyncResult();
             if (rs_ && rs_->next())
             {
                 return true;
@@ -162,18 +165,19 @@ public:
 
 private:
     postgis_processor_context_ptr ctx_;
-    std::shared_ptr< Pool<Connection,ConnectionCreator> > pool_;
-    std::shared_ptr<Connection> conn_;
+    std::shared_ptr<ConnectionManager::PoolType> pool_;
+    std::unique_ptr<ConnectionManager::PoolType::handle> conn_handle_;
     std::string sql_;
     std::shared_ptr<ResultSet> rs_;
     bool is_closed_;
 
     void prepare()
     {
-        conn_ = pool_->borrowObject();
-        if (conn_ && conn_->isOK())
+        conn_handle_ = pool_->borrow();
+        Connection & conn = conn_handle_->get();
+        if (conn.isOK())
         {
-            conn_->executeAsyncQuery(sql_, 1);
+            conn.executeAsyncQuery(sql_, 1);
         }
         else
         {

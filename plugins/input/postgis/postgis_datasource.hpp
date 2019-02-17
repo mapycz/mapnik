@@ -86,7 +86,7 @@ private:
                                 double pixel_height,
                                 mapnik::attributes const& vars) const;
     std::string populate_tokens(std::string const& sql) const;
-    std::shared_ptr<IResultSet> get_resultset(std::shared_ptr<Connection> &conn, std::string const& sql, CnxPool_ptr const& pool, processor_context_ptr ctx= processor_context_ptr()) const;
+    std::shared_ptr<IResultSet> get_resultset(conn_handle_ptr && conn_handle, std::string const& sql, CnxPool_ptr const& pool, processor_context_ptr ctx= processor_context_ptr()) const;
     static const std::string GEOMETRY_COLUMNS;
     static const std::string SPATIAL_REF_SYS;
     static const double FMAX;

@@ -58,7 +58,6 @@ const std::string pgraster_datasource::RASTER_COLUMNS = "raster_columns";
 const std::string pgraster_datasource::RASTER_OVERVIEWS = "raster_overviews";
 const std::string pgraster_datasource::SPATIAL_REF_SYS = "spatial_ref_system";
 
-using std::shared_ptr;
 using mapnik::attribute_descriptor;
 using mapnik::value_integer;
 
@@ -143,13 +142,13 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
     if (pool)
     {
-        shared_ptr<Connection> conn = pool->borrowObject();
-        if (!conn) return;
+        conn_handle_ptr handle = pool->borrow();
+        Connection & conn = handle->get();
 
-        if (conn->isOK())
+        if (conn.isOK())
         {
 
-            desc_.set_encoding(conn->client_encoding());
+            desc_.set_encoding(conn.client_encoding());
 
             if (raster_table_.empty())
             {
@@ -233,7 +232,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
                     }
                     MAPNIK_LOG_DEBUG(pgraster) <<
                       "pgraster_datasource: running query " << s.str();
-                    shared_ptr<ResultSet> rs = conn->executeQuery(s.str());
+                    std::shared_ptr<ResultSet> rs = conn.executeQuery(s.str());
                     if (rs->next())
                     {
                         geometryColumn_ = rs->getValue("col");
@@ -293,7 +292,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
                     s << "SELECT ST_SRID(\"" << geometryColumn_ << "\") AS srid FROM "
                       << populate_tokens(table_) << " WHERE \"" << geometryColumn_ << "\" IS NOT NULL LIMIT 1;";
 
-                    shared_ptr<ResultSet> rs = conn->executeQuery(s.str());
+                    std::shared_ptr<ResultSet> rs = conn.executeQuery(s.str());
                     if (rs->next())
                     {
                         const char* srid_c = rs->getValue("srid");
@@ -350,7 +349,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
                      " and r.r_raster_column = o.o_raster_column"
                      " ORDER BY scl ASC";
                 MAPNIK_LOG_DEBUG(pgraster) << "pgraster_datasource: running query " << s.str();
-                shared_ptr<ResultSet> rs = conn->executeQuery(s.str());
+                std::shared_ptr<ResultSet> rs = conn.executeQuery(s.str());
                 while (rs->next())
                 {
                   pgraster_overview ov = pgraster_overview();
@@ -405,7 +404,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
                 }
                 s << "ORDER BY a.attnum";
 
-                shared_ptr<ResultSet> rs_key = conn->executeQuery(s.str());
+                std::shared_ptr<ResultSet> rs_key = conn.executeQuery(s.str());
                 if (rs_key->next())
                 {
                     unsigned int result_rows = rs_key->size();
@@ -476,7 +475,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
             std::ostringstream s;
             s << "SELECT * FROM " << populate_tokens(table_) << " LIMIT 0";
 
-            shared_ptr<ResultSet> rs = conn->executeQuery(s.str());
+            std::shared_ptr<ResultSet> rs = conn.executeQuery(s.str());
             int count = rs->getNumFields();
             bool found_key_field = false;
             for (int i = 0; i < count; ++i)
@@ -500,7 +499,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
                         std::ostringstream type_s;
                         type_s << "SELECT oid, typname FROM pg_type WHERE oid = " << type_oid;
 
-                        shared_ptr<ResultSet> rs_oid = conn->executeQuery(type_s.str());
+                        std::shared_ptr<ResultSet> rs_oid = conn.executeQuery(type_s.str());
                         if (rs_oid->next())
                         {
                             error_s << rs_oid->getValue("typname")
@@ -547,7 +546,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
                         s.str("");
                         s << "SELECT oid, typname FROM pg_type WHERE oid = " << type_oid;
 
-                        shared_ptr<ResultSet> rs_oid = conn->executeQuery(s.str());
+                        std::shared_ptr<ResultSet> rs_oid = conn.executeQuery(s.str());
                         if (rs_oid->next())
                         {
                             std::string typname(rs_oid->getValue("typname"));
@@ -573,7 +572,7 @@ pgraster_datasource::pgraster_datasource(parameters const& params)
         }
 
         // Close explicitly the connection so we can 'fork()' without sharing open connections
-        conn->close();
+        conn.close();
 
     }
 }
@@ -585,19 +584,22 @@ pgraster_datasource::~pgraster_datasource()
         CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
         if (pool)
         {
-            try {
-              shared_ptr<Connection> conn = pool->borrowObject();
-              if (conn)
-              {
-                  conn->close();
-              }
-            } catch (mapnik::datasource_exception const& ex) {
-              // happens when borrowObject tries to
-              // create a new connection and fails.
-              // In turn, new connection would be needed
-              // when our broke and was thus no good to
-              // be borrowed
-              // See https://github.com/mapnik/mapnik/issues/2191
+            try
+            {
+                conn_handle_ptr handle = pool->try_borrow();
+                if (handle)
+                {
+                    Connection & conn = handle->get();
+                    conn.close();
+                }
+            }
+            catch (mapnik::datasource_exception const& ex) {
+                // happens when borrow tries to
+                // create a new connection and fails.
+                // In turn, new connection would be needed
+                // when our broke and was thus no good to
+                // be borrowed
+                // See https://github.com/mapnik/mapnik/issues/2191
             }
         }
     }
@@ -728,8 +730,9 @@ std::string pgraster_datasource::populate_tokens(std::string const& sql, double 
 }
 
 
-std::shared_ptr<IResultSet> pgraster_datasource::get_resultset(std::shared_ptr<Connection> &conn, std::string const& sql, CnxPool_ptr const& pool, processor_context_ptr ctx) const
+std::shared_ptr<IResultSet> pgraster_datasource::get_resultset(conn_handle_ptr && conn_handle, std::string const& sql, CnxPool_ptr const& pool, processor_context_ptr ctx) const
 {
+    Connection & conn = conn_handle->get();
 
     if (!ctx)
     {
@@ -738,42 +741,31 @@ std::shared_ptr<IResultSet> pgraster_datasource::get_resultset(std::shared_ptr<C
         {
             // cursor
             std::ostringstream csql;
-            std::string cursor_name = conn->new_cursor_name();
+            std::string cursor_name = conn.new_cursor_name();
 
             csql << "DECLARE " << cursor_name << " BINARY INSENSITIVE NO SCROLL CURSOR WITH HOLD FOR " << sql << " FOR READ ONLY";
 
-            if (! conn->execute(csql.str()))
+            if (! conn.execute(csql.str()))
             {
                 // TODO - better error
                 throw mapnik::datasource_exception("Pgraster Plugin: error creating cursor for data select." );
             }
 
-            return std::make_shared<CursorResultSet>(conn, cursor_name, cursor_fetch_size_);
+            return std::make_shared<CursorResultSet>(std::move(conn_handle), cursor_name, cursor_fetch_size_);
 
         }
         else
         {
             // no cursor
-            return conn->executeQuery(sql, 1);
+            return conn.executeQuery(sql, 1);
         }
     }
     else
     {   // asynchronous requests
-
         std::shared_ptr<postgis_processor_context> pgis_ctxt = std::static_pointer_cast<postgis_processor_context>(ctx);
-        if (conn)
-        {
-            // lauch async req & create asyncresult with conn
-            conn->executeAsyncQuery(sql, 1);
-            return std::make_shared<AsyncResultSet>(pgis_ctxt, pool, conn, sql);
-        }
-        else
-        {
-            // create asyncresult  with  null connection
-            std::shared_ptr<AsyncResultSet> res = std::make_shared<AsyncResultSet>(pgis_ctxt, pool,  conn, sql);
-            pgis_ctxt->add_request(res);
-            return res;
-        }
+        // lauch async req & create asyncresult with conn
+        conn.executeAsyncQuery(sql, 1);
+        return std::make_shared<AsyncResultSet>(pgis_ctxt, pool, std::move(conn_handle), sql);
     }
 }
 
@@ -824,7 +816,7 @@ featureset_ptr pgraster_datasource::features_with_context(query const& q,process
 
     if (pool)
     {
-        shared_ptr<Connection> conn;
+        conn_handle_ptr handle;
 
         if ( asynchronous_request_ )
         {
@@ -832,15 +824,15 @@ featureset_ptr pgraster_datasource::features_with_context(query const& q,process
             std::shared_ptr<postgis_processor_context> pgis_ctxt = std::static_pointer_cast<postgis_processor_context>(proc_ctx);
             if ( pgis_ctxt->num_async_requests_ < max_async_connections_ )
             {
-                conn = pool->borrowObject();
+                handle = pool->borrow();
                 pgis_ctxt->num_async_requests_++;
             }
         }
         else
         {
             // Always get a connection in synchronous mode
-            conn = pool->borrowObject();
-            if(!conn )
+            handle = pool->borrow();
+            if(!handle )
             {
                 throw mapnik::datasource_exception("Pgraster Plugin: "
                     "All connections from the pool have been taken. "
@@ -990,7 +982,7 @@ featureset_ptr pgraster_datasource::features_with_context(query const& q,process
         MAPNIK_LOG_DEBUG(pgraster) << "pgraster_datasource: "
           "features query: " << s.str();
 
-        std::shared_ptr<IResultSet> rs = get_resultset(conn, s.str(), pool, proc_ctx);
+        std::shared_ptr<IResultSet> rs = get_resultset(std::move(handle), s.str(), pool, proc_ctx);
         return std::make_shared<pgraster_featureset>(rs, ctx,
                   desc_.get_encoding(), !key_field_.empty(),
                   band_ ? 1 : 0 // whatever band number is given we'd have
@@ -1012,10 +1004,10 @@ featureset_ptr pgraster_datasource::features_at_point(coord2d const& pt, double 
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
     if (pool)
     {
-        shared_ptr<Connection> conn = pool->borrowObject();
-        if (!conn) return mapnik::make_invalid_featureset();
+        conn_handle_ptr handle = pool->borrow();
+        Connection & conn = handle->get();
 
-        if (conn->isOK())
+        if (conn.isOK())
         {
             if (geometryColumn_.empty())
             {
@@ -1079,7 +1071,7 @@ featureset_ptr pgraster_datasource::features_at_point(coord2d const& pt, double 
                 s << " LIMIT " << row_limit_;
             }
 
-            std::shared_ptr<IResultSet> rs = get_resultset(conn, s.str(), pool);
+            std::shared_ptr<IResultSet> rs = get_resultset(std::move(handle), s.str(), pool);
             return std::make_shared<pgraster_featureset>(rs, ctx, desc_.get_encoding(), !key_field_.empty());
         }
     }
@@ -1097,9 +1089,9 @@ box2d<double> pgraster_datasource::envelope() const
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
     if (pool)
     {
-        shared_ptr<Connection> conn = pool->borrowObject();
-        if (!conn) return extent_;
-        if (conn->isOK())
+        conn_handle_ptr handle = pool->borrow();
+        Connection & conn = handle->get();
+        if (conn.isOK())
         {
             std::ostringstream s;
 
@@ -1179,7 +1171,7 @@ box2d<double> pgraster_datasource::envelope() const
                 }
             }
 
-            shared_ptr<ResultSet> rs = conn->executeQuery(s.str());
+            std::shared_ptr<ResultSet> rs = conn.executeQuery(s.str());
             if (rs->next() && ! rs->isNull(0))
             {
                 double lox, loy, hix, hiy;

@@ -161,16 +161,17 @@ static std::string numeric2string(const char* buf)
 
 namespace mapnik {
 
-template <typename Connection>
-void pgsql2sqlite(Connection conn,
+void pgsql2sqlite(conn_handle_ptr && conn_handle,
                   std::string const& query,
                   std::string const& output_table_name,
                   std::string const& output_filename)
 {
+    Connection & conn = conn_handle->get();
+
     namespace sqlite = mapnik::sqlite;
     sqlite::database db(output_filename);
 
-    std::shared_ptr<ResultSet> rs = conn->executeQuery("select * from (" + query + ") as query limit 0;");
+    std::shared_ptr<ResultSet> rs = conn.executeQuery("select * from (" + query + ") as query limit 0;");
     int count = rs->getNumFields();
 
     std::ostringstream select_sql;
@@ -207,7 +208,7 @@ void pgsql2sqlite(Connection conn,
         geom_col_sql <<" and f_table_schema='"<< schema_name <<"'";
     }
 
-    rs = conn->executeQuery(geom_col_sql.str());
+    rs = conn.executeQuery(geom_col_sql.str());
 
     int srid = -1;
     std::string geom_col = "UNKNOWN";
@@ -235,9 +236,9 @@ void pgsql2sqlite(Connection conn,
     std::string cursor_name("my_cursor");
 
     cursor_sql << "DECLARE " << cursor_name << " BINARY INSENSITIVE NO SCROLL CURSOR WITH HOLD FOR " << select_sql_str << " FOR READ ONLY";
-    conn->execute(cursor_sql.str());
+    conn.execute(cursor_sql.str());
 
-    std::shared_ptr<CursorResultSet> cursor(new CursorResultSet(conn,cursor_name,10000));
+    std::shared_ptr<CursorResultSet> cursor(new CursorResultSet(std::move(conn_handle), cursor_name, 10000));
 
     unsigned num_fields = cursor->getNumFields();
 
@@ -295,7 +296,7 @@ void pgsql2sqlite(Connection conn,
     create_sql << ");";
     output_table_insert_sql +=")";
 
-    std::cout << "client_encoding=" << conn->client_encoding() << "\n";
+    std::cout << "client_encoding=" << conn.client_encoding() << "\n";
     std::cout << "geometry_column=" << geom_col << "(" << geom_type
               <<  ") srid=" << srid << " oid=" << geometry_oid << "\n";
 

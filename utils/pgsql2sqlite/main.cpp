@@ -97,9 +97,11 @@ int main ( int argc, char** argv)
         if (vm.count("password")) password = vm["password"].as<std::string>();
 
         ConnectionCreator<Connection> creator(host,port,dbname,user,password,connect_timeout);
+        ConnectionManager::instance().registerPool(creator, 1, 1);
+        std::shared_ptr<ConnectionManager::PoolType> pool = ConnectionManager::instance().getPool(creator.id());
         try
         {
-            std::shared_ptr<Connection> conn(creator());
+            conn_handle_ptr handle = pool->borrow();
 
             std::string query = vm["query"].as<std::string>();
             std::string output_table_name = vm.count("table") ? vm["table"].as<std::string>() : mapnik::sql_utils::table_from_sql(query);
@@ -107,7 +109,7 @@ int main ( int argc, char** argv)
 
             std::cout << "output_table : " << output_table_name << "\n";
 
-            mapnik::pgsql2sqlite(conn,query,output_table_name,output_file);
+            mapnik::pgsql2sqlite(std::move(handle), query, output_table_name, output_file);
         }
         catch (mapnik::datasource_exception & ex)
         {

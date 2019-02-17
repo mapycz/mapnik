@@ -26,7 +26,7 @@
 #include "connection.hpp"
 
 // mapnik
-#include <mapnik/pool.hpp>
+#include <mapnik/util/connection_pool.hpp>
 #include <mapnik/util/singleton.hpp>
 
 // boost
@@ -38,7 +38,6 @@
 #include <sstream>
 #include <memory>
 
-using mapnik::Pool;
 using mapnik::singleton;
 using mapnik::CreateStatic;
 
@@ -102,7 +101,7 @@ class ConnectionManager : public singleton <ConnectionManager,CreateStatic>
 {
 
 public:
-    using PoolType = Pool<Connection,ConnectionCreator>;
+    using PoolType = mapnik::connection_pool<Connection, ConnectionCreator>;
 
 private:
     friend class CreateStatic<ConnectionManager>;
@@ -129,7 +128,7 @@ public:
         {
             return pools_.insert(
                 std::make_pair(creator.id(),
-                               std::make_shared<PoolType>(creator,initialSize,maxSize))).second;
+                               std::make_shared<PoolType>(creator, initialSize, maxSize))).second;
         }
         return false;
 
@@ -154,5 +153,7 @@ private:
     ConnectionManager(const ConnectionManager&);
     ConnectionManager& operator=(const ConnectionManager);
 };
+
+using conn_handle_ptr = std::unique_ptr<ConnectionManager::PoolType::handle>;
 
 #endif // POSTGIS_CONNECTION_MANAGER_HPP
