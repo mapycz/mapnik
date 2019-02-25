@@ -48,11 +48,23 @@ void  agg_renderer<T0,T1>::process(shield_symbolizer const& sym,
         common_.query_extent_, tr,
         common_.symbol_cache_));
 
+    value_double gamma = get<value_double, keys::gamma>(sym, feature, common_.vars_);
+    gamma_method_enum gamma_method = get<gamma_method_enum, keys::gamma_method>(sym, feature, common_.vars_);
+    std::unique_ptr<gamma_lut<>> gamma_table;
+
+    if (gamma != gamma_ || gamma_method != gamma_method_)
+    {
+        gamma_table = std::make_unique<gamma_lut<>>(gamma, gamma_method);
+        gamma_method_ = gamma_method;
+        gamma_ = gamma;
+    }
+
     halo_rasterizer_enum halo_rasterizer = get<halo_rasterizer_enum>(sym, keys::halo_rasterizer, feature, common_.vars_, HALO_RASTERIZER_FULL);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_, src_over);
     agg_text_renderer<T0> ren(buffers_.top().get(),
                               halo_rasterizer,
+                              gamma_table,
                               comp_op,
                               halo_comp_op,
                               common_.scale_factor_,

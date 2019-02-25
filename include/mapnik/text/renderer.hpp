@@ -31,6 +31,7 @@
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/value_types.hpp>
 #include <mapnik/pixel_position.hpp>
+#include <mapnik/agg_helpers.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -157,6 +158,7 @@ class agg_text_renderer : public text_renderer
 public:
     using pixmap_type = T;
     agg_text_renderer (pixmap_type & pixmap, halo_rasterizer_e rasterizer,
+                       std::unique_ptr<gamma_lut<>> const & gamma_table,
                        composite_mode_e comp_op = src_over,
                        composite_mode_e halo_comp_op = src_over,
                        double scale_factor = 1.0,
@@ -165,6 +167,7 @@ public:
 private:
     pixmap_type & pixmap_;
     halo_cache halo_cache_;
+    std::unique_ptr<gamma_lut<>> const & gamma_table_;
 
     void render_halo(unsigned char *buffer,
                      unsigned width,

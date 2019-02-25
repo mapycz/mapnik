@@ -1378,6 +1378,8 @@ void map_parser::parse_text_symbolizer(rule & rule, xml_node const& node)
             set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
             set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle, node);
             set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle_distance, node);
+            set_symbolizer_property<symbolizer_base, value_double>(sym, keys::gamma, node);
+            set_symbolizer_property<symbolizer_base, gamma_method_enum>(sym, keys::gamma_method, node);
             rule.append(std::move(sym));
         }
     }
@@ -1423,6 +1425,8 @@ void map_parser::parse_shield_symbolizer(rule & rule, xml_node const& node)
         set_symbolizer_property<symbolizer_base, std::string>(sym, keys::collision_cache_insert, node);
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle, node);
         set_symbolizer_property<symbolizer_base,value_double>(sym, keys::max_line_angle_distance, node);
+        set_symbolizer_property<symbolizer_base, value_double>(sym, keys::gamma, node);
+        set_symbolizer_property<symbolizer_base, gamma_method_enum>(sym, keys::gamma_method, node);
 
         std::string file = node.get_attr<std::string>("file");
         if (file.empty())
