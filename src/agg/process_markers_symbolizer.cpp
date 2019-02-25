@@ -134,8 +134,8 @@ void agg_renderer<T0,T1>::process_marker(Sym const& sym,
 
     ras_ptr->reset();
 
-    double gamma = get<value_double, keys::gamma>(sym, feature, common_.vars_);
-    gamma_method_enum gamma_method = get<gamma_method_enum, keys::gamma_method>(sym, feature, common_.vars_);
+    double gamma = get<value_double, keys::stroke_gamma>(sym, feature, common_.vars_);
+    gamma_method_enum gamma_method = get<gamma_method_enum, keys::stroke_gamma_method>(sym, feature, common_.vars_);
     if (gamma != gamma_ || gamma_method != gamma_method_)
     {
         set_gamma_method(ras_ptr, gamma, gamma_method);
