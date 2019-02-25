@@ -218,6 +218,25 @@
             "default-value": 15,
             "default-meaning": "The step is 15 degrees.",
             "doc": "An angle in degrees by which angle of placement will be iterated. The first placement is at exact position given by `angle` option. Subsequent placements oscilate around `angle` by `n * step` angle, where integer `n` grows until `tolerance` is reached. This option is intended for `placement-type` `angle`."
+        },
+        "stroke-gamma": {
+            "type": "float",
+            "default-value": 1.0,
+            "default-meaning": "Fully antialiased.",
+            "range": "0-1",
+            "doc": "Level of antialiasing of stroke line."
+        },
+        "stroke-gamma-method": {
+            "type": [
+                "power",
+                "linear",
+                "none",
+                "threshold",
+                "multiply"
+            ],
+            "default-value": "power",
+            "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
+            "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
         }
     },
     "map": {
@@ -556,23 +575,10 @@
                 "default-meaning": "The line endings will be rendered using a butt look."
             },
             "stroke-gamma": {
-                "type": "float",
-                "default-value": 1.0,
-                "default-meaning": "Fully antialiased.",
-                "range": "0-1",
-                "doc": "Level of antialiasing of stroke line."
+                "see-also": "stroke-gamma"
             },
             "stroke-gamma-method": {
-                "type": [
-                    "power",
-                    "linear",
-                    "none",
-                    "threshold",
-                    "multiply"
-                ],
-                "default-value": "power",
-                "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
-                "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
+                "see-also": "stroke-gamma-method"
             },
             "stroke-dasharray": {
                 "type": "numbers",
@@ -859,6 +865,12 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "stroke-gamma": {
+                "see-also": "stroke-gamma"
+            },
+            "stroke-gamma-method": {
+                "see-also": "stroke-gamma-method"
             },
             "collision-cache-insert": {
                 "see-also": "collision-cache-insert"
