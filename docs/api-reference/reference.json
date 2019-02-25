@@ -237,6 +237,25 @@
             "default-value": "power",
             "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
             "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
+        },
+        "gamma": {
+            "type": "float",
+            "default-value": 1.0,
+            "default-meaning": "Fully antialiased.",
+            "range": "0-1",
+            "doc": "Level of antialiasing of polygon edges."
+        },
+        "gamma-method": {
+            "type": [
+                "power",
+                "linear",
+                "none",
+                "threshold",
+                "multiply"
+            ],
+            "default-value": "power",
+            "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
+            "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
         }
     },
     "map": {
@@ -472,23 +491,10 @@
                 "see-also": "opacity"
             },
             "gamma": {
-                "type": "float",
-                "default-value": 1.0,
-                "default-meaning": "Fully antialiased.",
-                "range": "0-1",
-                "doc": "Level of antialiasing of polygon edges."
+                "see-also": "gamma"
             },
             "gamma-method": {
-                "type": [
-                    "power",
-                    "linear",
-                    "none",
-                    "threshold",
-                    "multiply"
-                ],
-                "default-value": "power",
-                "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
-                "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapnik/mapnik/blob/master/deps/agg/include/agg_gamma_functions."
+                "see-also": "gamma-method"
             },
             "clip": {
                 "see-also": "clip"
@@ -1945,6 +1951,12 @@
             },
             "opacity": {
                 "see-also": "opacity"
+            },
+            "gamma": {
+                "see-also": "gamma"
+            },
+            "gamma-method": {
+                "see-also": "gamma-method"
             },
             "collision-cache-insert": {
                 "see-also": "collision-cache-insert"
