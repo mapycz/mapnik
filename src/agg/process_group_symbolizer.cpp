@@ -64,8 +64,7 @@ struct thunk_renderer<image_rgba8> : render_thunk_list_dispatch
                    buffer_type &buf,
                    renderer_common &common)
         : ren_(ren), ras_ptr_(ras_ptr), buf_(buf), common_(common),
-          gamma_table_(),
-          tex_(buf, HALO_RASTERIZER_FULL, gamma_table_, src_over, src_over,
+          tex_(buf, HALO_RASTERIZER_FULL, src_over, src_over,
                common.scale_factor_, common.font_manager_.get_stroker())
     {}
 
@@ -142,7 +141,6 @@ private:
     std::unique_ptr<rasterizer> const& ras_ptr_;
     buffer_type & buf_;
     renderer_common &common_;
-    std::unique_ptr<gamma_lut<>> gamma_table_;
     text_renderer_type tex_;
 };
 

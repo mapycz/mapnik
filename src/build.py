@@ -235,6 +235,7 @@ source = Split(
     text/glyph_positions.cpp
     text/properties_util.cpp
     text/renderer.cpp
+    text/compositing.cpp
     text/text_properties.cpp
     text/font_feature_settings.cpp
     text/formatting/base.cpp

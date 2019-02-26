@@ -370,15 +370,11 @@ void composite_color_glyph_halo(T & pixmap,
 template <typename T>
 agg_text_renderer<T>::agg_text_renderer (pixmap_type & pixmap,
                                          halo_rasterizer_e rasterizer,
-                                         std::unique_ptr<gamma_lut<>> const & gamma_table,
                                          composite_mode_e comp_op,
                                          composite_mode_e halo_comp_op,
                                          double scale_factor,
                                          stroker_ptr stroker)
-    : text_renderer(rasterizer, comp_op, halo_comp_op,
-                    scale_factor, stroker),
-      pixmap_(pixmap),
-      gamma_table_(gamma_table)
+    : text_renderer(rasterizer, comp_op, halo_comp_op, scale_factor, stroker), pixmap_(pixmap)
 {}
 
 template <typename T>
@@ -447,29 +443,13 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                     FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
                     if (bit->bitmap.pixel_mode != FT_PIXEL_MODE_BGRA)
                     {
-                        if (gamma_table_)
-                        {
-                            composite_bitmap(pixmap_,
-                                             &bit->bitmap,
-                                             halo_fill,
-                                             bit->left,
-                                             height - bit->top,
-                                             halo_opacity,
-                                             halo_comp_op_,
-                                             *gamma_table_);
-                        }
-                        else
-                        {
-                            const noop_gamma_func gamma;
-                            composite_bitmap(pixmap_,
-                                             &bit->bitmap,
-                                             halo_fill,
-                                             bit->left,
-                                             height - bit->top,
-                                             halo_opacity,
-                                             halo_comp_op_,
-                                             gamma);
-                        }
+                        composite_bitmap(pixmap_,
+                                         &bit->bitmap,
+                                         halo_fill,
+                                         bit->left,
+                                         height - bit->top,
+                                         halo_opacity,
+                                         halo_comp_op_);
                     }
                 }
             }
@@ -549,28 +529,15 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                       text_opacity,
                                       comp_op_);
             }
-            else if (gamma_table_)
-            {
-                composite_bitmap(pixmap_,
-                                 &bit->bitmap,
-                                 fill,
-                                 bit->left,
-                                 height - bit->top,
-                                 text_opacity,
-                                 comp_op_,
-                                 *gamma_table_);
-            }
             else
             {
-                const noop_gamma_func gamma;
                 composite_bitmap(pixmap_,
                                  &bit->bitmap,
                                  fill,
                                  bit->left,
                                  height - bit->top,
                                  text_opacity,
-                                 comp_op_,
-                                 gamma);
+                                 comp_op_);
             }
         }
         FT_Done_Glyph(glyph.image);
