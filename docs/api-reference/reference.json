@@ -1085,6 +1085,12 @@
                 "doc": "The opacity of the image used for the shield.",
                 "see-also": "opacity"
             },
+            "gamma": {
+                "see-also": "gamma"
+            },
+            "gamma-method": {
+                "see-also": "gamma-method"
+            },
             "text-opacity": {
                 "doc": "The opacity of the text placed on top of the shield.",
                 "see-also": "opacity"
