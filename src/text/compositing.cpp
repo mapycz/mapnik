@@ -24,6 +24,7 @@
 #include <mapnik/color.hpp>
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/box2d.hpp>
+#include <mapnik/agg_rasterizer.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -39,7 +40,8 @@ void composite_bitmap_src_over(
     unsigned rgba,
     int x,
     int y,
-    double opacity)
+    double opacity,
+    rasterizer const & ras)
 {
     box2d<int> dst_ext(0, 0, dst.width(), dst.height());
     box2d<int> src_ext(x, y, x + src->width, y + src->rows);
@@ -73,7 +75,7 @@ void composite_bitmap_src_over(
             {
                 image_rgba8::pixel_type & pix = dst(i, j);
                 blender_type::blend_pix(reinterpret_cast<value_type*>(&pix),
-                                        cr, cg, cb, ca, gray);
+                                        cr, cg, cb, ca, ras.apply_gamma(gray));
             }
         }
     }
@@ -86,11 +88,12 @@ void composite_bitmap(
     int x,
     int y,
     double opacity,
-    composite_mode_e comp_op)
+    composite_mode_e comp_op,
+    rasterizer const & ras)
 {
     if (comp_op == src_over)
     {
-        composite_bitmap_src_over(dst, src, rgba, x, y, opacity);
+        composite_bitmap_src_over(dst, src, rgba, x, y, opacity, ras);
         return;
     }
 
@@ -104,7 +107,7 @@ void composite_bitmap(
             unsigned gray = src->buffer[q * src->width + p];
             if (gray)
             {
-                mapnik::composite_pixel(dst, comp_op, i, j, rgba, gray, opacity);
+                mapnik::composite_pixel(dst, comp_op, i, j, rgba, ras.apply_gamma(gray), opacity);
             }
         }
     }

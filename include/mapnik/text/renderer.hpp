@@ -54,6 +54,8 @@ extern "C"
 namespace mapnik
 {
 
+struct rasterizer;
+
 struct glyph_t
 {
     glyph_info const& info;
@@ -156,7 +158,8 @@ class agg_text_renderer : public text_renderer
 {
 public:
     using pixmap_type = T;
-    agg_text_renderer (pixmap_type & pixmap, halo_rasterizer_e rasterizer,
+    agg_text_renderer (pixmap_type & pixmap, halo_rasterizer_e halo_rasterizer,
+                       rasterizer const & ras,
                        composite_mode_e comp_op = src_over,
                        composite_mode_e halo_comp_op = src_over,
                        double scale_factor = 1.0,
@@ -165,6 +168,7 @@ public:
 private:
     pixmap_type & pixmap_;
     halo_cache halo_cache_;
+    rasterizer const & ras_;
 
     void render_halo(unsigned char *buffer,
                      unsigned width,

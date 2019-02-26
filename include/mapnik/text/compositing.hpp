@@ -37,6 +37,8 @@ extern "C"
 namespace mapnik
 {
 
+struct rasterizer;
+
 void composite_bitmap(
     image_rgba8 & dst,
     FT_Bitmap *src,
@@ -44,7 +46,8 @@ void composite_bitmap(
     int x,
     int y,
     double opacity,
-    composite_mode_e comp_op);
+    composite_mode_e comp_op,
+    rasterizer const & ras);
 
 }
 

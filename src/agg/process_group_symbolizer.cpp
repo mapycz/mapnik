@@ -64,7 +64,7 @@ struct thunk_renderer<image_rgba8> : render_thunk_list_dispatch
                    buffer_type &buf,
                    renderer_common &common)
         : ren_(ren), ras_ptr_(ras_ptr), buf_(buf), common_(common),
-          tex_(buf, HALO_RASTERIZER_FULL, src_over, src_over,
+          tex_(buf, HALO_RASTERIZER_FULL, *ras_ptr, src_over, src_over,
                common.scale_factor_, common.font_manager_.get_stroker())
     {}
 

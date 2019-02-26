@@ -369,12 +369,16 @@ void composite_color_glyph_halo(T & pixmap,
 
 template <typename T>
 agg_text_renderer<T>::agg_text_renderer (pixmap_type & pixmap,
-                                         halo_rasterizer_e rasterizer,
+                                         halo_rasterizer_e halo_rasterizer,
+                                         rasterizer const & ras,
                                          composite_mode_e comp_op,
                                          composite_mode_e halo_comp_op,
                                          double scale_factor,
                                          stroker_ptr stroker)
-    : text_renderer(rasterizer, comp_op, halo_comp_op, scale_factor, stroker), pixmap_(pixmap)
+    : text_renderer(halo_rasterizer, comp_op, halo_comp_op,
+                    scale_factor, stroker),
+      pixmap_(pixmap),
+      ras_(ras)
 {}
 
 template <typename T>
@@ -449,7 +453,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                          bit->left,
                                          height - bit->top,
                                          halo_opacity,
-                                         halo_comp_op_);
+                                         halo_comp_op_,
+                                         ras_);
                     }
                 }
             }
@@ -537,7 +542,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                  bit->left,
                                  height - bit->top,
                                  text_opacity,
-                                 comp_op_);
+                                 comp_op_,
+                                 ras_);
             }
         }
         FT_Done_Glyph(glyph.image);

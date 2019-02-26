@@ -485,12 +485,6 @@ struct agg_render_marker_visitor
         using svg_attribute_type = agg::pod_bvector<mapnik::svg::path_attributes>;
 
         ras_ptr_->reset();
-        if (gamma_method_ != GAMMA_POWER || gamma_ != 1.0)
-        {
-            ras_ptr_->gamma(agg::gamma_power());
-            gamma_method_ = GAMMA_POWER;
-            gamma_ = 1.0;
-        }
         agg::scanline_u8 sl;
         agg::rendering_buffer buf(current_buffer_.bytes(),
                                   current_buffer_.width(),
@@ -534,12 +528,6 @@ struct agg_render_marker_visitor
         using renderer_base = agg::renderer_base<pixfmt_comp_type>;
 
         ras_ptr_->reset();
-        if (gamma_method_ != GAMMA_POWER || gamma_ != 1.0)
-        {
-            ras_ptr_->gamma(agg::gamma_power());
-            gamma_method_ = GAMMA_POWER;
-            gamma_ = 1.0;
-        }
         agg::scanline_u8 sl;
         agg::rendering_buffer buf(current_buffer_.bytes(),
                                   current_buffer_.width(),
