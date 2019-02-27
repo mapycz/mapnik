@@ -50,10 +50,6 @@
 #include <sstream>
 #include <iomanip>
 
-#ifndef MAPNIK_POSTGIS_PLUGIN_MAX_SIZE
-#define MAPNIK_POSTGIS_PLUGIN_MAX_SIZE 10
-#endif
-
 DATASOURCE_PLUGIN(postgis_datasource)
 
 const double postgis_datasource::FMAX = std::numeric_limits<float>::max();
@@ -86,7 +82,7 @@ postgis_datasource::postgis_datasource(parameters const& params)
       scale_denom_token_("!scale_denominator!"),
       pixel_width_token_("!pixel_width!"),
       pixel_height_token_("!pixel_height!"),
-      pool_max_size_(*params_.get<mapnik::value_integer>("max_size", MAPNIK_POSTGIS_PLUGIN_MAX_SIZE)),
+      pool_max_size_(*params_.get<mapnik::value_integer>("max_size", 10)),
       persist_connection_(*params.get<mapnik::boolean_type>("persist_connection", true)),
       extent_from_subquery_(*params.get<mapnik::boolean_type>("extent_from_subquery", false)),
       max_async_connections_(*params_.get<mapnik::value_integer>("max_async_connection", 1)),
