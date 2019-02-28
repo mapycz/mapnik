@@ -108,6 +108,10 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
         {
             load_flags |= FT_LOAD_NO_HINTING;
         }
+        else
+        {
+            load_flags |= FT_LOAD_FORCE_AUTOHINT | FT_LOAD_TARGET_MONO;
+        }
 
         FT_Face face = glyph.face->get_face();
         if (glyph.face->is_color())
