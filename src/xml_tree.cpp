@@ -447,4 +447,6 @@ compile_get_attr(double);
 compile_get_value(value_integer);
 compile_get_value(double);
 compile_get_value(expression_ptr);
+compile_get_opt_attr(text_mode_e);
+
 } //ns mapnik

@@ -62,6 +62,7 @@ struct evaluated_format_properties
     color halo_fill;
     double halo_radius;
     font_feature_settings ff_settings;
+    text_mode_e text_mode;
 };
 
 struct evaluated_text_properties : util::noncopyable
@@ -124,6 +125,7 @@ struct MAPNIK_DECL format_properties
     symbolizer_base::value_type halo_radius;
     symbolizer_base::value_type text_transform;
     symbolizer_base::value_type ff_settings;
+    symbolizer_base::value_type text_mode;
 };
 
 

@@ -150,6 +150,14 @@ static const char * justify_alignment_strings[] = {
 
 IMPLEMENT_ENUM( justify_alignment_e, justify_alignment_strings )
 
+static const char * text_mode_strings[] = {
+    "default",
+    "mono",
+    ""
+};
+
+IMPLEMENT_ENUM( text_mode_e, text_mode_strings )
+
 static const char * text_transform_strings[] = {
     "none",
     "uppercase",

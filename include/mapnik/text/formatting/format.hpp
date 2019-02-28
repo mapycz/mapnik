@@ -60,6 +60,7 @@ public:
     boost::optional<symbolizer_base::value_type> halo_fill;
     boost::optional<symbolizer_base::value_type> halo_radius;
     boost::optional<symbolizer_base::value_type> ff_settings;
+    boost::optional<symbolizer_base::value_type> text_mode;
 
 private:
     node_ptr child_;

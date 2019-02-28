@@ -73,6 +73,23 @@ void text_renderer::set_halo_transform(agg::trans_affine const& halo_transform)
     halo_transform_ = halo_transform;
 }
 
+FT_Error text_renderer::select_closest_size(glyph_info const& glyph, FT_Face & face) const
+{
+    int scaled_size = static_cast<int>(glyph.format->text_size * scale_factor_);
+    int best_match = 0;
+    int diff = std::abs(scaled_size - face->available_sizes[0].width);
+    for (int i = 1; i < face->num_fixed_sizes; ++i)
+    {
+        int ndiff = std::abs(scaled_size - face->available_sizes[i].height);
+        if (ndiff < diff)
+        {
+            best_match = i;
+            diff = ndiff;
+        }
+    }
+    return FT_Select_Size(face, best_match);
+}
+
 void text_renderer::prepare_glyphs(glyph_positions const& positions)
 {
     FT_Matrix matrix;
@@ -85,28 +102,23 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
     for (auto const& glyph_pos : positions)
     {
         glyph_info const& glyph = glyph_pos.glyph;
-        FT_Int32 load_flags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING;
+        FT_Int32 load_flags = FT_LOAD_DEFAULT;
+
+        if (glyph.format->text_mode == TEXT_MODE_DEFAULT)
+        {
+            load_flags |= FT_LOAD_NO_HINTING;
+        }
 
         FT_Face face = glyph.face->get_face();
         if (glyph.face->is_color())
         {
-            load_flags |= FT_LOAD_COLOR ;
-            if (face->num_fixed_sizes > 0)
-            {
-                int scaled_size = static_cast<int>(glyph.format->text_size * scale_factor_);
-                int best_match = 0;
-                int diff = std::abs(scaled_size - face->available_sizes[0].width);
-                for (int i = 1; i < face->num_fixed_sizes; ++i)
-                {
-                    int ndiff = std::abs(scaled_size - face->available_sizes[i].height);
-                    if (ndiff < diff)
-                    {
-                        best_match = i;
-                        diff = ndiff;
-                    }
-                }
-                error = FT_Select_Size(face, best_match);
-            }
+            load_flags |= FT_LOAD_COLOR;
+        }
+
+        if (face->num_fixed_sizes > 0)
+        {
+            error = select_closest_size(glyph, face);
+            if (error) continue;
         }
         else
         {
@@ -512,44 +524,68 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
 
         FT_Glyph_Transform(glyph.image, &matrix, &start);
         error = 0;
-        if ( glyph.image->format != FT_GLYPH_FORMAT_BITMAP )
-        {
-
-            error = FT_Glyph_To_Bitmap(&glyph.image ,FT_RENDER_MODE_NORMAL, 0, 1);
-        }
-        if (error == 0)
+        if (glyph.image->format == FT_GLYPH_FORMAT_BITMAP)
         {
             FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(glyph.image);
-            int pixel_mode = bit->bitmap.pixel_mode;
-            if (pixel_mode == FT_PIXEL_MODE_BGRA)
+            int x = (start.x >> 6) + glyph.pos.x;
+            int y = height - (start.y >> 6) - glyph.pos.y;
+            switch (bit->bitmap.pixel_mode)
             {
-                int x = (start.x >> 6) + glyph.pos.x;
-                int y = height - (start.y >> 6) - glyph.pos.y;
-                composite_color_glyph(pixmap_,
-                                      bit->bitmap,
-                                      transform_,
-                                      x,y,
-                                      -glyph.rot.angle(),
-                                      glyph.bbox,
-                                      text_opacity,
-                                      comp_op_);
-            }
-            else
-            {
-                composite_bitmap(pixmap_,
-                                 &bit->bitmap,
-                                 fill,
-                                 bit->left,
-                                 height - bit->top,
-                                 text_opacity,
-                                 comp_op_,
-                                 ras_);
+                case FT_PIXEL_MODE_BGRA:
+                    composite_color_glyph(pixmap_,
+                                          bit->bitmap,
+                                          transform_,
+                                          x, y,
+                                          -glyph.rot.angle(),
+                                          glyph.bbox,
+                                          text_opacity,
+                                          comp_op_);
+                    break;
+                case FT_PIXEL_MODE_MONO:
+                    composite_bitmap_mono(pixmap_,
+                                     &bit->bitmap,
+                                     fill,
+                                     x, y,
+                                     text_opacity,
+                                     comp_op_);
+                    break;
             }
         }
-        FT_Done_Glyph(glyph.image);
+        else
+        {
+            FT_Render_Mode mode = (glyph.info.format->text_mode == TEXT_MODE_DEFAULT)
+                ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
+            error = FT_Glyph_To_Bitmap(&glyph.image, mode, 0, 1);
+            if (error == 0)
+            {
+                FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(glyph.image);
+                switch (bit->bitmap.pixel_mode)
+                {
+                    case FT_PIXEL_MODE_GRAY:
+                        composite_bitmap(pixmap_,
+                                         &bit->bitmap,
+                                         fill,
+                                         bit->left,
+                                         height - bit->top,
+                                         text_opacity,
+                                         comp_op_,
+                                         ras_);
+                        break;
+                    case FT_PIXEL_MODE_MONO:
+                        composite_bitmap_mono(pixmap_,
+                                         &bit->bitmap,
+                                         fill,
+                                         bit->left,
+                                         height - bit->top,
+                                         text_opacity,
+                                         comp_op_);
+                        break;
+                }
+            }
+            FT_Done_Glyph(glyph.image);
+        }
     }
 }
-
 
 template <typename T>
 void grid_text_renderer<T>::render(glyph_positions const& pos, value_integer feature_id)

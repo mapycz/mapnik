@@ -61,10 +61,13 @@ bool freetype_engine::is_font_file(std::string const& file_name)
     std::transform(fn.begin(), fn.end(), fn.begin(), ::tolower);
     return boost::algorithm::ends_with(fn,std::string(".ttf")) ||
         boost::algorithm::ends_with(fn,std::string(".otf")) ||
+        boost::algorithm::ends_with(fn,std::string(".otb")) ||
         boost::algorithm::ends_with(fn,std::string(".woff"))||
         boost::algorithm::ends_with(fn,std::string(".ttc")) ||
         boost::algorithm::ends_with(fn,std::string(".pfa")) ||
         boost::algorithm::ends_with(fn,std::string(".pfb")) ||
+        boost::algorithm::ends_with(fn,std::string(".fon")) ||
+        boost::algorithm::ends_with(fn,std::string(".bdf")) ||
         // Plus OSX custom ext
         boost::algorithm::ends_with(fn,std::string(".dfont"));
 }

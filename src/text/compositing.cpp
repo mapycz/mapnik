@@ -113,4 +113,37 @@ void composite_bitmap(
     }
 }
 
+void composite_bitmap_mono(
+    image_rgba8 & dst,
+    FT_Bitmap *src,
+    unsigned rgba,
+    int x,
+    int y,
+    double opacity,
+    composite_mode_e comp_op)
+{
+    int x_max = x + src->width;
+    int y_max = y + src->rows;
+    unsigned char * buff = src->buffer;
+
+    for (int j = y; j < y_max; ++j)
+    {
+        unsigned char * row = buff;
+        unsigned b = 0;
+        for (int i = x, p = 0; i < x_max; ++i, ++p)
+        {
+            if (p % 8 == 0)
+            {
+                b = *row++;
+            }
+            if (b & 0x80)
+            {
+                mapnik::composite_pixel(dst, comp_op, i, j, rgba, 255, opacity);
+            }
+            b <<= 1;
+        }
+        buff += src->pitch;
+    }
+}
+
 }
