@@ -118,7 +118,9 @@ public:
 protected:
     using glyph_vector = std::vector<glyph_t>;
     void prepare_glyphs(glyph_positions const& positions);
+    FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
     halo_rasterizer_e rasterizer_;
+
     composite_mode_e comp_op_;
     composite_mode_e halo_comp_op_;
     double scale_factor_;

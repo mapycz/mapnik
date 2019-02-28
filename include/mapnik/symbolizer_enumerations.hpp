@@ -105,6 +105,15 @@ enum multi_policy_enum : std::uint8_t
 
 DEFINE_ENUM( multi_policy_e, multi_policy_enum );
 
+enum text_mode_enum : std::uint8_t
+{
+    TEXT_MODE_DEFAULT = 0,
+    TEXT_MODE_MONO,
+    text_mode_enum_MAX
+};
+
+DEFINE_ENUM(text_mode_e, text_mode_enum);
+
 enum text_transform_enum : std::uint8_t
 {
     NONE = 0,

@@ -176,6 +176,9 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "svg-stroke", nullptr, property_types::target_color},
     property_meta_type{ "svg-stroke-width", nullptr, property_types::target_double},
     property_meta_type{ "svg-stroke-opacity", nullptr, property_types::target_double},
+    property_meta_type{ "text-mode", [](enumeration_wrapper e)
+                        {return enumeration<text_mode_enum,text_mode_enum_MAX>(text_mode_enum(e.value)).as_string();},
+                        property_types::target_text_mode},
 
 };
 

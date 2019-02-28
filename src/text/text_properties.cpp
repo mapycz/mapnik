@@ -293,7 +293,8 @@ format_properties::format_properties()
       halo_fill(color(255,255,255)),
       halo_radius(0.0),
       text_transform(enumeration_wrapper(NONE)),
-      ff_settings() {}
+      ff_settings(),
+      text_mode(enumeration_wrapper(TEXT_MODE_DEFAULT)) {}
 
 void format_properties::from_xml(xml_node const& node, fontset_map const& fontsets, bool is_shield)
 {
@@ -315,6 +316,7 @@ void format_properties::from_xml(xml_node const& node, fontset_map const& fontse
     set_property_from_xml<color>(halo_fill, "halo-fill", node);
     set_property_from_xml<text_transform_e>(text_transform,"text-transform", node);
     set_property_from_xml<font_feature_settings>(ff_settings, "font-feature-settings", node);
+    set_property_from_xml<text_mode_e>(text_mode, "text-mode", node);
 
     optional<std::string> face_name_ = node.get_opt_attr<std::string>("face-name");
     if (face_name_) face_name = *face_name_;
@@ -370,6 +372,7 @@ void format_properties::to_xml(boost::property_tree::ptree & node, bool explicit
     if (!(halo_fill == dfl.halo_fill) || explicit_defaults) serialize_property("halo-fill", halo_fill, node);
     if (!(text_transform == dfl.text_transform) || explicit_defaults) serialize_property("text-transform", text_transform, node);
     if (!(ff_settings == dfl.ff_settings) || explicit_defaults) serialize_property("font-feature-settings", ff_settings, node);
+    if (!(text_mode == dfl.text_mode) || explicit_defaults) serialize_property("text-mode", text_mode, node);
 }
 
 void format_properties::add_expressions(expression_set & output) const
@@ -384,6 +387,7 @@ void format_properties::add_expressions(expression_set & output) const
     if (is_expression(halo_fill)) output.insert(util::get<expression_ptr>(halo_fill));
     if (is_expression(text_transform)) output.insert(util::get<expression_ptr>(text_transform));
     if (is_expression(ff_settings)) output.insert(util::get<expression_ptr>(ff_settings));
+    if (is_expression(text_mode)) output.insert(util::get<expression_ptr>(text_mode));
 }
 
 

@@ -49,6 +49,15 @@ void composite_bitmap(
     composite_mode_e comp_op,
     rasterizer const & ras);
 
+void composite_bitmap_mono(
+    image_rgba8 & dst,
+    FT_Bitmap *src,
+    unsigned rgba,
+    int x,
+    int y,
+    double opacity,
+    composite_mode_e comp_op);
+
 }
 
 #endif // MAPNIK_TEXT_COMPOSITING_HPP

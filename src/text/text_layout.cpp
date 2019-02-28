@@ -140,6 +140,7 @@ text_layout::text_layout(face_manager_freetype & font_manager,
             format_->face_name = format_defaults.face_name;
             format_->fontset = format_defaults.fontset;
             format_->ff_settings = util::apply_visitor(extract_value<font_feature_settings>(feature,attrs), format_defaults.ff_settings);
+            format_->text_mode = util::apply_visitor(extract_value<text_mode_enum>(feature,attrs), format_defaults.text_mode);
             // Turn off ligatures if character_spacing > 0.
             if (format_->character_spacing > .0 && format_->ff_settings.count() == 0)
             {
