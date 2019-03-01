@@ -58,6 +58,12 @@ void* _Realloc_Func(FT_Memory, long /*cur_size*/, long new_size, void* block)
     return std::realloc(block, mapnik::safe_cast<std::size_t>(new_size));
 }
 
+unsigned constexpr compact_version(unsigned major, unsigned minor, unsigned patch)
+{
+    const constexpr unsigned scale = 1000;
+    return (major * scale + minor) * scale + patch;
+}
+
 }
 
 namespace mapnik {
@@ -70,9 +76,10 @@ font_library::font_library()
     memory_->free = _Free_Func;
     memory_->realloc = _Realloc_Func;
     FT_Error error = FT_New_Library(&*memory_, &library_);
-    //FT_Error error = FT_Init_FreeType( &library_ );
     if (error) throw std::runtime_error("can not initialize FreeType2 library");
+#if ((FREETYPE_MAJOR*1000 + FREETYPE_MINOR)*1000 >= 2008000)
     FT_Add_Default_Modules(library_);
+#endif
 
     //FT_Set_Default_Properties(library_);
     /*
@@ -85,6 +92,13 @@ font_library::font_library()
         throw std::runtime_error("!!!!");
     }
     */
+}
+
+unsigned font_library::version() const
+{
+    FT_Int major, minor, patch;
+    FT_Library_Version(library_, major, minor, patch);
+    return compact_version(major, minor, patch);
 }
 
 FT_Library font_library::get()

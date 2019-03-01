@@ -41,6 +41,7 @@ public:
     explicit font_library();
     ~font_library();
     FT_LibraryRec_ * get();
+    unsigned version() const;
 private:
     FT_LibraryRec_ * library_;
     std::unique_ptr<FT_MemoryRec_> memory_;
