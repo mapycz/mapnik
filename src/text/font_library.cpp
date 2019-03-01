@@ -83,7 +83,7 @@ font_library::font_library()
     FT_Set_Default_Properties(library_);
 #endif
 
-    if (version() >= compact_version(2, 7, 0))
+    if (!std::getenv("FREETYPE_PROPERTIES") && version() >= compact_version(2, 7, 0))
     {
         FT_UInt interpreter_version = 35;
         error = FT_Property_Set(library_, "truetype",
