@@ -90,7 +90,7 @@ FT_Error text_renderer::select_closest_size(glyph_info const& glyph, FT_Face & f
     return FT_Select_Size(face, best_match);
 }
 
-void text_renderer::prepare_glyphs(glyph_positions const& positions)
+void text_renderer::prepare_glyphs(glyph_positions const& positions, bool is_mono)
 {
     FT_Matrix matrix;
     FT_Vector pen;
@@ -107,10 +107,6 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
         if (glyph.format->text_mode == TEXT_MODE_DEFAULT)
         {
             load_flags |= FT_LOAD_NO_HINTING;
-        }
-        else
-        {
-            load_flags |= FT_LOAD_TARGET_MONO;
         }
 
         FT_Face face = glyph.face->get_face();
@@ -136,6 +132,11 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
         matrix.yy = static_cast<FT_Fixed>( glyph_pos.rot.cos * 0x10000L);
 
         pixel_position pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
+        if (is_mono)
+        {
+            pos.x = std::round(pos.x);
+            pos.y = std::round(pos.y);
+        }
         pen.x = static_cast<FT_Pos>(pos.x * 64);
         pen.y = static_cast<FT_Pos>(pos.y * 64);
 
@@ -400,15 +401,20 @@ agg_text_renderer<T>::agg_text_renderer (pixmap_type & pixmap,
 template <typename T>
 void agg_text_renderer<T>::render(glyph_positions const& pos)
 {
-    prepare_glyphs(pos);
+    bool is_mono = (pos.size() != 0) && pos.begin()->glyph.format->text_mode == TEXT_MODE_MONO;
+    prepare_glyphs(pos, is_mono);
     FT_Error  error;
     FT_Vector start;
     FT_Vector start_halo;
     int height = pixmap_.height();
-    pixel_position const& base_point = pos.get_base_point();
-
-    start.x =  static_cast<FT_Pos>(base_point.x * (1 << 6));
-    start.y =  static_cast<FT_Pos>((height - base_point.y) * (1 << 6));
+    pixel_position base_point = pos.get_base_point();
+    if (is_mono)
+    {
+        base_point.x = std::round(base_point.x);
+        base_point.y = std::round(base_point.y);
+    }
+    start.x = static_cast<FT_Pos>(base_point.x * (1 << 6));
+    start.y = static_cast<FT_Pos>((height - base_point.y) * (1 << 6));
     start_halo = start;
     start.x += transform_.tx * 64;
     start.y += transform_.ty * 64;
@@ -594,7 +600,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
 template <typename T>
 void grid_text_renderer<T>::render(glyph_positions const& pos, value_integer feature_id)
 {
-    prepare_glyphs(pos);
+    prepare_glyphs(pos, false);
     FT_Error  error;
     FT_Vector start;
     unsigned height = pixmap_.height();

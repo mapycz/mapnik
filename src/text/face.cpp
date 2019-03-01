@@ -22,6 +22,7 @@
 // mapnik
 #include <mapnik/text/face.hpp>
 #include <mapnik/debug.hpp>
+#include <mapnik/text/text_properties.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -96,7 +97,11 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     pen.y = 0;
     if (color_font_) FT_Select_Size(face_, 0);
     FT_Set_Transform(face_, 0, &pen);
-    FT_Int32 load_flags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING;
+    FT_Int32 load_flags = FT_LOAD_DEFAULT;
+    if (glyph.format->text_mode == TEXT_MODE_DEFAULT)
+    {
+        load_flags |= FT_LOAD_NO_HINTING;
+    }
     if (color_font_) load_flags |= FT_LOAD_COLOR ;
     if (FT_Error error = FT_Load_Glyph(face_, glyph.glyph_index, load_flags))
     {

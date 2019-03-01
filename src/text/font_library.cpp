@@ -23,6 +23,7 @@
 // mapnik
 #include <mapnik/text/font_library.hpp>
 #include <mapnik/safe_cast.hpp>
+#include <mapnik/debug.hpp>
 
 // stl
 #include <cstdlib>
@@ -58,6 +59,11 @@ void* _Realloc_Func(FT_Memory, long /*cur_size*/, long new_size, void* block)
     return std::realloc(block, mapnik::safe_cast<std::size_t>(new_size));
 }
 
+unsigned constexpr compact_version(unsigned major, unsigned minor, unsigned patch)
+{
+    return (major * 1000 + minor) * 1000 + patch;
+}
+
 }
 
 namespace mapnik {
@@ -72,6 +78,28 @@ font_library::font_library()
     FT_Error error = FT_New_Library(&*memory_, &library_);
     if (error) throw std::runtime_error("can not initialize FreeType2 library");
     FT_Add_Default_Modules(library_);
+
+#if ((FREETYPE_MAJOR*1000 + FREETYPE_MINOR)*1000 >= 2008000)
+    FT_Set_Default_Properties(library_);
+#endif
+
+    if (!std::getenv("FREETYPE_PROPERTIES") && version() >= compact_version(2, 7, 0))
+    {
+        FT_UInt interpreter_version = 35;
+        error = FT_Property_Set(library_, "truetype",
+            "interpreter-version", &interpreter_version );
+        if (error)
+        {
+            MAPNIK_LOG_WARN(font_library) << "FreeType: Error setting interpreter-version=35";
+        }
+    }
+}
+
+unsigned font_library::version() const
+{
+    FT_Int major, minor, patch;
+    FT_Library_Version(library_, &major, &minor, &patch);
+    return compact_version(major, minor, patch);
 }
 
 FT_Library font_library::get()

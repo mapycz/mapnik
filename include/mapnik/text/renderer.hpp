@@ -117,7 +117,7 @@ public:
 
 protected:
     using glyph_vector = std::vector<glyph_t>;
-    void prepare_glyphs(glyph_positions const& positions);
+    void prepare_glyphs(glyph_positions const& positions, bool is_mono);
     FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
     halo_rasterizer_e rasterizer_;
 
