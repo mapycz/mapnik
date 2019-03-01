@@ -108,10 +108,6 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
         {
             load_flags |= FT_LOAD_NO_HINTING;
         }
-        else
-        {
-            //load_flags |= FT_LOAD_TARGET_MONO;
-        }
 
         FT_Face face = glyph.face->get_face();
         if (glyph.face->is_color())
@@ -136,8 +132,16 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions)
         matrix.yy = static_cast<FT_Fixed>( glyph_pos.rot.cos * 0x10000L);
 
         pixel_position pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
-        pen.x = static_cast<FT_Pos>(std::round(pos.x) * 64);
-        pen.y = static_cast<FT_Pos>(std::round(pos.y) * 64);
+        if (glyph.format->text_mode == TEXT_MODE_MONO)
+        {
+            pen.x = static_cast<FT_Pos>(std::round(pos.x) * 64);
+            pen.y = static_cast<FT_Pos>(std::round(pos.y) * 64);
+        }
+        else
+        {
+            pen.x = static_cast<FT_Pos>(pos.x * 64);
+            pen.y = static_cast<FT_Pos>(pos.y * 64);
+        }
 
         FT_Set_Transform(face, &matrix, &pen);
         error = FT_Load_Glyph(face, glyph.glyph_index, load_flags);
@@ -407,8 +411,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
     int height = pixmap_.height();
     pixel_position const& base_point = pos.get_base_point();
 
-    start.x =  static_cast<FT_Pos>(std::round(base_point.x) * (1 << 6));
-    start.y =  static_cast<FT_Pos>(std::round(height - base_point.y) * (1 << 6));
+    start.x = static_cast<FT_Pos>((base_point.x) * (1 << 6));
+    start.y = static_cast<FT_Pos>((height - base_point.y) * (1 << 6));
     start_halo = start;
     start.x += transform_.tx * 64;
     start.y += transform_.ty * 64;
