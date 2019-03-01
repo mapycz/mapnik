@@ -119,7 +119,7 @@ static void shape_text(text_line & line,
             // https://github.com/mapnik/test-data-visual/pull/25
             #if HB_VERSION_MAJOR > 0
              #if HB_VERSION_ATLEAST(1, 0 , 5)
-            hb_ft_font_set_load_flags(font,FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING);
+            hb_ft_font_set_load_flags(font,FT_LOAD_DEFAULT);
              #endif
             #endif
             hb_shape(font, buffer.get(), ff_settings.get_features(), ff_count);

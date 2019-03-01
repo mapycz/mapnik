@@ -70,8 +70,21 @@ font_library::font_library()
     memory_->free = _Free_Func;
     memory_->realloc = _Realloc_Func;
     FT_Error error = FT_New_Library(&*memory_, &library_);
+    //FT_Error error = FT_Init_FreeType( &library_ );
     if (error) throw std::runtime_error("can not initialize FreeType2 library");
     FT_Add_Default_Modules(library_);
+
+    //FT_Set_Default_Properties(library_);
+    /*
+    FT_UInt     interpreter_version = 35;
+    error = FT_Property_Set(library_, "truetype",
+            "interpreter-version",
+            &interpreter_version );
+    if (error)
+    {
+        throw std::runtime_error("!!!!");
+    }
+    */
 }
 
 FT_Library font_library::get()
