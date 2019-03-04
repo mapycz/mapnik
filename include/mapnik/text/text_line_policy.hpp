@@ -38,14 +38,11 @@ struct text_line_policy
         LayoutGenerator const & lg,
         double layout_width,
         params_type const & params)
-        : path_(path),
-          layout_generator_(lg),
+        : layout_generator_(lg),
           params_(params),
           layout_width_(layout_width),
           minimum_path_length_(lg.get_text_props().minimum_path_length),
-          spacing_(lg.get_text_props().label_spacing),
-          position_tolerance_(
-            lg.get_text_props().label_position_tolerance * params.scale_factor)
+          path_(path)
     {
     }
 
@@ -58,24 +55,22 @@ struct text_line_policy
 
     double get_spacing() const
     {
-        int num_labels = 1;
-        if (spacing_ > 0)
+        return spacing_;
+    }
+
+    bool next_subpath()
+    {
+        if (path_.next_subpath())
         {
-            double count_float = path_.length() / (spacing_ * params_.scale_factor + layout_width_);
-            const double epsilon = std::numeric_limits<double>::epsilon() * count_float;
-            bool round = std::abs(count_float - std::round(count_float)) < epsilon;
-            num_labels = round ? std::round(count_float) : std::floor(count_float);
+            spacing_ = init_spacing();
+            position_tolerance_ = init_position_tolerance();
+            return true;
         }
-        if (num_labels <= 0)
-        {
-            num_labels = 1;
-        }
-        return path_.length() / num_labels;
+        return false;
     }
 
     bool align()
     {
-        double spacing = get_spacing();
         auto const & root_layout = layout_generator_.layouts_->root_layout();
         horizontal_alignment_e halign = root_layout.horizontal_alignment();
 
@@ -83,7 +78,7 @@ struct text_line_policy
         if (halign == H_MIDDLE ||
             halign == H_AUTO)
         {
-            if (!path_.forward(spacing / 2.0))
+            if (!path_.forward(spacing_ / 2.0))
             {
                 return false;
             }
@@ -97,8 +92,7 @@ struct text_line_policy
         }
         else if (halign == H_ADJUST)
         {
-            spacing = path_.length();
-            if (!path_.forward(spacing / 2.0))
+            if (!path_.forward(path_.length() / 2.0))
             {
                 return false;
             }
@@ -121,24 +115,61 @@ struct text_line_policy
         return path_.move(distance);
     }
 
-    inline bool forward(bool success)
+    bool forward(bool success)
     {
-        return path_.forward(get_spacing());
+        return path_.forward(spacing_);
     }
 
     double position_tolerance() const
     {
-        return position_tolerance_ > 0 ?
-            position_tolerance_ : (get_spacing() / 2.0);
+        return position_tolerance_;
     }
 
-    vertex_cache & path_;
     LayoutGenerator const & layout_generator_;
     params_type const & params_;
     const double layout_width_;
     const double minimum_path_length_;
-    const double spacing_;
-    const double position_tolerance_;
+    vertex_cache & path_;
+    double spacing_;
+    double position_tolerance_;
+
+private:
+    double init_spacing() const
+    {
+        double spacing = layout_generator_.get_text_props().label_spacing;
+        int num_labels = 1;
+        if (spacing > 0)
+        {
+            double count_float = path_.length() / (spacing * params_.scale_factor + layout_width_);
+            const double epsilon = std::numeric_limits<double>::epsilon() * count_float;
+            bool round = std::abs(count_float - std::round(count_float)) < epsilon;
+            num_labels = round ? std::round(count_float) : std::floor(count_float);
+        }
+        if (num_labels <= 0)
+        {
+            num_labels = 1;
+        }
+        return path_.length() / num_labels;
+    }
+
+    double init_position_tolerance() const
+    {
+        double tolerance = layout_generator_.get_text_props().label_position_tolerance * params_.scale_factor;
+        if (tolerance > 0)
+        {
+            return tolerance;
+        }
+
+        auto const & root_layout = layout_generator_.layouts_->root_layout();
+        horizontal_alignment_e halign = root_layout.horizontal_alignment();
+        if (halign == H_ADJUST)
+        {
+            // Let small tolerance by default.
+            return 10.0;
+        }
+
+        return spacing_ / 2.0;
+    }
 };
 
 template <typename LayoutGenerator>

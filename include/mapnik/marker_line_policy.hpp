@@ -46,26 +46,31 @@ struct marker_line_policy
     {
     }
 
-    inline bool check_size() const
+    bool check_size() const
     {
         return path_.length() >= minimum_path_length_  &&
             path_.length() > layout_width_;
     }
 
-    inline bool align()
+    bool next_subpath()
+    {
+        return path_.next_subpath();
+    }
+
+    bool align()
     {
         double pos = ((spacing_ > path_.length()) ?
             path_.length() : spacing_) / 2.0;
         return path_.forward(pos);
     }
 
-    inline bool move(double distance)
+    bool move(double distance)
     {
         return path_.move(distance) &&
             (path_.linear_position() + layout_width_ / 2.0) < path_.length();
     }
 
-    inline bool forward(bool success)
+    bool forward(bool success)
     {
         return path_.forward(success ? spacing_ : (spacing_ / 2.0));
     }
@@ -97,7 +102,7 @@ struct marker_line_max_angle_policy : marker_line_policy
     {
     }
 
-    inline bool move(double distance)
+    bool move(double distance)
     {
         if (!marker_line_policy::move(distance))
         {

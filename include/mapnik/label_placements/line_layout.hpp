@@ -74,7 +74,7 @@ bool line_layout<SubLayout>::try_placement(
     LineLayoutPolicy & policy)
 {
     bool success = false;
-    while (path.next_subpath())
+    while (policy.next_subpath())
     {
         if (!policy.check_size())
         {

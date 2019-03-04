@@ -30,8 +30,8 @@
 #include <mapnik/text/placements/base.hpp>
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/label_placements/base.hpp>
-#include <mapnik/text/text_line_policy.hpp>
 #include <mapnik/label_placements/line_layout.hpp>
+#include <mapnik/label_placements/max_line_angle_mover.hpp>
 
 #include <list>
 
@@ -78,13 +78,87 @@ struct group_layout_generator : util::noncopyable
     detector_type & detector_;
 };
 
-struct group_line_policy : text_line_policy<group_layout_generator>
+struct group_line_policy
 {
-    using text_line_policy<group_layout_generator>::text_line_policy;
+    using params_type = label_placement::placement_params;
 
-    inline bool align()
+    group_line_policy(
+        vertex_cache & path,
+        group_layout_generator const & lg,
+        double layout_width,
+        params_type const & params)
+        : path_(path),
+          params_(params),
+          layout_width_(layout_width),
+          minimum_path_length_(lg.get_text_props().minimum_path_length),
+          spacing_(init_spacing(lg.get_text_props().label_spacing)),
+          position_tolerance_(
+              lg.get_text_props().label_position_tolerance * params.scale_factor)
+
     {
-        return path_.forward(this->get_spacing() / 2.0);
+    }
+
+    bool check_size() const
+    {
+        return !(
+            path_.length() < minimum_path_length_ * params_.scale_factor ||
+            path_.length() < layout_width_);
+    }
+
+    bool next_subpath()
+    {
+        return path_.next_subpath();
+    }
+
+    double get_spacing() const
+    {
+        return spacing_;
+    }
+
+    bool align()
+    {
+        return path_.forward(spacing_ / 2.0);
+    }
+
+    bool move(double distance)
+    {
+        return path_.move(distance);
+    }
+
+    bool forward(bool success)
+    {
+        return path_.forward(spacing_);
+    }
+
+    double position_tolerance() const
+    {
+        return position_tolerance_ > 0 ?
+            position_tolerance_ : (spacing_ / 2.0);
+    }
+
+    vertex_cache & path_;
+    params_type const & params_;
+    const double layout_width_;
+    const double minimum_path_length_;
+    const double spacing_;
+    const double position_tolerance_;
+
+private:
+    double init_spacing(double spacing) const
+    {
+        int num_labels = 1;
+        if (spacing > 0)
+        {
+            double count_float = path_.length() / (spacing * params_.scale_factor + layout_width_);
+            const double epsilon = std::numeric_limits<double>::epsilon() * count_float;
+            bool round = std::abs(count_float - std::round(count_float)) < epsilon;
+            num_labels = round ? std::round(count_float) : std::floor(count_float);
+        }
+        if (num_labels <= 0)
+        {
+            num_labels = 1;
+        }
+        return path_.length() / num_labels;
     }
 };
 
@@ -113,14 +187,33 @@ public:
     }
 };
 
-struct group_max_angle_line_policy : text_max_line_angle_policy<group_layout_generator>
+struct group_max_line_angle_policy : group_line_policy
 {
-    using text_max_line_angle_policy<group_layout_generator>::text_max_line_angle_policy;
+    using params_type = label_placement::placement_params;
 
-    inline bool align()
+    group_max_line_angle_policy(
+        vertex_cache & path,
+        group_layout_generator const & lg,
+        double layout_width,
+        params_type const & params,
+        double max_angle_diff,
+        double max_angle_distance)
+        : group_line_policy(path, lg, layout_width, params),
+          mover_(path, max_angle_diff, max_angle_distance)
     {
-        return path_.forward(this->get_spacing() / 2.0);
     }
+
+    bool move(double distance)
+    {
+        if (!group_line_policy::move(distance))
+        {
+            return false;
+        }
+
+        return mover_.move(distance);
+    }
+
+    max_line_angle_mover mover_;
 };
 
 template <typename SubLayout>
@@ -149,7 +242,7 @@ public:
             (this->params_.scale_factor * *max_angle_distance_) :
             layout_width;
         vertex_cache path(geom);
-        group_max_angle_line_policy policy(path, layout_generator,
+        group_max_line_angle_policy policy(path, layout_generator,
             layout_width, this->params_, max_angle_diff_, distance);
         return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);

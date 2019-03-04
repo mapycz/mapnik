@@ -51,22 +51,22 @@ struct text_layout_generator : util::noncopyable
     bool next();
     void reset();
 
-    inline evaluated_text_properties const & get_text_props() const
+    evaluated_text_properties const & get_text_props() const
     {
         return *text_props_;
     }
 
-    inline bool has_placements() const
+    bool has_placements() const
     {
         return !layouts_->placements_.empty();
     }
 
-    inline std::unique_ptr<layout_container> & get_placements()
+    std::unique_ptr<layout_container> & get_placements()
     {
         return layouts_;
     }
 
-    inline multi_policy_enum multi_policy() const
+    multi_policy_enum multi_policy() const
     {
         return text_props_->largest_bbox_only ? LARGEST_MULTI : EACH_MULTI;
     }
