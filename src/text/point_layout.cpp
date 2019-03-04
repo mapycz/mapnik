@@ -131,6 +131,10 @@ bool point_layout::try_placement(
                     //Only advance if glyph is not part of a multiple glyph sequence
                     x += glyph.advance() + glyph.format->character_spacing * params_.scale_factor;
                 }
+                if (glyph.format->text_mode == TEXT_MODE_MONO)
+                {
+                    x = std::round(x);
+                }
             }
         }
     }
