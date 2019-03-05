@@ -164,7 +164,7 @@ private:
         if (halign == H_ADJUST)
         {
             // Let small tolerance by default.
-            return 10.0;
+            return 10.0 * params_.scale_factor;
         }
 
         return spacing_ / 2.0;
