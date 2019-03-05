@@ -110,7 +110,7 @@ public:
     {
         vertex_cache path(geom);
         double layout_width = this->sublayout_.get_length(layout_generator);
-        text_line_policy<LayoutGenerator> policy(path,
+        text_line_policy policy(path,
             layout_generator, layout_width, this->params_);
         return label_placement::line_layout<SubLayout>::try_placement(
             layout_generator, path, policy);

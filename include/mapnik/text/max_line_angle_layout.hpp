@@ -27,14 +27,9 @@
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/text/rotation.hpp>
-#include <mapnik/util/noncopyable.hpp>
-#include <mapnik/extend_converter.hpp>
 #include <mapnik/vertex_cache.hpp>
 #include <mapnik/text/point_layout.hpp>
-#include <mapnik/tolerance_iterator.hpp>
 #include <mapnik/text/text_line_policy.hpp>
-#include <mapnik/vertex_converters.hpp>
-#include <mapnik/vertex_adapters.hpp>
 #include <mapnik/label_placements/line_layout.hpp>
 
 namespace mapnik
@@ -80,7 +75,7 @@ bool max_line_angle_layout<SubLayout>::try_placement(
     double distance = max_angle_distance_ ?
         (this->params_.scale_factor * *max_angle_distance_) :
         layout_width;
-    text_max_line_angle_policy<LayoutGenerator> policy(path,
+    text_max_line_angle_policy policy(path,
         layout_generator, layout_width, this->params_, max_angle_diff_,
         distance);
     return label_placement::line_layout<SubLayout>::try_placement(

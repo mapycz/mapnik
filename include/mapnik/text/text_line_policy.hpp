@@ -28,14 +28,13 @@
 namespace mapnik
 {
 
-template <typename LayoutGenerator>
 struct text_line_policy
 {
     using params_type = label_placement::placement_params;
 
     text_line_policy(
         vertex_cache & path,
-        LayoutGenerator const & lg,
+        text_layout_generator const & lg,
         double layout_width,
         params_type const & params)
         : layout_generator_(lg),
@@ -125,7 +124,7 @@ struct text_line_policy
         return position_tolerance_;
     }
 
-    LayoutGenerator const & layout_generator_;
+    text_layout_generator const & layout_generator_;
     params_type const & params_;
     const double layout_width_;
     const double minimum_path_length_;
@@ -172,26 +171,25 @@ private:
     }
 };
 
-template <typename LayoutGenerator>
-struct text_max_line_angle_policy : text_line_policy<LayoutGenerator>
+struct text_max_line_angle_policy : text_line_policy
 {
     using params_type = label_placement::placement_params;
 
     text_max_line_angle_policy(
         vertex_cache & path,
-        LayoutGenerator const & lg,
+        text_layout_generator const & lg,
         double layout_width,
         params_type const & params,
         double max_angle_diff,
         double max_angle_distance)
-        : text_line_policy<LayoutGenerator>(path, lg, layout_width, params),
+        : text_line_policy(path, lg, layout_width, params),
           mover_(path, max_angle_diff, max_angle_distance)
     {
     }
 
     bool move(double distance)
     {
-        if (!text_line_policy<LayoutGenerator>::move(distance))
+        if (!text_line_policy::move(distance))
         {
             return false;
         }
