@@ -256,6 +256,15 @@
             "default-value": "power",
             "default-meaning": "pow(x,gamma) is used to calculate pixel gamma, which produces slightly smoother line and polygon antialiasing than the 'linear' method, while other methods are usually only used to disable AA.",
             "doc": "An Antigrain Geometry specific rendering hint to control the quality of antialiasing. Under the hood in Mapnik this method is used in combination with the 'gamma' value (which defaults to 1). The methods are in the AGG source at https://github.com/mapycz/mapnik/blob/master/deps/agg/include/agg_gamma_functions.h."
+        },
+        "text-mode": {
+            "type": [
+                "default",
+                "mono"
+            ],
+            "default-value": "default",
+            "default-meaning": "Text will be rendered with antialiasing, no hinting.",
+            "doc": "Each value represents a group properties affecting text rendering. The `default` value renders antialiased text with no hinting. The `mono` renders hinted, monochrome text (1 bit per pixel)."
         }
     },
     "map": {
@@ -1123,6 +1132,9 @@
             "placements": {
                 "see-also": "text/placements"
             },
+            "text-mode": {
+                "see-also": "text-mode"
+            },
             "text-transform": {
                 "type": [
                     "none",
@@ -1640,6 +1652,9 @@
                 "default-value": 10.0,
                 "doc": "Text size in pixels.",
                 "default-meaning": "Font size of 10 will be used to render text."
+            },
+            "text-mode": {
+                "see-also": "text-mode"
             },
             "text-ratio": {
                 "doc": "Define the amount of text (of the total) present on successive lines when wrapping occurs.",
