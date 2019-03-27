@@ -1528,15 +1528,15 @@ struct comp_op_rgba_grain_merge_gimp
             const int new_alpha = layer_alpha + (((base_mask - layer_alpha) * da + base_mask) >> base_shift);
             const int grain = (da * layer_alpha * Grain + Grain * base_mask + base_mask) >> (2 * base_shift);
 
-            dr = (da * ((int)sr + dr - grain)) / new_alpha;
-            dg = (da * ((int)sg + dg - grain)) / new_alpha;
-            db = (da * ((int)sb + db - grain)) / new_alpha;
-            //da = da ? da : new_alpha;
+            dr = (int)sr + dr - grain;
+            dg = (int)sg + dg - grain;
+            db = (int)sb + db - grain;
+            da = new_alpha;
 
             p[Order::R] = dr < 0 ? 0 : (dr > base_mask ? base_mask : dr);
             p[Order::G] = dg < 0 ? 0 : (dg > base_mask ? base_mask : dg);
             p[Order::B] = db < 0 ? 0 : (db > base_mask ? base_mask : db);
-            //p[Order::A] = da < 0 ? 0 : (da > base_mask ? base_mask : da);
+            p[Order::A] = da < 0 ? 0 : (da > base_mask ? base_mask : da);
         }
     }
 };
