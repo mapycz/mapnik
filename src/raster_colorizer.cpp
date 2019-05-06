@@ -234,22 +234,17 @@ unsigned raster_colorizer::get_color(float value) const
         //deal with this separately so we don't have to worry about div0
         if(nextStopValue == stopValue)
         {
-            outputColor = stopColor;
+            return stopColor.rgba();
         }
-        else
-        {
-            float fraction = (value - stopValue) / (nextStopValue - stopValue);
 
-            unsigned r = interpolate(stopColor.red(), nextStopColor.red(),fraction);
-            unsigned g = interpolate(stopColor.green(), nextStopColor.green(),fraction);
-            unsigned b = interpolate(stopColor.blue(), nextStopColor.blue(),fraction);
-            unsigned a = interpolate(stopColor.alpha(), nextStopColor.alpha(),fraction);
+        float fraction = (value - stopValue) / (nextStopValue - stopValue);
 
-            outputColor.set_red(r);
-            outputColor.set_green(g);
-            outputColor.set_blue(b);
-            outputColor.set_alpha(a);
-        }
+        unsigned r = interpolate(stopColor.red(), nextStopColor.red(),fraction);
+        unsigned g = interpolate(stopColor.green(), nextStopColor.green(),fraction);
+        unsigned b = interpolate(stopColor.blue(), nextStopColor.blue(),fraction);
+        unsigned a = interpolate(stopColor.alpha(), nextStopColor.alpha(),fraction);
+
+        return color(r, g, b, a).rgba();
     }
     break;
     case COLORIZER_LINEAR_ALL:
@@ -257,15 +252,13 @@ unsigned raster_colorizer::get_color(float value) const
         //deal with this separately so we don't have to worry about div0
         if(nextStopValue == stopValue)
         {
-            outputColor = stopColor;
+            return stopColor.rgba();
         }
-        else
-        {
-            double fraction = (value - stopValue) / (nextStopValue - stopValue);
-            double colorStart = static_cast<double>(stopColor.rgba());
-            double colorEnd = static_cast<double>(nextStopColor.rgba());
-            return colorStart + fraction * (colorEnd - colorStart);
-        }
+
+        double fraction = (value - stopValue) / (nextStopValue - stopValue);
+        double colorStart = static_cast<double>(stopColor.rgba());
+        double colorEnd = static_cast<double>(nextStopColor.rgba());
+        return colorStart + fraction * (colorEnd - colorStart);
     }
     break;
     case COLORIZER_DISCRETE:
@@ -284,7 +277,6 @@ unsigned raster_colorizer::get_color(float value) const
         }
         break;
     }
-
 
     /*
       MAPNIK_LOG_DEBUG(raster_colorizer) << "raster_colorizer: get_color " << value;
