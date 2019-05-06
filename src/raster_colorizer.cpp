@@ -42,6 +42,7 @@ static const char *colorizer_mode_strings[] = {
     "linear",
     "discrete",
     "exact",
+    "linear-all",
     ""
 };
 
@@ -249,7 +250,22 @@ unsigned raster_colorizer::get_color(float value) const
             outputColor.set_blue(b);
             outputColor.set_alpha(a);
         }
-
+    }
+    break;
+    case COLORIZER_LINEAR_ALL:
+    {
+        //deal with this separately so we don't have to worry about div0
+        if(nextStopValue == stopValue)
+        {
+            outputColor = stopColor;
+        }
+        else
+        {
+            double fraction = (value - stopValue) / (nextStopValue - stopValue);
+            double colorStart = static_cast<double>(stopColor.rgba());
+            double colorEnd = static_cast<double>(nextStopColor.rgba());
+            return colorStart + fraction * (colorEnd - colorStart);
+        }
     }
     break;
     case COLORIZER_DISCRETE:
