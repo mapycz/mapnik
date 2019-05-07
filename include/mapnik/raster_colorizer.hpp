@@ -64,7 +64,8 @@ enum colorizer_mode_enum : std::uint8_t
     COLORIZER_LINEAR = 1,     //!< Linear interpolation between colors, each channel separately
     COLORIZER_DISCRETE = 2,   //!< Single color for stop
     COLORIZER_EXACT = 3,      //!< Only the exact value specified for the stop gets translated, others use the default
-    COLORIZER_LINEAR_ALL = 4, //!< Linear interpolation between colors, all channels together in en RGBA value
+    COLORIZER_LINEAR_ALL = 4, //!< Linear interpolation between colors, all channels together in an RGBA value
+    COLORIZER_LINEAR_ALL_BGRA = 5, //!< Linear interpolation between colors, all channels together in a BGRA value
     colorizer_mode_enum_MAX
 };
 

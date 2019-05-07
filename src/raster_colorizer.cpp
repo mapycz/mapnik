@@ -43,6 +43,7 @@ static const char *colorizer_mode_strings[] = {
     "discrete",
     "exact",
     "linear-all",
+    "linear-all-bgra",
     ""
 };
 
@@ -259,6 +260,29 @@ unsigned raster_colorizer::get_color(float value) const
         double colorStart = static_cast<double>(stopColor.rgba());
         double colorEnd = static_cast<double>(nextStopColor.rgba());
         return colorStart + fraction * (colorEnd - colorStart);
+    }
+    break;
+    case COLORIZER_LINEAR_ALL_BGRA:
+    {
+        //deal with this separately so we don't have to worry about div0
+        if(nextStopValue == stopValue)
+        {
+            return stopColor.rgba();
+        }
+
+        double fraction = (value - stopValue) / (nextStopValue - stopValue);
+        double colorStart = static_cast<double>(color(
+            stopColor.blue(),
+            stopColor.green(),
+            stopColor.red(),
+            stopColor.alpha()).rgba());
+        double colorEnd = static_cast<double>(color(
+            nextStopColor.blue(),
+            nextStopColor.green(),
+            nextStopColor.red(),
+            nextStopColor.alpha()).rgba());
+        color bgra(static_cast<unsigned>(colorStart + fraction * (colorEnd - colorStart)));
+        return color(bgra.blue(), bgra.green(), bgra.red(), bgra.alpha()).rgba();
     }
     break;
     case COLORIZER_DISCRETE:
