@@ -21,6 +21,7 @@
 #pragma GCC diagnostic pop
 
 #include <mapnik/text/scrptrun.hpp>
+#include <algorithm>
 
 #define ARRAY_SIZE(array) (sizeof array  / sizeof array[0])
 
@@ -188,7 +189,7 @@ UBool ScriptRun::next()
             // pop it from the stack
             if (pairIndex >= 0 && (pairIndex & 1) != 0 && parenSP >= 0) {
                 parenSP -= 1;
-                startSP -= 1;
+                startSP = std::max(-1, startSP - 1);
             }
         } else {
             // if the run broke on a surrogate pair,
