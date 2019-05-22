@@ -62,6 +62,7 @@ namespace mapnik { namespace sql_utils {
     {
         std::string table_name = sql;
         boost::algorithm::replace_all(table_name,"\n"," ");
+        boost::algorithm::replace_all(table_name,"\t"," ");
         boost::algorithm::ireplace_all(table_name," from "," FROM ");
 
         std::string::size_type idx = table_name.rfind(" FROM ");

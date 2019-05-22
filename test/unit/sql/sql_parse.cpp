@@ -30,4 +30,9 @@ SECTION("complex sql 4") {
     REQUIRE( "table1" == mapnik::sql_utils::table_from_sql(subquery) );
 }
 
+SECTION("complex sql 5") {
+    std::string subquery("(select * FROM\ttable1) AS data");
+    REQUIRE( "table1" == mapnik::sql_utils::table_from_sql(subquery) );
+}
+
 }
