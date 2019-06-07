@@ -427,7 +427,7 @@ void agg_renderer<T0,T1>::end_style_processing(feature_type_style const& st)
                  );
         }
         previous_buffer.painted(previous_buffer.painted() || current_buffer.painted());
-        if (internal_buffers_.in_range()
+        if (!internal_buffers_.empty()
             && &current_buffer == &internal_buffers_.top())
         {
             internal_buffers_.pop();

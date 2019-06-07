@@ -60,53 +60,25 @@ namespace mapnik {
 namespace mapnik {
 
 template <typename T>
-class buffer_stack
+class buffer_stack : public std::stack<T>
 {
 public:
     buffer_stack(std::size_t width, std::size_t height)
         : width_(width),
           height_(height),
-          buffers_(),
-          position_(buffers_.begin())
+          std::stack<T>()
     {
     }
 
     T & push()
     {
-        if (position_ == buffers_.begin())
-        {
-            buffers_.emplace_front(width_, height_);
-            position_ = buffers_.begin();
-        }
-        else
-        {
-            --position_;
-            mapnik::fill(*position_, 0); // fill with transparent colour
-        }
-        return *position_;
-    }
-    bool in_range() const
-    {
-        return (position_ != buffers_.end());
-    }
-
-    void pop()
-    {
-        // ^ ensure irator is not out-of-range
-        // prior calling this method
-        ++position_;
-    }
-
-    T & top() const
-    {
-        return *position_;
+        this->emplace(width_, height_);
+        return this->top();
     }
 
 private:
     const std::size_t width_;
     const std::size_t height_;
-    std::deque<T> buffers_;
-    typename std::deque<T>::iterator position_;
 };
 
 template <typename T0, typename T1=renderer_common::detector_type>
