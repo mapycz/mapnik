@@ -95,8 +95,7 @@ pretty_dep_names = {
     'libxml2':'libxml2 library | try setting XML2_CONFIG SCons option to point to location of xml2-config program or configure with XML2_LIBS & XML2_INCLUDES',
     'xslt':'XSLT C library | configure with XSLT_LIBS, XSLT_INCLUDES, EXSLT_LIBS, EXSLT_INCLUDES',
     'gdal-config':'gdal-config program | try setting GDAL_CONFIG SCons option',
-    'freetype-config':'freetype-config program | try setting FREETYPE_CONFIG SCons option or configure with FREETYPE_LIBS & FREETYPE_INCLUDES',
-    'freetype':'libfreetype library | try setting FREETYPE_CONFIG SCons option or configure with FREETYPE_LIBS & FREETYPE_INCLUDES',
+    'freetype':'libfreetype library | configure with FREETYPE_LIBS & FREETYPE_INCLUDES',
     'osm':'more info: https://github.com/mapnik/mapnik/wiki/OsmPlugin',
     'boost_regex_icu':'libboost_regex built with optional ICU unicode support is needed for unicode regex support in mapnik.',
     'sqlite_rtree':'The SQLite plugin requires libsqlite3 built with RTREE support (-DSQLITE_ENABLE_RTREE=1)',
@@ -336,7 +335,6 @@ opts.AddVariables(
     ('BOOST_STATIC','Link with boost libs statically','', False),
 
     # Variables for required dependencies
-    ('FREETYPE_CONFIG', 'The path to the freetype-config executable.', 'freetype-config'),
     ('XML2_CONFIG', 'The path to the xml2-config executable.', 'xml2-config'),
     PathVariable('ICU_INCLUDES', 'Search path for ICU include files', ICU_INCLUDES_DEFAULT, PathVariable.PathAccept),
     PathVariable('ICU_LIBS','Search path for ICU include files',ICU_LIBS_DEFAULT + LIBDIR_SCHEMA_DEFAULT, PathVariable.PathAccept),
@@ -1407,7 +1405,7 @@ if not preconfigured:
         if env.get('FREETYPE_LIBS'):
             lib_path = env['FREETYPE_LIBS']
             env.AppendUnique(LIBPATH = fix_path(lib_path))
-    elif conf.parse_config('FREETYPE_CONFIG'):
+    elif env.ParseConfig('pkg-config --libs --cflags freetype2'):
         # check if freetype links to bz2
         if env['RUNTIME_LINK'] == 'static':
             temp_env = env.Clone()
