@@ -1,7 +1,7 @@
 
 # Placement `line-max-angle`
 
-Allows place symbols only on straight sections of lines. Straight section is defined by maximum angle between particular segment of the line and other line segments to given distance. The angle and the distance can be set by `max-line-angle` and `max-line-angle-distance` options.
+Allows to place symbols only on straight sections of lines. Straight section is defined by maximum angle between particular segment of the line and other line segments to given distance. The angle and the distance can be set by `max-line-angle` and `max-line-angle-distance` options.
 
 ## An example
 
