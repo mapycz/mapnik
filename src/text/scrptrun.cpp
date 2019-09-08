@@ -14,17 +14,9 @@
  * http://source.icu-project.org/repos/icu/icu/trunk/license.html
  */
 
-#pragma GCC diagnostic push
-#include <mapnik/warning_ignore.hpp>
-#include <unicode/utypes.h>
-#include <unicode/uscript.h>
-#pragma GCC diagnostic pop
-
 #include <mapnik/text/scrptrun.hpp>
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
-
-const char ScriptRun::fgClassID=0;
 
 UChar32 ScriptRun::pairedChars[] = {
     0x0028, 0x0029, // ascii paired punctuation

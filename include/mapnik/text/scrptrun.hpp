@@ -20,7 +20,6 @@
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
 #include <unicode/utypes.h>
-#include <unicode/uobject.h>
 #include <unicode/uscript.h>
 #pragma GCC diagnostic pop
 
@@ -37,44 +36,27 @@ struct ParenStackEntry
     UScriptCode scriptCode = USCRIPT_INVALID_CODE;
 };
 
-class ScriptRun : public icu::UObject {
+class ScriptRun {
 public:
-    ScriptRun();
+    ScriptRun(const UChar chars[], int32_t length)
+      : charStart(0),
+        charLimit(length),
+        charArray(chars),
+        scriptStart(charStart),
+        scriptEnd(charStart),
+        scriptCode(USCRIPT_INVALID_CODE),
+        parenSP(-1)
+    { }
 
-    ScriptRun(const UChar chars[], int32_t length);
+    int32_t getScriptStart() { return scriptStart; }
 
-    ScriptRun(const UChar chars[], int32_t start, int32_t length);
+    int32_t getScriptEnd(){ return scriptEnd; }
 
-    void reset();
-
-    void reset(int32_t start, int32_t count);
-
-    void reset(const UChar chars[], int32_t start, int32_t length);
-
-    int32_t getScriptStart();
-
-    int32_t getScriptEnd();
-
-    UScriptCode getScriptCode();
+    UScriptCode getScriptCode() { return scriptCode; }
 
     UBool next();
 
-    /**
-     * ICU "poor man's RTTI", returns a UClassID for the actual class.
-     *
-     * @stable ICU 2.2
-     */
-    virtual inline UClassID getDynamicClassID() const { return getStaticClassID(); }
-
-    /**
-     * ICU "poor man's RTTI", returns a UClassID for this class.
-     *
-     * @stable ICU 2.2
-     */
-    static inline UClassID getStaticClassID() { return (UClassID)&fgClassID; }
-
 private:
-
     static UBool sameScript(int32_t scriptOne, int32_t scriptTwo);
 
     int32_t charStart;
@@ -95,66 +77,6 @@ private:
     static const int32_t pairedCharCount;
     static const int32_t pairedCharPower;
     static const int32_t pairedCharExtra;
-
-    /**
-     * The address of this static class variable serves as this class's ID
-     * for ICU "poor man's RTTI".
-     */
-    static const char fgClassID;
 };
-
-inline ScriptRun::ScriptRun()
-{
-    reset(nullptr, 0, 0);
-}
-
-inline ScriptRun::ScriptRun(const UChar chars[], int32_t length)
-{
-    reset(chars, 0, length);
-}
-
-inline ScriptRun::ScriptRun(const UChar chars[], int32_t start, int32_t length)
-{
-    reset(chars, start, length);
-}
-
-inline int32_t ScriptRun::getScriptStart()
-{
-    return scriptStart;
-}
-
-inline int32_t ScriptRun::getScriptEnd()
-{
-    return scriptEnd;
-}
-
-inline UScriptCode ScriptRun::getScriptCode()
-{
-    return scriptCode;
-}
-
-inline void ScriptRun::reset()
-{
-    scriptStart = charStart;
-    scriptEnd   = charStart;
-    scriptCode  = USCRIPT_INVALID_CODE;
-    parenSP     = -1;
-}
-
-inline void ScriptRun::reset(int32_t start, int32_t length)
-{
-    charStart = start;
-    charLimit = start + length;
-
-    reset();
-}
-
-inline void ScriptRun::reset(const UChar chars[], int32_t start, int32_t length)
-{
-    charArray = chars;
-
-    reset(start, length);
-}
-
 
 #endif
