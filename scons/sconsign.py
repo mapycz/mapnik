@@ -23,17 +23,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-<<<<<<< HEAD
-__revision__ = "src/script/sconsign.py rel_2.5.1:3735:9dc6cee5c168 2016/11/03 14:02:02 bdbaddog"
 
-__version__ = "2.5.1"
-
-__build__ = "rel_2.5.1:3735:9dc6cee5c168[MODIFIED]"
-
-__buildsys__ = "mongodog"
-
-__date__ = "2016/11/03 14:02:02"
-=======
 from __future__ import print_function
 
 __revision__ = "src/script/sconsign.py 74b2c53bc42290e911b334a6b44f187da698a668 2017/11/14 13:16:53 bdbaddog"
@@ -45,7 +35,6 @@ __build__ = "74b2c53bc42290e911b334a6b44f187da698a668"
 __buildsys__ = "hpmicrodog"
 
 __date__ = "2017/11/14 13:16:53"
->>>>>>> 5732df452... support SCons 3 (initial attempt)
 
 __developer__ = "bdbaddog"
 
