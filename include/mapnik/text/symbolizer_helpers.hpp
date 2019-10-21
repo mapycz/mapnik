@@ -31,7 +31,6 @@
 #include <mapnik/text/text_properties.hpp>
 #include <mapnik/label_placement.hpp>
 #include <mapnik/marker.hpp>
-#include <mapnik/group/group_symbolizer_helper.hpp>
 #include <mapnik/text/grid_layout.hpp>
 #include <mapnik/text/max_line_angle_layout.hpp>
 #include <mapnik/text/line_layout.hpp>
@@ -165,65 +164,6 @@ struct shield_symbolizer_traits
 
     using placements_type = placements_list;
     using layout_generator_type = text_layout_generator;
-};
-
-struct group_symbolizer_traits
-{
-    using point = split_multi<
-        point_layout<point_geometry_visitor,
-            geom_iterator<
-                group_point_layout>>>;
-    using interior = split_multi<
-        point_layout<interior_geometry_visitor,
-            geom_iterator<
-                group_point_layout>>>;
-    using vertex = split_multi<
-        geom_iterator<
-            vertex_layout<
-                group_point_layout>>>;
-    using grid = split_multi<
-        geom_iterator<
-            vertex_converter<
-                set_clip_geometry_visitor,
-                grid_layout<
-                    geometry::grid_vertex_adapter<
-                        geometry::spiral_grid_iterator>,
-                    group_point_layout>>>>;
-    using alternating_grid = split_multi<
-        geom_iterator<
-            vertex_converter<
-                set_clip_geometry_visitor,
-                grid_layout<
-                    geometry::alternating_grid_vertex_adapter<
-                        geometry::spiral_grid_iterator>,
-                    group_point_layout>>>>;
-    using line = split_multi<
-        geom_iterator<
-            vertex_converter<
-                set_line_clip_geometry_visitor,
-                group_line_layout<
-                    group_point_layout>>>>;
-    using line_max_angle = split_multi<
-        geom_iterator<
-            vertex_converter<
-                set_line_clip_geometry_visitor,
-                group_max_angle_line_layout<
-                    group_point_layout>>>>;
-    using vertex_first = split_multi<
-        geom_iterator<
-            vertex_converter<
-                set_clip_geometry_visitor,
-                vertex_first_layout<
-                    group_point_layout>>>>;
-    using vertex_last = split_multi<
-        geom_iterator<
-            vertex_converter<
-                set_clip_geometry_visitor,
-                vertex_last_layout<
-                    group_point_layout>>>>;
-
-    using placements_type = pixel_position_list;
-    using layout_generator_type = group_layout_generator;
 };
 
 }

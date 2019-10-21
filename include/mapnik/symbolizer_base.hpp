@@ -30,7 +30,6 @@
 #include <mapnik/path_expression.hpp>
 #include <mapnik/symbolizer_keys.hpp>
 #include <mapnik/raster_colorizer.hpp>
-#include <mapnik/group/group_symbolizer_properties.hpp>
 #include <mapnik/attribute.hpp>
 #include <mapnik/text/font_feature_settings.hpp>
 #include <mapnik/util/variant.hpp>
@@ -93,7 +92,6 @@ using value_base_type = util::variant<value_bool,
                                       text_placements_ptr,
                                       dash_array,
                                       raster_colorizer_ptr,
-                                      group_symbolizer_properties_ptr,
                                       font_feature_settings>;
 
 struct strict_value : value_base_type
@@ -142,7 +140,6 @@ struct MAPNIK_DECL polygon_pattern_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL markers_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL raster_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL building_symbolizer : public symbolizer_base {};
-struct MAPNIK_DECL group_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL debug_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL dot_symbolizer : public symbolizer_base {};
 struct MAPNIK_DECL collision_symbolizer : public symbolizer_base {};
@@ -158,7 +155,6 @@ using symbolizer = util::variant<point_symbolizer,
                                  text_symbolizer,
                                  building_symbolizer,
                                  markers_symbolizer,
-                                 group_symbolizer,
                                  debug_symbolizer,
                                  dot_symbolizer,
                                  collision_symbolizer>;

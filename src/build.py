@@ -254,15 +254,11 @@ source = Split(
     text/line_layout.cpp
     text/text_layout_generator.cpp
     text/glyph_bbox.cpp
-    group/group_layout_manager.cpp
-    group/group_rule.cpp
-    group/group_symbolizer_helper.cpp
     geometry_cref.cpp
     xml_tree.cpp
     config_error.cpp
     color_factory.cpp
     renderer_common.cpp
-    renderer_common/render_group_symbolizer.cpp
     renderer_common/render_markers_symbolizer.cpp
     renderer_common/render_thunk_extractor.cpp
     renderer_common/process_collision_symbolizer.cpp
@@ -319,7 +315,6 @@ if env['PLUGIN_LINKING'] == 'static':
 # to make it safe to try to compile them from Makefile wrapper
 source += Split("""
 cairo/process_markers_symbolizer.cpp
-cairo/process_group_symbolizer.cpp
 """)
 
 if env['ENABLE_GLIBC_WORKAROUND']:
@@ -369,7 +364,6 @@ source += Split(
     agg/process_raster_symbolizer.cpp
     agg/process_shield_symbolizer.cpp
     agg/process_markers_symbolizer.cpp
-    agg/process_group_symbolizer.cpp
     agg/process_debug_symbolizer.cpp
     agg/process_collision_symbolizer.cpp
     """
@@ -382,7 +376,6 @@ if env['RUNTIME_LINK'] == "static":
 # to make it safe to try to compile them from Makefile wrapper
 source += Split("""
 grid/process_markers_symbolizer.cpp
-grid/process_group_symbolizer.cpp
 """)
 
 # grid backend

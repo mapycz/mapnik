@@ -34,8 +34,6 @@
 #include <mapnik/path_expression.hpp>  // for path_expression_ptr
 #include <mapnik/text/placements/base.hpp>  // for text_placements
 #include <mapnik/image_scaling.hpp>
-#include <mapnik/group/group_symbolizer_properties.hpp>
-#include <mapnik/group/group_rule.hpp>
 #include <mapnik/util/conversions.hpp>
 #include <mapnik/util/variant.hpp>
 
@@ -89,20 +87,6 @@ struct expression_attributes
 
 private:
     Container& names_;
-};
-
-class group_attribute_collector : public util::noncopyable
-{
-private:
-    std::set<std::string>& names_;
-    bool expand_index_columns_;
-public:
-    group_attribute_collector(std::set<std::string>& names,
-                              bool expand_index_columns)
-        : names_(names),
-          expand_index_columns_(expand_index_columns) {}
-
-    void operator() (group_symbolizer const& sym);
 };
 
 template <typename Container>
@@ -163,8 +147,7 @@ struct symbolizer_attributes
     symbolizer_attributes(std::set<std::string>& names,
                           double & filter_factor)
         : filter_factor_(filter_factor),
-          f_attrs_(names),
-          g_attrs_(names, true) {}
+          f_attrs_(names) {}
 
     template <typename T>
     void operator () (T const& sym)
@@ -198,15 +181,9 @@ struct symbolizer_attributes
         }
     }
 
-    void operator () (group_symbolizer const& sym)
-    {
-        g_attrs_(sym);
-    }
-
 private:
     double & filter_factor_;
     extract_attribute_names<std::set<std::string> > f_attrs_;
-    group_attribute_collector g_attrs_;
 };
 
 
@@ -241,72 +218,6 @@ public:
         return filter_factor_;
     }
 };
-
-
-inline void group_attribute_collector::operator() (group_symbolizer const& sym)
-{
-    // find all column names referenced in the group symbolizer
-    std::set<std::string> group_columns;
-    attribute_collector column_collector(group_columns);
-    expression_attributes<std::set<std::string> > rk_attr(group_columns);
-
-    // get columns from symbolizer repeat key
-    expression_ptr repeat_key = get<mapnik::expression_ptr>(sym, keys::repeat_key);
-    if (repeat_key)
-    {
-        util::apply_visitor(rk_attr, *repeat_key);
-    }
-
-    // get columns from child rules and symbolizers
-    group_symbolizer_properties_ptr props = get<group_symbolizer_properties_ptr>(sym, keys::group_properties);
-    if (props)
-    {
-        for (auto const& rule : props->get_rules())
-        {
-            // note that this recurses down on to the symbolizer
-            // internals too, so we get all free variables.
-            column_collector(*rule);
-            // still need to collect repeat key columns
-            if (rule->get_repeat_key())
-            {
-                util::apply_visitor(rk_attr, *(rule->get_repeat_key()));
-            }
-        }
-    }
-
-    // get indexed column names
-    value_integer start = get<value_integer>(sym, keys::start_column);
-    value_integer end = start + get<value_integer>(sym, keys::num_columns);
-    for (auto const& col_name : group_columns)
-    {
-        if (expand_index_columns_ && col_name.find('%') != std::string::npos)
-        {
-            // Note: ignore column name if it is '%' by itself.
-            // '%' is a special case to access the index value itself,
-            // rather than acessing indexed columns from data source.
-            if (col_name.size() > 1)
-            {
-                // Indexed column name. add column name for each index value.
-                for (value_integer col_idx = start; col_idx < end; ++col_idx)
-                {
-                    std::string col_idx_str;
-                    if (mapnik::util::to_string(col_idx_str,col_idx))
-                    {
-                        std::string col_idx_name = col_name;
-                        boost::replace_all(col_idx_name, "%", col_idx_str);
-                        names_.emplace(col_idx_name);
-                    }
-                }
-            }
-        }
-        else
-        {
-            // This is not an indexed column, or we are ignoring indexes.
-            // Insert the name as is.
-            names_.emplace(col_name);
-        }
-    }
-}
 
 } // namespace mapnik
 
