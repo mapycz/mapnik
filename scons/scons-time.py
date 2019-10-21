@@ -31,11 +31,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 from __future__ import division, print_function
 
-<<<<<<< HEAD
-__revision__ = "src/script/scons-time.py rel_2.5.1:3735:9dc6cee5c168 2016/11/03 14:02:02 bdbaddog"
-=======
 __revision__ = "src/script/scons-time.py 74b2c53bc42290e911b334a6b44f187da698a668 2017/11/14 13:16:53 bdbaddog"
->>>>>>> 5732df452... support SCons 3 (initial attempt)
 
 import getopt
 import glob
@@ -268,7 +264,7 @@ def tee_to_file(command, log):
     return '%s 2>&1 | tee %s' % (command, log)
 
 
-    
+
 class SConsTimer(object):
     """
     Usage: scons-time SUBCOMMAND [ARGUMENTS]
@@ -364,7 +360,7 @@ class SConsTimer(object):
         'SCons'         : 'Total SCons execution time',
         'commands'      : 'Total command execution time',
     }
-    
+
     time_string_all = 'Total .* time'
 
     #
