@@ -80,7 +80,6 @@ enum class property_types : std::uint8_t
     target_dash_array,
     target_colorizer,
     target_repeat_key,
-    target_group_symbolizer_properties,
     target_halo_comp_op,
     target_simplify_algorithm,
     target_gamma_method,

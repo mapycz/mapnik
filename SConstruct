@@ -723,6 +723,7 @@ def FindBoost(context, prefixes, thread_flag):
     prefixes.insert(0, env['BOOST_INCLUDES'])
     prefixes.insert(0, env['BOOST_LIBS'])
     for searchDir in prefixes:
+        searchDir = str(searchDir)
         libItems = glob(os.path.join(searchDir, env['LIBDIR_SCHEMA'], '%s*.*' % search_lib))
         if not libItems:
             libItems = glob(os.path.join(searchDir, '%s*.*' % search_lib))

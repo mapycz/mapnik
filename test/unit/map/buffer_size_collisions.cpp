@@ -39,7 +39,6 @@ TEST_CASE("buffer-size-collisions")
             { "shield2", buffer_size_collisions },
             { "raster", boost::none },
             { "building", boost::none },
-            { "group", buffer_size_collisions },
             { "collision", buffer_size_collisions },
             { "debug", boost::none },
             { "mix", buffer_size_collisions },

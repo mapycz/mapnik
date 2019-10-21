@@ -78,7 +78,6 @@ enum class keys : std::uint8_t
     num_columns,
     start_column,
     repeat_key,
-    group_properties,
     largest_box_only,
     minimum_path_length,
     halo_comp_op,

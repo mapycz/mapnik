@@ -123,7 +123,6 @@ static const property_meta_type key_meta[const_max_key] =
     property_meta_type{ "num-columns",  nullptr, property_types::target_integer},
     property_meta_type{ "start-column", nullptr, property_types::target_integer},
     property_meta_type{ "repeat-key", nullptr, property_types::target_repeat_key},
-    property_meta_type{ "symbolizer-properties", nullptr, property_types::target_group_symbolizer_properties},
     property_meta_type{ "largest-box-only", nullptr, property_types::target_bool },
     property_meta_type{ "minimum-path-length", nullptr, property_types::target_double },
     property_meta_type{ "halo-comp-op",

@@ -56,11 +56,6 @@ struct uses_collision_detector_visitor
         return !get_ignore_placement(sym) || !get_allow_overlap(sym);
     }
 
-    bool operator() (group_symbolizer const & sym) const
-    {
-        return true;
-    }
-
     bool operator() (collision_symbolizer const & sym) const
     {
         return true;
