@@ -88,12 +88,6 @@ runner::renderer_container create_renderers(po::variables_map const & args,
         renderers.emplace_back(renderer<svg_renderer>(output_dir, reference_dir, overwrite));
     }
 #endif
-#if defined(GRID_RENDERER)
-    if (force_append || args.count(grid_renderer::name))
-    {
-        renderers.emplace_back(renderer<grid_renderer>(output_dir, reference_dir, overwrite));
-    }
-#endif
 
     if (renderers.empty())
     {
@@ -142,9 +136,6 @@ int main(int argc, char** argv)
 #endif
 #if defined(SVG_RENDERER)
         (svg_renderer::name, "render with SVG renderer")
-#endif
-#if defined(GRID_RENDERER)
-        (grid_renderer::name, "render with Grid renderer")
 #endif
         ;
 

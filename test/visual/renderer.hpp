@@ -35,9 +35,6 @@
 #include <mapnik/image_reader.hpp>
 #include <mapnik/util/variant.hpp>
 #include <mapnik/agg_renderer.hpp>
-#if defined(GRID_RENDERER)
-#include <mapnik/grid/grid_renderer.hpp>
-#endif
 
 #if defined(HAVE_CAIRO)
 #include <mapnik/cairo/cairo_renderer.hpp>
@@ -221,55 +218,6 @@ struct svg_renderer : vector_renderer_base
 };
 #endif
 
-#if defined(GRID_RENDERER)
-struct grid_renderer : raster_renderer_base<mapnik::image_rgba8>
-{
-    static constexpr const char * name = "grid";
-
-    void convert(mapnik::grid::data_type const & grid, image_type & image) const
-    {
-        for (std::size_t y = 0; y < grid.height(); ++y)
-        {
-            mapnik::grid::value_type const * grid_row = grid.get_row(y);
-            image_type::pixel_type * image_row = image.get_row(y);
-            for (std::size_t x = 0; x < grid.width(); ++x)
-            {
-                mapnik::grid::value_type val = grid_row[x];
-
-                if (val == mapnik::grid::base_mask)
-                {
-                    image_row[x] = 0;
-                    continue;
-                }
-                if (val < 0)
-                {
-                    throw std::runtime_error("grid renderer: feature id is negative.");
-                }
-
-                val *= 100;
-
-                if (val > 0x00ffffff)
-                {
-                    throw std::runtime_error("grid renderer: feature id is too high.");
-                }
-
-                image_row[x] = val | 0xff000000;
-            }
-        }
-    }
-
-    image_type render(mapnik::Map const & map, double scale_factor) const
-    {
-        mapnik::grid grid(map.width(), map.height(), "__id__");
-        mapnik::grid_renderer<mapnik::grid> ren(map, grid, scale_factor);
-        ren.apply();
-        image_type image(map.width(), map.height());
-        convert(grid.data(), image);
-        return image;
-    }
-};
-#endif
-
 template <typename T>
 void set_rectangle(T const & src, T & dst, std::size_t x, std::size_t y)
 {
@@ -414,9 +362,6 @@ using renderer_type = mapnik::util::variant<renderer<agg_renderer>
 #endif
 #if defined(SVG_RENDERER)
                                             ,renderer<svg_renderer>
-#endif
-#if defined(GRID_RENDERER)
-                                            ,renderer<grid_renderer>
 #endif
                                             >;
 
