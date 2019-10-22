@@ -73,7 +73,7 @@ config_override () {
 
 configure () {
     if enabled ${COVERAGE}; then
-        ./configure "$@" PREFIX=${PREFIX} PGSQL2SQLITE=False SVG2PNG=False SVG_RENDERER=False \
+        ./configure "$@" PREFIX=${PREFIX} PGSQL2SQLITE=False SVG2PNG=False \
             COVERAGE=True DEBUG=True
     else
         ./configure "$@" PREFIX=${PREFIX}

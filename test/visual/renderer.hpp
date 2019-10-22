@@ -50,10 +50,6 @@
 #endif
 #endif
 
-#if defined(SVG_RENDERER)
-#include <mapnik/svg/output/svg_renderer.hpp>
-#endif
-
 // boost
 #include <boost/filesystem.hpp>
 
@@ -201,23 +197,6 @@ struct cairo_pdf_renderer : cairo_vector_renderer<cairo_pdf_surface_create_for_s
 #endif
 #endif
 
-#if defined(SVG_RENDERER)
-struct svg_renderer : vector_renderer_base
-{
-    static constexpr const char * name = "svg";
-    static constexpr const char * ext = ".svg";
-
-    image_type render(mapnik::Map const & map, double scale_factor) const
-    {
-        std::stringstream ss;
-        std::ostream_iterator<char> output_stream_iterator(ss);
-        mapnik::svg_renderer<std::ostream_iterator<char>> ren(map, output_stream_iterator, scale_factor);
-        ren.apply();
-        return ss.str();
-    }
-};
-#endif
-
 template <typename T>
 void set_rectangle(T const & src, T & dst, std::size_t x, std::size_t y)
 {
@@ -359,9 +338,6 @@ using renderer_type = mapnik::util::variant<renderer<agg_renderer>
 #ifdef CAIRO_HAS_PDF_SURFACE
                                             ,renderer<cairo_pdf_renderer>
 #endif
-#endif
-#if defined(SVG_RENDERER)
-                                            ,renderer<svg_renderer>
 #endif
                                             >;
 

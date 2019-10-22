@@ -31,19 +31,11 @@
 #include <mapnik/cairo/cairo_renderer.hpp>
 #endif
 
-#if defined(SVG_RENDERER)
-#include <mapnik/svg/output/svg_renderer.hpp>
-#endif
-
 namespace mapnik
 {
 
 #if defined(HAVE_CAIRO)
 template class MAPNIK_DECL feature_style_processor<cairo_renderer<cairo_ptr> >;
-#endif
-
-#if defined(SVG_RENDERER)
-template class MAPNIK_DECL feature_style_processor<svg_renderer<std::ostream_iterator<char> > >;
 #endif
 
 template class MAPNIK_DECL feature_style_processor<agg_renderer<image_rgba8> >;

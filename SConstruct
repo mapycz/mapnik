@@ -370,7 +370,6 @@ opts.AddVariables(
 
     # Variables affecting rendering back-ends
 
-    BoolVariable('SVG_RENDERER', 'build support for native svg renderer', 'False'),
     BoolVariable('CPP_TESTS', 'Compile the C++ tests', 'True'),
     BoolVariable('BENCHMARK', 'Compile the C++ benchmark scripts', 'False'),
 
@@ -475,7 +474,6 @@ pickle_store = [# Scons internal variables
         'CAIRO_LIBPATHS',
         'CAIRO_ALL_LIBS',
         'CAIRO_CPPPATHS',
-        'SVG_RENDERER',
         'SQLITE_LINKFLAGS',
         'BOOST_LIB_VERSION_FROM_HEADER',
         'BIGINT',

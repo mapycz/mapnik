@@ -82,12 +82,6 @@ runner::renderer_container create_renderers(po::variables_map const & args,
     }
 #endif
 #endif
-#if defined(SVG_RENDERER)
-    if (force_append || args.count(svg_renderer::name))
-    {
-        renderers.emplace_back(renderer<svg_renderer>(output_dir, reference_dir, overwrite));
-    }
-#endif
 
     if (renderers.empty())
     {
@@ -133,9 +127,6 @@ int main(int argc, char** argv)
 #ifdef CAIRO_HAS_PDF_SURFACE
         (cairo_pdf_renderer::name, "render with Cairo PDF renderer")
 #endif
-#endif
-#if defined(SVG_RENDERER)
-        (svg_renderer::name, "render with SVG renderer")
 #endif
         ;
 

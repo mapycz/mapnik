@@ -372,21 +372,6 @@ source += Split(
 if env['RUNTIME_LINK'] == "static":
     source += glob.glob('../deps/agg/src/' + '*.cpp')
 
-# https://github.com/mapnik/mapnik/issues/1438
-if env['SVG_RENDERER']: # svg backend
-    source += Split(
-    """
-    svg/output/svg_output_grammars.cpp
-    svg/output/svg_renderer.cpp
-    svg/output/svg_generator.cpp
-    svg/output/svg_output_attributes.cpp
-    svg/output/process_symbolizers.cpp
-    svg/output/process_line_symbolizer.cpp
-    svg/output/process_polygon_symbolizer.cpp
-    """)
-    lib_env.Append(CPPDEFINES = '-DSVG_RENDERER')
-    libmapnik_defines.append('-DSVG_RENDERER')
-
 if env['XMLPARSER'] == 'libxml2' and env['HAS_LIBXML2']:
     source += Split(
         """

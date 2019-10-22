@@ -41,9 +41,6 @@ subdirs = [
     'markers_placements'
     ]
 
-if env['SVG_RENDERER']:
-    subdirs.append('svg/output')
-
 if 'install' in COMMAND_LINE_TARGETS:
     for subdir in subdirs:
         pathdir = os.path.join(base,subdir,'*.hpp')
