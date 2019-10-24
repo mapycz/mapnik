@@ -246,25 +246,6 @@ bool box2d<T>::contains(box2d<T> const& other) const
 }
 
 template <typename T>
-bool box2d<T>::intersects(coord<T,2> const& c) const
-{
-    return intersects(c.x,c.y);
-}
-
-template <typename T>
-bool box2d<T>::intersects(T x,T y) const
-{
-    return !(x>maxx_ || x<minx_ || y>maxy_ || y<miny_);
-}
-
-template <typename T>
-bool box2d<T>::intersects(box2d<T> const& other) const
-{
-    return !(other.minx_>maxx_ || other.maxx_<minx_ ||
-             other.miny_>maxy_ || other.maxy_<miny_);
-}
-
-template <typename T>
 box2d<T> box2d<T>::intersect(box2d_type const& other) const
 {
     if (intersects(other))

@@ -101,9 +101,6 @@ public:
     bool contains(coord<T,2> const& c) const;
     bool contains(T x,T y) const;
     bool contains(box2d_type const& other) const;
-    bool intersects(coord<T,2> const& c) const;
-    bool intersects(T x,T y) const;
-    bool intersects(box2d_type const& other) const;
     box2d_type intersect(box2d_type const& other) const;
     bool operator==(box2d_type const& other) const;
     void re_center(T cx,T cy);
@@ -117,6 +114,22 @@ public:
     void move(T x, T y);
     std::string to_string() const;
     T area() const;
+
+    bool intersects(coord<T,2> const& c) const
+    {
+        return intersects(c.x,c.y);
+    }
+
+    bool intersects(T x,T y) const
+    {
+        return !(x>maxx_ || x<minx_ || y>maxy_ || y<miny_);
+    }
+
+    bool intersects(box2d<T> const& other) const
+    {
+        return !(other.minx_>maxx_ || other.maxx_<minx_ ||
+                 other.miny_>maxy_ || other.maxy_<miny_);
+    }
 
     // define some operators
     box2d_type& operator+=(box2d_type const& other);
