@@ -33,13 +33,15 @@ text_layout_generator::text_layout_generator(
     params_type const & params,
     detector_type & detector,
     face_manager_freetype & font_manager,
-    text_placement_info & info)
+    text_placement_info & info,
+    shaper_cache & s_cache)
     : params_(params),
       font_manager_(font_manager),
       info_(info),
       text_props_(evaluate_text_properties(
         info.properties, params.feature, params.vars)),
-      detector_(detector)
+      detector_(detector),
+      shaper_cache_(s_cache)
 {
 }
 
@@ -59,7 +61,8 @@ bool text_layout_generator::next()
             params_.scale_factor,
             info_.properties,
             info_.properties.layout_defaults,
-            info_.properties.format_tree())));
+            info_.properties.format_tree(),
+            shaper_cache_)));
     return true;
 }
 

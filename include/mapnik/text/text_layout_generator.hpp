@@ -36,6 +36,7 @@ namespace mapnik
 
 class feature_impl;
 class text_placement_info;
+class shaper_cache;
 
 struct text_layout_generator : util::noncopyable
 {
@@ -46,7 +47,8 @@ struct text_layout_generator : util::noncopyable
         params_type const & params,
         detector_type & detector,
         face_manager_freetype & font_manager,
-        text_placement_info & info);
+        text_placement_info & info,
+        shaper_cache & s_cache);
 
     bool next();
     void reset();
@@ -78,6 +80,7 @@ struct text_layout_generator : util::noncopyable
     std::unique_ptr<layout_container> layouts_;
     placements_list placements_;
     detector_type & detector_;
+    shaper_cache & shaper_cache_;
 };
 
 }//ns mapnik

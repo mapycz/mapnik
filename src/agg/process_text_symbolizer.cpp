@@ -47,7 +47,7 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
         common_.query_extent_, tr,
-        common_.symbol_cache_));
+        common_.symbol_cache_, common_.shaper_cache_));
 
     value_double gamma = get<value_double, keys::gamma>(sym, feature, common_.vars_);
     gamma_method_enum gamma_method = get<gamma_method_enum, keys::gamma_method>(sym, feature, common_.vars_);

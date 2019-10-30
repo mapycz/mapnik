@@ -49,7 +49,7 @@ void cairo_renderer<T>::process(shield_symbolizer const& sym,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
         common_.query_extent_, tr,
-        common_.symbol_cache_));
+        common_.symbol_cache_, common_.shaper_cache_));
 
     cairo_save_restore guard(context_);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
@@ -91,7 +91,7 @@ void cairo_renderer<T>::process(text_symbolizer const& sym,
         common_.scale_factor_,
         common_.t_, common_.font_manager_, *common_.detector_,
         common_.query_extent_, tr,
-        common_.symbol_cache_));
+        common_.symbol_cache_, common_.shaper_cache_));
 
     cairo_save_restore guard(context_);
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_,  src_over);

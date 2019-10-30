@@ -24,6 +24,7 @@
 #include <mapnik/text/text_properties.hpp>
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/text/glyph_info.hpp>
+#include <mapnik/text/shaper_cache.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/ptree_helpers.hpp>
@@ -111,7 +112,8 @@ void layout_node::apply(evaluated_format_properties_ptr const& p, feature_impl c
                                                                  parent.get_scale_factor(),
                                                                  parent.get_default_text_properties(),
                                                                  new_properties,
-                                                                 formatting::node_ptr());
+                                                                 formatting::node_ptr(),
+                                                                 parent.s_cache());
     // process contained format tree into the child node
     if (child_)
     {

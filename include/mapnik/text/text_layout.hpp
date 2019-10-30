@@ -49,6 +49,7 @@ namespace mapnik
 
 class feature_impl;
 class text_layout;
+class shaper_cache;
 
 using text_layout_ptr = std::unique_ptr<text_layout>;
 using text_layout_vector = std::vector<text_layout_ptr>;
@@ -72,7 +73,8 @@ public:
                 double scale_factor,
                 text_symbolizer_properties const& properties,
                 text_layout_properties const& layout_defaults,
-                formatting::node_ptr tree);
+                formatting::node_ptr tree,
+                shaper_cache & s_cache);
 
     // Adds a new text part. Call this function repeatedly to build the complete text.
     void add_text(mapnik::value_unicode_string const& str, evaluated_format_properties_ptr const& format);
@@ -101,9 +103,7 @@ public:
     // Width of a certain glyph cluster (in pixels).
     inline double cluster_width(unsigned cluster) const
     {
-        std::map<unsigned, double>::const_iterator width_itr = width_map_.find(cluster);
-        if (width_itr != width_map_.end()) return width_itr->second;
-        return 0;
+        return width_map_[cluster];
     }
 
     // Returns the number of glyphs so memory can be preallocated.
@@ -127,6 +127,8 @@ public:
 
     const_iterator longest_line() const;
 
+    shaper_cache & s_cache() const { return shaper_cache_; }
+
 private:
     void break_line(std::pair<unsigned, unsigned> && line_limits);
     void break_line_icu(std::pair<unsigned, unsigned> && line_limits);
@@ -144,7 +146,7 @@ private:
     // Maps char index (UTF-16) to width. If multiple glyphs map to the same char the sum of all widths is used
     // note: this probably isn't the best solution. it would be better to have an object for each cluster, but
     // it needs to be implemented with no overhead.
-    std::map<unsigned, double> width_map_;
+    std::vector<double> width_map_;
     double width_;
     double height_;
     unsigned glyphs_count_;
@@ -184,6 +186,8 @@ private:
     // in order to keep them in scope
     // NOTE: this must not be a std::vector - see note above about child_format_ptrs
     child_format_ptrs format_ptrs_;
+
+    shaper_cache & shaper_cache_;
 };
 
 class layout_container : util::noncopyable

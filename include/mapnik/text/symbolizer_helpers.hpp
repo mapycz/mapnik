@@ -188,7 +188,8 @@ public:
         DetectorT & detector,
         box2d<double> const& query_extent,
         agg::trans_affine const affine_trans,
-        symbol_cache const& sc)
+        symbol_cache const& sc,
+        shaper_cache & sh_cache)
     {
         label_placement::placement_params params {
             prj_trans, t, affine_trans, sym, feature, vars,
@@ -199,7 +200,7 @@ public:
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
         layout_generator_type layout_generator(
-            params, detector, font_manager, *placement_info);
+            params, detector, font_manager, *placement_info, sh_cache);
 
         const label_placement_enum placement_type =
             layout_generator.get_text_props().label_placement;

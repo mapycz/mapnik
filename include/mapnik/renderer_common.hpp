@@ -31,6 +31,7 @@
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/symbol_cache.hpp>
 #include <mapnik/collision_cache.hpp>
+#include <mapnik/text/shaper_cache.hpp>
 
 // fwd declarations to speed up compile
 namespace mapnik {
@@ -67,6 +68,7 @@ struct renderer_common : private util::noncopyable
     view_transform t_;
     detector_ptr detector_;
     symbol_cache symbol_cache_;
+    shaper_cache shaper_cache_;
 
 protected:
     // it's desirable to keep this class implicitly noncopyable to prevent

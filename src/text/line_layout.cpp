@@ -174,20 +174,16 @@ bool single_line_layout::try_placement(
             {
                 if (current_cluster != static_cast<int>(glyph.char_index))
                 {
+                    const double cluster_width = (current_cluster < 0) ? 0 : layout.cluster_width(current_cluster);
+                    const double distance = sign * (cluster_width + last_glyph_spacing);
                     if (adjust)
                     {
-                        if (!off_pp.move(sign * (layout.cluster_width(current_cluster) + last_glyph_spacing)))
-                        {
-                            return false;
-                        }
+                        if (!off_pp.move(distance)) { return false; }
                         last_glyph_spacing = adjust_character_spacing;
                     }
                     else
                     {
-                        if (!off_pp.move_to_distance(sign * (layout.cluster_width(current_cluster) + last_glyph_spacing)))
-                        {
-                            return false;
-                        }
+                        if (!off_pp.move_to_distance(distance)) { return false; }
                         last_glyph_spacing = glyph.format->character_spacing * params_.scale_factor;
                     }
                     current_cluster = glyph.char_index;

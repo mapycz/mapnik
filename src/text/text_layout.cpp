@@ -22,11 +22,12 @@
 
 #include <mapnik/text/text_layout.hpp>
 #include <mapnik/text/text_properties.hpp>
+#include <mapnik/text/shaper_cache.hpp>
+#include <mapnik/text/harfbuzz_shaper.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/feature.hpp>
 #include <mapnik/symbolizer.hpp>
-#include <mapnik/text/harfbuzz_shaper.hpp>
 #include <mapnik/make_unique.hpp>
 
 #pragma GCC diagnostic push
@@ -96,7 +97,8 @@ text_layout::text_layout(face_manager_freetype & font_manager,
                          double scale_factor,
                          text_symbolizer_properties const& properties,
                          text_layout_properties const& layout_defaults,
-                         formatting::node_ptr tree)
+                         formatting::node_ptr tree,
+                         shaper_cache & s_cache)
     : font_manager_(font_manager),
       scale_factor_(scale_factor),
       itemizer_(),
@@ -107,7 +109,8 @@ text_layout::text_layout(face_manager_freetype & font_manager,
       lines_(),
       layout_properties_(layout_defaults),
       properties_(properties),
-      format_(std::make_unique<evaluated_format_properties>())
+      format_(std::make_unique<evaluated_format_properties>()),
+      shaper_cache_(s_cache)
     {
         double dx = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dx);
         double dy = util::apply_visitor(extract_value<value_double>(feature,attrs), layout_properties_.dy);
@@ -178,6 +181,8 @@ mapnik::value_unicode_string const& text_layout::text() const
 
 void text_layout::layout()
 {
+    width_map_.assign(this->text().length(), 0.0);
+
     unsigned num_lines = itemizer_.num_lines();
     for (unsigned i = 0; i < num_lines; ++i)
     {
@@ -248,11 +253,7 @@ void text_layout::break_line_icu(std::pair<unsigned, unsigned> && line_limits)
     for (unsigned i = line.first_char(); i < line.last_char(); ++i)
     {
         // TODO: character_spacing
-        std::map<unsigned, double>::const_iterator width_itr = width_map_.find(i);
-        if (width_itr != width_map_.end())
-        {
-            current_line_length += width_itr->second;
-        }
+        current_line_length += width_map_[i];
         if (current_line_length <= scaled_wrap_width) continue;
 
         int break_position = wrap_before_ ? breakitr->preceding(i + 1) : breakitr->following(i);
@@ -361,11 +362,7 @@ void text_layout::break_line(std::pair<unsigned, unsigned> && line_limits)
     int last_break_position = static_cast<int>(line.first_char());
     for (unsigned i=line.first_char(); i < line.last_char(); ++i)
     {
-        std::map<unsigned, double>::const_iterator width_itr = width_map_.find(i);
-        if (width_itr != width_map_.end())
-        {
-            current_line_length += width_itr->second;
-        }
+        current_line_length += width_map_[i];
         if (current_line_length <= scaled_wrap_width) continue;
 
         int break_position = wrap_before_ ? breaker.preceding(i + 1) : breaker.following(i);
@@ -438,7 +435,7 @@ void text_layout::clear()
 
 void text_layout::shape_text(text_line & line)
 {
-    harfbuzz_shaper::shape_text(line, itemizer_, width_map_, font_manager_, scale_factor_);
+    harfbuzz_shaper::shape_text(line, shaper_cache_, itemizer_, width_map_, font_manager_, scale_factor_);
 }
 
 void text_layout::init_auto_alignment()

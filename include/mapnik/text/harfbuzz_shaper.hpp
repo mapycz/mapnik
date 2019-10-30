@@ -29,6 +29,7 @@
 #include <mapnik/text/face.hpp>
 #include <mapnik/text/font_feature_settings.hpp>
 #include <mapnik/text/itemizer.hpp>
+#include <mapnik/text/shaper_cache.hpp>
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 
@@ -67,8 +68,9 @@ static inline const uint16_t * uchar_to_utf16(const UChar* src)
 struct harfbuzz_shaper
 {
 static void shape_text(text_line & line,
+                       shaper_cache & s_cache,
                        text_itemizer & itemizer,
-                       std::map<unsigned,double> & width_map,
+                       std::vector<double> & width_map,
                        face_manager_freetype & font_manager,
                        double scale_factor)
 {
@@ -81,9 +83,6 @@ static void shape_text(text_line & line,
 
     line.reserve(length);
 
-    auto hb_buffer_deleter = [](hb_buffer_t * buffer) { hb_buffer_destroy(buffer);};
-    const std::unique_ptr<hb_buffer_t, decltype(hb_buffer_deleter)> buffer(hb_buffer_create(),hb_buffer_deleter);
-    hb_buffer_pre_allocate(buffer.get(), safe_cast<int>(length));
     mapnik::value_unicode_string const& text = itemizer.text();
 
     for (auto const& text_item : list)
@@ -111,22 +110,36 @@ static void shape_text(text_line & line,
         for (auto const& face : *face_set)
         {
             ++pos;
-            hb_buffer_clear_contents(buffer.get());
-            hb_buffer_add_utf16(buffer.get(), uchar_to_utf16(text.getBuffer()), text.length(), text_item.start, static_cast<int>(text_item.end - text_item.start));
-            hb_buffer_set_direction(buffer.get(), (text_item.dir == UBIDI_RTL)?HB_DIRECTION_RTL:HB_DIRECTION_LTR);
-            hb_buffer_set_script(buffer.get(), _icu_script_to_script(text_item.script));
-            hb_font_t *font(hb_ft_font_create(face->get_face(), nullptr));
-            // https://github.com/mapnik/test-data-visual/pull/25
-            #if HB_VERSION_MAJOR > 0
-             #if HB_VERSION_ATLEAST(1, 0 , 5)
-            FT_Int32 ft_load_flags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING;
-            hb_ft_font_set_load_flags(font, ft_load_flags);
-             #endif
-            #endif
-            hb_shape(font, buffer.get(), ff_settings.get_features(), ff_count);
-            hb_font_destroy(font);
 
-            unsigned num_glyphs = hb_buffer_get_length(buffer.get());
+            shaper_cache_key cache_key{text_item.script, text_item.dir, *face,
+                value_unicode_string(text, text_item.start, static_cast<int>(text_item.end - text_item.start)) };
+            hb_buffer_t * buffer = s_cache.find(cache_key);
+
+            if (!buffer)
+            {
+                std::unique_ptr<hb_buffer_t, decltype(&hb_buffer_destroy)> new_buff(hb_buffer_create(),&hb_buffer_destroy);
+                hb_buffer_pre_allocate(new_buff.get(), cache_key.text.length());
+
+                hb_buffer_clear_contents(new_buff.get());
+                hb_buffer_add_utf16(new_buff.get(), uchar_to_utf16(cache_key.text.getBuffer()), cache_key.text.length(), 0, cache_key.text.length());
+                hb_buffer_set_direction(new_buff.get(), (text_item.dir == UBIDI_RTL)?HB_DIRECTION_RTL:HB_DIRECTION_LTR);
+                hb_buffer_set_script(new_buff.get(), _icu_script_to_script(text_item.script));
+                hb_font_t *font(hb_ft_font_create(face->get_face(), nullptr));
+                // https://github.com/mapnik/test-data-visual/pull/25
+                #if HB_VERSION_MAJOR > 0
+                 #if HB_VERSION_ATLEAST(1, 0 , 5)
+                FT_Int32 ft_load_flags = FT_LOAD_DEFAULT | FT_LOAD_NO_HINTING;
+                hb_ft_font_set_load_flags(font, ft_load_flags);
+                 #endif
+                #endif
+                hb_shape(font, new_buff.get(), ff_settings.get_features(), ff_count);
+                hb_font_destroy(font);
+
+                buffer = new_buff.get();
+                s_cache.insert(std::move(cache_key), std::move(new_buff));
+            }
+
+            const unsigned num_glyphs = hb_buffer_get_length(buffer);
 
             // if the number of rendered glyphs has increased, we need to resize the table 
             if (num_glyphs > glyphinfos.size())
@@ -134,8 +147,8 @@ static void shape_text(text_line & line,
                 glyphinfos.resize(num_glyphs);
             }
 
-            hb_glyph_info_t *glyphs = hb_buffer_get_glyph_infos(buffer.get(), nullptr);
-            hb_glyph_position_t *positions = hb_buffer_get_glyph_positions(buffer.get(), nullptr);
+            hb_glyph_info_t *glyphs = hb_buffer_get_glyph_infos(buffer, nullptr);
+            hb_glyph_position_t *positions = hb_buffer_get_glyph_positions(buffer, nullptr);
 
             // Check if all glyphs are valid.
             for (unsigned i=0; i<num_glyphs; ++i)
@@ -167,7 +180,7 @@ static void shape_text(text_line & line,
                     glyph = glyphinfos[i].glyph;
                     theface = glyphinfos[i].face;
                 }
-                unsigned char_index = glyph.cluster;
+                unsigned char_index = glyph.cluster + text_item.start;
                 glyph_info g(glyph.codepoint,char_index,text_item.format_);
                 if (theface->glyph_dimensions(g))
                 {
