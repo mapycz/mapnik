@@ -26,6 +26,7 @@
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/debug.hpp>
 #include <mapnik/config.hpp>
+#include <mapnik/vertex.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/util/math.hpp>
 
@@ -267,38 +268,57 @@ vertex_cache::vertex_cache(T & path)
     unsigned cmd;
     double new_x = 0., new_y = 0., old_x = 0., old_y = 0.;
     bool first = true; //current_subpath_ uninitalized
-    while (!agg::is_stop(cmd = path.vertex(&new_x, &new_y)))
+    while ((cmd = path.vertex(&new_x, &new_y)) != SEG_END)
     {
-        if (agg::is_move_to(cmd))
+        switch (cmd)
         {
-            //Create new sub path
-            subpaths_.emplace_back();
-            current_subpath_ = subpaths_.end()-1;
-            current_subpath_->add_segment(new_x, new_y, 0);
-            first = false;
-        }
-        else if (agg::is_line_to(cmd))
-        {
-            if (first)
-            {
-                MAPNIK_LOG_ERROR(vertex_cache) << "No starting point in path!\n";
-                continue;
-            }
-            double dx = old_x - new_x;
-            double dy = old_y - new_y;
-            double segment_length = std::sqrt(dx*dx + dy*dy);
-            current_subpath_->add_segment(new_x, new_y, segment_length);
-        }
-        else if (agg::is_closed(cmd) && !current_subpath_->vector.empty())
-        {
-            segment const & first_segment = current_subpath_->vector[0];
-            double dx = old_x - first_segment.pos.x;
-            double dy = old_y - first_segment.pos.y;
-            double segment_length = std::sqrt(dx*dx + dy*dy);
-            current_subpath_->add_segment(first_segment.pos.x, first_segment.pos.y, segment_length);
+            case SEG_MOVETO:
+                //Create new sub path
+                subpaths_.emplace_back();
+                current_subpath_ = subpaths_.end()-1;
+                current_subpath_->add_segment(new_x, new_y, 0);
+                first = false;
+                break;
+            case SEG_LINETO:
+                {
+                    if (first)
+                    {
+                        MAPNIK_LOG_WARN(vertex_cache) << "No starting point in path!\n";
+                        continue;
+                    }
+                    double dx = old_x - new_x;
+                    double dy = old_y - new_y;
+                    double segment_length = std::sqrt(dx*dx + dy*dy);
+                    current_subpath_->add_segment(new_x, new_y, segment_length);
+                }
+                break;
+            case SEG_CLOSE:
+                {
+                    if (first)
+                    {
+                        MAPNIK_LOG_WARN(vertex_cache) << "No starting point in path!\n";
+                        continue;
+                    }
+                    segment const & first_segment = current_subpath_->vector[0];
+                    double dx = old_x - first_segment.pos.x;
+                    double dy = old_y - first_segment.pos.y;
+                    double segment_length = std::sqrt(dx*dx + dy*dy);
+                    current_subpath_->add_segment(first_segment.pos.x, first_segment.pos.y, segment_length);
+                }
+                break;
         }
         old_x = new_x;
         old_y = new_y;
+    }
+    // Cover case of empty geometry on the input.
+    // We have to ensure constructed vertex_cache is valid.
+    if (first)
+    {
+        subpaths_.emplace_back();
+        current_subpath_ = subpaths_.begin();
+        current_subpath_->add_segment(
+            std::numeric_limits<double>::max(),
+            std::numeric_limits<double>::max(), 0);
     }
 }
 
