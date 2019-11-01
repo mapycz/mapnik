@@ -23,7 +23,6 @@
 // mapnik
 #include <mapnik/text/renderer.hpp>
 #include <mapnik/text/compositing.hpp>
-#include <mapnik/grid/grid.hpp>
 #include <mapnik/text/text_properties.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/image_compositing.hpp>
@@ -598,45 +597,6 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
 }
 
 template <typename T>
-void grid_text_renderer<T>::render(glyph_positions const& pos, value_integer feature_id)
-{
-    prepare_glyphs(pos, false);
-    FT_Error  error;
-    FT_Vector start;
-    unsigned height = pixmap_.height();
-    pixel_position const& base_point = pos.get_base_point();
-    start.x =  static_cast<FT_Pos>(base_point.x * (1 << 6));
-    start.y =  static_cast<FT_Pos>((height - base_point.y) * (1 << 6));
-    start.x += transform_.tx * 64;
-    start.y += transform_.ty * 64;
-
-    // now render transformed glyphs
-    double halo_radius = 0.0;
-    FT_Matrix halo_matrix;
-    halo_matrix.xx = halo_transform_.sx  * 0x10000L;
-    halo_matrix.xy = halo_transform_.shx * 0x10000L;
-    halo_matrix.yy = halo_transform_.sy  * 0x10000L;
-    halo_matrix.yx = halo_transform_.shy * 0x10000L;
-    for (auto & glyph : glyphs_)
-    {
-        halo_radius = glyph.info.format->halo_radius * scale_factor_;
-        FT_Glyph_Transform(glyph.image, &halo_matrix, &start);
-        error = FT_Glyph_To_Bitmap(&glyph.image, FT_RENDER_MODE_NORMAL, 0, 1);
-        if (!error)
-        {
-            FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(glyph.image);
-            render_halo_id(&bit->bitmap,
-                           feature_id,
-                           bit->left,
-                           height - bit->top,
-                           static_cast<int>(halo_radius));
-        }
-        FT_Done_Glyph(glyph.image);
-    }
-}
-
-
-template <typename T>
 void agg_text_renderer<T>::render_halo(unsigned char *buffer,
                                        unsigned width,
                                        unsigned height,
@@ -691,40 +651,6 @@ void agg_text_renderer<T>::render_halo(unsigned char *buffer,
     }
 }
 
-template <typename T>
-void grid_text_renderer<T>::render_halo_id(
-                    FT_Bitmap *bitmap,
-                    mapnik::value_integer feature_id,
-                    int x1,
-                    int y1,
-                    int halo_radius)
-{
-    int width = bitmap->width;
-    int height = bitmap->rows;
-    int x, y;
-    for (x=0; x < width; x++)
-    {
-        for (y=0; y < height; y++)
-        {
-            int gray = bitmap->buffer[y*bitmap->width+x];
-            if (gray)
-            {
-                for (int n=-halo_radius; n <=halo_radius; ++n)
-                    for (int m=-halo_radius; m <= halo_radius; ++m)
-                        pixmap_.setPixel(x+x1+m,y+y1+n,feature_id);
-            }
-        }
-    }
-}
-
-template <typename T>
-grid_text_renderer<T>::grid_text_renderer(pixmap_type &pixmap,
-                                          composite_mode_e comp_op,
-                                          double scale_factor)
-    : text_renderer(HALO_RASTERIZER_FAST, comp_op, src_over, scale_factor),
-      pixmap_(pixmap) {}
-
 template class agg_text_renderer<image_rgba8>;
-template class grid_text_renderer<grid>;
 
 } // namespace mapnik

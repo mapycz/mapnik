@@ -181,19 +181,5 @@ private:
                      composite_mode_e comp_op);
 };
 
-template <typename T>
-class grid_text_renderer : public text_renderer
-{
-public:
-    using pixmap_type = T;
-    grid_text_renderer (pixmap_type & pixmap,
-                        composite_mode_e comp_op = src_over,
-                        double scale_factor = 1.0);
-    void render(glyph_positions const& positions, value_integer feature_id);
-private:
-    pixmap_type & pixmap_;
-    void render_halo_id(FT_Bitmap_ *bitmap, mapnik::value_integer feature_id, int x, int y, int halo_radius);
-};
-
 }
 #endif // RENDERER_HPP
