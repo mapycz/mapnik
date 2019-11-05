@@ -7,7 +7,7 @@ subdirs =  {
   './sparsehash':{'dir':'sparsehash','glob':'*'},
   './sparsehash/internal':{'dir':'sparsehash/internal','glob':'*'},
   '../agg/include':{'dir':'agg','glob':'agg*'},
-  '../boost/include/container_hash':{'dir':'boost/boost/container_hash','glob':'**'},
+  '../boost/container_hash':{'dir':'boost/boost/container_hash','glob':'**'},
 }
 
 if 'install' in COMMAND_LINE_TARGETS:
