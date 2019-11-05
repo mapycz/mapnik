@@ -53,8 +53,7 @@ struct shaper_cache_key
         std::size_t h = text.hashCode();
         boost::hash_combine(h, script);
         boost::hash_combine(h, dir);
-        boost::hash_combine(h, face.family_name());
-        boost::hash_combine(h, face.style_name());
+        boost::hash_combine(h, &face);
         return h;
     }
 
@@ -63,8 +62,7 @@ struct shaper_cache_key
         return text == other.text &&
             script == other.script &&
             dir == other.dir &&
-            face.family_name() == other.face.family_name() &&
-            face.style_name() == other.face.style_name();
+            &face == &other.face;
     }
 };
 
