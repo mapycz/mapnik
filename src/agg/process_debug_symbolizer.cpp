@@ -247,7 +247,7 @@ void agg_renderer<T0,T1>::process(debug_symbolizer const& sym,
         {
             for (auto & n : common_.detector_->detector(key))
             {
-                draw_rect(buffers_.top().get(), n.get().box);
+                draw_rect(buffers_.top().get(), n.first);
             }
         }
     }

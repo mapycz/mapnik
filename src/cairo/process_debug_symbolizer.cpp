@@ -120,7 +120,7 @@ void cairo_renderer<T>::process(debug_symbolizer const& sym,
         {
             for (auto & n : common_.detector_->detector(key))
             {
-                render_debug_box(context_, n.get().box);
+                render_debug_box(context_, n.first);
             }
         }
     }

@@ -41,7 +41,7 @@ class shaper_cache;
 struct text_layout_generator : util::noncopyable
 {
     using params_type = label_placement::placement_params;
-    using detector_type = keyed_collision_cache<label_collision_detector4>;
+    using detector_type = keyed_collision_cache<label_collision_detector_boost>;
 
     text_layout_generator(
         params_type const & params,

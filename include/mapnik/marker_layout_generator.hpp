@@ -59,7 +59,7 @@ using marker_positions_type = std::vector<marker_position>;
 struct marker_layout_generator : util::noncopyable
 {
     using params_type = label_placement::placement_params;
-    using detector_type = keyed_collision_cache<label_collision_detector4>;
+    using detector_type = keyed_collision_cache<label_collision_detector_boost>;
 
     marker_layout_generator(
         params_type const & params,

@@ -27,6 +27,7 @@
 #include <mapnik/quad_tree.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/value_types.hpp>
+#include <mapnik/geometry_adapters.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -35,6 +36,8 @@
 
 // stl
 #include <vector>
+
+#include <boost/geometry/index/rtree.hpp>
 
 namespace mapnik
 {
@@ -257,6 +260,109 @@ public:
 
     query_iterator begin() { return tree_.query_in_box(extent()); }
     query_iterator end() { return tree_.query_end(); }
+#ifdef MAPNIK_STATS_RENDER
+public:
+    unsigned long query_count_;
+
+    int count_items() const
+    {
+        return tree_.count_items();
+    }
+#endif
+};
+
+class label_collision_detector_boost : util::noncopyable
+{
+    using balancing = boost::geometry::index::quadratic<16>; // TODO: tune this up
+    using value_type = std::pair<box2d<double>, value_unicode_string>;
+    using tree_type = boost::geometry::index::rtree<value_type, balancing>;
+
+    tree_type tree_;
+    box2d<double> extent_;
+
+public:
+    explicit label_collision_detector_boost(box2d<double> const& extent)
+        : extent_(extent),
+          tree_(tree_type::parameters_type(),
+                tree_type::indexable_getter(),
+                tree_type::value_equal(),
+                tree_type::allocator_type())
+    {
+    }
+
+    bool has_placement(box2d<double> const& box)
+    {
+        return tree_.qbegin(boost::geometry::index::intersects(box)) == tree_.qend();
+    }
+
+    bool has_placement(box2d<double> const& box, double margin)
+    {
+        box2d<double> const& margin_box = (margin > 0
+                                               ? box2d<double>(box.minx() - margin, box.miny() - margin,
+                                                               box.maxx() + margin, box.maxy() + margin)
+                                               : box);
+        return has_placement(margin_box);
+    }
+
+    struct text_equality
+    {
+        value_unicode_string const& text;
+
+        bool operator()(value_type const& v) const
+        {
+            return v.second == text;
+        }
+    };
+
+    bool has_placement(box2d<double> const& box, double margin, value_unicode_string const& text, double repeat_distance)
+    {
+        // Don't bother with any of the repeat checking unless the repeat distance is greater than the margin
+        if (repeat_distance <= margin)
+        {
+            return has_placement(box, margin);
+        }
+
+        if (!has_placement(box, margin))
+        {
+            return false;
+        }
+
+        box2d<double> repeat_box(box.minx() - repeat_distance, box.miny() - repeat_distance,
+                                 box.maxx() + repeat_distance, box.maxy() + repeat_distance);
+
+        return tree_.qbegin(boost::geometry::index::intersects(repeat_box) &&
+                            boost::geometry::index::satisfies(text_equality{text})) == tree_.qend();
+    }
+
+    void insert(box2d<double> const& box)
+    {
+        if (extent_.intersects(box))
+        {
+            tree_.insert(std::make_pair(box, value_unicode_string()));
+        }
+    }
+
+    void insert(box2d<double> const& box, mapnik::value_unicode_string const& text)
+    {
+        if (extent_.intersects(box))
+        {
+            tree_.insert(std::make_pair(box, text));
+        }
+    }
+
+    void clear()
+    {
+        tree_.clear();
+    }
+
+    box2d<double> const& extent() const
+    {
+        return extent_;
+    }
+
+    tree_type::const_iterator begin() { return tree_.begin(); }
+    tree_type::const_iterator end() { return tree_.end(); }
+
 #ifdef MAPNIK_STATS_RENDER
 public:
     unsigned long query_count_;

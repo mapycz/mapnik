@@ -44,7 +44,7 @@ namespace mapnik {
 
 struct renderer_common : private util::noncopyable
 {
-    using detector_type = keyed_collision_cache<label_collision_detector4>;
+    using detector_type = keyed_collision_cache<label_collision_detector_boost>;
     using detector_ptr = std::shared_ptr<detector_type>;
 
     renderer_common(Map const &m, attributes const& vars, unsigned offset_x, unsigned offset_y,
