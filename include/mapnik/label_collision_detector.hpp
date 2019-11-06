@@ -369,7 +369,7 @@ public:
 
     int count_items() const
     {
-        return tree_.count_items();
+        return tree_.size();
     }
 #endif
 };
