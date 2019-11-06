@@ -36,56 +36,66 @@ namespace mapnik
 class font_face;
 using face_ptr = std::shared_ptr<font_face>;
 
+struct glyph_metrics
+{
+    double unscaled_ymin;
+    double unscaled_ymax;
+    double unscaled_advance;
+    double unscaled_line_height;
+    double unscaled_ascender;
+};
+
 struct glyph_info : util::noncopyable
 {
     glyph_info(unsigned g_index,
                unsigned c_index,
-               evaluated_format_properties_ptr const& f)
+               glyph_metrics const& metrics,
+               face_ptr face,
+               evaluated_format_properties const& f,
+               double unscaled_advance,
+               double scale_multiplier,
+               double offset_x, double offset_y)
         : glyph_index(g_index),
           char_index(c_index),
           format(f),
-          face(nullptr),
-          unscaled_ymin(0.0),
-          unscaled_ymax(0.0),
-          unscaled_advance(0.0),
-          unscaled_line_height(0.0),
-          unscaled_ascender(0.0),
-          scale_multiplier(1.0),
-          offset() {}
+          face(face),
+          metrics(metrics),
+          offset(offset_x * scale_multiplier, offset_y * scale_multiplier),
+          ymin(metrics.unscaled_ymin * 64.0 * scale_multiplier),
+          ymax(metrics.unscaled_ymax * 64.0 * scale_multiplier),
+          height(ymax - ymin),
+          advance(unscaled_advance * scale_multiplier),
+          line_height(metrics.unscaled_line_height * scale_multiplier),
+          ascender(metrics.unscaled_ascender * scale_multiplier) {}
+
     glyph_info(glyph_info && rhs)
         : glyph_index(std::move(rhs.glyph_index)),
           char_index(std::move(rhs.char_index)),
-          format(rhs.format), // take ref
-          face(std::move(rhs.face)), // shared_ptr move just ref counts, right?
-          unscaled_ymin(std::move(rhs.unscaled_ymin)),
-          unscaled_ymax(std::move(rhs.unscaled_ymax)),
-          unscaled_advance(std::move(rhs.unscaled_advance)),
-          unscaled_line_height(std::move(rhs.unscaled_line_height)),
-          unscaled_ascender(std::move(rhs.unscaled_ascender)),
-          scale_multiplier(std::move(rhs.scale_multiplier)),
-          offset(std::move(rhs.offset)) {}
+          format(rhs.format),
+          face(std::move(rhs.face)),
+          metrics(rhs.metrics),
+          offset(std::move(rhs.offset)),
+          ymin(std::move(rhs.ymin)),
+          ymax(std::move(rhs.ymax)),
+          height(std::move(rhs.height)),
+          advance(std::move(rhs.advance)),
+          line_height(std::move(rhs.line_height)),
+          ascender(std::move(rhs.ascender)) {}
 
-    unsigned glyph_index;
+    const unsigned glyph_index;
     // Position in the string of all characters i.e. before itemizing
-    unsigned char_index;
-    evaluated_format_properties_ptr const& format;
-    face_ptr face;
-    double unscaled_ymin;
-    double unscaled_ymax;
-    double unscaled_advance;
-    // Line height returned by freetype, includes normal font
-    // line spacing, but not additional user defined spacing
-    double unscaled_line_height;
-    double unscaled_ascender;
-    double scale_multiplier;
-    pixel_position offset;
+    const unsigned char_index;
+    evaluated_format_properties const& format;
+    face_ptr const face;
+    glyph_metrics const & metrics;
+    const pixel_position offset;
 
-    double ymin() const { return unscaled_ymin * 64.0 * scale_multiplier; }
-    double ymax() const { return unscaled_ymax * 64.0 * scale_multiplier; }
-    double height() const { return ymax() - ymin(); }
-    double advance() const { return unscaled_advance * scale_multiplier; }
-    double line_height() const { return unscaled_line_height * scale_multiplier; }
-    double ascender() const { return unscaled_ascender * scale_multiplier; }
+    const double ymin;
+    const double ymax;
+    const double height;
+    const double advance;
+    const double line_height;
+    const double ascender;
 };
 
 } //ns mapnik

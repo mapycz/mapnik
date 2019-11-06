@@ -184,7 +184,7 @@ bool single_line_layout::try_placement(
                     else
                     {
                         if (!off_pp.move_to_distance(distance)) { return false; }
-                        last_glyph_spacing = glyph.format->character_spacing * params_.scale_factor;
+                        last_glyph_spacing = glyph.format.character_spacing * params_.scale_factor;
                     }
                     current_cluster = glyph.char_index;
                     // Only calculate new angle at the start of each cluster!
@@ -211,8 +211,8 @@ bool single_line_layout::try_placement(
                 pos.y = -pos.y - char_height/2.0*rot.cos;
                 pos.x =  pos.x + char_height/2.0*rot.sin;
 
-                cluster_offset.x += rot.cos * glyph.advance();
-                cluster_offset.y -= rot.sin * glyph.advance();
+                cluster_offset.x += rot.cos * glyph.advance;
+                cluster_offset.y -= rot.sin * glyph.advance;
 
                 box2d<double> bbox = get_bbox(layout, glyph, pos, rot);
                 if (collision(detector, text_props, bbox, layouts.text())) return false;
@@ -263,7 +263,7 @@ void single_line_layout::process_bboxes(
         box2d<double> bbox(glyph_pos.bbox);
         detector.insert(bbox, layouts.text(), collision_cache_insert_);
 
-        double halo_radius = glyph_pos.glyph.format->halo_radius * params_.scale_factor;
+        double halo_radius = glyph_pos.glyph.format.halo_radius * params_.scale_factor;
         bbox.pad(halo_radius);
 
         in_canvas |= params_.dims.intersects(bbox);

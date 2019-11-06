@@ -126,12 +126,12 @@ bool point_layout::try_placement(
 
                 // place the character relative to the center of the string envelope
                 glyphs.emplace_back(glyph, glyph_pos + layout_offset, orientation, bbox);
-                if (glyph.advance())
+                if (glyph.advance)
                 {
                     //Only advance if glyph is not part of a multiple glyph sequence
-                    x += glyph.advance() + glyph.format->character_spacing * params_.scale_factor;
+                    x += glyph.advance + glyph.format.character_spacing * params_.scale_factor;
                 }
-                if (glyph.format->text_mode == TEXT_MODE_MONO)
+                if (glyph.format.text_mode == TEXT_MODE_MONO)
                 {
                     x = std::round(x);
                 }
@@ -152,7 +152,7 @@ bool point_layout::process_bboxes(
         box2d<double> bbox(glyph_pos.bbox);
         detector.insert(bbox, layouts.text(), collision_cache_insert_);
 
-        double halo_radius = glyph_pos.glyph.format->halo_radius * params_.scale_factor;
+        double halo_radius = glyph_pos.glyph.format.halo_radius * params_.scale_factor;
         bbox.pad(halo_radius);
 
         in_canvas |= params_.dims.intersects(bbox);

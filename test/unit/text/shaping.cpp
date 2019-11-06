@@ -19,7 +19,7 @@ TEST_CASE("shapers compile") {
                                 width_map,
                                 fm,
                                 scale_factor);
-    mapnik::icu_shaper::shape_text(line,itemizer,
+    mapnik::icu_shaper::shape_text(line, s_cache,itemizer,
                                 width_map,
                                 fm,
                                 scale_factor);

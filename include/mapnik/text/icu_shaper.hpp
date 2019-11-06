@@ -29,6 +29,7 @@
 #include <mapnik/text/face.hpp>
 #include <mapnik/text/font_feature_settings.hpp>
 #include <mapnik/text/itemizer.hpp>
+#include <mapnik/text/shaper_cache.hpp>
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/debug.hpp>
@@ -49,6 +50,7 @@ namespace mapnik
 struct icu_shaper
 {
 static void shape_text(text_line & line,
+                       shaper_cache & s_cache,
                        text_itemizer & itemizer,
                        std::vector<double> & width_map,
                        face_manager_freetype & font_manager,
@@ -99,18 +101,30 @@ static void shape_text(text_line & line,
                 {
                     UChar ch = iter.nextPostInc();
                     auto codepoint = FT_Get_Char_Index(face->get_face(), ch);
-                    glyph_info g(codepoint,char_index,text_item.format_);
-                    //g.offset.clear();
-                    if (g.glyph_index == 0)
+                    if (codepoint == 0)
                     {
                         shaped_status = false;
                         break;
                     }
-                    if (face->glyph_dimensions(g))
+
+                    glyph_metrics_cache_key ck{codepoint, *face};
+                    const glyph_metrics * metrics = s_cache.find(ck);
+
+                    if (!metrics)
                     {
-                        g.face = face;
-                        g.scale_multiplier = size / face->get_face()->units_per_EM;
-                        width_map[char_index++] += g.advance();
+                        glyph_metrics new_metrics;
+                        face->glyph_dimensions(codepoint, text_item.format_->text_mode, new_metrics);
+                        metrics = s_cache.insert(ck, new_metrics);
+                    }
+
+                    if (metrics)
+                    {
+                        glyph_info g(codepoint, char_index,
+                            *metrics, face, *text_item.format_,
+                            metrics->unscaled_advance,
+                            size / face->get_face()->units_per_EM,
+                            0, 0);
+                        width_map[char_index++] += g.advance;
                         line.add_glyph(std::move(g), scale_factor);
                     }
                 }

@@ -90,7 +90,7 @@ bool font_face::set_unscaled_character_sizes()
     return (FT_Set_Char_Size(face_, 0, char_height, 0, 0) == 0);
 }
 
-bool font_face::glyph_dimensions(glyph_info & glyph) const
+bool font_face::glyph_dimensions(unsigned glyph_index, text_mode_enum text_mode, glyph_metrics & metrics) const
 {
     FT_Vector pen;
     pen.x = 0;
@@ -98,16 +98,16 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     if (color_font_) FT_Select_Size(face_, 0);
     FT_Set_Transform(face_, 0, &pen);
     FT_Int32 load_flags = FT_LOAD_DEFAULT;
-    if (glyph.format->text_mode == TEXT_MODE_DEFAULT)
+    if (text_mode == TEXT_MODE_DEFAULT)
     {
         load_flags |= FT_LOAD_NO_HINTING;
     }
     if (color_font_) load_flags |= FT_LOAD_COLOR ;
-    if (FT_Error error = FT_Load_Glyph(face_, glyph.glyph_index, load_flags))
+    if (FT_Error error = FT_Load_Glyph(face_, glyph_index, load_flags))
     {
         MAPNIK_LOG_ERROR(font_face) << "FT_Load_Glyph failed: " << ft_translate_error_code(error)
                                     << " (0x" << std::hex << error << "): index="
-                                    << glyph.glyph_index << " " << load_flags
+                                    << glyph_index << " " << load_flags
                                     << " " << face_->family_name << " " << face_->style_name  ;
         return false;
     }
@@ -121,21 +121,21 @@ bool font_face::glyph_dimensions(glyph_info & glyph) const
     FT_BBox glyph_bbox;
     FT_Glyph_Get_CBox(image, FT_GLYPH_BBOX_TRUNCATE, &glyph_bbox);
     FT_Done_Glyph(image);
-    glyph.unscaled_ymin = glyph_bbox.yMin;
-    glyph.unscaled_ymax = glyph_bbox.yMax;
-    glyph.unscaled_ascender = unscaled_ascender_;
-    glyph.unscaled_advance = face_->glyph->advance.x;
+    metrics.unscaled_ymin = glyph_bbox.yMin;
+    metrics.unscaled_ymax = glyph_bbox.yMax;
+    metrics.unscaled_ascender = unscaled_ascender_;
+    metrics.unscaled_advance = face_->glyph->advance.x;
 
     if (color_font_)
     {
         double scale_multiplier = 2048.0 / (face_->size->metrics.height);
-        glyph.unscaled_ymin *= scale_multiplier;
-        glyph.unscaled_ymax *= scale_multiplier;
-        glyph.unscaled_advance *= scale_multiplier;
-        glyph.unscaled_ascender *= scale_multiplier;
+        metrics.unscaled_ymin *= scale_multiplier;
+        metrics.unscaled_ymax *= scale_multiplier;
+        metrics.unscaled_advance *= scale_multiplier;
+        metrics.unscaled_ascender *= scale_multiplier;
     }
 
-    glyph.unscaled_line_height = face_->size->metrics.height;
+    metrics.unscaled_line_height = face_->size->metrics.height;
     return true;
 }
 

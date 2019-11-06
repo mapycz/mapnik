@@ -26,6 +26,7 @@
 #include <mapnik/config.hpp>
 #include <mapnik/text/glyph_info.hpp>
 #include <mapnik/util/noncopyable.hpp>
+#include <mapnik/symbolizer_enumerations.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
@@ -70,7 +71,7 @@ public:
     bool set_character_sizes(double size);
     bool set_unscaled_character_sizes();
 
-    bool glyph_dimensions(glyph_info &glyph) const;
+    bool glyph_dimensions(unsigned glyph_index, text_mode_enum text_mode, glyph_metrics & metrics) const;
 
     inline bool is_color() const { return color_font_;}
 

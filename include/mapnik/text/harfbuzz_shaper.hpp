@@ -180,21 +180,29 @@ static void shape_text(text_line & line,
                     glyph = glyphinfos[i].glyph;
                     theface = glyphinfos[i].face;
                 }
-                unsigned char_index = glyph.cluster + text_item.start;
-                glyph_info g(glyph.codepoint,char_index,text_item.format_);
-                if (theface->glyph_dimensions(g))
+
+                glyph_metrics_cache_key ck{glyph.codepoint, *theface};
+                const glyph_metrics * metrics = s_cache.find(ck);
+
+                if (!metrics)
                 {
-                    g.face = theface;
-                    g.scale_multiplier = theface->get_face()->units_per_EM > 0 ?
-                        (size / theface->get_face()->units_per_EM) : (size / 2048.0) ;
+                    glyph_metrics new_metrics;
+                    theface->glyph_dimensions(glyph.codepoint, text_item.format_->text_mode, new_metrics);
+                    metrics = s_cache.insert(ck, new_metrics);
+                }
+
+                if (metrics)
+                {
+                    const unsigned char_index = glyph.cluster + text_item.start;
+                    const double unscaled_advance = theface->is_color() ? metrics->unscaled_advance : gpos.x_advance;
                     //Overwrite default advance with better value provided by HarfBuzz
                     // TODO: Why FT advance is more precise for color fonts?
-                    if (!g.face->is_color())
-                    {
-                        g.unscaled_advance = gpos.x_advance;
-                    }
-                    g.offset.set(gpos.x_offset * g.scale_multiplier, gpos.y_offset * g.scale_multiplier);
-                    width_map[char_index] += g.advance();
+                    const double scale_multiplier = theface->get_face()->units_per_EM > 0 ?
+                        (size / theface->get_face()->units_per_EM) : (size / 2048.0);
+                    glyph_info g(glyph.codepoint, char_index, *metrics, theface, *text_item.format_,
+                        unscaled_advance, scale_multiplier,
+                        gpos.x_offset, gpos.y_offset);
+                    width_map[char_index] += g.advance;
                     line.add_glyph(std::move(g), scale_factor);
                 }
             }

@@ -51,9 +51,9 @@ text_line::text_line(text_line && rhs)
 
 void text_line::add_glyph(glyph_info && glyph, double scale_factor_)
 {
-    line_height_ = std::max(line_height_, glyph.line_height() + glyph.format->line_spacing * scale_factor_);
-    max_char_height_ = std::max(max_char_height_, glyph.ascender());
-    double advance = glyph.advance();
+    line_height_ = std::max(line_height_, glyph.line_height + glyph.format.line_spacing * scale_factor_);
+    max_char_height_ = std::max(max_char_height_, glyph.ascender);
+    double advance = glyph.advance;
     if (glyphs_.empty())
     {
         width_ = advance;
@@ -63,7 +63,7 @@ void text_line::add_glyph(glyph_info && glyph, double scale_factor_)
     else if (advance > 0)
     {
         // Only add character spacing if the character is not a zero-width part of a cluster.
-        width_ += advance + glyphs_.back().format->character_spacing  * scale_factor_;
+        width_ += advance + glyphs_.back().format.character_spacing  * scale_factor_;
         glyphs_width_ += advance;
         space_count_++;
     }

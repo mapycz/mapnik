@@ -74,7 +74,7 @@ void text_renderer::set_halo_transform(agg::trans_affine const& halo_transform)
 
 FT_Error text_renderer::select_closest_size(glyph_info const& glyph, FT_Face & face) const
 {
-    int scaled_size = static_cast<int>(glyph.format->text_size * scale_factor_);
+    int scaled_size = static_cast<int>(glyph.format.text_size * scale_factor_);
     int best_match = 0;
     int diff = std::abs(scaled_size - face->available_sizes[0].width);
     for (int i = 1; i < face->num_fixed_sizes; ++i)
@@ -103,7 +103,7 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions, bool is_mon
         glyph_info const& glyph = glyph_pos.glyph;
         FT_Int32 load_flags = FT_LOAD_DEFAULT;
 
-        if (glyph.format->text_mode == TEXT_MODE_DEFAULT)
+        if (glyph.format.text_mode == TEXT_MODE_DEFAULT)
         {
             load_flags |= FT_LOAD_NO_HINTING;
         }
@@ -121,10 +121,10 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions, bool is_mon
         }
         else
         {
-            glyph.face->set_character_sizes(glyph.format->text_size * scale_factor_);
+            glyph.face->set_character_sizes(glyph.format.text_size * scale_factor_);
         }
 
-        double size = glyph.format->text_size * scale_factor_;
+        double size = glyph.format.text_size * scale_factor_;
         matrix.xx = static_cast<FT_Fixed>( glyph_pos.rot.cos * 0x10000L);
         matrix.xy = static_cast<FT_Fixed>(-glyph_pos.rot.sin * 0x10000L);
         matrix.yx = static_cast<FT_Fixed>( glyph_pos.rot.sin * 0x10000L);
@@ -145,7 +145,7 @@ void text_renderer::prepare_glyphs(glyph_positions const& positions, bool is_mon
         FT_Glyph image;
         error = FT_Get_Glyph(face->glyph, &image);
         if (error) continue;
-        box2d<double> bbox(0, glyph_pos.glyph.ymin(), 1, glyph_pos.glyph.ymax());
+        box2d<double> bbox(0, glyph_pos.glyph.ymin, 1, glyph_pos.glyph.ymax);
         glyphs_.emplace_back(glyph, image, pos, glyph_pos.rot, size, bbox);
     }
 }
@@ -335,7 +335,7 @@ image_gray8 const& halo_cache::get(glyph_info const & glyph,
                                    double halo_radius)
 {
     key_type key(glyph.face->family_name(), glyph.face->style_name(),
-        glyph.glyph_index, glyph.height(), halo_radius);
+        glyph.glyph_index, glyph.height, halo_radius);
     value_type & halo_img_ptr = cache_[key];
 
     if (halo_img_ptr)
@@ -400,7 +400,7 @@ agg_text_renderer<T>::agg_text_renderer (pixmap_type & pixmap,
 template <typename T>
 void agg_text_renderer<T>::render(glyph_positions const& pos)
 {
-    bool is_mono = (pos.size() != 0) && pos.begin()->glyph.format->text_mode == TEXT_MODE_MONO;
+    bool is_mono = (pos.size() != 0) && pos.begin()->glyph.format.text_mode == TEXT_MODE_MONO;
     prepare_glyphs(pos, is_mono);
     FT_Error  error;
     FT_Vector start;
@@ -442,9 +442,9 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
 
     for (auto const& glyph : glyphs_)
     {
-        halo_fill = glyph.info.format->halo_fill.rgba();
-        halo_opacity = glyph.info.format->halo_opacity;
-        halo_radius = glyph.info.format->halo_radius * scale_factor_;
+        halo_fill = glyph.info.format.halo_fill.rgba();
+        halo_opacity = glyph.info.format.halo_opacity;
+        halo_radius = glyph.info.format.halo_radius * scale_factor_;
         // make sure we've got reasonable values.
         if (halo_radius <= 0.0 || halo_radius > 1024.0) continue;
         FT_Glyph g;
@@ -528,8 +528,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
     // render actual text
     for (auto & glyph : glyphs_)
     {
-        fill = glyph.info.format->fill.rgba();
-        text_opacity = glyph.info.format->text_opacity;
+        fill = glyph.info.format.fill.rgba();
+        text_opacity = glyph.info.format.text_opacity;
 
         FT_Glyph_Transform(glyph.image, &matrix, &start);
         error = 0;
@@ -562,7 +562,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         }
         else
         {
-            FT_Render_Mode mode = (glyph.info.format->text_mode == TEXT_MODE_DEFAULT)
+            FT_Render_Mode mode = (glyph.info.format.text_mode == TEXT_MODE_DEFAULT)
                 ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
             error = FT_Glyph_To_Bitmap(&glyph.image, mode, 0, 1);
             if (error == 0)

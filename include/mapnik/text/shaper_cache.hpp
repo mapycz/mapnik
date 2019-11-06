@@ -64,6 +64,27 @@ struct shaper_cache_key
             dir == other.dir &&
             &face == &other.face;
     }
+
+    shaper_cache_key(shaper_cache_key &&) = default;
+};
+
+struct glyph_metrics_cache_key
+{
+    unsigned glyph_index;
+    font_face const & face;
+
+    std::size_t hash() const
+    {
+        std::size_t h = glyph_index;
+        boost::hash_combine(h, &face);
+        return h;
+    }
+
+    bool operator==(glyph_metrics_cache_key const & other) const
+    {
+        return glyph_index == other.glyph_index &&
+            &face == &other.face;
+    }
 };
 
 }
@@ -75,6 +96,16 @@ namespace std
         typedef mapnik::shaper_cache_key argument_type;
         typedef std::size_t result_type;
         result_type operator()(mapnik::shaper_cache_key const& k) const noexcept
+        {
+            return k.hash();
+        }
+    };
+
+    template<> struct hash<mapnik::glyph_metrics_cache_key>
+    {
+        typedef mapnik::glyph_metrics_cache_key argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(mapnik::glyph_metrics_cache_key const& k) const noexcept
         {
             return k.hash();
         }
@@ -91,6 +122,9 @@ class shaper_cache : private util::noncopyable
     using cache_type = std::unordered_map<shaper_cache_key, value_type>;
     cache_type cache_;
 
+    using glyph_metrics_cache_type = std::unordered_map<glyph_metrics_cache_key, glyph_metrics>;
+    glyph_metrics_cache_type metrics_cache_;
+
 public:
     hb_buffer_t * find(shaper_cache_key const & key) const
     {
@@ -103,11 +137,26 @@ public:
 
     bool insert(shaper_cache_key && key, value_type && value)
     {
-        auto it = cache_.emplace(
+        auto result = cache_.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(std::move(key)),
             std::forward_as_tuple(std::move(value)));
-        return it.second;
+        return result.second;
+    }
+
+    const glyph_metrics * find(glyph_metrics_cache_key const & key) const
+    {
+        auto it = metrics_cache_.find(key);
+        if (it != metrics_cache_.end()) {
+            return &it->second;
+        }
+        return nullptr;
+    }
+
+    const glyph_metrics * insert(glyph_metrics_cache_key const & key, glyph_metrics const & value)
+    {
+        auto result = metrics_cache_.emplace(key, value);
+        return result.second ? &result.first->second : nullptr;
     }
 };
 

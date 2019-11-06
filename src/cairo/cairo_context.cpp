@@ -455,7 +455,7 @@ void cairo_context::add_text(glyph_positions const& pos,
     for (auto const& glyph_pos : pos)
     {
         glyph_info const& glyph = glyph_pos.glyph;
-        glyph.face->set_character_sizes(glyph.format->text_size * scale_factor);
+        glyph.face->set_character_sizes(glyph.format.text_size * scale_factor);
     }
 
     //render halo
@@ -464,10 +464,10 @@ void cairo_context::add_text(glyph_positions const& pos,
     for (auto const& glyph_pos : pos)
     {
         glyph_info const& glyph = glyph_pos.glyph;
-        halo_radius = glyph.format->halo_radius * scale_factor;
+        halo_radius = glyph.format.halo_radius * scale_factor;
         // make sure we've got reasonable values.
         if (halo_radius <= 0.0 || halo_radius > 1024.0) continue;
-        double text_size = glyph.format->text_size * scale_factor;
+        double text_size = glyph.format.text_size * scale_factor;
         cairo_matrix_t matrix;
         matrix.xx = text_size * glyph_pos.rot.cos;
         matrix.xy = text_size * glyph_pos.rot.sin;
@@ -481,14 +481,14 @@ void cairo_context::add_text(glyph_positions const& pos,
         glyph_path(glyph.glyph_index, pixel_position(sx + new_pos.x, sy - new_pos.y));
         set_line_width(2.0 * halo_radius);
         set_line_join(ROUND_JOIN);
-        set_color(glyph.format->halo_fill, glyph.format->halo_opacity);
+        set_color(glyph.format.halo_fill, glyph.format.halo_opacity);
         stroke();
     }
     set_operator(comp_op);
     for (auto const& glyph_pos : pos)
     {
         glyph_info const& glyph = glyph_pos.glyph;
-        double text_size = glyph.format->text_size * scale_factor;
+        double text_size = glyph.format.text_size * scale_factor;
         cairo_matrix_t matrix;
         matrix.xx = text_size * glyph_pos.rot.cos;
         matrix.xy = text_size * glyph_pos.rot.sin;
@@ -499,7 +499,7 @@ void cairo_context::add_text(glyph_positions const& pos,
         set_font_matrix(matrix);
         set_font_face(manager, glyph.face);
         pixel_position new_pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
-        set_color(glyph.format->fill, glyph.format->text_opacity);
+        set_color(glyph.format.fill, glyph.format.text_opacity);
         (this->*render_glyph_)(glyph.glyph_index, pixel_position(sx + new_pos.x, sy - new_pos.y));
     }
 
