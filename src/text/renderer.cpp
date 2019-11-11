@@ -31,6 +31,7 @@
 #include <mapnik/image_util.hpp>
 #include <mapnik/image_any.hpp>
 #include <mapnik/agg_rasterizer.hpp>
+#include <mapnik/util/const_rendering_buffer.hpp>
 
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore_agg.hpp>
@@ -305,6 +306,38 @@ void composite_color_glyph(T & pixmap,
     using order_type = agg::order_bgra;
     composite_color_glyph<T, img_accessor_type, order_type>(
         pixmap, img_accessor, width, height, tr,
+        x, y, angle, bbox, opacity, 0, comp_op);
+}
+
+void composite_glyph(image_rgba8 & dst,
+                     image_rgba8 const& src,
+                     agg::trans_affine const& tr,
+                     int x,
+                     int y,
+                     double angle,
+                     box2d<double> const& bbox,
+                     double opacity,
+                     composite_mode_e comp_op)
+{
+    /*
+    using pixfmt_type = agg::pixfmt_rgba32_pre;
+    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
+    unsigned width = bitmap.width;
+    unsigned height = bitmap.rows;
+    agg::rendering_buffer glyph_buf(bitmap.buffer, width, height, width * pixfmt_type::pix_width);
+    pixfmt_type glyph_pixf(glyph_buf);
+    */
+    using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
+    const_rendering_buffer src_buffer(src);
+    using pixfmt_type = agg::pixfmt_alpha_blend_rgba<
+        agg::blender_rgba32_pre, const_rendering_buffer, agg::pixel32_type>;
+    pixfmt_type glyph_pixf(src_buffer);
+    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
+    img_accessor_type img_accessor(glyph_pixf);
+
+    using order_type = agg::order_rgba;
+    composite_color_glyph<image_rgba8, img_accessor_type, order_type>(
+        dst, img_accessor, src.width(), src.height(), tr,
         x, y, angle, bbox, opacity, 0, comp_op);
 }
 
@@ -723,14 +756,14 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                         {
                             int x = (start.x >> 6) + glyph.pos.x;
                             int y = height - (start.y >> 6) - glyph.pos.y;
-                            composite_color_glyph(pixmap_,
-                                                  bit->bitmap,
-                                                  transform_,
-                                                  x, y,
-                                                  -glyph.rot.angle(),
-                                                  glyph.bbox,
-                                                  text_opacity,
-                                                  comp_op_);
+                            composite_glyph(pixmap_,
+                                            *glyph_img,
+                                            transform_,
+                                            x, y,
+                                            -glyph.rot.angle(),
+                                            glyph.bbox,
+                                            text_opacity,
+                                            comp_op_);
                         }
                         }
                         /*
