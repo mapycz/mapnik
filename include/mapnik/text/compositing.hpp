@@ -49,6 +49,12 @@ void composite_bitmap(
     composite_mode_e comp_op,
     rasterizer const & ras);
 
+void composite_bitmap(
+    image_gray8 & dst,
+    FT_Bitmap *src,
+    int x,
+    int y);
+
 void composite_bitmap_mono(
     image_rgba8 & dst,
     FT_Bitmap *src,
@@ -57,6 +63,14 @@ void composite_bitmap_mono(
     int y,
     double opacity,
     composite_mode_e comp_op);
+
+}
+
+void composite_bitmap_mono(
+    image_gray8 & dst,
+    FT_Bitmap *src,
+    int x,
+    int y);
 
 }
 
