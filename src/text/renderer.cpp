@@ -335,6 +335,16 @@ void composite_glyph(image_rgba8 & dst,
     using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
     img_accessor_type img_accessor(glyph_pixf);
 
+    //std::clog << angle << std::endl;
+    /*
+    using pixfmt_type = agg::pixfmt_rgba32_pre;
+    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
+    agg::rendering_buffer glyph_buf(const_cast<unsigned char*>(src.bytes()), src.width(), src.height(), src.row_size());
+    pixfmt_type glyph_pixf(glyph_buf);
+    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
+    img_accessor_type img_accessor(glyph_pixf);
+    */
+
     using order_type = agg::order_rgba;
     composite_color_glyph<image_rgba8, img_accessor_type, order_type>(
         dst, img_accessor, src.width(), src.height(), tr,
@@ -448,6 +458,8 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
     {
         glyph.face->set_character_sizes(glyph.format.text_size * 2.0 /*scale_factor_*/);
     }
+
+    FT_Set_Transform(face, nullptr, nullptr);
 
     if (FT_Load_Glyph(face, glyph.glyph_index, load_flags))
     {
@@ -754,6 +766,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                         const glyph_cache::img_type * glyph_img = glyph_cache_.get(glyph.info);
                         if (glyph_img)
                         {
+                            //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
                             int x = (start.x >> 6) + glyph.pos.x;
                             int y = height - (start.y >> 6) - glyph.pos.y;
                             composite_glyph(pixmap_,
