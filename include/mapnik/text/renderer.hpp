@@ -41,6 +41,8 @@
 #include <agg_trans_affine.h>
 #pragma GCC diagnostic pop
 
+#include <boost/container_hash/hash.hpp>
+
 // freetype2
 extern "C"
 {
@@ -200,20 +202,15 @@ class glyph_cache
 {
 public:
     using img_type = image_gray8;
-    //using value_type = std::unique_ptr<img_type>;
 
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-
-    image_gray8 const& get(glyph_info const & glyph,
-                           pixfmt_type const& bitmap,
-                           double halo_radius);
+    const img_type * get(glyph_info const & glyph);
 
 private:
     std::unordered_map<glyph_cache_key, img_type> cache_;
 
-    void render_halo_img(pixfmt_type const& glyph_bitmap,
-                         img_type & halo_bitmap,
-                         int radius);
+    const img_type * render(glyph_cache_key const & key,
+                            glyph_info const & glyph);
+    FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
 };
 
 template <typename T>

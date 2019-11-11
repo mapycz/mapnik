@@ -372,7 +372,24 @@ struct done_glyph
      }
 };
 
-const glyph_cache::img_type * halo_cache::render(glyph_cache_key const & key, glyph_info const & glyph)
+FT_Error glyph_cache::select_closest_size(glyph_info const& glyph, FT_Face & face) const
+{
+    int scaled_size = static_cast<int>(glyph.format.text_size * 2.0/*scale_factor_*/);
+    int best_match = 0;
+    int diff = std::abs(scaled_size - face->available_sizes[0].width);
+    for (int i = 1; i < face->num_fixed_sizes; ++i)
+    {
+        int ndiff = std::abs(scaled_size - face->available_sizes[i].height);
+        if (ndiff < diff)
+        {
+            best_match = i;
+            diff = ndiff;
+        }
+    }
+    return FT_Select_Size(face, best_match);
+}
+
+const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, glyph_info const & glyph)
 {
     FT_Int32 load_flags = FT_LOAD_DEFAULT;
 
@@ -391,23 +408,23 @@ const glyph_cache::img_type * halo_cache::render(glyph_cache_key const & key, gl
 
     if (face->num_fixed_sizes > 0)
     {
-        if (error = select_closest_size(glyph, face))
+        if (select_closest_size(glyph, face))
         {
             return nullptr;
         }
     }
     else
     {
-        glyph.face->set_character_sizes(glyph.format.text_size * scale_factor_);
+        glyph.face->set_character_sizes(glyph.format.text_size * 2.0 /*scale_factor_*/);
     }
 
-    if (error = FT_Load_Glyph(face, glyph.glyph_index, load_flags))
+    if (FT_Load_Glyph(face, glyph.glyph_index, load_flags))
     {
         return nullptr;
     }
 
     FT_Glyph image;
-    if (error = FT_Get_Glyph(face->glyph, &image))
+    if (FT_Get_Glyph(face->glyph, &image))
     {
         return nullptr;
     }
@@ -436,7 +453,7 @@ const glyph_cache::img_type * halo_cache::render(glyph_cache_key const & key, gl
                 auto result = cache_.emplace(
                     std::piecewise_construct,
                     std::forward_as_tuple(key),
-                    std::forward_as_tuple(bit->bitmap.width, bit->bitmap.height));
+                    std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
                 if (!result.second) { return nullptr; }
                 img_type & glyph_img = result.first->second;
                 // TODO: y = height?
@@ -448,15 +465,14 @@ const glyph_cache::img_type * halo_cache::render(glyph_cache_key const & key, gl
     {
         FT_Render_Mode mode = (glyph.format.text_mode == TEXT_MODE_DEFAULT)
             ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
-        error = FT_Glyph_To_Bitmap(&image, mode, 0, 1);
-        if (!error)
+        if (!FT_Glyph_To_Bitmap(&image, mode, 0, 1))
         {
             done_glyph release_glyph{image};
             FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
             auto result = cache_.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(key),
-                std::forward_as_tuple(bit->bitmap.width, bit->bitmap.height));
+                std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
             if (!result.second) { return nullptr; }
             img_type & glyph_img = result.first->second;
             switch (bit->bitmap.pixel_mode)

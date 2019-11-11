@@ -64,8 +64,6 @@ void composite_bitmap_mono(
     double opacity,
     composite_mode_e comp_op);
 
-}
-
 void composite_bitmap_mono(
     image_gray8 & dst,
     FT_Bitmap *src,
