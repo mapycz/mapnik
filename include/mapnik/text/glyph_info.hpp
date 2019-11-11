@@ -59,7 +59,6 @@ struct glyph_info : util::noncopyable
           char_index(c_index),
           format(f),
           face(face),
-          metrics(metrics),
           offset(offset_x * scale_multiplier, offset_y * scale_multiplier),
           ymin(metrics.unscaled_ymin * 64.0 * scale_multiplier),
           ymax(metrics.unscaled_ymax * 64.0 * scale_multiplier),
@@ -73,7 +72,6 @@ struct glyph_info : util::noncopyable
           char_index(std::move(rhs.char_index)),
           format(rhs.format),
           face(std::move(rhs.face)),
-          metrics(rhs.metrics),
           offset(std::move(rhs.offset)),
           ymin(std::move(rhs.ymin)),
           ymax(std::move(rhs.ymax)),
@@ -87,7 +85,6 @@ struct glyph_info : util::noncopyable
     const unsigned char_index;
     evaluated_format_properties const& format;
     face_ptr const face;
-    glyph_metrics const & metrics;
     const pixel_position offset;
 
     const double ymin;
