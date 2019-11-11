@@ -350,6 +350,65 @@ image_gray8 const& halo_cache::get(glyph_info const & glyph,
     return halo_img;
 }
 
+const glyph_cache::img_type * glyph_cache::get(glyph_info const & glyph)
+{
+    glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.height};
+
+    if (auto it = cache_.find(key); it != cache_.end())
+    {
+        return &it->second;
+    }
+
+    return render(glyph);
+}
+
+const glyph_cache::img_type * halo_cache::render(glyph_info const& glyph)
+{
+    FT_Int32 load_flags = FT_LOAD_DEFAULT;
+
+    if (glyph.format.text_mode == TEXT_MODE_DEFAULT)
+    {
+        load_flags |= FT_LOAD_NO_HINTING;
+    }
+
+    FT_Face face = glyph.face->get_face();
+    if (glyph.face->is_color())
+    {
+        load_flags |= FT_LOAD_COLOR;
+    }
+
+    if (face->num_fixed_sizes > 0)
+    {
+        if (error = select_closest_size(glyph, face))
+        {
+            return nullptr;
+        }
+    }
+    else
+    {
+        glyph.face->set_character_sizes(glyph.format.text_size * scale_factor_);
+    }
+
+    if (error = FT_Load_Glyph(face, glyph.glyph_index, load_flags))
+    {
+        return nullptr;
+    }
+
+    FT_Glyph image;
+    if (error = FT_Get_Glyph(face->glyph, &image))
+    {
+        return nullptr;
+    }
+
+
+
+
+    box2d<double> bbox(0, glyph_pos.glyph.ymin, 1, glyph_pos.glyph.ymax);
+    glyph_img_ptr.reset(new img_type(bitmap.width() + 2 * halo_radius,
+                                     bitmap.height() + 2 * halo_radius));
+    img_type & glyph_img = *glyph_img_ptr;
+}
+
 template <typename T>
 void composite_color_glyph_halo(T & pixmap,
                                 FT_Bitmap const& bitmap,

@@ -54,6 +54,47 @@ extern "C"
 namespace mapnik
 {
 
+struct glyph_cache_key
+{
+    font_face const & face;
+    unsigned glyph_index;
+    unsigned glyph_height;
+
+    std::size_t hash() const
+    {
+        std::size_t h = 0;
+        boost::hash_combine(h, &face);
+        boost::hash_combine(h, glyph_index);
+        boost::hash_combine(h, glyph_height);
+        return h;
+    }
+
+    bool operator==(glyph_cache_key const & other) const
+    {
+        return &face == &other.face &&
+            glyph_index == other.glyph_index &&
+            glyph_height == other.glyph_height;
+    }
+};
+
+}
+
+namespace std
+{
+    template<> struct hash<mapnik::glyph_cache_key>
+    {
+        typedef mapnik::glyph_cache_key argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(mapnik::glyph_cache_key const& k) const noexcept
+        {
+            return k.hash();
+        }
+    };
+}
+
+namespace mapnik
+{
+
 struct rasterizer;
 
 struct glyph_t
@@ -149,6 +190,26 @@ public:
 
 private:
     std::map<key_type, value_type> cache_;
+
+    void render_halo_img(pixfmt_type const& glyph_bitmap,
+                         img_type & halo_bitmap,
+                         int radius);
+};
+
+class glyph_cache
+{
+public:
+    using img_type = image_gray8;
+    //using value_type = std::unique_ptr<img_type>;
+
+    using pixfmt_type = agg::pixfmt_rgba32_pre;
+
+    image_gray8 const& get(glyph_info const & glyph,
+                           pixfmt_type const& bitmap,
+                           double halo_radius);
+
+private:
+    std::unordered_map<glyph_cache_key, img_type> cache_;
 
     void render_halo_img(pixfmt_type const& glyph_bitmap,
                          img_type & halo_bitmap,
