@@ -319,14 +319,6 @@ void composite_glyph(image_rgba8 & dst,
                      double opacity,
                      composite_mode_e comp_op)
 {
-    /*
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
-    unsigned width = bitmap.width;
-    unsigned height = bitmap.rows;
-    agg::rendering_buffer glyph_buf(bitmap.buffer, width, height, width * pixfmt_type::pix_width);
-    pixfmt_type glyph_pixf(glyph_buf);
-    */
     using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
     const_rendering_buffer src_buffer(src);
     using pixfmt_type = agg::pixfmt_alpha_blend_rgba<
@@ -334,16 +326,6 @@ void composite_glyph(image_rgba8 & dst,
     pixfmt_type glyph_pixf(src_buffer);
     using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
     img_accessor_type img_accessor(glyph_pixf);
-
-    //std::clog << angle << std::endl;
-    /*
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
-    agg::rendering_buffer glyph_buf(const_cast<unsigned char*>(src.bytes()), src.width(), src.height(), src.row_size());
-    pixfmt_type glyph_pixf(glyph_buf);
-    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
-    img_accessor_type img_accessor(glyph_pixf);
-    */
 
     using order_type = agg::order_rgba;
     composite_color_glyph<image_rgba8, img_accessor_type, order_type>(
@@ -475,8 +457,6 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
     if (image->format == FT_GLYPH_FORMAT_BITMAP)
     {
         FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
-        //int x = (start.x >> 6) + glyph.pos.x;
-        //int y = height - (start.y >> 6) - glyph.pos.y;
         auto result = cache_.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(key),
@@ -485,7 +465,6 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
         img_type & glyph_img = result.first->second;
         switch (bit->bitmap.pixel_mode)
         {
-            // TODO: color fonts
             case FT_PIXEL_MODE_BGRA:
                 composite_color_glyph(glyph_img,
                                       bit->bitmap,
@@ -497,7 +476,6 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
                                       src_over);
                 return &glyph_img;
             case FT_PIXEL_MODE_MONO:
-                // TODO: y = height?
                 composite_bitmap_mono(glyph_img, &bit->bitmap,
                     color(0, 0, 0).rgba(),
                     0, 0, 1.0, src_over);
@@ -522,13 +500,11 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
             switch (bit->bitmap.pixel_mode)
             {
                 case FT_PIXEL_MODE_GRAY:
-                    // TODO: y = height?
                     composite_bitmap(glyph_img, &bit->bitmap,
                         color(0, 0, 0).rgba(),
                         0, 0, 1.0, src_over, ras);
                     break;
                 case FT_PIXEL_MODE_MONO:
-                    // TODO: y = height?
                     composite_bitmap_mono(glyph_img, &bit->bitmap,
                         color(0, 0, 0).rgba(),
                         0, 0, 1.0, src_over);
