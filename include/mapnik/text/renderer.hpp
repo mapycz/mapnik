@@ -228,6 +228,7 @@ public:
 private:
     pixmap_type & pixmap_;
     halo_cache halo_cache_;
+    glyph_cache glyph_cache_;
     rasterizer const & ras_;
 
     void render_halo(unsigned char *buffer,

@@ -717,6 +717,23 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                 switch (bit->bitmap.pixel_mode)
                 {
                     case FT_PIXEL_MODE_GRAY:
+                        {
+                        const glyph_cache::img_type * glyph_img = glyph_cache_.get(glyph.info);
+                        if (glyph_img)
+                        {
+                            int x = (start.x >> 6) + glyph.pos.x;
+                            int y = height - (start.y >> 6) - glyph.pos.y;
+                            composite_color_glyph(pixmap_,
+                                                  bit->bitmap,
+                                                  transform_,
+                                                  x, y,
+                                                  -glyph.rot.angle(),
+                                                  glyph.bbox,
+                                                  text_opacity,
+                                                  comp_op_);
+                        }
+                        }
+                        /*
                         composite_bitmap(pixmap_,
                                          &bit->bitmap,
                                          fill,
@@ -725,6 +742,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                          text_opacity,
                                          comp_op_,
                                          ras_);
+                                         */
                         break;
                     case FT_PIXEL_MODE_MONO:
                         composite_bitmap_mono(pixmap_,
