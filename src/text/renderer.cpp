@@ -401,8 +401,6 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
     FT_Face face = glyph.face->get_face();
     if (glyph.face->is_color())
     {
-        // TODO: color fonts
-        return nullptr;
         load_flags |= FT_LOAD_COLOR;
     }
 
@@ -434,30 +432,30 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
         FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
         //int x = (start.x >> 6) + glyph.pos.x;
         //int y = height - (start.y >> 6) - glyph.pos.y;
+        auto result = cache_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(key),
+            std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
+        if (!result.second) { return nullptr; }
+        img_type & glyph_img = result.first->second;
         switch (bit->bitmap.pixel_mode)
         {
             // TODO: color fonts
             case FT_PIXEL_MODE_BGRA:
-                /*
-                composite_color_glyph(pixmap_,
+                composite_color_glyph(glyph_img,
                                       bit->bitmap,
-                                      transform_,
-                                      x, y,
-                                      -glyph.rot.angle(),
-                                      glyph.bbox,
-                                      text_opacity,
-                                      comp_op_);
-                */
-                break;
+                                      agg::trans_affine(),
+                                      0, 0,
+                                      0,
+                                      box2d<double>(0, 0, bit->bitmap.width, bit->bitmap.rows),
+                                      1.0,
+                                      src_over);
+                return &glyph_img;
             case FT_PIXEL_MODE_MONO:
-                auto result = cache_.emplace(
-                    std::piecewise_construct,
-                    std::forward_as_tuple(key),
-                    std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
-                if (!result.second) { return nullptr; }
-                img_type & glyph_img = result.first->second;
                 // TODO: y = height?
-                composite_bitmap_mono(glyph_img, &bit->bitmap, 0, 0);
+                composite_bitmap_mono(glyph_img, &bit->bitmap,
+                    color(0, 0, 0).rgba(),
+                    0, 0, 1.0, src_over);
                 return &glyph_img;
         }
     }
@@ -475,15 +473,20 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
                 std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
             if (!result.second) { return nullptr; }
             img_type & glyph_img = result.first->second;
+            rasterizer ras;
             switch (bit->bitmap.pixel_mode)
             {
                 case FT_PIXEL_MODE_GRAY:
                     // TODO: y = height?
-                    composite_bitmap(glyph_img, &bit->bitmap, 0, 0);
+                    composite_bitmap(glyph_img, &bit->bitmap,
+                        color(0, 0, 0).rgba(),
+                        0, 0, 1.0, src_over, ras);
                     break;
                 case FT_PIXEL_MODE_MONO:
                     // TODO: y = height?
-                    composite_bitmap_mono(glyph_img, &bit->bitmap, 0, 0);
+                    composite_bitmap_mono(glyph_img, &bit->bitmap,
+                        color(0, 0, 0).rgba(),
+                        0, 0, 1.0, src_over);
                     break;
             }
             return &glyph_img;

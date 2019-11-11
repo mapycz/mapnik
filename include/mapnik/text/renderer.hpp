@@ -201,7 +201,7 @@ private:
 class glyph_cache
 {
 public:
-    using img_type = image_gray8;
+    using img_type = image_rgba8;
 
     const img_type * get(glyph_info const & glyph);
 
