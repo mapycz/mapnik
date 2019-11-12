@@ -79,6 +79,24 @@ struct glyph_cache_key
     }
 };
 
+struct glyph_halo_cache_key : glyph_cache_key
+{
+    double halo_radius;
+
+    std::size_t hash() const
+    {
+        std::size_t h = glyph_cache_key::hash();
+        boost::hash_combine(h, halo_radius);
+        return h;
+    }
+
+    bool operator==(glyph_halo_cache_key const & other) const
+    {
+        return glyph_cache_key::operator==(other) &&
+            std::abs(halo_radius - other.halo_radius) < 1e-3;
+    }
+};
+
 }
 
 namespace std
@@ -88,6 +106,16 @@ namespace std
         typedef mapnik::glyph_cache_key argument_type;
         typedef std::size_t result_type;
         result_type operator()(mapnik::glyph_cache_key const& k) const noexcept
+        {
+            return k.hash();
+        }
+    };
+
+    template<> struct hash<mapnik::glyph_halo_cache_key>
+    {
+        typedef mapnik::glyph_halo_cache_key argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(mapnik::glyph_halo_cache_key const& k) const noexcept
         {
             return k.hash();
         }
@@ -207,6 +235,7 @@ public:
 
 private:
     std::unordered_map<glyph_cache_key, img_type> cache_;
+    std::unordered_map<glyph_halo_cache_key, img_type> halo_cache_;
 
     const img_type * render(glyph_cache_key const & key,
                             glyph_info const & glyph);
