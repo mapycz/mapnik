@@ -232,6 +232,7 @@ public:
     using img_type = image_rgba8;
 
     const img_type * get(glyph_info const & glyph);
+    const img_type * get_halo(glyph_info const & glyph, double halo_radius);
 
 private:
     std::unordered_map<glyph_cache_key, img_type> cache_;

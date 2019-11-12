@@ -387,6 +387,18 @@ const glyph_cache::img_type * glyph_cache::get(glyph_info const & glyph)
     return render(key, glyph);
 }
 
+const glyph_cache::img_type * glyph_cache::get_halo(glyph_info const & glyph, double halo_radius)
+{
+    glyph_halo_cache_key key{*glyph.face, glyph.glyph_index, glyph.height, halo_radius};
+
+    if (auto it = halo_cache_.find(key); it != halo_cache_.end())
+    {
+        return &it->second;
+    }
+
+    return nullptr;//render(key, glyph);
+}
+
 struct done_glyph
 {
      FT_Glyph glyph;
