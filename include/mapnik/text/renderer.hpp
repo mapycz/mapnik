@@ -232,7 +232,7 @@ class glyph_cache
 {
 public:
     glyph_cache() :
-        font_library_(std::make_unique<font_library>()),
+        font_library_(),
         font_manager_(*font_library_,
                       freetype_engine::get_mapping(),
                       freetype_engine::get_cache())
@@ -248,7 +248,7 @@ private:
     std::unordered_map<glyph_cache_key, img_type> cache_;
     std::unordered_map<glyph_halo_cache_key, img_type> halo_cache_;
 
-    std::unique_ptr<font_library> font_library_;
+    font_library font_library_;
     face_manager_freetype font_manager_;
 
     const img_type * render(glyph_cache_key const & key,
