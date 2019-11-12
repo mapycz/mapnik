@@ -871,15 +871,17 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                         if (glyph_img)
                         {
                             //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
-                            int x = (start.x >> 6) + glyph.pos.x;
+                            int x = (start.x >> 6) + glyph.pos.x - halo_radius;
                             int y = height - (start.y >> 6) - glyph.pos.y;
+                            box2d<double> halo_bbox(glyph.bbox);
+                            halo_bbox.pad(halo_radius);
                             composite_glyph(pixmap_,
                                             *glyph_img,
                                             halo_fill,
                                             halo_transform_,
                                             x, y,
                                             -glyph.rot.angle(),
-                                            glyph.bbox,
+                                            halo_bbox,
                                             halo_opacity,
                                             halo_comp_op_);
                         }
