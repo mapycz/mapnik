@@ -529,6 +529,112 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
     return nullptr;
 }
 
+const glyph_cache::img_type * glyph_cache::render_halo(
+    glyph_halo_cache_key const & key,
+    glyph_info const & glyph,
+    double halo_radius)
+{
+    FT_Int32 load_flags = FT_LOAD_DEFAULT;
+
+    if (glyph.format.text_mode == TEXT_MODE_DEFAULT)
+    {
+        load_flags |= FT_LOAD_NO_HINTING;
+    }
+
+    FT_Face face = glyph.face->get_face();
+    if (glyph.face->is_color())
+    {
+        load_flags |= FT_LOAD_COLOR;
+    }
+
+    if (face->num_fixed_sizes > 0)
+    {
+        if (select_closest_size(glyph, face))
+        {
+            return nullptr;
+        }
+    }
+    else
+    {
+        glyph.face->set_character_sizes(glyph.format.text_size * 2.0 /*scale_factor_*/);
+    }
+
+    FT_Set_Transform(face, nullptr, nullptr);
+
+    if (FT_Load_Glyph(face, glyph.glyph_index, load_flags))
+    {
+        return nullptr;
+    }
+
+    FT_Glyph image;
+    if (FT_Get_Glyph(face->glyph, &image))
+    {
+        return nullptr;
+    }
+
+    if (image->format == FT_GLYPH_FORMAT_BITMAP)
+    {
+        FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
+        auto result = halo_cache_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(key),
+            std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
+        if (!result.second) { return nullptr; }
+        img_type & glyph_img = result.first->second;
+        switch (bit->bitmap.pixel_mode)
+        {
+            case FT_PIXEL_MODE_BGRA:
+                composite_color_glyph(glyph_img,
+                                      bit->bitmap,
+                                      agg::trans_affine(),
+                                      0, 0,
+                                      0,
+                                      box2d<double>(0, 0, bit->bitmap.width, bit->bitmap.rows),
+                                      1.0,
+                                      src_over);
+                return &glyph_img;
+            case FT_PIXEL_MODE_MONO:
+                composite_bitmap_mono(glyph_img, &bit->bitmap,
+                    color(0, 0, 0).rgba(),
+                    0, 0, 1.0, src_over);
+                return &glyph_img;
+        }
+    }
+    else
+    {
+        FT_Render_Mode mode = (glyph.format.text_mode == TEXT_MODE_DEFAULT)
+            ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
+        if (!FT_Glyph_To_Bitmap(&image, mode, 0, 1))
+        {
+            done_glyph release_glyph{image};
+            FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
+            auto result = halo_cache_.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(key),
+                std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
+            if (!result.second) { return nullptr; }
+            img_type & glyph_img = result.first->second;
+            rasterizer ras;
+            switch (bit->bitmap.pixel_mode)
+            {
+                case FT_PIXEL_MODE_GRAY:
+                    composite_bitmap(glyph_img, &bit->bitmap,
+                        color(0, 0, 0).rgba(),
+                        0, 0, 1.0, src_over, ras);
+                    break;
+                case FT_PIXEL_MODE_MONO:
+                    composite_bitmap_mono(glyph_img, &bit->bitmap,
+                        color(0, 0, 0).rgba(),
+                        0, 0, 1.0, src_over);
+                    break;
+            }
+            return &glyph_img;
+        }
+    }
+
+    return nullptr;
+}
+
 template <typename T>
 void composite_color_glyph_halo(T & pixmap,
                                 FT_Bitmap const& bitmap,

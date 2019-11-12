@@ -178,10 +178,12 @@ public:
         scale_factor_ = scale_factor;
     }
 
+    /*
     void set_stroker(stroker_ptr stroker)
     {
         stroker_ = stroker;
     }
+    */
 
     void set_transform(agg::trans_affine const& transform);
     void set_halo_transform(agg::trans_affine const& halo_transform);
@@ -229,6 +231,14 @@ private:
 class glyph_cache
 {
 public:
+    glyph_cache() :
+        font_library_(std::make_unique<font_library>()),
+        font_manager_(*font_library_,
+                      freetype_engine::get_mapping(),
+                      freetype_engine::get_cache())
+    {
+    }
+
     using img_type = image_rgba8;
 
     const img_type * get(glyph_info const & glyph);
@@ -238,9 +248,17 @@ private:
     std::unordered_map<glyph_cache_key, img_type> cache_;
     std::unordered_map<glyph_halo_cache_key, img_type> halo_cache_;
 
+    std::unique_ptr<font_library> font_library_;
+    face_manager_freetype font_manager_;
+
     const img_type * render(glyph_cache_key const & key,
                             glyph_info const & glyph);
     FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
+
+    const img_type * render_halo(
+        glyph_halo_cache_key const & key,
+        glyph_info const & glyph,
+        double halo_radius);
 };
 
 template <typename T>
