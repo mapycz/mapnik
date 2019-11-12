@@ -115,18 +115,18 @@ void composite_bitmap(
 
 void composite_bitmap(
     image_gray8 & dst,
-    FT_Bitmap *src,
+    FT_Bitmap const & src,
     int x,
     int y)
 {
-    int x_max = x + src->width;
-    int y_max = y + src->rows;
+    int x_max = x + src.width;
+    int y_max = y + src.rows;
 
     for (int i = x, p = 0; i < x_max; ++i, ++p)
     {
         for (int j = y, q = 0; j < y_max; ++j, ++q)
         {
-            dst(i, j) = src->buffer[q * src->width + p];
+            dst(i, j) = src.buffer[q * src.width + p];
         }
     }
 }
@@ -166,13 +166,13 @@ void composite_bitmap_mono(
 
 void composite_bitmap_mono(
     image_gray8 & dst,
-    FT_Bitmap *src,
+    FT_Bitmap const & src,
     int x,
     int y)
 {
-    int x_max = x + src->width;
-    int y_max = y + src->rows;
-    unsigned char * buff = src->buffer;
+    int x_max = x + src.width;
+    int y_max = y + src.rows;
+    unsigned char * buff = src.buffer;
 
     for (int j = y; j < y_max; ++j)
     {
@@ -186,11 +186,11 @@ void composite_bitmap_mono(
             }
             if (b & 0x80)
             {
-                dst(i, j) = 1;
+                dst(i, j) = 255;
             }
             b <<= 1;
         }
-        buff += src->pitch;
+        buff += src.pitch;
     }
 }
 

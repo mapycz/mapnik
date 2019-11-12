@@ -233,13 +233,13 @@ class glyph_cache
 public:
     glyph_cache() :
         font_library_(),
-        font_manager_(*font_library_,
+        font_manager_(font_library_,
                       freetype_engine::get_mapping(),
                       freetype_engine::get_cache())
     {
     }
 
-    using img_type = image_rgba8;
+    using img_type = image_gray8;
 
     const img_type * get(glyph_info const & glyph);
     const img_type * get_halo(glyph_info const & glyph, double halo_radius);
@@ -259,6 +259,11 @@ private:
         glyph_halo_cache_key const & key,
         glyph_info const & glyph,
         double halo_radius);
+
+    void render_halo(
+        img_type & dst,
+        FT_Bitmap const & src,
+        int radius) const;
 };
 
 template <typename T>

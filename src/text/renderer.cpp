@@ -212,6 +212,65 @@ private:
     int x_, x0_, y_;
 };
 
+template<class PixFmt> class image_accessor_colorize
+{
+public:
+    using pixfmt_type = PixFmt;
+    using color_type = typename pixfmt_type::color_type;
+    using order_type = typename pixfmt_type::order_type;
+    using value_type = typename pixfmt_type::value_type;
+    using pixel_type = typename pixfmt_type::pixel_type;
+    enum pix_width_e { pix_width = pixfmt_type::pix_width };
+
+    image_accessor_colorize(pixel_type color, image_gray8 const& img) :
+        color_(color),
+        nodata_color_(0),
+        img_(img)
+    {
+    }
+
+private:
+    const agg::int8u* pixel() const
+    {
+        int x = x_, y = y_;
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+        if (x >= img_.width()) x = img_.width() - 1;
+        if (y >= img_.height()) y = img_.height() - 1;
+
+        return img_(x, y) ?
+            reinterpret_cast<const agg::int8u*>(&color_) :
+            reinterpret_cast<const agg::int8u*>(&nodata_color_);
+    }
+
+public:
+    const agg::int8u* span(int x, int y, unsigned len)
+    {
+        x_ = x0_ = x;
+        y_ = y;
+        return pixel();
+    }
+
+    const agg::int8u* next_x()
+    {
+        ++x_;
+        return pixel();
+    }
+
+    const agg::int8u* next_y()
+    {
+        ++y_;
+        x_ = x0_;
+        return pixel();
+    }
+
+private:
+    const pixel_type color_;
+    const pixel_type nodata_color_;
+    image_gray8 const & img_;
+    int x_, x0_, y_;
+};
+
 template <typename Pixmap, typename ImageAccessor, typename ColorOrder>
 void composite_color_glyph(Pixmap & pixmap,
                            ImageAccessor & img_accessor,
@@ -310,7 +369,8 @@ void composite_color_glyph(T & pixmap,
 }
 
 void composite_glyph(image_rgba8 & dst,
-                     image_rgba8 const& src,
+                     image_gray8 const& src,
+                     unsigned rgba,
                      agg::trans_affine const& tr,
                      int x,
                      int y,
@@ -319,13 +379,12 @@ void composite_glyph(image_rgba8 & dst,
                      double opacity,
                      composite_mode_e comp_op)
 {
-    using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
-    const_rendering_buffer src_buffer(src);
-    using pixfmt_type = agg::pixfmt_alpha_blend_rgba<
-        agg::blender_rgba32_pre, const_rendering_buffer, agg::pixel32_type>;
-    pixfmt_type glyph_pixf(src_buffer);
-    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
-    img_accessor_type img_accessor(glyph_pixf);
+    //using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
+    //using pixfmt_type = agg::pixfmt_alpha_blend_rgba<
+        //agg::blender_rgba32_pre, const_rendering_buffer, agg::pixel32_type>;
+    using pixfmt_type = agg::pixfmt_rgba32_pre;
+    using img_accessor_type = image_accessor_colorize<pixfmt_type>;
+    img_accessor_type img_accessor(rgba, src);
 
     using order_type = agg::order_rgba;
     composite_color_glyph<image_rgba8, img_accessor_type, order_type>(
@@ -410,10 +469,10 @@ void glyph_cache::render_halo_img(
 }
 */
 
-void glyph_cache::render_halo_img(
+void glyph_cache::render_halo(
     image_gray8 & dst,
     FT_Bitmap const & src,
-    int radius
+    int radius) const
 {
     unsigned char * buff = src.buffer;
 
@@ -546,6 +605,7 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
         switch (bit->bitmap.pixel_mode)
         {
             case FT_PIXEL_MODE_BGRA:
+                /* TODO: color fonts
                 composite_color_glyph(glyph_img,
                                       bit->bitmap,
                                       agg::trans_affine(),
@@ -555,10 +615,10 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
                                       1.0,
                                       src_over);
                 return &glyph_img;
+                */
+                return nullptr;
             case FT_PIXEL_MODE_MONO:
-                composite_bitmap_mono(glyph_img, &bit->bitmap,
-                    color(0, 0, 0).rgba(),
-                    0, 0, 1.0, src_over);
+                composite_bitmap_mono(glyph_img, bit->bitmap, 0, 0);
                 return &glyph_img;
         }
     }
@@ -580,14 +640,10 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
             switch (bit->bitmap.pixel_mode)
             {
                 case FT_PIXEL_MODE_GRAY:
-                    composite_bitmap(glyph_img, &bit->bitmap,
-                        color(0, 0, 0).rgba(),
-                        0, 0, 1.0, src_over, ras);
+                    composite_bitmap(glyph_img, bit->bitmap, 0, 0);
                     break;
                 case FT_PIXEL_MODE_MONO:
-                    composite_bitmap_mono(glyph_img, &bit->bitmap,
-                        color(0, 0, 0).rgba(),
-                        0, 0, 1.0, src_over);
+                    composite_bitmap_mono(glyph_img, bit->bitmap, 0, 0);
                     break;
             }
             return &glyph_img;
@@ -668,28 +724,20 @@ const glyph_cache::img_type * glyph_cache::render_halo(
                 // TODO: support color fonts
                 return nullptr;
             case FT_PIXEL_MODE_MONO:
-                composite_bitmap_mono(glyph_img, &bit->bitmap,
-                    color(0, 0, 0).rgba(),
-                    0, 0, 1.0, src_over);
+                render_halo(glyph_img, bit->bitmap, halo_radius);
                 return &glyph_img;
         }
     }
     else
     {
-        FT_Render_Mode mode = (glyph.format.text_mode == TEXT_MODE_DEFAULT)
-            ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
         FT_Glyph g;
-        if (!FT_Glyph_Copy(glyph.image, &g))
-        {
-            return;
-        }
+        if (!FT_Glyph_Copy(image, &g)) { return nullptr; }
         done_glyph release_glyph{g};
         FT_Glyph_Transform(g, nullptr, nullptr);
         stroker & strk = *font_manager_.get_stroker();
         strk.init(halo_radius);
         FT_Glyph_Stroke(&g, strk.get(), 1);
-
-        if (!FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_NORMAL, 0, 1)
+        if (!FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_NORMAL, 0, 1))
         {
             FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
             auto result = halo_cache_.emplace(
@@ -699,9 +747,7 @@ const glyph_cache::img_type * glyph_cache::render_halo(
             if (!result.second) { return nullptr; }
             img_type & glyph_img = result.first->second;
             rasterizer ras;
-            composite_bitmap(glyph_img, &bit->bitmap,
-                color(0, 0, 0).rgba(),
-                0, 0, 1.0, src_over, ras);
+            composite_bitmap(glyph_img, bit->bitmap, 0, 0);
             return &glyph_img;
         }
     }
@@ -939,6 +985,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                             int y = height - (start.y >> 6) - glyph.pos.y;
                             composite_glyph(pixmap_,
                                             *glyph_img,
+                                            fill,
                                             transform_,
                                             x, y,
                                             -glyph.rot.angle(),

@@ -51,7 +51,7 @@ void composite_bitmap(
 
 void composite_bitmap(
     image_gray8 & dst,
-    FT_Bitmap *src,
+    FT_Bitmap const & src,
     int x,
     int y);
 
@@ -66,7 +66,7 @@ void composite_bitmap_mono(
 
 void composite_bitmap_mono(
     image_gray8 & dst,
-    FT_Bitmap *src,
+    FT_Bitmap const & src,
     int x,
     int y);
 
