@@ -223,9 +223,7 @@ public:
     enum pix_width_e { pix_width = pixfmt_type::pix_width };
 
     image_accessor_colorize(pixel_type color, image_gray8 const& img) :
-        color_(color),
-        nodata_color_(0),
-        img_(img)
+        color_(color), img_(img)
     {
     }
 
@@ -237,10 +235,8 @@ private:
         if (y < 0) y = 0;
         if (x >= img_.width()) x = img_.width() - 1;
         if (y >= img_.height()) y = img_.height() - 1;
-
-        return img_(x, y) ?
-            reinterpret_cast<const agg::int8u*>(&color_) :
-            reinterpret_cast<const agg::int8u*>(&nodata_color_);
+        color_ = (color_ & 0x00ffffff) | (static_cast<unsigned>(img_(x, y)) << 24);
+        return reinterpret_cast<const agg::int8u*>(&color_);
     }
 
 public:
@@ -265,8 +261,7 @@ public:
     }
 
 private:
-    const pixel_type color_;
-    const pixel_type nodata_color_;
+    mutable pixel_type color_; // TODO: colorize after affine transforms
     image_gray8 const & img_;
     int x_, x0_, y_;
 };
@@ -873,6 +868,23 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                     FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
                     if (bit->bitmap.pixel_mode != FT_PIXEL_MODE_BGRA)
                     {
+                        const glyph_cache::img_type * glyph_img = glyph_cache_.get_halo(glyph.info, halo_radius);
+                        if (glyph_img)
+                        {
+                            //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
+                            int x = (start.x >> 6) + glyph.pos.x;
+                            int y = height - (start.y >> 6) - glyph.pos.y;
+                            composite_glyph(pixmap_,
+                                            *glyph_img,
+                                            halo_fill,
+                                            halo_transform_,
+                                            x, y,
+                                            -glyph.rot.angle(),
+                                            glyph.bbox,
+                                            halo_opacity,
+                                            halo_comp_op_);
+                        }
+                    /*
                         composite_bitmap(pixmap_,
                                          &bit->bitmap,
                                          halo_fill,
@@ -881,6 +893,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                          halo_opacity,
                                          halo_comp_op_,
                                          ras_);
+                                         */
                     }
                 }
             }
