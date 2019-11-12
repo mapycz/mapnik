@@ -523,7 +523,7 @@ const glyph_cache::img_type * glyph_cache::get_halo(glyph_info const & glyph, do
 
 struct done_glyph
 {
-     FT_Glyph glyph;
+     FT_Glyph & glyph;
 
      ~done_glyph()
      {
@@ -631,7 +631,6 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
                 std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
             if (!result.second) { return nullptr; }
             img_type & glyph_img = result.first->second;
-            rasterizer ras;
             switch (bit->bitmap.pixel_mode)
             {
                 case FT_PIXEL_MODE_GRAY:
@@ -686,6 +685,7 @@ const glyph_cache::img_type * glyph_cache::render_halo(
     }
 
     FT_Glyph image;
+    // TODO: release the FT_Glyph?
     if (FT_Get_Glyph(face->glyph, &image))
     {
         return nullptr;
@@ -726,7 +726,7 @@ const glyph_cache::img_type * glyph_cache::render_halo(
     else
     {
         FT_Glyph g;
-        if (!FT_Glyph_Copy(image, &g)) { return nullptr; }
+        if (FT_Glyph_Copy(image, &g)) { return nullptr; }
         done_glyph release_glyph{g};
         FT_Glyph_Transform(g, nullptr, nullptr);
         stroker & strk = *font_manager_.get_stroker();
@@ -734,14 +734,13 @@ const glyph_cache::img_type * glyph_cache::render_halo(
         FT_Glyph_Stroke(&g, strk.get(), 1);
         if (!FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_NORMAL, 0, 1))
         {
-            FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
+            FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
             auto result = halo_cache_.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(key),
                 std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
             if (!result.second) { return nullptr; }
             img_type & glyph_img = result.first->second;
-            rasterizer ras;
             composite_bitmap(glyph_img, bit->bitmap, 0, 0);
             return &glyph_img;
         }
