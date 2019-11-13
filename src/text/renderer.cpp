@@ -90,67 +90,6 @@ FT_Error text_renderer::select_closest_size(glyph_info const& glyph, FT_Face & f
     return FT_Select_Size(face, best_match);
 }
 
-void text_renderer::prepare_glyphs(glyph_positions const& positions, bool is_mono)
-{
-    FT_Matrix matrix;
-    FT_Vector pen;
-    FT_Error  error;
-
-    glyphs_.clear();
-    glyphs_.reserve(positions.size());
-
-    for (auto const& glyph_pos : positions)
-    {
-        glyph_info const& glyph = glyph_pos.glyph;
-        FT_Int32 load_flags = FT_LOAD_DEFAULT;
-
-        if (glyph.format.text_mode == TEXT_MODE_DEFAULT)
-        {
-            load_flags |= FT_LOAD_NO_HINTING;
-        }
-
-        FT_Face face = glyph.face->get_face();
-        if (glyph.face->is_color())
-        {
-            load_flags |= FT_LOAD_COLOR;
-        }
-
-        if (face->num_fixed_sizes > 0)
-        {
-            error = select_closest_size(glyph, face);
-            if (error) continue;
-        }
-        else
-        {
-            glyph.face->set_character_sizes(glyph.format.text_size * scale_factor_);
-        }
-
-        double size = glyph.format.text_size * scale_factor_;
-        matrix.xx = static_cast<FT_Fixed>( glyph_pos.rot.cos * 0x10000L);
-        matrix.xy = static_cast<FT_Fixed>(-glyph_pos.rot.sin * 0x10000L);
-        matrix.yx = static_cast<FT_Fixed>( glyph_pos.rot.sin * 0x10000L);
-        matrix.yy = static_cast<FT_Fixed>( glyph_pos.rot.cos * 0x10000L);
-
-        pixel_position pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
-        if (is_mono)
-        {
-            pos.x = std::round(pos.x);
-            pos.y = std::round(pos.y);
-        }
-        pen.x = static_cast<FT_Pos>(pos.x * 64);
-        pen.y = static_cast<FT_Pos>(pos.y * 64);
-
-        FT_Set_Transform(face, &matrix, &pen);
-        error = FT_Load_Glyph(face, glyph.glyph_index, load_flags);
-        if (error) continue;
-        FT_Glyph image;
-        error = FT_Get_Glyph(face->glyph, &image);
-        if (error) continue;
-        box2d<double> bbox(0, glyph_pos.glyph.ymin, 1, glyph_pos.glyph.ymax);
-        glyphs_.emplace_back(glyph, image, pos, glyph_pos.rot, size, bbox);
-    }
-}
-
 template<class PixFmt> class image_accessor_halo
 {
 public:
@@ -828,7 +767,23 @@ template <typename T>
 void agg_text_renderer<T>::render(glyph_positions const& pos)
 {
     const bool is_mono = (pos.size() != 0) && pos.begin()->glyph.format.text_mode == TEXT_MODE_MONO;
-    prepare_glyphs(pos, is_mono);
+
+    std::vector<glyph_t> glyphs;
+
+    for (auto const& glyph_pos : pos)
+    {
+        glyph_info const& glyph = glyph_pos.glyph;
+        double size = glyph.format.text_size * scale_factor_;
+        pixel_position pos = glyph_pos.pos + glyph.offset.rotate(glyph_pos.rot);
+        if (is_mono)
+        {
+            pos.x = std::round(pos.x);
+            pos.y = std::round(pos.y);
+        }
+        box2d<double> bbox(0, glyph_pos.glyph.ymin, 1, glyph_pos.glyph.ymax);
+        glyphs.emplace_back(glyph, pos, glyph_pos.rot, size, bbox);
+    }
+
     const int height = pixmap_.height();
     pixel_position base_point = pos.get_base_point();
     if (is_mono)
@@ -843,7 +798,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         base_point.x + halo_transform_.tx,
         base_point.y - halo_transform_.ty);
 
-    for (auto const& glyph : glyphs_)
+    for (auto const& glyph : glyphs)
     {
         const glyph_cache::value_type * glyph_val = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
         if (glyph_val)
@@ -866,7 +821,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
     }
 
     // render actual text
-    for (auto & glyph : glyphs_)
+    for (auto & glyph : glyphs)
     {
         const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info);
         if (glyph_val)

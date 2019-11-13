@@ -130,19 +130,16 @@ struct rasterizer;
 struct glyph_t
 {
     glyph_info const& info;
-    FT_Glyph image;
     pixel_position pos;
     rotation rot;
     double size;
     box2d<double> bbox;
     glyph_t(glyph_info const& info_,
-            FT_Glyph image_,
             pixel_position const& pos_,
             rotation const& rot_,
             double size_,
             box2d<double> const& bbox_)
         : info(info_),
-          image(image_),
           pos(pos_),
           rot(rot_),
           size(size_),
@@ -183,7 +180,6 @@ public:
 
 protected:
     using glyph_vector = std::vector<glyph_t>;
-    void prepare_glyphs(glyph_positions const& positions, bool is_mono);
     FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
     halo_rasterizer_e rasterizer_;
 
