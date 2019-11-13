@@ -61,11 +61,11 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
 
     composite_mode_e comp_op = get<composite_mode_e>(sym, keys::comp_op, feature, common_.vars_, src_over);
     composite_mode_e halo_comp_op = get<composite_mode_e>(sym, keys::halo_comp_op, feature, common_.vars_, src_over);
-    agg_text_renderer<T0> ren(buffers_.top().get(),
-                              //*ras_ptr, TODO: use gamma
-                              comp_op,
-                              halo_comp_op,
-                              common_.scale_factor_);
+    agg_text_renderer ren(buffers_.top().get(),
+                          //*ras_ptr, TODO: use gamma
+                          comp_op,
+                          halo_comp_op,
+                          common_.scale_factor_);
 
     auto halo_transform = get_optional<transform_type>(sym, keys::halo_transform);
     if (halo_transform)

@@ -25,6 +25,7 @@
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/text/face.hpp>
+#include <mapnik/text/glyph_cache.hpp>
 #include <mapnik/util/fs.hpp>
 #include <mapnik/util/file_io.hpp>
 #include <mapnik/make_unique.hpp>
@@ -53,6 +54,14 @@ namespace mapnik
 {
 template class MAPNIK_DECL singleton<freetype_engine, CreateUsingNew>;
 
+freetype_engine::freetype_engine()
+    : glyph_cache_(std::make_unique<glyph_cache>(global_font_file_mapping_, global_memory_fonts_))
+{
+}
+
+freetype_engine::~freetype_engine()
+{
+}
 
 bool freetype_engine::is_font_file(std::string const& file_name)
 {
@@ -403,6 +412,16 @@ face_ptr freetype_engine::create_face(std::string const& family_name,
                                        font_cache,
                                        global_font_file_mapping,
                                        global_memory_fonts);
+}
+
+glyph_cache & freetype_engine::get_glyph_cache()
+{
+    return instance().get_glyph_cache_impl();
+}
+
+glyph_cache & freetype_engine::get_glyph_cache_impl()
+{
+    return *glyph_cache_;
 }
 
 face_manager::face_manager(font_library & library,

@@ -27,7 +27,6 @@
 #include <mapnik/image_compositing.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
 #include <mapnik/util/noncopyable.hpp>
-#include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/text/glyph_positions.hpp>
 #include <mapnik/value_types.hpp>
 #include <mapnik/pixel_position.hpp>
@@ -40,65 +39,12 @@
 #include "agg_pixfmt_rgba.h"
 #include <agg_trans_affine.h>
 #pragma GCC diagnostic pop
-
-#include <boost/container_hash/hash.hpp>
-
-// freetype2
-extern "C"
-{
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include FT_STROKER_H
-}
-
 #pragma GCC diagnostic pop
 
 namespace mapnik
 {
 
-struct glyph_cache_key
-{
-    font_face const & face;
-    unsigned glyph_index;
-    unsigned glyph_height;
-    double halo_radius;
-
-    std::size_t hash() const
-    {
-        std::size_t h = 0;
-        boost::hash_combine(h, &face);
-        boost::hash_combine(h, glyph_index);
-        boost::hash_combine(h, glyph_height);
-        boost::hash_combine(h, halo_radius);
-        return h;
-    }
-
-    bool operator==(glyph_cache_key const & other) const
-    {
-        return &face == &other.face &&
-            glyph_index == other.glyph_index &&
-            glyph_height == other.glyph_height &&
-            std::abs(halo_radius - other.halo_radius) < 1e-3;
-    }
-};
-
-}
-
-namespace std
-{
-    template<> struct hash<mapnik::glyph_cache_key>
-    {
-        typedef mapnik::glyph_cache_key argument_type;
-        typedef std::size_t result_type;
-        result_type operator()(mapnik::glyph_cache_key const& k) const noexcept
-        {
-            return k.hash();
-        }
-    };
-}
-
-namespace mapnik
-{
+class glyph_cache;
 
 struct glyph_t
 {
@@ -119,12 +65,15 @@ struct glyph_t
           bbox(bbox_) {}
 };
 
-class text_renderer : private util::noncopyable
+class agg_text_renderer : private util::noncopyable
 {
 public:
-    text_renderer (composite_mode_e comp_op,
-                   composite_mode_e halo_comp_op,
-                   double scale_factor);
+    using pixmap_type = image_rgba8;
+
+    agg_text_renderer(pixmap_type & pixmap,
+                      composite_mode_e comp_op,
+                      composite_mode_e halo_comp_op,
+                      double scale_factor);
 
     void set_comp_op(composite_mode_e comp_op)
     {
@@ -144,71 +93,16 @@ public:
     void set_transform(agg::trans_affine const& transform);
     void set_halo_transform(agg::trans_affine const& halo_transform);
 
-protected:
+    void render(glyph_positions const& positions);
+
+private:
     composite_mode_e comp_op_;
     composite_mode_e halo_comp_op_;
     double scale_factor_;
     agg::trans_affine transform_;
     agg::trans_affine halo_transform_;
-};
-
-class glyph_cache
-{
-public:
-    glyph_cache() :
-        font_library_(),
-        font_manager_(font_library_,
-                      freetype_engine::get_mapping(),
-                      freetype_engine::get_cache())
-    {
-    }
-
-    using img_type = image_gray8;
-
-    struct value_type
-    {
-        value_type(unsigned width, unsigned height, int x, int y)
-            : img(width, height), x(x), y(y)
-        {
-        }
-
-        value_type(value_type const&) = delete;
-        value_type(value_type &&) = default;
-
-        img_type img;
-        int x, y;
-    };
-
-    const value_type * get(glyph_info const & glyph, double halo_radius);
-
-private:
-    std::unordered_map<glyph_cache_key, value_type> cache_;
-
-    font_library font_library_;
-    face_manager_freetype font_manager_;
-
-    const value_type * render(glyph_cache_key const & key,
-                              glyph_info const & glyph,
-                              double halo_radius);
-
-    FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
-
-    void render_halo(img_type & dst, FT_Bitmap const & src, int radius) const;
-};
-
-template <typename T>
-class agg_text_renderer : public text_renderer
-{
-public:
-    using pixmap_type = T;
-    agg_text_renderer (pixmap_type & pixmap,
-                       composite_mode_e comp_op,
-                       composite_mode_e halo_comp_op,
-                       double scale_factor);
-    void render(glyph_positions const& positions);
-private:
     pixmap_type & pixmap_;
-    glyph_cache glyph_cache_;
+    glyph_cache & glyph_cache_;
 };
 
 }

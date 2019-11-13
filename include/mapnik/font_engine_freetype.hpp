@@ -48,6 +48,8 @@ using face_set_ptr = std::unique_ptr<font_face_set>;
 class font_face;
 using face_ptr = std::shared_ptr<font_face>;
 
+class glyph_cache;
+
 class MAPNIK_DECL freetype_engine : public singleton<freetype_engine, CreateUsingNew>,
                                     private util::noncopyable
 {
@@ -74,11 +76,18 @@ public:
                                 freetype_engine::font_memory_cache_type const& font_cache,
                                 font_file_mapping_type const& global_font_file_mapping,
                                 freetype_engine::font_memory_cache_type & global_memory_fonts);
+    static glyph_cache & get_glyph_cache();
+
+    ~freetype_engine();
+
 private:
+    freetype_engine();
+
     bool is_font_file_impl(std::string const& file_name);
     std::vector<std::string> face_names_impl();
     font_file_mapping_type const& get_mapping_impl();
     font_memory_cache_type& get_cache_impl();
+    glyph_cache & get_glyph_cache_impl();
     bool can_open_impl(std::string const& face_name,
                   font_library & library,
                   font_file_mapping_type const& font_file_mapping,
@@ -103,6 +112,7 @@ private:
                              bool recurse = false);
     font_file_mapping_type global_font_file_mapping_;
     font_memory_cache_type global_memory_fonts_;
+    std::unique_ptr<glyph_cache> glyph_cache_;
 };
 
 class MAPNIK_DECL face_manager
