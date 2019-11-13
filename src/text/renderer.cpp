@@ -838,10 +838,10 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
     }
     const pixel_position start(
         base_point.x + transform_.tx,
-        - base_point.y + transform_.ty);
+        base_point.y - transform_.ty);
     const pixel_position start_halo(
         base_point.x + halo_transform_.tx,
-        - base_point.y + halo_transform_.ty);
+        base_point.y - halo_transform_.ty);
 
     for (auto const& glyph : glyphs_)
     {
@@ -849,8 +849,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         if (glyph_val)
         {
             const double halo_radius = glyph.info.format.halo_radius * scale_factor_;
-            int x = start_halo.x + glyph.pos.x - halo_radius;
-            int y = - start_halo.y - glyph.pos.y;
+            const int x = start_halo.x + glyph.pos.x - halo_radius;
+            const int y = start_halo.y - glyph.pos.y;
             box2d<double> halo_bbox(glyph.bbox);
             halo_bbox.pad(halo_radius);
             composite_glyph(pixmap_,
@@ -871,8 +871,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info);
         if (glyph_val)
         {
-            int x = start.x + glyph.pos.x;
-            int y = - start.y - glyph.pos.y;
+            const int x = start.x + glyph.pos.x;
+            const int y = start.y - glyph.pos.y;
             composite_glyph(pixmap_,
                             glyph_val->img,
                             glyph.info.format.fill.rgba(),
