@@ -739,6 +739,21 @@ const glyph_cache::img_type * glyph_cache::render_halo(
                 std::piecewise_construct,
                 std::forward_as_tuple(key),
                 std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
+
+
+            if (bit->bitmap.width && bit->bitmap.rows)
+            {
+            std::clog << bit->bitmap.width << " ; " << bit->bitmap.rows << " : " << halo_radius << std::endl;
+            image_rgba8 i(bit->bitmap.width, bit->bitmap.rows);
+            rasterizer ras;
+            composite_bitmap(i, &bit->bitmap,
+                        color(0, 0, 0).rgba(),
+                        0, 0, 1.0, src_over, ras);
+            save_to_file(i, std::to_string(glyph.glyph_index) + ".png", "png32");
+            }
+
+
+
             if (!result.second) { return nullptr; }
             img_type & glyph_img = result.first->second;
             composite_bitmap(glyph_img, bit->bitmap, 0, 0);
@@ -867,7 +882,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                     FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
                     if (bit->bitmap.pixel_mode != FT_PIXEL_MODE_BGRA)
                     {
-                        const glyph_cache::img_type * glyph_img = glyph_cache_.get_halo(glyph.info, halo_radius);
+                        const glyph_cache::img_type * glyph_img = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
                         if (glyph_img)
                         {
                             //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
