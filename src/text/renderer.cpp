@@ -860,15 +860,35 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
     matrix.yx = transform_.shy * 0x10000L;
 
     // default formatting
-    double halo_radius = 0;
+    //double halo_radius = 0;
     color black(0,0,0);
     unsigned fill = black.rgba();
-    unsigned halo_fill = black.rgba();
+    //unsigned halo_fill = black.rgba();
     double text_opacity = 1.0;
     double halo_opacity = 1.0;
 
     for (auto const& glyph : glyphs_)
     {
+        const glyph_cache::value_type * glyph_val = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
+        if (glyph_val)
+        {
+            //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
+            const double halo_radius = glyph.info.format.halo_radius * scale_factor_;
+            int x = (start.x >> 6) + glyph.pos.x - halo_radius;
+            int y = height - (start.y >> 6) - glyph.pos.y;
+            box2d<double> halo_bbox(glyph.bbox);
+            halo_bbox.pad(halo_radius);
+            composite_glyph(pixmap_,
+                            glyph_val->img,
+                            glyph.info.format.halo_fill.rgba(),
+                            halo_transform_,
+                            x, y,
+                            -glyph.rot.angle(),
+                            halo_bbox,
+                            halo_opacity,
+                            halo_comp_op_);
+        }
+        /*
         halo_fill = glyph.info.format.halo_fill.rgba();
         halo_opacity = glyph.info.format.halo_opacity;
         halo_radius = glyph.info.format.halo_radius * scale_factor_;
@@ -895,25 +915,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                     FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
                     if (bit->bitmap.pixel_mode != FT_PIXEL_MODE_BGRA)
                     {
-                        const glyph_cache::value_type * glyph_val = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
-                        if (glyph_val)
-                        {
-                            //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
-                            int x = (start.x >> 6) + glyph.pos.x - halo_radius;
-                            int y = height - (start.y >> 6) - glyph.pos.y;
-                            box2d<double> halo_bbox(glyph.bbox);
-                            halo_bbox.pad(halo_radius);
-                            composite_glyph(pixmap_,
-                                            glyph_val->img,
-                                            halo_fill,
-                                            halo_transform_,
-                                            x, y,
-                                            -glyph.rot.angle(),
-                                            halo_bbox,
-                                            halo_opacity,
-                                            halo_comp_op_);
-                        }
-                    /*
+                    / *
                         composite_bitmap(pixmap_,
                                          &bit->bitmap,
                                          halo_fill,
@@ -922,7 +924,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                          halo_opacity,
                                          halo_comp_op_,
                                          ras_);
-                                         */
+                                         * /
                     }
                 }
             }
@@ -970,6 +972,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
             }
         }
         FT_Done_Glyph(g);
+        */
     }
 
     // render actual text
