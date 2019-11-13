@@ -241,21 +241,35 @@ public:
 
     using img_type = image_gray8;
 
-    const img_type * get(glyph_info const & glyph);
-    const img_type * get_halo(glyph_info const & glyph, double halo_radius);
+    struct value_type
+    {
+        value_type(unsigned width, unsigned height, int x, int y)
+            : img(width, height), x(x), y(y)
+        {
+        }
+
+        value_type(value_type const&) = delete;
+        value_type(value_type &&) = default;
+
+        img_type img;
+        int x, y;
+    };
+
+    const value_type * get(glyph_info const & glyph);
+    const value_type * get_halo(glyph_info const & glyph, double halo_radius);
 
 private:
-    std::unordered_map<glyph_cache_key, img_type> cache_;
-    std::unordered_map<glyph_halo_cache_key, img_type> halo_cache_;
+    std::unordered_map<glyph_cache_key, value_type> cache_;
+    std::unordered_map<glyph_halo_cache_key, value_type> halo_cache_;
 
     font_library font_library_;
     face_manager_freetype font_manager_;
 
-    const img_type * render(glyph_cache_key const & key,
+    const value_type * render(glyph_cache_key const & key,
                             glyph_info const & glyph);
     FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
 
-    const img_type * render_halo(
+    const value_type * render_halo(
         glyph_halo_cache_key const & key,
         glyph_info const & glyph,
         double halo_radius);

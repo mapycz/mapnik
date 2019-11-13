@@ -497,7 +497,7 @@ void glyph_cache::render_halo(
     }
 }
 
-const glyph_cache::img_type * glyph_cache::get(glyph_info const & glyph)
+const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph)
 {
     glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.height};
 
@@ -509,7 +509,7 @@ const glyph_cache::img_type * glyph_cache::get(glyph_info const & glyph)
     return render(key, glyph);
 }
 
-const glyph_cache::img_type * glyph_cache::get_halo(glyph_info const & glyph, double halo_radius)
+const glyph_cache::value_type * glyph_cache::get_halo(glyph_info const & glyph, double halo_radius)
 {
     glyph_halo_cache_key key{*glyph.face, glyph.glyph_index, glyph.height, halo_radius};
 
@@ -548,7 +548,7 @@ FT_Error glyph_cache::select_closest_size(glyph_info const& glyph, FT_Face & fac
     return FT_Select_Size(face, best_match);
 }
 
-const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, glyph_info const & glyph)
+const glyph_cache::value_type * glyph_cache::render(glyph_cache_key const & key, glyph_info const & glyph)
 {
     FT_Int32 load_flags = FT_LOAD_DEFAULT;
 
@@ -594,9 +594,12 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
         auto result = cache_.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(key),
-            std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
+            std::forward_as_tuple(
+                bit->bitmap.width, bit->bitmap.rows,
+                bit->left, bit->bitmap.rows /* TODO: do we have better height val here? */ - bit->top));
         if (!result.second) { return nullptr; }
-        img_type & glyph_img = result.first->second;
+        value_type & val = result.first->second;
+        img_type & glyph_img = val.img;
         switch (bit->bitmap.pixel_mode)
         {
             case FT_PIXEL_MODE_BGRA:
@@ -614,7 +617,7 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
                 return nullptr;
             case FT_PIXEL_MODE_MONO:
                 composite_bitmap_mono(glyph_img, bit->bitmap, 0, 0);
-                return &glyph_img;
+                return &val;
         }
     }
     else
@@ -628,9 +631,11 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
             auto result = cache_.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(key),
-                std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
+                std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows,
+                    bit->left, bit->bitmap.rows /* TODO: do we have better height val here? */ - bit->top));
             if (!result.second) { return nullptr; }
-            img_type & glyph_img = result.first->second;
+            value_type & val = result.first->second;
+            img_type & glyph_img = val.img;
             switch (bit->bitmap.pixel_mode)
             {
                 case FT_PIXEL_MODE_GRAY:
@@ -640,14 +645,14 @@ const glyph_cache::img_type * glyph_cache::render(glyph_cache_key const & key, g
                     composite_bitmap_mono(glyph_img, bit->bitmap, 0, 0);
                     break;
             }
-            return &glyph_img;
+            return &val;
         }
     }
 
     return nullptr;
 }
 
-const glyph_cache::img_type * glyph_cache::render_halo(
+const glyph_cache::value_type * glyph_cache::render_halo(
     glyph_halo_cache_key const & key,
     glyph_info const & glyph,
     double halo_radius)
@@ -694,14 +699,18 @@ const glyph_cache::img_type * glyph_cache::render_halo(
     if (image->format == FT_GLYPH_FORMAT_BITMAP)
     {
         FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
+        const int w = bit->bitmap.width + 2 * halo_radius;
+        const int h = bit->bitmap.rows + 2 * halo_radius;
         auto result = halo_cache_.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(key),
             std::forward_as_tuple(
                 bit->bitmap.width + 2 * halo_radius,
-                bit->bitmap.rows + 2 * halo_radius));
+                bit->bitmap.rows + 2 * halo_radius,
+                bit->left, h /* TODO: do we have better height val here? */ - bit->top));
         if (!result.second) { return nullptr; }
-        img_type & glyph_img = result.first->second;
+        value_type & val = result.first->second;
+        img_type & glyph_img = val.img;
         switch (bit->bitmap.pixel_mode)
         {
             case FT_PIXEL_MODE_BGRA:
@@ -720,7 +729,7 @@ const glyph_cache::img_type * glyph_cache::render_halo(
                 return nullptr;
             case FT_PIXEL_MODE_MONO:
                 render_halo(glyph_img, bit->bitmap, halo_radius);
-                return &glyph_img;
+                return &val;
         }
     }
     else
@@ -738,12 +747,14 @@ const glyph_cache::img_type * glyph_cache::render_halo(
             auto result = halo_cache_.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(key),
-                std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows));
+                std::forward_as_tuple(
+                    bit->bitmap.width, bit->bitmap.rows,
+                    bit->left, bit->bitmap.rows /* TODO: do we have better height val here? */ - bit->top));
 
-
+            /*
             if (bit->bitmap.width && bit->bitmap.rows)
             {
-            std::clog << bit->bitmap.width << " ; " << bit->bitmap.rows << " : " << halo_radius << std::endl;
+            std::clog << bit->bitmap.width << " ; " << bit->bitmap.rows << " : " << bit->top << " : " << bit->left << std::endl;
             image_rgba8 i(bit->bitmap.width, bit->bitmap.rows);
             rasterizer ras;
             composite_bitmap(i, &bit->bitmap,
@@ -751,13 +762,15 @@ const glyph_cache::img_type * glyph_cache::render_halo(
                         0, 0, 1.0, src_over, ras);
             save_to_file(i, std::to_string(glyph.glyph_index) + ".png", "png32");
             }
+            */
 
 
 
             if (!result.second) { return nullptr; }
-            img_type & glyph_img = result.first->second;
+            value_type & val = result.first->second;
+            img_type & glyph_img = val.img;
             composite_bitmap(glyph_img, bit->bitmap, 0, 0);
-            return &glyph_img;
+            return &val;
         }
     }
 
@@ -882,8 +895,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                     FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
                     if (bit->bitmap.pixel_mode != FT_PIXEL_MODE_BGRA)
                     {
-                        const glyph_cache::img_type * glyph_img = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
-                        if (glyph_img)
+                        const glyph_cache::value_type * glyph_val = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
+                        if (glyph_val)
                         {
                             //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
                             int x = (start.x >> 6) + glyph.pos.x - halo_radius;
@@ -891,7 +904,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                             box2d<double> halo_bbox(glyph.bbox);
                             halo_bbox.pad(halo_radius);
                             composite_glyph(pixmap_,
-                                            *glyph_img,
+                                            glyph_val->img,
                                             halo_fill,
                                             halo_transform_,
                                             x, y,
@@ -1006,14 +1019,14 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                 {
                     case FT_PIXEL_MODE_GRAY:
                         {
-                        const glyph_cache::img_type * glyph_img = glyph_cache_.get(glyph.info);
-                        if (glyph_img)
+                        const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info);
+                        if (glyph_val)
                         {
                             //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
                             int x = (start.x >> 6) + glyph.pos.x;
                             int y = height - (start.y >> 6) - glyph.pos.y;
                             composite_glyph(pixmap_,
-                                            *glyph_img,
+                                            glyph_val->img,
                                             fill,
                                             transform_,
                                             x, y,
