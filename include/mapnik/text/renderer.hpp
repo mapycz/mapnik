@@ -178,13 +178,6 @@ public:
         scale_factor_ = scale_factor;
     }
 
-    /*
-    void set_stroker(stroker_ptr stroker)
-    {
-        stroker_ = stroker;
-    }
-    */
-
     void set_transform(agg::trans_affine const& transform);
     void set_halo_transform(agg::trans_affine const& halo_transform);
 
