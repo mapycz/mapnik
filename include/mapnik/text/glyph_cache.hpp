@@ -127,9 +127,9 @@ public:
 
 private:
     std::unordered_map<glyph_cache_key, value_type> cache_;
-
     font_library font_library_;
     face_manager_freetype font_manager_;
+    std::mutex mutex_;
 
     const value_type * render(glyph_cache_key const & key,
                               glyph_info const & glyph,

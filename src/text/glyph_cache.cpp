@@ -70,6 +70,7 @@ void glyph_cache::render_halo(
 
 const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph, double halo_radius)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.height, halo_radius};
 
     if (auto it = cache_.find(key); it != cache_.end())
