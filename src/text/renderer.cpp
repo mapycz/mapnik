@@ -51,14 +51,12 @@
 namespace mapnik
 {
 
-text_renderer::text_renderer (halo_rasterizer_e rasterizer, composite_mode_e comp_op,
-                              composite_mode_e halo_comp_op, double scale_factor, stroker_ptr stroker)
-    : rasterizer_(rasterizer),
-      comp_op_(comp_op),
+text_renderer::text_renderer(
+        composite_mode_e comp_op, composite_mode_e halo_comp_op,
+        double scale_factor)
+    : comp_op_(comp_op),
       halo_comp_op_(halo_comp_op),
       scale_factor_(scale_factor),
-      glyphs_(),
-      stroker_(stroker),
       transform_(),
       halo_transform_()
 {}
@@ -71,23 +69,6 @@ void text_renderer::set_transform(agg::trans_affine const& transform)
 void text_renderer::set_halo_transform(agg::trans_affine const& halo_transform)
 {
     halo_transform_ = halo_transform;
-}
-
-FT_Error text_renderer::select_closest_size(glyph_info const& glyph, FT_Face & face) const
-{
-    int scaled_size = static_cast<int>(glyph.format.text_size * scale_factor_);
-    int best_match = 0;
-    int diff = std::abs(scaled_size - face->available_sizes[0].width);
-    for (int i = 1; i < face->num_fixed_sizes; ++i)
-    {
-        int ndiff = std::abs(scaled_size - face->available_sizes[i].height);
-        if (ndiff < diff)
-        {
-            best_match = i;
-            diff = ndiff;
-        }
-    }
-    return FT_Select_Size(face, best_match);
 }
 
 template<class PixFmt> class image_accessor_halo
@@ -436,28 +417,16 @@ void glyph_cache::render_halo(
     }
 }
 
-const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph)
+const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph, double halo_radius)
 {
-    glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.height};
+    glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.height, halo_radius};
 
     if (auto it = cache_.find(key); it != cache_.end())
     {
         return &it->second;
     }
 
-    return render(key, glyph);
-}
-
-const glyph_cache::value_type * glyph_cache::get_halo(glyph_info const & glyph, double halo_radius)
-{
-    glyph_halo_cache_key key{*glyph.face, glyph.glyph_index, glyph.height, halo_radius};
-
-    if (auto it = halo_cache_.find(key); it != halo_cache_.end())
-    {
-        return &it->second;
-    }
-
-    return render_halo(key, glyph, halo_radius * 2.0);
+    return render(key, glyph, halo_radius * 2.0);
 }
 
 struct done_glyph
@@ -487,112 +456,8 @@ FT_Error glyph_cache::select_closest_size(glyph_info const& glyph, FT_Face & fac
     return FT_Select_Size(face, best_match);
 }
 
-const glyph_cache::value_type * glyph_cache::render(glyph_cache_key const & key, glyph_info const & glyph)
-{
-    FT_Int32 load_flags = FT_LOAD_DEFAULT;
-
-    if (glyph.format.text_mode == TEXT_MODE_DEFAULT)
-    {
-        load_flags |= FT_LOAD_NO_HINTING;
-    }
-
-    FT_Face face = glyph.face->get_face();
-    if (glyph.face->is_color())
-    {
-        load_flags |= FT_LOAD_COLOR;
-    }
-
-    if (face->num_fixed_sizes > 0)
-    {
-        if (select_closest_size(glyph, face))
-        {
-            return nullptr;
-        }
-    }
-    else
-    {
-        glyph.face->set_character_sizes(glyph.format.text_size * 2.0 /*scale_factor_*/);
-    }
-
-    FT_Set_Transform(face, nullptr, nullptr);
-
-    if (FT_Load_Glyph(face, glyph.glyph_index, load_flags))
-    {
-        return nullptr;
-    }
-
-    FT_Glyph image;
-    if (FT_Get_Glyph(face->glyph, &image))
-    {
-        return nullptr;
-    }
-
-    if (image->format == FT_GLYPH_FORMAT_BITMAP)
-    {
-        FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
-        auto result = cache_.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(key),
-            std::forward_as_tuple(
-                bit->bitmap.width, bit->bitmap.rows,
-                bit->left, bit->bitmap.rows /* TODO: do we have better height val here? */ - bit->top));
-        if (!result.second) { return nullptr; }
-        value_type & val = result.first->second;
-        img_type & glyph_img = val.img;
-        switch (bit->bitmap.pixel_mode)
-        {
-            case FT_PIXEL_MODE_BGRA:
-                /* TODO: color fonts
-                composite_color_glyph(glyph_img,
-                                      bit->bitmap,
-                                      agg::trans_affine(),
-                                      0, 0,
-                                      0,
-                                      box2d<double>(0, 0, bit->bitmap.width, bit->bitmap.rows),
-                                      1.0,
-                                      src_over);
-                return &glyph_img;
-                */
-                return nullptr;
-            case FT_PIXEL_MODE_MONO:
-                composite_bitmap_mono(glyph_img, bit->bitmap, 0, 0);
-                return &val;
-        }
-    }
-    else
-    {
-        FT_Render_Mode mode = (glyph.format.text_mode == TEXT_MODE_DEFAULT)
-            ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
-        if (!FT_Glyph_To_Bitmap(&image, mode, 0, 1))
-        {
-            done_glyph release_glyph{image};
-            FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
-            auto result = cache_.emplace(
-                std::piecewise_construct,
-                std::forward_as_tuple(key),
-                std::forward_as_tuple(bit->bitmap.width, bit->bitmap.rows,
-                    bit->left, bit->bitmap.rows /* TODO: do we have better height val here? */ - bit->top));
-            if (!result.second) { return nullptr; }
-            value_type & val = result.first->second;
-            img_type & glyph_img = val.img;
-            switch (bit->bitmap.pixel_mode)
-            {
-                case FT_PIXEL_MODE_GRAY:
-                    composite_bitmap(glyph_img, bit->bitmap, 0, 0);
-                    break;
-                case FT_PIXEL_MODE_MONO:
-                    composite_bitmap_mono(glyph_img, bit->bitmap, 0, 0);
-                    break;
-            }
-            return &val;
-        }
-    }
-
-    return nullptr;
-}
-
-const glyph_cache::value_type * glyph_cache::render_halo(
-    glyph_halo_cache_key const & key,
+const glyph_cache::value_type * glyph_cache::render(
+    glyph_cache_key const & key,
     glyph_info const & glyph,
     double halo_radius)
 {
@@ -640,7 +505,7 @@ const glyph_cache::value_type * glyph_cache::render_halo(
         FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(image);
         const int w = bit->bitmap.width + 2 * halo_radius;
         const int h = bit->bitmap.rows + 2 * halo_radius;
-        auto result = halo_cache_.emplace(
+        auto result = cache_.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(key),
             std::forward_as_tuple(
@@ -677,13 +542,16 @@ const glyph_cache::value_type * glyph_cache::render_halo(
         if (FT_Glyph_Copy(image, &g)) { return nullptr; }
         done_glyph release_glyph{g};
         FT_Glyph_Transform(g, nullptr, nullptr);
-        stroker & strk = *font_manager_.get_stroker();
-        strk.init(halo_radius);
-        FT_Glyph_Stroke(&g, strk.get(), 1);
+        if (halo_radius > 0.0)
+        {
+            stroker & strk = *font_manager_.get_stroker();
+            strk.init(halo_radius);
+            FT_Glyph_Stroke(&g, strk.get(), 1);
+        }
         if (!FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_NORMAL, 0, 1))
         {
             FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
-            auto result = halo_cache_.emplace(
+            auto result = cache_.emplace(
                 std::piecewise_construct,
                 std::forward_as_tuple(key),
                 std::forward_as_tuple(
@@ -702,8 +570,6 @@ const glyph_cache::value_type * glyph_cache::render_halo(
             save_to_file(i, std::to_string(glyph.glyph_index) + ".png", "png32");
             }
             */
-
-
 
             if (!result.second) { return nullptr; }
             value_type & val = result.first->second;
@@ -751,23 +617,17 @@ void composite_color_glyph_halo(T & pixmap,
 
 template <typename T>
 agg_text_renderer<T>::agg_text_renderer (pixmap_type & pixmap,
-                                         halo_rasterizer_e halo_rasterizer,
-                                         rasterizer const & ras,
                                          composite_mode_e comp_op,
                                          composite_mode_e halo_comp_op,
-                                         double scale_factor,
-                                         stroker_ptr stroker)
-    : text_renderer(halo_rasterizer, comp_op, halo_comp_op,
-                    scale_factor, stroker),
-      pixmap_(pixmap),
-      ras_(ras)
+                                         double scale_factor)
+    : text_renderer(comp_op, halo_comp_op, scale_factor),
+      pixmap_(pixmap)
 {}
 
 template <typename T>
 void agg_text_renderer<T>::render(glyph_positions const& pos)
 {
     const bool is_mono = (pos.size() != 0) && pos.begin()->glyph.format.text_mode == TEXT_MODE_MONO;
-
     std::vector<glyph_t> glyphs;
 
     for (auto const& glyph_pos : pos)
@@ -798,9 +658,10 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         base_point.x + halo_transform_.tx,
         base_point.y - halo_transform_.ty);
 
+    // halo
     for (auto const& glyph : glyphs)
     {
-        const glyph_cache::value_type * glyph_val = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
+        const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info, glyph.info.format.halo_radius);
         if (glyph_val)
         {
             const double halo_radius = glyph.info.format.halo_radius * scale_factor_;
@@ -823,7 +684,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
     // render actual text
     for (auto & glyph : glyphs)
     {
-        const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info);
+        const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info, 0.0);
         if (glyph_val)
         {
             const int x = start.x + glyph.pos.x;

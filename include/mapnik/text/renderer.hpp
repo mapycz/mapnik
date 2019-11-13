@@ -61,6 +61,7 @@ struct glyph_cache_key
     font_face const & face;
     unsigned glyph_index;
     unsigned glyph_height;
+    double halo_radius;
 
     std::size_t hash() const
     {
@@ -68,6 +69,7 @@ struct glyph_cache_key
         boost::hash_combine(h, &face);
         boost::hash_combine(h, glyph_index);
         boost::hash_combine(h, glyph_height);
+        boost::hash_combine(h, halo_radius);
         return h;
     }
 
@@ -75,24 +77,7 @@ struct glyph_cache_key
     {
         return &face == &other.face &&
             glyph_index == other.glyph_index &&
-            glyph_height == other.glyph_height;
-    }
-};
-
-struct glyph_halo_cache_key : glyph_cache_key
-{
-    double halo_radius;
-
-    std::size_t hash() const
-    {
-        std::size_t h = glyph_cache_key::hash();
-        boost::hash_combine(h, halo_radius);
-        return h;
-    }
-
-    bool operator==(glyph_halo_cache_key const & other) const
-    {
-        return glyph_cache_key::operator==(other) &&
+            glyph_height == other.glyph_height &&
             std::abs(halo_radius - other.halo_radius) < 1e-3;
     }
 };
@@ -106,16 +91,6 @@ namespace std
         typedef mapnik::glyph_cache_key argument_type;
         typedef std::size_t result_type;
         result_type operator()(mapnik::glyph_cache_key const& k) const noexcept
-        {
-            return k.hash();
-        }
-    };
-
-    template<> struct hash<mapnik::glyph_halo_cache_key>
-    {
-        typedef mapnik::glyph_halo_cache_key argument_type;
-        typedef std::size_t result_type;
-        result_type operator()(mapnik::glyph_halo_cache_key const& k) const noexcept
         {
             return k.hash();
         }
@@ -149,11 +124,9 @@ struct glyph_t
 class text_renderer : private util::noncopyable
 {
 public:
-    text_renderer (halo_rasterizer_e rasterizer,
-                   composite_mode_e comp_op,
+    text_renderer (composite_mode_e comp_op,
                    composite_mode_e halo_comp_op,
-                   double scale_factor,
-                   stroker_ptr stroker);
+                   double scale_factor);
 
     void set_comp_op(composite_mode_e comp_op)
     {
@@ -165,11 +138,6 @@ public:
         halo_comp_op_ = halo_comp_op;
     }
 
-    void set_halo_rasterizer(halo_rasterizer_e rasterizer)
-    {
-        rasterizer_ = rasterizer;
-    }
-
     void set_scale_factor(double scale_factor)
     {
         scale_factor_ = scale_factor;
@@ -179,15 +147,9 @@ public:
     void set_halo_transform(agg::trans_affine const& halo_transform);
 
 protected:
-    using glyph_vector = std::vector<glyph_t>;
-    FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
-    halo_rasterizer_e rasterizer_;
-
     composite_mode_e comp_op_;
     composite_mode_e halo_comp_op_;
     double scale_factor_;
-    glyph_vector glyphs_;
-    stroker_ptr stroker_;
     agg::trans_affine transform_;
     agg::trans_affine halo_transform_;
 };
@@ -244,29 +206,21 @@ public:
         int x, y;
     };
 
-    const value_type * get(glyph_info const & glyph);
-    const value_type * get_halo(glyph_info const & glyph, double halo_radius);
+    const value_type * get(glyph_info const & glyph, double halo_radius);
 
 private:
     std::unordered_map<glyph_cache_key, value_type> cache_;
-    std::unordered_map<glyph_halo_cache_key, value_type> halo_cache_;
 
     font_library font_library_;
     face_manager_freetype font_manager_;
 
     const value_type * render(glyph_cache_key const & key,
-                            glyph_info const & glyph);
+                              glyph_info const & glyph,
+                              double halo_radius);
+
     FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
 
-    const value_type * render_halo(
-        glyph_halo_cache_key const & key,
-        glyph_info const & glyph,
-        double halo_radius);
-
-    void render_halo(
-        img_type & dst,
-        FT_Bitmap const & src,
-        int radius) const;
+    void render_halo(img_type & dst, FT_Bitmap const & src, int radius) const;
 };
 
 template <typename T>
@@ -274,18 +228,15 @@ class agg_text_renderer : public text_renderer
 {
 public:
     using pixmap_type = T;
-    agg_text_renderer (pixmap_type & pixmap, halo_rasterizer_e halo_rasterizer,
-                       rasterizer const & ras,
-                       composite_mode_e comp_op = src_over,
-                       composite_mode_e halo_comp_op = src_over,
-                       double scale_factor = 1.0,
-                       stroker_ptr stroker = stroker_ptr());
+    agg_text_renderer (pixmap_type & pixmap,
+                       composite_mode_e comp_op,
+                       composite_mode_e halo_comp_op,
+                       double scale_factor);
     void render(glyph_positions const& positions);
 private:
     pixmap_type & pixmap_;
     halo_cache halo_cache_;
     glyph_cache glyph_cache_;
-    rasterizer const & ras_;
 
     void render_halo(unsigned char *buffer,
                      unsigned width,
