@@ -100,8 +100,6 @@ namespace std
 namespace mapnik
 {
 
-struct rasterizer;
-
 struct glyph_t
 {
     glyph_info const& info;
@@ -152,31 +150,6 @@ protected:
     double scale_factor_;
     agg::trans_affine transform_;
     agg::trans_affine halo_transform_;
-};
-
-class halo_cache
-{
-public:
-    using key_type = std::tuple<std::string, // family
-                                std::string, // face
-                                unsigned, // glyph index
-                                unsigned, // glyph height
-                                int>; // halo radius
-    using img_type = image_gray8;
-    using value_type = std::unique_ptr<img_type>;
-
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-
-    image_gray8 const& get(glyph_info const & glyph,
-                           pixfmt_type const& bitmap,
-                           double halo_radius);
-
-private:
-    std::map<key_type, value_type> cache_;
-
-    void render_halo_img(pixfmt_type const& glyph_bitmap,
-                         img_type & halo_bitmap,
-                         int radius);
 };
 
 class glyph_cache
@@ -235,16 +208,7 @@ public:
     void render(glyph_positions const& positions);
 private:
     pixmap_type & pixmap_;
-    halo_cache halo_cache_;
     glyph_cache glyph_cache_;
-
-    void render_halo(unsigned char *buffer,
-                     unsigned width,
-                     unsigned height,
-                     unsigned pixel_width,
-                     unsigned rgba, int x, int y,
-                     double halo_radius, double opacity,
-                     composite_mode_e comp_op);
 };
 
 }

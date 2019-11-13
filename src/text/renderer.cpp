@@ -294,9 +294,6 @@ void composite_glyph(image_rgba8 & dst,
                      double opacity,
                      composite_mode_e comp_op)
 {
-    //using const_rendering_buffer = util::rendering_buffer<image_rgba8>;
-    //using pixfmt_type = agg::pixfmt_alpha_blend_rgba<
-        //agg::blender_rgba32_pre, const_rendering_buffer, agg::pixel32_type>;
     using pixfmt_type = agg::pixfmt_rgba32_pre;
     using img_accessor_type = image_accessor_colorize<pixfmt_type>;
     img_accessor_type img_accessor(rgba, src);
@@ -306,83 +303,6 @@ void composite_glyph(image_rgba8 & dst,
         dst, img_accessor, src.width(), src.height(), tr,
         x, y, angle, bbox, opacity, 0, comp_op);
 }
-
-void halo_cache::render_halo_img(pixfmt_type const& glyph_bitmap,
-                                 img_type & halo_bitmap,
-                                 int radius)
-{
-    for (int x = 0; x < glyph_bitmap.width(); x++)
-    {
-        for (int y = 0; y < glyph_bitmap.height(); y++)
-        {
-            if (*reinterpret_cast<const pixfmt_type::pixel_type*>(glyph_bitmap.pix_ptr(x, y)))
-            {
-                for (int n = -radius; n <= radius; ++n)
-                {
-                    for (int m = -radius; m <= radius; ++m)
-                    {
-                        halo_bitmap(radius + x + n, radius + y + m) = 1;
-                    }
-                }
-            }
-        }
-    }
-}
-
-image_gray8 const& halo_cache::get(glyph_info const & glyph,
-                                   pixfmt_type const& bitmap,
-                                   double halo_radius)
-{
-    key_type key(glyph.face->family_name(), glyph.face->style_name(),
-        glyph.glyph_index, glyph.height, halo_radius);
-    value_type & halo_img_ptr = cache_[key];
-
-    if (halo_img_ptr)
-    {
-        return *halo_img_ptr;
-    }
-
-    halo_img_ptr.reset(new img_type(bitmap.width() + 2 * halo_radius,
-                                    bitmap.height() + 2 * halo_radius));
-    img_type & halo_img = *halo_img_ptr;
-    render_halo_img(bitmap, halo_img, halo_radius);
-    return halo_img;
-}
-
-/*
-void glyph_cache::render_halo_img(
-    FT_Bitmap const& glyph_bitmap,
-    img_type & halo_bitmap,
-    int radius)
-{
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-    using img_accessor_type = image_accessor_halo<pixfmt_type>;
-    const unsigned width = bitmap.width;
-    const unsigned height = bitmap.rows;
-    const double scale = bbox.height() / height;
-    agg::rendering_buffer glyph_buf(bitmap.buffer, width, height, width * pixfmt_type::pix_width);
-    pixfmt_type glyph_pixf(glyph_buf);
-    const double scaled_radius = halo_radius / scale;
-    img_accessor_type img_accessor(halo_color, scaled_radius, halo_bitmap);
-
-    for (int x = 0; x < glyph_bitmap.width(); x++)
-    {
-        for (int y = 0; y < glyph_bitmap.height(); y++)
-        {
-            if (*reinterpret_cast<const pixfmt_type::pixel_type*>(glyph_bitmap.pix_ptr(x, y)))
-            {
-                for (int n = -radius; n <= radius; ++n)
-                {
-                    for (int m = -radius; m <= radius; ++m)
-                    {
-                        halo_bitmap(radius + x + n, radius + y + m) = 1;
-                    }
-                }
-            }
-        }
-    }
-}
-*/
 
 void glyph_cache::render_halo(
     image_gray8 & dst,
@@ -583,39 +503,6 @@ const glyph_cache::value_type * glyph_cache::render(
 }
 
 template <typename T>
-void composite_color_glyph_halo(T & pixmap,
-                                FT_Bitmap const& bitmap,
-                                agg::trans_affine const& tr,
-                                int x,
-                                int y,
-                                double angle,
-                                box2d<double> const& bbox,
-                                unsigned halo_color,
-                                double opacity,
-                                double halo_radius,
-                                composite_mode_e comp_op,
-                                glyph_info const& glyph,
-                                halo_cache & cache)
-{
-
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-    using img_accessor_type = image_accessor_halo<pixfmt_type>;
-    unsigned width = bitmap.width;
-    unsigned height = bitmap.rows;
-    double scale = bbox.height() / height;
-    agg::rendering_buffer glyph_buf(bitmap.buffer, width, height, width * pixfmt_type::pix_width);
-    pixfmt_type glyph_pixf(glyph_buf);
-    double scaled_radius = halo_radius / scale;
-    image_gray8 const& halo_bitmap = cache.get(glyph, glyph_pixf, scaled_radius);
-    img_accessor_type img_accessor(halo_color, scaled_radius, halo_bitmap);
-
-    using order_type = agg::order_rgba;
-    composite_color_glyph<T, img_accessor_type, order_type>(
-        pixmap, img_accessor, width, height, tr, x, y,
-        angle, bbox, opacity, halo_radius, comp_op);
-}
-
-template <typename T>
 agg_text_renderer<T>::agg_text_renderer (pixmap_type & pixmap,
                                          composite_mode_e comp_op,
                                          composite_mode_e halo_comp_op,
@@ -698,61 +585,6 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                             glyph.bbox,
                             glyph.info.format.text_opacity,
                             comp_op_);
-        }
-    }
-}
-
-template <typename T>
-void agg_text_renderer<T>::render_halo(unsigned char *buffer,
-                                       unsigned width,
-                                       unsigned height,
-                                       unsigned pixel_width,
-                                       unsigned rgba,
-                                       int x1,
-                                       int y1,
-                                       double halo_radius,
-                                       double opacity,
-                                       composite_mode_e comp_op)
-{
-    int x, y;
-    if (halo_radius < 1.0)
-    {
-        for (x=0; x < width; x++)
-        {
-            for (y=0; y < height; y++)
-            {
-                int gray = buffer[(y * width + x) * pixel_width + pixel_width - 1];
-                if (gray)
-                {
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1-1, y+y1-1, rgba, gray*halo_radius*halo_radius, opacity);
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1,   y+y1-1, rgba, gray*halo_radius, opacity);
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1+1, y+y1-1, rgba, gray*halo_radius*halo_radius, opacity);
-
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1-1, y+y1,   rgba, gray*halo_radius, opacity);
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1,   y+y1,   rgba, gray, opacity);
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1+1, y+y1,   rgba, gray*halo_radius, opacity);
-
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1-1, y+y1+1, rgba, gray*halo_radius*halo_radius, opacity);
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1,   y+y1+1, rgba, gray*halo_radius, opacity);
-                    mapnik::composite_pixel(pixmap_, comp_op, x+x1+1, y+y1+1, rgba, gray*halo_radius*halo_radius, opacity);
-                }
-            }
-        }
-    }
-    else
-    {
-        for (x=0; x < width; x++)
-        {
-            for (y=0; y < height; y++)
-            {
-                int gray = buffer[(y * width + x) * pixel_width + pixel_width - 1];
-                if (gray)
-                {
-                    for (int n=-halo_radius; n <=halo_radius; ++n)
-                        for (int m=-halo_radius; m <= halo_radius; ++m)
-                            mapnik::composite_pixel(pixmap_, comp_op, x+x1+m, y+y1+n, rgba, gray, opacity);
-                }
-            }
         }
     }
 }
