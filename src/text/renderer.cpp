@@ -861,11 +861,11 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
 
     // default formatting
     //double halo_radius = 0;
-    color black(0,0,0);
-    unsigned fill = black.rgba();
+    //color black(0,0,0);
+    //unsigned fill = black.rgba();
     //unsigned halo_fill = black.rgba();
-    double text_opacity = 1.0;
-    double halo_opacity = 1.0;
+    //double text_opacity = 1.0;
+    //double halo_opacity = 1.0;
 
     for (auto const& glyph : glyphs_)
     {
@@ -885,7 +885,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                             x, y,
                             -glyph.rot.angle(),
                             halo_bbox,
-                            halo_opacity,
+                            glyph.info.format.halo_opacity,
                             halo_comp_op_);
         }
         /*
@@ -978,9 +978,23 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
     // render actual text
     for (auto & glyph : glyphs_)
     {
-        fill = glyph.info.format.fill.rgba();
-        text_opacity = glyph.info.format.text_opacity;
+        const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info);
+        if (glyph_val)
+        {
+            int x = (start.x >> 6) + glyph.pos.x;
+            int y = height - (start.y >> 6) - glyph.pos.y;
+            composite_glyph(pixmap_,
+                            glyph_val->img,
+                            glyph.info.format.fill.rgba(),
+                            transform_,
+                            x, y,
+                            -glyph.rot.angle(),
+                            glyph.bbox,
+                            glyph.info.format.text_opacity,
+                            comp_op_);
+        }
 
+        /*
         FT_Glyph_Transform(glyph.image, &matrix, &start);
         error = 0;
         if (glyph.image->format == FT_GLYPH_FORMAT_BITMAP)
@@ -1039,7 +1053,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                             comp_op_);
                         }
                         }
-                        /*
+                        / *
                         composite_bitmap(pixmap_,
                                          &bit->bitmap,
                                          fill,
@@ -1048,7 +1062,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                                          text_opacity,
                                          comp_op_,
                                          ras_);
-                                         */
+                                         * /
                         break;
                     case FT_PIXEL_MODE_MONO:
                         composite_bitmap_mono(pixmap_,
@@ -1063,6 +1077,7 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
             }
             FT_Done_Glyph(glyph.image);
         }
+            */
     }
 }
 
