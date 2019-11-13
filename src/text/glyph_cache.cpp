@@ -78,7 +78,7 @@ const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph, doubl
         return &it->second;
     }
 
-    return render(key, glyph, halo_radius * 2.0);
+    return render(key, glyph, halo_radius * scale);
 }
 
 struct done_glyph
@@ -93,7 +93,7 @@ struct done_glyph
 
 FT_Error glyph_cache::select_closest_size(glyph_info const& glyph, FT_Face & face) const
 {
-    int scaled_size = static_cast<int>(glyph.format.text_size * 2.0/*scale_factor_*/);
+    int scaled_size = static_cast<int>(glyph.format.text_size * scale);
     int best_match = 0;
     int diff = std::abs(scaled_size - face->available_sizes[0].width);
     for (int i = 1; i < face->num_fixed_sizes; ++i)
@@ -135,7 +135,7 @@ const glyph_cache::value_type * glyph_cache::render(
     }
     else
     {
-        glyph.face->set_character_sizes(glyph.format.text_size * 2.0 /*scale_factor_*/);
+        glyph.face->set_character_sizes(glyph.format.text_size * scale);
     }
 
     FT_Set_Transform(face, nullptr, nullptr);

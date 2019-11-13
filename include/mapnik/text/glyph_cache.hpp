@@ -125,6 +125,8 @@ public:
 
     const value_type * get(glyph_info const & glyph, double halo_radius);
 
+    const double scale = 2.0;
+
 private:
     std::unordered_map<glyph_cache_key, value_type> cache_;
     font_library font_library_;

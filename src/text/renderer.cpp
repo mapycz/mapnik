@@ -217,6 +217,7 @@ void composite_color_glyph(Pixmap & pixmap,
 
     agg::trans_affine tr(transform);
     tr *= agg::trans_affine_translation(-x, -y);
+    tr *= agg::trans_affine_translation(-halo_radius, 0);
     tr *= agg::trans_affine_rotation(angle);
     tr *= agg::trans_affine_scaling(scale);
     tr *= agg::trans_affine_translation(x, y);
@@ -227,10 +228,10 @@ void composite_color_glyph(Pixmap & pixmap,
     tr.transform(&p[6], &p[7]);
 
     rasterizer ras;
-    ras.move_to_d(p[0] - halo_radius, p[1] - halo_radius);
-    ras.line_to_d(p[2] + halo_radius, p[3] - halo_radius);
-    ras.line_to_d(p[4] + halo_radius, p[5] + halo_radius);
-    ras.line_to_d(p[6] - halo_radius, p[7] + halo_radius);
+    ras.move_to_d(p[0], p[1]);
+    ras.line_to_d(p[2], p[3]);
+    ras.line_to_d(p[4], p[5]);
+    ras.line_to_d(p[6], p[7]);
 
     using color_type = agg::rgba8;
     using blender_type = agg::comp_op_adaptor_rgba_pre<color_type, ColorOrder>; // comp blender
@@ -298,6 +299,7 @@ void composite_glyph(image_rgba8 & dst,
                      double angle,
                      box2d<double> const& bbox,
                      double opacity,
+                     double halo_radius,
                      composite_mode_e comp_op)
 {
     using pixfmt_type = agg::pixfmt_rgba32_pre;
@@ -307,7 +309,7 @@ void composite_glyph(image_rgba8 & dst,
     using order_type = agg::order_rgba;
     composite_color_glyph<image_rgba8, img_accessor_type, order_type>(
         dst, img_accessor, src.width(), src.height(), tr,
-        x, y, angle, bbox, opacity, 0, comp_op);
+        x, y, angle, bbox, opacity, halo_radius, comp_op);
 }
 
 void agg_text_renderer::render(glyph_positions const& pos)
@@ -346,11 +348,12 @@ void agg_text_renderer::render(glyph_positions const& pos)
     // halo
     for (auto const& glyph : glyphs)
     {
-        const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info, glyph.info.format.halo_radius);
+        const glyph_cache::value_type * glyph_val = glyph_cache_.get(
+            glyph.info, glyph.info.format.halo_radius);
         if (glyph_val)
         {
             const double halo_radius = glyph.info.format.halo_radius * scale_factor_;
-            const int x = start_halo.x + glyph.pos.x - halo_radius;
+            const int x = start_halo.x + glyph.pos.x;
             const int y = start_halo.y - glyph.pos.y;
             box2d<double> halo_bbox(glyph.bbox);
             halo_bbox.pad(halo_radius);
@@ -362,6 +365,7 @@ void agg_text_renderer::render(glyph_positions const& pos)
                             -glyph.rot.angle(),
                             halo_bbox,
                             glyph.info.format.halo_opacity,
+                            glyph.info.format.halo_radius * glyph_cache_.scale,
                             halo_comp_op_);
         }
     }
@@ -382,6 +386,7 @@ void agg_text_renderer::render(glyph_positions const& pos)
                             -glyph.rot.angle(),
                             glyph.bbox,
                             glyph.info.format.text_opacity,
+                            0.0,
                             comp_op_);
         }
     }
