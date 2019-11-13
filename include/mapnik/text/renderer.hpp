@@ -153,10 +153,10 @@ class text_renderer : private util::noncopyable
 {
 public:
     text_renderer (halo_rasterizer_e rasterizer,
-                   composite_mode_e comp_op = src_over,
-                   composite_mode_e halo_comp_op = src_over,
-                   double scale_factor = 1.0,
-                   stroker_ptr stroker = stroker_ptr());
+                   composite_mode_e comp_op,
+                   composite_mode_e halo_comp_op,
+                   double scale_factor,
+                   stroker_ptr stroker);
 
     void set_comp_op(composite_mode_e comp_op)
     {

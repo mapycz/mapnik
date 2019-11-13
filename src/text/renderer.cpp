@@ -827,55 +827,30 @@ agg_text_renderer<T>::agg_text_renderer (pixmap_type & pixmap,
 template <typename T>
 void agg_text_renderer<T>::render(glyph_positions const& pos)
 {
-    bool is_mono = (pos.size() != 0) && pos.begin()->glyph.format.text_mode == TEXT_MODE_MONO;
+    const bool is_mono = (pos.size() != 0) && pos.begin()->glyph.format.text_mode == TEXT_MODE_MONO;
     prepare_glyphs(pos, is_mono);
-    FT_Error  error;
-    FT_Vector start;
-    FT_Vector start_halo;
-    int height = pixmap_.height();
+    const int height = pixmap_.height();
     pixel_position base_point = pos.get_base_point();
     if (is_mono)
     {
         base_point.x = std::round(base_point.x);
         base_point.y = std::round(base_point.y);
     }
-    start.x = static_cast<FT_Pos>(base_point.x * (1 << 6));
-    start.y = static_cast<FT_Pos>((height - base_point.y) * (1 << 6));
-    start_halo = start;
-    start.x += transform_.tx * 64;
-    start.y += transform_.ty * 64;
-    start_halo.x += halo_transform_.tx * 64;
-    start_halo.y += halo_transform_.ty * 64;
-
-    FT_Matrix halo_matrix;
-    halo_matrix.xx = halo_transform_.sx  * 0x10000L;
-    halo_matrix.xy = halo_transform_.shx * 0x10000L;
-    halo_matrix.yy = halo_transform_.sy  * 0x10000L;
-    halo_matrix.yx = halo_transform_.shy * 0x10000L;
-
-    FT_Matrix matrix;
-    matrix.xx = transform_.sx  * 0x10000L;
-    matrix.xy = transform_.shx * 0x10000L;
-    matrix.yy = transform_.sy  * 0x10000L;
-    matrix.yx = transform_.shy * 0x10000L;
-
-    // default formatting
-    //double halo_radius = 0;
-    //color black(0,0,0);
-    //unsigned fill = black.rgba();
-    //unsigned halo_fill = black.rgba();
-    //double text_opacity = 1.0;
-    //double halo_opacity = 1.0;
+    const pixel_position start(
+        base_point.x + transform_.tx,
+        height - base_point.y + transform_.ty);
+    const pixel_position start_halo(
+        base_point.x + halo_transform_.tx,
+        height - base_point.y + halo_transform_.ty);
 
     for (auto const& glyph : glyphs_)
     {
         const glyph_cache::value_type * glyph_val = glyph_cache_.get_halo(glyph.info, glyph.info.format.halo_radius);
         if (glyph_val)
         {
-            //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
             const double halo_radius = glyph.info.format.halo_radius * scale_factor_;
-            int x = (start.x >> 6) + glyph.pos.x - halo_radius;
-            int y = height - (start.y >> 6) - glyph.pos.y;
+            int x = start_halo.x + glyph.pos.x - halo_radius;
+            int y = height - start_halo.y - glyph.pos.y;
             box2d<double> halo_bbox(glyph.bbox);
             halo_bbox.pad(halo_radius);
             composite_glyph(pixmap_,
@@ -888,91 +863,6 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                             glyph.info.format.halo_opacity,
                             halo_comp_op_);
         }
-        /*
-        halo_fill = glyph.info.format.halo_fill.rgba();
-        halo_opacity = glyph.info.format.halo_opacity;
-        halo_radius = glyph.info.format.halo_radius * scale_factor_;
-        // make sure we've got reasonable values.
-        if (halo_radius <= 0.0 || halo_radius > 1024.0) continue;
-        FT_Glyph g;
-        error = FT_Glyph_Copy(glyph.image, &g);
-        if (!error)
-        {
-            FT_Glyph_Transform(g, &halo_matrix, &start_halo);
-            if (rasterizer_ == HALO_RASTERIZER_FULL)
-            {
-                if (g->format != FT_GLYPH_FORMAT_OUTLINE)
-                {
-                    MAPNIK_LOG_WARN(agg_text_renderer) << "HALO_RASTERIZER_FULL only works with vectorial glyphs.";
-                    continue;
-                }
-
-                stroker_->init(halo_radius);
-                FT_Glyph_Stroke(&g, stroker_->get(), 1);
-                error = FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_NORMAL, 0, 1);
-                if (!error)
-                {
-                    FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
-                    if (bit->bitmap.pixel_mode != FT_PIXEL_MODE_BGRA)
-                    {
-                    / *
-                        composite_bitmap(pixmap_,
-                                         &bit->bitmap,
-                                         halo_fill,
-                                         bit->left,
-                                         height - bit->top,
-                                         halo_opacity,
-                                         halo_comp_op_,
-                                         ras_);
-                                         * /
-                    }
-                }
-            }
-            else
-            {
-                if (g->format == FT_GLYPH_FORMAT_OUTLINE)
-                {
-                    error = FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_NORMAL, 0, 1);
-                    if (error)
-                    {
-                        continue;
-                    }
-                }
-                FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(g);
-                if (bit->bitmap.pixel_mode == FT_PIXEL_MODE_BGRA)
-                {
-                    int x = (start.x >> 6) + glyph.pos.x;
-                    int y = height - (start.y >> 6) - glyph.pos.y;
-                    composite_color_glyph_halo(pixmap_,
-                                               bit->bitmap,
-                                               transform_,
-                                               x, y,
-                                               -glyph.rot.angle(),
-                                               glyph.bbox,
-                                               halo_fill,
-                                               halo_opacity,
-                                               halo_radius,
-                                               comp_op_,
-                                               glyph.info,
-                                               halo_cache_);
-                }
-                else
-                {
-                    render_halo(bit->bitmap.buffer,
-                                bit->bitmap.width,
-                                bit->bitmap.rows,
-                                1,
-                                halo_fill,
-                                bit->left,
-                                height - bit->top,
-                                halo_radius,
-                                halo_opacity,
-                                halo_comp_op_);
-                }
-            }
-        }
-        FT_Done_Glyph(g);
-        */
     }
 
     // render actual text
@@ -981,8 +871,8 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
         const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info);
         if (glyph_val)
         {
-            int x = (start.x >> 6) + glyph.pos.x;
-            int y = height - (start.y >> 6) - glyph.pos.y;
+            int x = start.x + glyph.pos.x;
+            int y = height - start.y - glyph.pos.y;
             composite_glyph(pixmap_,
                             glyph_val->img,
                             glyph.info.format.fill.rgba(),
@@ -993,91 +883,6 @@ void agg_text_renderer<T>::render(glyph_positions const& pos)
                             glyph.info.format.text_opacity,
                             comp_op_);
         }
-
-        /*
-        FT_Glyph_Transform(glyph.image, &matrix, &start);
-        error = 0;
-        if (glyph.image->format == FT_GLYPH_FORMAT_BITMAP)
-        {
-            FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(glyph.image);
-            int x = (start.x >> 6) + glyph.pos.x;
-            int y = height - (start.y >> 6) - glyph.pos.y;
-            switch (bit->bitmap.pixel_mode)
-            {
-                case FT_PIXEL_MODE_BGRA:
-                    composite_color_glyph(pixmap_,
-                                          bit->bitmap,
-                                          transform_,
-                                          x, y,
-                                          -glyph.rot.angle(),
-                                          glyph.bbox,
-                                          text_opacity,
-                                          comp_op_);
-                    break;
-                case FT_PIXEL_MODE_MONO:
-                    composite_bitmap_mono(pixmap_,
-                                     &bit->bitmap,
-                                     fill,
-                                     x, y,
-                                     text_opacity,
-                                     comp_op_);
-                    break;
-            }
-        }
-        else
-        {
-            FT_Render_Mode mode = (glyph.info.format.text_mode == TEXT_MODE_DEFAULT)
-                ? FT_RENDER_MODE_NORMAL : FT_RENDER_MODE_MONO;
-            error = FT_Glyph_To_Bitmap(&glyph.image, mode, 0, 1);
-            if (error == 0)
-            {
-                FT_BitmapGlyph bit = reinterpret_cast<FT_BitmapGlyph>(glyph.image);
-                switch (bit->bitmap.pixel_mode)
-                {
-                    case FT_PIXEL_MODE_GRAY:
-                        {
-                        const glyph_cache::value_type * glyph_val = glyph_cache_.get(glyph.info);
-                        if (glyph_val)
-                        {
-                            //save_to_file(*glyph_img, std::to_string(glyph.info.glyph_index) + ".png", "png32");
-                            int x = (start.x >> 6) + glyph.pos.x;
-                            int y = height - (start.y >> 6) - glyph.pos.y;
-                            composite_glyph(pixmap_,
-                                            glyph_val->img,
-                                            fill,
-                                            transform_,
-                                            x, y,
-                                            -glyph.rot.angle(),
-                                            glyph.bbox,
-                                            text_opacity,
-                                            comp_op_);
-                        }
-                        }
-                        / *
-                        composite_bitmap(pixmap_,
-                                         &bit->bitmap,
-                                         fill,
-                                         bit->left,
-                                         height - bit->top,
-                                         text_opacity,
-                                         comp_op_,
-                                         ras_);
-                                         * /
-                        break;
-                    case FT_PIXEL_MODE_MONO:
-                        composite_bitmap_mono(pixmap_,
-                                         &bit->bitmap,
-                                         fill,
-                                         bit->left,
-                                         height - bit->top,
-                                         text_opacity,
-                                         comp_op_);
-                        break;
-                }
-            }
-            FT_Done_Glyph(glyph.image);
-        }
-            */
     }
 }
 
