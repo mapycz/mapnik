@@ -16,6 +16,7 @@ public:
         mapnik::font_library library;
         for (std::string const& name : mapnik::freetype_engine::face_names())
         {
+            /*
             mapnik::face_ptr f = mapnik::freetype_engine::create_face(name,
                                                                       library,
                                                                       font_file_mapping,
@@ -23,6 +24,7 @@ public:
                                                                       mapnik::freetype_engine::get_mapping(),
                                                                       mapnik::freetype_engine::get_cache());
             if (f) ++count;
+            */
         }
         return count == expected_count;
     }
@@ -37,6 +39,7 @@ public:
             mapnik::font_library library;
             for (std::string const& name : mapnik::freetype_engine::face_names())
             {
+                /*
                 mapnik::face_ptr f = mapnik::freetype_engine::create_face(name,
                                                                           library,
                                                                           font_file_mapping,
@@ -44,6 +47,7 @@ public:
                                                                           mapnik::freetype_engine::get_mapping(),
                                                                           mapnik::freetype_engine::get_cache());
                 if (f) ++count;
+                */
             }
             if (count != expected_count) {
                 std::clog << "warning: face creation not working as expected\n";

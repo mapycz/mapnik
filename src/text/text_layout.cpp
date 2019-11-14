@@ -91,16 +91,14 @@ pixel_position pixel_position::rotate(rotation const& rot) const
     return pixel_position(x * rot.cos - y * rot.sin, x * rot.sin + y * rot.cos);
 }
 
-text_layout::text_layout(face_manager_freetype & font_manager,
-                         feature_impl const& feature,
+text_layout::text_layout(feature_impl const& feature,
                          attributes const& attrs,
                          double scale_factor,
                          text_symbolizer_properties const& properties,
                          text_layout_properties const& layout_defaults,
                          formatting::node_ptr tree,
                          shaper_cache & s_cache)
-    : font_manager_(font_manager),
-      scale_factor_(scale_factor),
+    : scale_factor_(scale_factor),
       itemizer_(),
       width_map_(),
       width_(0.0),
@@ -435,7 +433,7 @@ void text_layout::clear()
 
 void text_layout::shape_text(text_line & line)
 {
-    harfbuzz_shaper::shape_text(line, shaper_cache_, itemizer_, width_map_, font_manager_, scale_factor_);
+    harfbuzz_shaper::shape_text(line, shaper_cache_, itemizer_, width_map_, scale_factor_);
 }
 
 void text_layout::init_auto_alignment()

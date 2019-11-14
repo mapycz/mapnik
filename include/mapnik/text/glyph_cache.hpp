@@ -82,11 +82,13 @@ struct glyph_cache_key
 struct glyph_metrics_cache_key
 {
     unsigned glyph_index;
+    unsigned glyph_height;
     font_face const & face;
 
     std::size_t hash() const
     {
         std::size_t h = glyph_index;
+        boost::hash_combine(h, glyph_height);
         boost::hash_combine(h, face.hash);
         return h;
     }
@@ -94,6 +96,7 @@ struct glyph_metrics_cache_key
     bool operator==(glyph_metrics_cache_key const & other) const
     {
         return glyph_index == other.glyph_index &&
+            glyph_height == other.glyph_height &&
             face == other.face;
     }
 };
@@ -129,8 +132,8 @@ namespace mapnik
 class MAPNIK_DECL glyph_cache
 {
 public:
-    glyph_cache(stroker & s)
-        : stroker_(s)
+    glyph_cache(stroker & s, std::mutex & mutex)
+        : stroker_(s), mutex_(mutex)
     {
     }
 
@@ -160,7 +163,7 @@ private:
     std::unordered_map<glyph_cache_key, value_type> cache_;
     stroker & stroker_;
     std::unordered_map<glyph_metrics_cache_key, glyph_metrics> metrics_cache_;
-    std::mutex mutex_;
+    std::mutex & mutex_;
 
     const value_type * render(
         glyph_cache_key const & key,

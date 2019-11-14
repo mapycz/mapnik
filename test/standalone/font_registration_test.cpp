@@ -99,7 +99,7 @@ SECTION("registration") {
         REQUIRE( face_names.size() == 1 );
 
         // now, inspect font mapping and confirm the correct 'DejaVu Sans Mono Bold Oblique' is registered
-        using font_file_mapping = std::map<std::string, std::pair<int,std::string> >;
+        using font_file_mapping = std::unordered_map<std::string, std::pair<int,std::string> >;
         font_file_mapping const& name2file = mapnik::freetype_engine::get_mapping();
         bool found_dejavu = false;
         for (auto const& item : name2file)

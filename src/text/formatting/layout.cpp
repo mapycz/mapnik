@@ -106,8 +106,7 @@ void layout_node::apply(evaluated_format_properties_ptr const& p, feature_impl c
 
     // starting a new offset child with the new displacement value
     // we pass a null format tree since this is not the parent but a child
-    text_layout_ptr child_layout = std::make_unique<text_layout>(parent.get_font_manager(),
-                                                                 feature,
+    text_layout_ptr child_layout = std::make_unique<text_layout>(feature,
                                                                  vars,
                                                                  parent.get_scale_factor(),
                                                                  parent.get_default_text_properties(),

@@ -60,8 +60,7 @@ cairo_renderer<T>::cairo_renderer(Map const& m,
       m_(m),
       context_(cairo, text_outlines),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor),
-      face_manager_(font_library_),
-      font_manager_(font_library_, m.get_font_file_mapping(), m.get_font_memory_cache()),
+      face_manager_(),
       style_level_compositing_(false)
 {
     setup(m);
@@ -80,8 +79,7 @@ cairo_renderer<T>::cairo_renderer(Map const& m,
       m_(m),
       context_(cairo, text_outlines),
       common_(m, req, vars, offset_x, offset_y, req.width(), req.height(), scale_factor),
-      face_manager_(font_library_),
-      font_manager_(font_library_, m.get_font_file_mapping(), m.get_font_memory_cache()),
+      face_manager_(),
       style_level_compositing_(false)
 
 {
@@ -100,8 +98,7 @@ cairo_renderer<T>::cairo_renderer(Map const& m,
       m_(m),
       context_(cairo, text_outlines),
       common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor, detector),
-      face_manager_(font_library_),
-      font_manager_(font_library_, m.get_font_file_mapping(), m.get_font_memory_cache()),
+      face_manager_(),
       style_level_compositing_(false)
 
 {

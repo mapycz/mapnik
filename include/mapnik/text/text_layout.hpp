@@ -67,8 +67,7 @@ public:
     using const_iterator = line_vector::const_iterator;
     using child_iterator = text_layout_vector::const_iterator;
 
-    text_layout(face_manager_freetype & font_manager,
-                feature_impl const& feature,
+    text_layout(feature_impl const& feature,
                 attributes const& attrs,
                 double scale_factor,
                 text_symbolizer_properties const& properties,
@@ -112,7 +111,6 @@ public:
     void add_child(text_layout_ptr && child_layout);
 
     inline text_layout_vector & get_child_layouts() { return child_layout_list_; }
-    inline face_manager_freetype & get_font_manager() const { return font_manager_; }
     inline double get_scale_factor() const { return scale_factor_; }
     inline text_symbolizer_properties const& get_default_text_properties() const { return properties_; }
     inline text_layout_properties const& get_layout_properties() const { return layout_properties_; }
@@ -138,7 +136,6 @@ private:
     void init_auto_alignment();
 
     // input
-    face_manager_freetype & font_manager_;
     double scale_factor_;
 
     // processing

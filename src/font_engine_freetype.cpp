@@ -55,8 +55,7 @@ namespace mapnik
 template class MAPNIK_DECL singleton<freetype_engine, CreateUsingNew>;
 
 freetype_engine::freetype_engine()
-    : face_manager_(std::make_unique<face_manager>(font_library_, global_font_file_mapping_, global_memory_fonts_)),
-      glyph_cache_(std::make_unique<glyph_cache>(face_manager_->get_stroker()))
+    : glyph_cache_(std::make_unique<glyph_cache>(*stroker_, mutex_))
 {
 }
 
@@ -323,21 +322,19 @@ bool freetype_engine::can_open_impl(std::string const& face_name,
     return true;
 }
 
-face_ptr freetype_engine::create_face_impl(std::string const& family_name,
-                                           font_library & library,
-                                           freetype_engine::font_file_mapping_type const& font_file_mapping,
-                                           freetype_engine::font_memory_cache_type const& font_cache,
-                                           freetype_engine::font_file_mapping_type const& global_font_file_mapping,
-                                           freetype_engine::font_memory_cache_type & global_memory_fonts)
+face_ptr freetype_engine::create_face(std::string const& family_name,
+                                      font_library & library,
+                                      freetype_engine::font_file_mapping_type const& global_font_file_mapping,
+                                      freetype_engine::font_memory_cache_type & global_memory_fonts)
 {
     bool found_font_file = false;
-    font_file_mapping_type::const_iterator itr = font_file_mapping.find(family_name);
-    // look for font registered on specific map
-    if (itr != font_file_mapping.end())
+    // otherwise search global registry
+    font_file_mapping_type::const_iterator itr = global_font_file_mapping.find(family_name);
+    if (itr != global_font_file_mapping.end())
     {
-        auto mem_font_itr = font_cache.find(itr->second.second);
-        // if map has font already in memory, use it
-        if (mem_font_itr != font_cache.end())
+        auto mem_font_itr = global_memory_fonts.find(itr->second.second);
+        // if font already in memory, use it
+        if (mem_font_itr != global_memory_fonts.end())
         {
             FT_Face face;
             FT_Error error = FT_New_Memory_Face(library.get(),
@@ -347,30 +344,7 @@ face_ptr freetype_engine::create_face_impl(std::string const& family_name,
                                                 &face);
             if (!error) return std::make_shared<font_face>(face);
         }
-        // we don't add to cache here because the map and its font_cache
-        // must be immutable during rendering for predictable thread safety
         found_font_file = true;
-    }
-    else
-    {
-        // otherwise search global registry
-        itr = global_font_file_mapping.find(family_name);
-        if (itr != global_font_file_mapping.end())
-        {
-            auto mem_font_itr = global_memory_fonts.find(itr->second.second);
-            // if font already in memory, use it
-            if (mem_font_itr != global_memory_fonts.end())
-            {
-                FT_Face face;
-                FT_Error error = FT_New_Memory_Face(library.get(),
-                                                    reinterpret_cast<FT_Byte const*>(mem_font_itr->second.first.get()), // data
-                                                    static_cast<FT_Long>(mem_font_itr->second.second), // size
-                                                    itr->second.first, // face index
-                                                    &face);
-                if (!error) return std::make_shared<font_face>(face);
-            }
-            found_font_file = true;
-        }
     }
     // if we found file file but it is not yet in memory
     if (found_font_file)
@@ -378,9 +352,6 @@ face_ptr freetype_engine::create_face_impl(std::string const& family_name,
         mapnik::util::file file(itr->second.second);
         if (file)
         {
-#ifdef MAPNIK_THREADSAFE
-            std::lock_guard<std::mutex> lock(mutex_);
-#endif
             auto result = global_memory_fonts.emplace(itr->second.second, std::make_pair(file.data(),file.size()));
             FT_Face face;
             FT_Error error = FT_New_Memory_Face(library.get(),
@@ -400,21 +371,6 @@ face_ptr freetype_engine::create_face_impl(std::string const& family_name,
     return face_ptr();
 }
 
-face_ptr freetype_engine::create_face(std::string const& family_name,
-                                      font_library & library,
-                                      freetype_engine::font_file_mapping_type const& font_file_mapping,
-                                      freetype_engine::font_memory_cache_type const& font_cache,
-                                      freetype_engine::font_file_mapping_type const& global_font_file_mapping,
-                                      freetype_engine::font_memory_cache_type & global_memory_fonts)
-{
-    return instance().create_face_impl(family_name,
-                                       library,
-                                       font_file_mapping,
-                                       font_cache,
-                                       global_font_file_mapping,
-                                       global_memory_fonts);
-}
-
 glyph_cache & freetype_engine::get_glyph_cache()
 {
     return instance().get_glyph_cache_impl();
@@ -425,28 +381,7 @@ glyph_cache & freetype_engine::get_glyph_cache_impl()
     return *glyph_cache_;
 }
 
-face_manager & freetype_engine::get_face_manager_impl()
-{
-    return *face_manager_;
-}
-
-face_manager & freetype_engine::get_face_manager()
-{
-    return instance().get_face_manager_impl();
-}
-
-face_manager::face_manager(font_library & library,
-                           freetype_engine::font_file_mapping_type const& font_file_mapping,
-                           freetype_engine::font_memory_cache_type const& font_cache)
-    : face_cache_(),
-      library_(library),
-      font_file_mapping_(font_file_mapping),
-      font_memory_cache_(font_cache),
-      stroker_(std::make_unique<stroker>(library_.get()))
-{
-}
-
-face_ptr face_manager::get_face(std::string const& name)
+face_ptr freetype_engine::get_face_impl(std::string const& name)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     auto itr = face_cache_.find(name);
@@ -454,39 +389,36 @@ face_ptr face_manager::get_face(std::string const& name)
     {
         return itr->second;
     }
-    else
+
+    face_ptr face = create_face(
+        name,
+        font_library_,
+        global_font_file_mapping_,
+        global_memory_fonts_);
+    if (face)
     {
-        face_ptr face = freetype_engine::create_face(name,
-                                                     library_,
-                                                     font_file_mapping_,
-                                                     font_memory_cache_,
-                                                     freetype_engine::instance().get_mapping(),
-                                                     freetype_engine::instance().get_cache());
-        if (face)
-        {
-            face_cache_.emplace(name, face);
-        }
-        return face;
+        face_cache_.emplace(name, face);
     }
+    return face;
 }
 
-face_set_ptr face_manager::get_face_set(std::string const& name)
+face_set_ptr freetype_engine::get_face_set(std::string const& name)
 {
     face_set_ptr face_set = std::make_unique<font_face_set>();
-    if (face_ptr face = get_face(name))
+    if (face_ptr face = instance().get_face_impl(name))
     {
         face_set->add(face);
     }
     return face_set;
 }
 
-face_set_ptr face_manager::get_face_set(font_set const& fset)
+face_set_ptr freetype_engine::get_face_set(font_set const& fset)
 {
     std::vector<std::string> const& names = fset.get_face_names();
     face_set_ptr face_set = std::make_unique<font_face_set>();
     for (auto const& name : names)
     {
-        face_ptr face = get_face(name);
+        face_ptr face = instance().get_face_impl(name);
         if (face)
         {
             face_set->add(face);
@@ -503,7 +435,7 @@ face_set_ptr face_manager::get_face_set(font_set const& fset)
     return face_set;
 }
 
-face_set_ptr face_manager::get_face_set(std::string const& name, boost::optional<font_set> fset)
+face_set_ptr freetype_engine::get_face_set(std::string const& name, boost::optional<font_set> fset)
 {
     if (fset && fset->size() > 0)
     {

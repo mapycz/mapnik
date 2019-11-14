@@ -174,7 +174,7 @@ class text_symbolizer_helper
 public:
     using layout_generator_type = typename Traits::layout_generator_type;
 
-    template <typename FaceManagerT, typename DetectorT>
+    template <typename DetectorT>
     static typename Traits::placements_type get(
         symbolizer_base const& sym,
         feature_impl const& feature,
@@ -184,7 +184,6 @@ public:
         unsigned height,
         double scale_factor,
         view_transform const& t,
-        FaceManagerT & font_manager,
         DetectorT & detector,
         box2d<double> const& query_extent,
         agg::trans_affine const affine_trans,
@@ -200,7 +199,7 @@ public:
             sym, keys::text_placements_)->get_placement_info(scale_factor,
                 feature, vars, sc);
         layout_generator_type layout_generator(
-            params, detector, font_manager, *placement_info, sh_cache);
+            params, detector, *placement_info, sh_cache);
 
         const label_placement_enum placement_type =
             layout_generator.get_text_props().label_placement;

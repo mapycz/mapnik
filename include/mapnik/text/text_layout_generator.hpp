@@ -46,7 +46,6 @@ struct text_layout_generator : util::noncopyable
     text_layout_generator(
         params_type const & params,
         detector_type & detector,
-        face_manager_freetype & font_manager,
         text_placement_info & info,
         shaper_cache & s_cache);
 
@@ -74,7 +73,6 @@ struct text_layout_generator : util::noncopyable
     }
 
     params_type const & params_;
-    face_manager_freetype &font_manager_;
     text_placement_info & info_;
     evaluated_text_properties_ptr text_props_;
     std::unique_ptr<layout_container> layouts_;

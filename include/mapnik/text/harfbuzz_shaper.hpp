@@ -72,7 +72,6 @@ static void shape_text(text_line & line,
                        shaper_cache & s_cache,
                        text_itemizer & itemizer,
                        std::vector<double> & width_map,
-                       face_manager_freetype & font_manager,
                        double scale_factor)
 {
     unsigned start = line.first_char();
@@ -89,7 +88,7 @@ static void shape_text(text_line & line,
 
     for (auto const& text_item : list)
     {
-        face_set_ptr face_set = font_manager.get_face_set(text_item.format_->face_name, text_item.format_->fontset);
+        face_set_ptr face_set = freetype_engine::get_face_set(text_item.format_->face_name, text_item.format_->fontset);
         double size = text_item.format_->text_size * scale_factor;
         face_set->set_unscaled_character_sizes();
         std::size_t num_faces = face_set->size();
@@ -183,7 +182,7 @@ static void shape_text(text_line & line,
                     theface = glyphinfos[i].face;
                 }
 
-                glyph_metrics_cache_key ck{glyph.codepoint, *theface};
+                glyph_metrics_cache_key ck{glyph.codepoint, size, *theface};
                 const glyph_metrics * metrics = g_cache.metrics(ck);
 
                 if (metrics)
