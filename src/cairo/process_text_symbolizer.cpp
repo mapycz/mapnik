@@ -47,7 +47,7 @@ void cairo_renderer<T>::process(shield_symbolizer const& sym,
         sym, feature, common_.vars_, prj_trans,
         common_.width_, common_.height_,
         common_.scale_factor_,
-        common_.t_, common_.font_manager_, *common_.detector_,
+        common_.t_, font_manager_, *common_.detector_,
         common_.query_extent_, tr,
         common_.symbol_cache_, common_.shaper_cache_));
 
@@ -89,7 +89,7 @@ void cairo_renderer<T>::process(text_symbolizer const& sym,
         sym, feature, common_.vars_, prj_trans,
         common_.width_, common_.height_,
         common_.scale_factor_,
-        common_.t_, common_.font_manager_, *common_.detector_,
+        common_.t_, font_manager_, *common_.detector_,
         common_.query_extent_, tr,
         common_.symbol_cache_, common_.shaper_cache_));
 

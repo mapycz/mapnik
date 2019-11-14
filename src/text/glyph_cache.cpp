@@ -70,7 +70,7 @@ void glyph_cache::render_halo(
 
 const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph, double halo_radius)
 {
-    std::lock_guard<std::mutex> lock(glyph_mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
     glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.height, halo_radius};
 
     if (auto it = cache_.find(key); it != cache_.end())
@@ -196,9 +196,8 @@ const glyph_cache::value_type * glyph_cache::render(
         FT_Glyph_Transform(g, nullptr, nullptr);
         if (halo_radius > 0.0)
         {
-            stroker & strk = *font_manager_.get_stroker();
-            strk.init(halo_radius);
-            FT_Glyph_Stroke(&g, strk.get(), 1);
+            stroker_.init(halo_radius);
+            FT_Glyph_Stroke(&g, stroker_.get(), 1);
         }
         if (!FT_Glyph_To_Bitmap(&g, FT_RENDER_MODE_NORMAL, 0, 1))
         {
@@ -234,20 +233,18 @@ const glyph_cache::value_type * glyph_cache::render(
     return nullptr;
 }
 
-const glyph_metrics * glyph_cache::metrics_find(glyph_metrics_cache_key const & key)
+const glyph_metrics * glyph_cache::metrics(glyph_metrics_cache_key const & key)
 {
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    std::lock_guard<std::mutex> lock(mutex_);
+
     auto it = metrics_cache_.find(key);
     if (it != metrics_cache_.end()) {
         return &it->second;
     }
-    return nullptr;
-}
 
-const glyph_metrics * glyph_cache::metrics_insert(glyph_metrics_cache_key const & key, glyph_metrics const & value)
-{
-    std::lock_guard<std::mutex> lock(metrics_mutex_);
-    auto result = metrics_cache_.emplace(key, value);
+    glyph_metrics new_metrics;
+    key.face.glyph_dimensions(key.glyph_index, TEXT_MODE_DEFAULT, new_metrics);
+    auto result = metrics_cache_.emplace(key, new_metrics);
     return result.second ? &result.first->second : nullptr;
 }
 

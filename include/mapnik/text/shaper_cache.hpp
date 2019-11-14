@@ -53,7 +53,7 @@ struct shaper_cache_key
         std::size_t h = text.hashCode();
         boost::hash_combine(h, script);
         boost::hash_combine(h, dir);
-        boost::hash_combine(h, &face);
+        boost::hash_combine(h, face.hash);
         return h;
     }
 
@@ -62,7 +62,7 @@ struct shaper_cache_key
         return text == other.text &&
             script == other.script &&
             dir == other.dir &&
-            &face == &other.face;
+            face == other.face;
     }
 
     shaper_cache_key(shaper_cache_key &&) = default;

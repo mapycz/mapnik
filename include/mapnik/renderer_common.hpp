@@ -61,21 +61,14 @@ struct renderer_common : private util::noncopyable
     double scale_factor_;
     attributes vars_;
     // TODO: dirty hack for cairo renderer, figure out how to remove this
-    std::shared_ptr<font_library> shared_font_library_;
-    font_library & font_library_;
-    face_manager_freetype font_manager_;
+    //std::shared_ptr<font_library> shared_font_library_;
+    //font_library & font_library_;
+    //face_manager_freetype font_manager_;
     box2d<double> query_extent_;
     view_transform t_;
     detector_ptr detector_;
     symbol_cache symbol_cache_;
     shaper_cache shaper_cache_;
-
-protected:
-    // it's desirable to keep this class implicitly noncopyable to prevent
-    // inadvertent copying from other places;
-    // this copy constructor is therefore protected and should only be used
-    // by virtual_renderer_common
-    renderer_common(renderer_common const& other);
 
 private:
     renderer_common(Map const &m, unsigned width, unsigned height, double scale_factor,

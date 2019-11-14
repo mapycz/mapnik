@@ -45,7 +45,7 @@ void agg_renderer<T0,T1>::process(text_symbolizer const& sym,
         sym, feature, common_.vars_, prj_trans,
         common_.width_, common_.height_,
         common_.scale_factor_,
-        common_.t_, common_.font_manager_, *common_.detector_,
+        common_.t_, freetype_engine::get_face_manager(), *common_.detector_,
         common_.query_extent_, tr,
         common_.symbol_cache_, common_.shaper_cache_));
 

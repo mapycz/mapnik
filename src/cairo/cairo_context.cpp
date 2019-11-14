@@ -32,7 +32,7 @@
 
 namespace mapnik {
 
-cairo_face::cairo_face(std::shared_ptr<font_library> const& library, face_ptr const& face)
+cairo_face::cairo_face(font_library const& library, face_ptr const& face)
     : face_(face)
 {
     static cairo_user_data_key_t key;
@@ -517,8 +517,8 @@ void cairo_context::pop_group()
     check_object_status_and_throw_exception(*this);
 }
 
-cairo_face_manager::cairo_face_manager(std::shared_ptr<font_library> font_library)
-  : font_library_(font_library)
+cairo_face_manager::cairo_face_manager(font_library & lib)
+  : font_library_(lib)
 {
 }
 

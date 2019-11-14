@@ -26,6 +26,7 @@
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 #include <mapnik/text/glyph_positions.hpp>
+#include <mapnik/text/face.hpp>
 #include <mapnik/value_types.hpp>
 
 #pragma GCC diagnostic push
@@ -62,7 +63,7 @@ struct glyph_cache_key
     std::size_t hash() const
     {
         std::size_t h = 0;
-        boost::hash_combine(h, &face);
+        boost::hash_combine(h, face.hash);
         boost::hash_combine(h, glyph_index);
         boost::hash_combine(h, glyph_height);
         boost::hash_combine(h, halo_radius);
@@ -71,7 +72,7 @@ struct glyph_cache_key
 
     bool operator==(glyph_cache_key const & other) const
     {
-        return &face == &other.face &&
+        return face == other.face &&
             glyph_index == other.glyph_index &&
             glyph_height == other.glyph_height &&
             std::abs(halo_radius - other.halo_radius) < 1e-3;
@@ -86,14 +87,14 @@ struct glyph_metrics_cache_key
     std::size_t hash() const
     {
         std::size_t h = glyph_index;
-        boost::hash_combine(h, &face);
+        boost::hash_combine(h, face.hash);
         return h;
     }
 
     bool operator==(glyph_metrics_cache_key const & other) const
     {
         return glyph_index == other.glyph_index &&
-            &face == &other.face;
+            face == other.face;
     }
 };
 
@@ -128,11 +129,8 @@ namespace mapnik
 class MAPNIK_DECL glyph_cache
 {
 public:
-    glyph_cache(
-        freetype_engine::font_file_mapping_type & font_mapping,
-        freetype_engine::font_memory_cache_type & font_cache)
-        : font_library_(),
-          font_manager_(font_library_, font_mapping, font_cache)
+    glyph_cache(stroker & s)
+        : stroker_(s)
     {
     }
 
@@ -156,20 +154,13 @@ public:
 
     const value_type * get(glyph_info const & glyph, double halo_radius);
 
-    const glyph_metrics * metrics_find(
-        glyph_metrics_cache_key const & key);
-    const glyph_metrics * metrics_insert(
-        glyph_metrics_cache_key const & key,
-        glyph_metrics const & value);
+    const glyph_metrics * metrics(glyph_metrics_cache_key const & key);
 
 private:
     std::unordered_map<glyph_cache_key, value_type> cache_;
-    std::mutex glyph_mutex_;
-    font_library font_library_;
-    face_manager_freetype font_manager_;
-
+    stroker & stroker_;
     std::unordered_map<glyph_metrics_cache_key, glyph_metrics> metrics_cache_;
-    std::mutex metrics_mutex_;
+    std::mutex mutex_;
 
     const value_type * render(
         glyph_cache_key const & key,

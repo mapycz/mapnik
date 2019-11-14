@@ -184,14 +184,7 @@ static void shape_text(text_line & line,
                 }
 
                 glyph_metrics_cache_key ck{glyph.codepoint, *theface};
-                const glyph_metrics * metrics = g_cache.metrics_find(ck);
-
-                if (!metrics)
-                {
-                    glyph_metrics new_metrics;
-                    theface->glyph_dimensions(glyph.codepoint, text_item.format_->text_mode, new_metrics);
-                    metrics = g_cache.metrics_insert(ck, new_metrics);
-                }
+                const glyph_metrics * metrics = g_cache.metrics(ck);
 
                 if (metrics)
                 {

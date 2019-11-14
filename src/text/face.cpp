@@ -24,6 +24,8 @@
 #include <mapnik/debug.hpp>
 #include <mapnik/text/text_properties.hpp>
 
+#include <boost/container_hash/hash.hpp>
+
 #pragma GCC diagnostic push
 #include <mapnik/warning_ignore.hpp>
 
@@ -67,8 +69,25 @@ const char * ft_translate_error_code(int err_code)
 font_face::font_face(FT_Face face)
     : face_(face),
       color_font_(init_color_font()),
-      unscaled_ascender_(get_ascender())
+      unscaled_ascender_(get_ascender()),
+      family_name(face->family_name),
+      style_name(face->style_name),
+      hash(create_hash())
 {
+}
+
+std::size_t font_face::create_hash() const
+{
+    std::size_t h = 0;
+    boost::hash_combine(h, family_name);
+    boost::hash_combine(h, style_name);
+    return h;
+}
+
+bool font_face::operator==(font_face const & other) const
+{
+    return family_name == other.family_name &&
+        style_name == other.style_name;
 }
 
 bool font_face::init_color_font()
@@ -142,8 +161,8 @@ bool font_face::glyph_dimensions(unsigned glyph_index, text_mode_enum text_mode,
 font_face::~font_face()
 {
     MAPNIK_LOG_DEBUG(font_face) <<
-        "font_face: Clean up face \"" << family_name() <<
-        " " << style_name() << "\"";
+        "font_face: Clean up face \"" << family_name <<
+        " " << style_name << "\"";
 
     FT_Done_Face(face_);
 }

@@ -53,16 +53,6 @@ class MAPNIK_DECL font_face : util::noncopyable
 public:
     font_face(FT_Face face);
 
-    std::string family_name() const
-    {
-        return std::string(face_->family_name);
-    }
-
-    std::string style_name() const
-    {
-        return std::string(face_->style_name);
-    }
-
     FT_Face get_face() const
     {
         return face_;
@@ -75,6 +65,8 @@ public:
 
     inline bool is_color() const { return color_font_;}
 
+    bool operator==(font_face const & other) const;
+
     ~font_face();
 
 private:
@@ -84,9 +76,16 @@ private:
     FT_Face face_;
     const bool color_font_;
     const double unscaled_ascender_;
-};
-using face_ptr = std::shared_ptr<font_face>;
 
+    std::size_t create_hash() const;
+
+public:
+    const std::string family_name;
+    const std::string style_name;
+    const std::size_t hash;
+};
+
+using face_ptr = std::shared_ptr<font_face>;
 
 class MAPNIK_DECL font_face_set : private util::noncopyable
 {
@@ -108,17 +107,24 @@ using face_set_ptr = std::unique_ptr<font_face_set>;
 
 
 // FT_Stroker wrapper
-class stroker : util::noncopyable
+class MAPNIK_DECL stroker : util::noncopyable
 {
+    FT_Stroker s_;
+
 public:
-    explicit stroker(FT_Stroker s)
-        : s_(s) {}
+    explicit stroker(FT_Library lib)
+    {
+        FT_Error error = FT_Stroker_New(lib, &s_);
+        if (error)
+        {
+            MAPNIK_LOG_ERROR(stroker) << "Call to FT_Stroker_New() failed";
+        }
+    }
+
     ~stroker();
 
     void init(double radius);
     FT_Stroker const& get() const { return s_; }
-private:
-    FT_Stroker s_;
 };
 
 } //ns mapnik

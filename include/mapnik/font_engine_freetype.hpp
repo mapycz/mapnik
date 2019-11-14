@@ -33,6 +33,7 @@
 // stl
 #include <memory>
 #include <map>
+#include <unordered_map>
 #include <utility> // pair
 #include <vector>
 
@@ -42,13 +43,13 @@ namespace mapnik
 {
 
 class stroker;
-using stroker_ptr = std::shared_ptr<stroker>;
 class font_face_set;
 using face_set_ptr = std::unique_ptr<font_face_set>;
 class font_face;
 using face_ptr = std::shared_ptr<font_face>;
 
 class glyph_cache;
+class face_manager;
 
 class MAPNIK_DECL freetype_engine : public singleton<freetype_engine, CreateUsingNew>,
                                     private util::noncopyable
@@ -76,7 +77,9 @@ public:
                                 freetype_engine::font_memory_cache_type const& font_cache,
                                 font_file_mapping_type const& global_font_file_mapping,
                                 freetype_engine::font_memory_cache_type & global_memory_fonts);
+
     static glyph_cache & get_glyph_cache();
+    static face_manager & get_face_manager();
 
     ~freetype_engine();
 
@@ -88,6 +91,8 @@ private:
     font_file_mapping_type const& get_mapping_impl();
     font_memory_cache_type& get_cache_impl();
     glyph_cache & get_glyph_cache_impl();
+    face_manager & get_face_manager_impl();
+
     bool can_open_impl(std::string const& face_name,
                   font_library & library,
                   font_file_mapping_type const& font_file_mapping,
@@ -110,8 +115,11 @@ private:
                              font_library & libary,
                              font_file_mapping_type & font_file_mapping,
                              bool recurse = false);
+
     font_file_mapping_type global_font_file_mapping_;
     font_memory_cache_type global_memory_fonts_;
+    font_library font_library_;
+    std::unique_ptr<face_manager> face_manager_;
     std::unique_ptr<glyph_cache> glyph_cache_;
 };
 
@@ -125,17 +133,17 @@ public:
     face_set_ptr get_face_set(std::string const& name);
     face_set_ptr get_face_set(font_set const& fset);
     face_set_ptr get_face_set(std::string const& name, boost::optional<font_set> fset);
-    stroker_ptr get_stroker() const { return stroker_; }
+    stroker & get_stroker() const { return *stroker_; }
+
+    face_manager(face_manager const&) = delete;
 
 private:
-    using face_cache = std::map<std::string, face_ptr>;
-    using face_cache_ptr = std::shared_ptr<face_cache>;
-
-    face_cache_ptr face_cache_;
+    std::unordered_map<std::string, face_ptr> face_cache_;
     font_library & library_;
     freetype_engine::font_file_mapping_type const& font_file_mapping_;
     freetype_engine::font_memory_cache_type const& font_memory_cache_;
-    stroker_ptr stroker_;
+    std::unique_ptr<stroker> stroker_;
+    std::mutex mutex_;
 };
 
 using face_manager_freetype = face_manager;

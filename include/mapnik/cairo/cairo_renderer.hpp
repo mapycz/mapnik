@@ -180,12 +180,16 @@ public:
                        double opacity=1.0,
                        bool recenter=true);
     void render_box(box2d<double> const& b);
+
 protected:
     Map const& m_;
     cairo_context context_;
     renderer_common common_;
     cairo_face_manager face_manager_;
+    font_library font_library_;
+    face_manager_freetype font_manager_;
     bool style_level_compositing_;
+
     void setup(Map const& m);
 
 };
