@@ -30,6 +30,7 @@
 #include <mapnik/text/font_feature_settings.hpp>
 #include <mapnik/text/itemizer.hpp>
 #include <mapnik/text/shaper_cache.hpp>
+#include <mapnik/text/glyph_cache.hpp>
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/font_engine_freetype.hpp>
 
@@ -78,6 +79,7 @@ static void shape_text(text_line & line,
     unsigned end = line.last_char();
     std::size_t length = end - start;
     if (!length) return;
+    glyph_cache & g_cache = freetype_engine::get_glyph_cache();
 
     std::list<text_item> const& list = itemizer.itemize(start, end);
 
@@ -182,13 +184,13 @@ static void shape_text(text_line & line,
                 }
 
                 glyph_metrics_cache_key ck{glyph.codepoint, *theface};
-                const glyph_metrics * metrics = s_cache.find(ck);
+                const glyph_metrics * metrics = g_cache.metrics_find(ck);
 
                 if (!metrics)
                 {
                     glyph_metrics new_metrics;
                     theface->glyph_dimensions(glyph.codepoint, text_item.format_->text_mode, new_metrics);
-                    metrics = s_cache.insert(ck, new_metrics);
+                    metrics = g_cache.metrics_insert(ck, new_metrics);
                 }
 
                 if (metrics)

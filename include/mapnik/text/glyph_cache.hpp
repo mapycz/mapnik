@@ -78,6 +78,25 @@ struct glyph_cache_key
     }
 };
 
+struct glyph_metrics_cache_key
+{
+    unsigned glyph_index;
+    font_face const & face;
+
+    std::size_t hash() const
+    {
+        std::size_t h = glyph_index;
+        boost::hash_combine(h, &face);
+        return h;
+    }
+
+    bool operator==(glyph_metrics_cache_key const & other) const
+    {
+        return glyph_index == other.glyph_index &&
+            &face == &other.face;
+    }
+};
+
 }
 
 namespace std
@@ -91,12 +110,22 @@ namespace std
             return k.hash();
         }
     };
+
+    template<> struct hash<mapnik::glyph_metrics_cache_key>
+    {
+        typedef mapnik::glyph_metrics_cache_key argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(mapnik::glyph_metrics_cache_key const& k) const noexcept
+        {
+            return k.hash();
+        }
+    };
 }
 
 namespace mapnik
 {
 
-class glyph_cache
+class MAPNIK_DECL glyph_cache
 {
 public:
     glyph_cache(
@@ -123,19 +152,29 @@ public:
         int x, y;
     };
 
+    const double scale = 2.0;
+
     const value_type * get(glyph_info const & glyph, double halo_radius);
 
-    const double scale = 2.0;
+    const glyph_metrics * metrics_find(
+        glyph_metrics_cache_key const & key);
+    const glyph_metrics * metrics_insert(
+        glyph_metrics_cache_key const & key,
+        glyph_metrics const & value);
 
 private:
     std::unordered_map<glyph_cache_key, value_type> cache_;
+    std::mutex glyph_mutex_;
     font_library font_library_;
     face_manager_freetype font_manager_;
-    std::mutex mutex_;
 
-    const value_type * render(glyph_cache_key const & key,
-                              glyph_info const & glyph,
-                              double halo_radius);
+    std::unordered_map<glyph_metrics_cache_key, glyph_metrics> metrics_cache_;
+    std::mutex metrics_mutex_;
+
+    const value_type * render(
+        glyph_cache_key const & key,
+        glyph_info const & glyph,
+        double halo_radius);
 
     FT_Error select_closest_size(glyph_info const& glyph, FT_Face & face) const;
 

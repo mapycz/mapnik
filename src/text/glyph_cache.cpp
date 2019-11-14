@@ -70,7 +70,7 @@ void glyph_cache::render_halo(
 
 const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph, double halo_radius)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::mutex> lock(glyph_mutex_);
     glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.height, halo_radius};
 
     if (auto it = cache_.find(key); it != cache_.end())
@@ -232,6 +232,23 @@ const glyph_cache::value_type * glyph_cache::render(
     }
 
     return nullptr;
+}
+
+const glyph_metrics * glyph_cache::metrics_find(glyph_metrics_cache_key const & key)
+{
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    auto it = metrics_cache_.find(key);
+    if (it != metrics_cache_.end()) {
+        return &it->second;
+    }
+    return nullptr;
+}
+
+const glyph_metrics * glyph_cache::metrics_insert(glyph_metrics_cache_key const & key, glyph_metrics const & value)
+{
+    std::lock_guard<std::mutex> lock(metrics_mutex_);
+    auto result = metrics_cache_.emplace(key, value);
+    return result.second ? &result.first->second : nullptr;
 }
 
 } // namespace mapnik
