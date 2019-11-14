@@ -35,9 +35,7 @@ namespace mapnik {
 cairo_face::cairo_face(face_ptr const& face)
     : face_(face)
 {
-    static cairo_user_data_key_t key;
     c_face_ = cairo_ft_font_face_create_for_ft_face(face->get_face(), FT_LOAD_NO_HINTING);
-    cairo_font_face_set_user_data(c_face_, &key, new handle(face), destroy);
 }
 
 cairo_face::~cairo_face()

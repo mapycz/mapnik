@@ -189,7 +189,6 @@ protected:
     bool style_level_compositing_;
 
     void setup(Map const& m);
-
 };
 
 extern template class MAPNIK_DECL cairo_renderer<cairo_ptr>;
