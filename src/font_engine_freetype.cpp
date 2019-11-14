@@ -55,7 +55,8 @@ namespace mapnik
 template class MAPNIK_DECL singleton<freetype_engine, CreateUsingNew>;
 
 freetype_engine::freetype_engine()
-    : glyph_cache_(std::make_unique<glyph_cache>(*stroker_, mutex_))
+    : stroker_(std::make_unique<stroker>(font_library_.get())),
+      glyph_cache_(std::make_unique<glyph_cache>(*stroker_, mutex_))
 {
 }
 
