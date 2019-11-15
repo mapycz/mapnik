@@ -31,6 +31,7 @@
 #include <mapnik/image_util.hpp>
 #include <mapnik/pixel_position.hpp>
 #include <mapnik/symbolizer_enumerations.hpp>
+#include <mapnik/agg_rasterizer.hpp>
 
 namespace mapnik
 {

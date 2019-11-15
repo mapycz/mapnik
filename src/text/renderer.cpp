@@ -47,6 +47,7 @@
 #include "agg_span_image_filter_rgba.h"
 #include "agg_renderer_base.h"
 #include "agg_renderer_scanline.h"
+#include "agg_pixfmt_gray.h"
 #pragma GCC diagnostic pop
 
 namespace mapnik
@@ -192,6 +193,121 @@ private:
     int x_, x0_, y_;
 };
 
+
+//=========================================span_image_resample_gray_affine
+template<class Source, class Dest> 
+class span_image_resample_gray_affine : 
+public agg::span_image_resample_affine<Source>
+{
+public:
+    typedef Source source_type;
+    typedef typename source_type::color_type color_type;
+    typedef agg::span_image_resample_affine<source_type> base_type;
+    typedef typename base_type::interpolator_type interpolator_type;
+    typedef typename color_type::value_type value_type;
+    typedef typename color_type::long_type long_type;
+    enum base_scale_e
+    {
+        base_shift      = color_type::base_shift,
+        base_mask       = color_type::base_mask,
+        downscale_shift = agg::image_filter_shift
+    };
+
+    using dest_type = Dest;
+    using dest_color_type = typename dest_type::color_type;
+
+    mapnik::color const & color_;
+
+    //--------------------------------------------------------------------
+    span_image_resample_gray_affine() {}
+    span_image_resample_gray_affine(source_type& src, 
+                                    interpolator_type& inter,
+                                    const agg::image_filter_lut& filter,
+                                    mapnik::color const & color) :
+        base_type(src, inter, filter), color_(color) 
+    {}
+
+
+    //--------------------------------------------------------------------
+    void generate(dest_color_type* span, int x, int y, unsigned len)
+    {
+        base_type::interpolator().begin(x + base_type::filter_dx_dbl(), 
+                                        y + base_type::filter_dy_dbl(), len);
+
+        long_type fg;
+
+        int diameter     = base_type::filter().diameter();
+        int filter_scale = diameter << agg::image_subpixel_shift;
+        int radius_x     = (diameter * base_type::m_rx) >> 1;
+        int radius_y     = (diameter * base_type::m_ry) >> 1;
+        int len_x_lr     = 
+            (diameter * base_type::m_rx + agg::image_subpixel_mask) >> 
+                agg::image_subpixel_shift;
+
+        const agg::int16* weight_array = base_type::filter().weight_array();
+
+        do
+        {
+            base_type::interpolator().coordinates(&x, &y);
+
+            x += base_type::filter_dx_int() - radius_x;
+            y += base_type::filter_dy_int() - radius_y;
+
+            fg = agg::image_filter_scale / 2;
+
+            int y_lr = y >> agg::image_subpixel_shift;
+            int y_hr = ((agg::image_subpixel_mask - (y & agg::image_subpixel_mask)) * 
+                            base_type::m_ry_inv) >> 
+                                agg::image_subpixel_shift;
+            int total_weight = 0;
+            int x_lr = x >> agg::image_subpixel_shift;
+            int x_hr = ((agg::image_subpixel_mask - (x & agg::image_subpixel_mask)) * 
+                            base_type::m_rx_inv) >> 
+                                agg::image_subpixel_shift;
+
+            int x_hr2 = x_hr;
+            const value_type* fg_ptr = 
+                (const value_type*)base_type::source().span(x_lr, y_lr, len_x_lr);
+            for(;;)
+            {
+                int weight_y = weight_array[y_hr];
+                x_hr = x_hr2;
+                for(;;)
+                {
+                    int weight = (weight_y * weight_array[x_hr] + 
+                                 agg::image_filter_scale / 2) >> 
+                                 downscale_shift;
+
+                    fg += *fg_ptr * weight;
+                    total_weight += weight;
+                    x_hr  += base_type::m_rx_inv;
+                    if(x_hr >= filter_scale) break;
+                    fg_ptr = (const value_type*)base_type::source().next_x();
+                }
+                y_hr += base_type::m_ry_inv;
+                if(y_hr >= filter_scale) break;
+                fg_ptr = (const value_type*)base_type::source().next_y();
+            }
+
+            fg /= total_weight;
+            if(fg < 0) fg = 0;
+            if(fg > base_mask) fg = base_mask;
+
+            //span->v = (value_type)fg;
+            //span->a = base_mask;
+            span->r = (value_type)color_.red_;
+            span->g = (value_type)color_.green_;
+            span->b = (value_type)color_.blue_;
+            span->a = (value_type)fg;
+
+            ++span;
+            ++base_type::interpolator();
+        } while(--len);
+    }
+};
+
+
+
 template <typename Pixmap, typename ImageAccessor, typename ColorOrder>
 void composite_color_glyph(Pixmap & pixmap,
                            ImageAccessor & img_accessor,
@@ -204,7 +320,8 @@ void composite_color_glyph(Pixmap & pixmap,
                            box2d<double> const& bbox,
                            double opacity,
                            double halo_radius,
-                           composite_mode_e comp_op)
+                           composite_mode_e comp_op,
+                           mapnik::color const& color)
 {
     double scale = bbox.height() / height;
     double x0 = x;
@@ -252,7 +369,7 @@ void composite_color_glyph(Pixmap & pixmap,
     agg::image_filter_lut filter(filter_kernel, false);
 
     using interpolator_type = agg::span_interpolator_linear<agg::trans_affine>;
-    using span_gen_type = agg::span_image_resample_rgba_affine<ImageAccessor>;
+    using span_gen_type = span_image_resample_gray_affine<ImageAccessor, pixfmt_comp_type>;
     using renderer_type = agg::renderer_scanline_aa_alpha<renderer_base,
                                                           agg::span_allocator<agg::rgba8>,
                                                           span_gen_type>;
@@ -260,34 +377,9 @@ void composite_color_glyph(Pixmap & pixmap,
     final_tr.tx = std::floor(final_tr.tx + .5);
     final_tr.ty = std::floor(final_tr.ty + .5);
     interpolator_type interpolator(final_tr);
-    span_gen_type sg(img_accessor, interpolator, filter);
+    span_gen_type sg(img_accessor, interpolator, filter, color);
     renderer_type rp(renb,sa, sg, static_cast<unsigned>(opacity * 255));
     agg::render_scanlines(ras, sl, rp);
-}
-
-template <typename T>
-void composite_color_glyph(T & pixmap,
-                           FT_Bitmap const& bitmap,
-                           agg::trans_affine const& tr,
-                           int x,
-                           int y,
-                           double angle,
-                           box2d<double> const& bbox,
-                           double opacity,
-                           composite_mode_e comp_op)
-{
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
-    unsigned width = bitmap.width;
-    unsigned height = bitmap.rows;
-    agg::rendering_buffer glyph_buf(bitmap.buffer, width, height, width * pixfmt_type::pix_width);
-    pixfmt_type glyph_pixf(glyph_buf);
-    img_accessor_type img_accessor(glyph_pixf);
-
-    using order_type = agg::order_bgra;
-    composite_color_glyph<T, img_accessor_type, order_type>(
-        pixmap, img_accessor, width, height, tr,
-        x, y, angle, bbox, opacity, 0, comp_op);
 }
 
 void composite_glyph(image_rgba8 & dst,
@@ -302,14 +394,23 @@ void composite_glyph(image_rgba8 & dst,
                      double halo_radius,
                      composite_mode_e comp_op)
 {
-    using pixfmt_type = agg::pixfmt_rgba32_pre;
-    using img_accessor_type = image_accessor_colorize<pixfmt_type>;
-    img_accessor_type img_accessor(rgba, src);
+    //using pixfmt_type = agg::pixfmt_gray8_pre;
+    //using img_accessor_type = image_accessor_colorize<pixfmt_type>;
+    //img_accessor_type img_accessor(rgba, src);
+    using const_rendering_buffer = util::rendering_buffer<image_gray8>;
+    using pixfmt_type = agg::pixfmt_alpha_blend_gray<
+        agg::blender_gray8_pre, const_rendering_buffer>;
+    using img_accessor_type = agg::image_accessor_clone<pixfmt_type>;
+    const_rendering_buffer glyph_buf(src);
+    pixfmt_type glyph_pixf(glyph_buf);
+    img_accessor_type img_accessor(glyph_pixf);
+    const mapnik::color c(rgba);
+
 
     using order_type = agg::order_rgba;
     composite_color_glyph<image_rgba8, img_accessor_type, order_type>(
         dst, img_accessor, src.width(), src.height(), tr,
-        x, y, angle, bbox, opacity, halo_radius, comp_op);
+        x, y, angle, bbox, opacity, halo_radius, comp_op, c);
 }
 
 void agg_text_renderer::render(glyph_positions const& pos)
