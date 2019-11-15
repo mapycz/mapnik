@@ -74,7 +74,8 @@ const glyph_cache::value_type * glyph_cache::get(glyph_info const & glyph, doubl
     std::lock_guard<std::mutex> lock(mutex_);
     glyph_cache_key key{*glyph.face, glyph.glyph_index, glyph.format.text_size, halo_radius};
 
-    if (auto it = cache_.find(key); it != cache_.end())
+    auto it = cache_.find(key);
+    if (it != cache_.end())
     {
         return &it->second;
     }
