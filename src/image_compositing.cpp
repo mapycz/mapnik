@@ -27,6 +27,9 @@
 #include <mapnik/safe_cast.hpp>
 #include <mapnik/util/const_rendering_buffer.hpp>
 #include <mapnik/util/parallelize.hpp>
+#include <mapnik/util/fast_src_over.hpp>
+#include <iostream>
+#include <chrono>
 #ifdef MAPNIK_STATS_RENDER
 #include <mapnik/log_render.hpp>
 #endif
@@ -165,6 +168,17 @@ struct composite_functor
     }
 };
 
+struct blend_functor
+{
+    util::rgba_pixel * dst;
+    const util::rgba_pixel * src;
+
+    void operator()(unsigned begin, unsigned end)
+    {
+        util::blend(dst, src, end - begin);
+    }
+};
+
 template <>
 MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_mode_e mode,
                float opacity,
@@ -197,9 +211,53 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
         throw std::runtime_error("DESTINATION MUST BE PREMULTIPLIED FOR COMPOSITING!");
     }
 #endif
-    unsigned jobs = util::jobs_by_image_size(src.width(), src.height());
+
+    unsigned jobs = 1;
+    //std::clog << jobs << std::endl;
+
+    if (mode == src_over &&
+        src.width() == dst.width() &&
+        src.height() == dst.height() &&
+        dx == 0 && dy == 0 &&
+        opacity >= 1.0)
+    {
+        using Clock = std::chrono::high_resolution_clock;
+        Clock::time_point start(Clock::now());
+
+            /*
+        blend_functor blend_func{
+            reinterpret_cast<util::rgba_pixel*>(dst.bytes()),
+            reinterpret_cast<const util::rgba_pixel*>(src.bytes())};
+        util::parallelize(blend_func, jobs, src.width() * src.height());
+            */
+
+        util::blend(
+            reinterpret_cast<util::rgba_pixel*>(dst.bytes()),
+            reinterpret_cast<const util::rgba_pixel*>(src.bytes()),
+            src.width() * src.height());
+
+        Clock::time_point end(Clock::now());
+        Clock::duration duration = end - start;
+        using Duration = std::chrono::duration<double>;
+        double seconds = std::chrono::duration_cast<Duration>(duration).count();
+
+        //std::clog << "Duration: " << seconds << std::endl;
+        
+        return;
+    }
+
+    using Clock = std::chrono::high_resolution_clock;
+    Clock::time_point start(Clock::now());
+
     composite_functor comp_func{ dst, src, mode, opacity, dx, dy };
     util::parallelize(comp_func, jobs, src.height());
+
+    Clock::time_point end(Clock::now());
+    Clock::duration duration = end - start;
+    using Duration = std::chrono::duration<double>;
+    double seconds = std::chrono::duration_cast<Duration>(duration).count();
+
+    //std::clog << "Duration: " << seconds << std::endl;
 }
 
 template <>
