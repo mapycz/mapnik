@@ -175,7 +175,7 @@ struct blend_functor
 
     void operator()(unsigned begin, unsigned end)
     {
-        util::blend(dst, src, end - begin);
+        util::simple_src_over(dst, src, end - begin);
     }
 };
 
@@ -212,8 +212,8 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
     }
 #endif
 
-    unsigned jobs = 1;
-    //std::clog << jobs << std::endl;
+    unsigned jobs = util::jobs_by_image_size(src.width(), src.height());
+    std::clog << jobs << std::endl;
 
     if (mode == src_over &&
         src.width() == dst.width() &&
@@ -224,24 +224,25 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
         using Clock = std::chrono::high_resolution_clock;
         Clock::time_point start(Clock::now());
 
-            /*
         blend_functor blend_func{
             reinterpret_cast<util::rgba_pixel*>(dst.bytes()),
             reinterpret_cast<const util::rgba_pixel*>(src.bytes())};
         util::parallelize(blend_func, jobs, src.width() * src.height());
-            */
 
+            /*
         util::blend(
             reinterpret_cast<util::rgba_pixel*>(dst.bytes()),
             reinterpret_cast<const util::rgba_pixel*>(src.bytes()),
             src.width() * src.height());
+            */
+
 
         Clock::time_point end(Clock::now());
         Clock::duration duration = end - start;
         using Duration = std::chrono::duration<double>;
         double seconds = std::chrono::duration_cast<Duration>(duration).count();
 
-        //std::clog << "Duration: " << seconds << std::endl;
+        std::clog << "Duration: " << seconds << std::endl;
         
         return;
     }
@@ -257,7 +258,7 @@ MAPNIK_DECL void composite(image_rgba8 & dst, image_rgba8 const& src, composite_
     using Duration = std::chrono::duration<double>;
     double seconds = std::chrono::duration_cast<Duration>(duration).count();
 
-    //std::clog << "Duration: " << seconds << std::endl;
+    std::clog << "Duration: " << seconds << std::endl;
 }
 
 template <>

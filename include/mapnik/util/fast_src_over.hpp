@@ -30,9 +30,9 @@ union rgba_pixel
     std::uint8_t channels[4];
 };
 
-inline void blend(
-    rgba_pixel * dst,
-    const rgba_pixel * src,
+inline void simple_src_over(
+    rgba_pixel * __restrict__ dst,
+    const rgba_pixel * __restrict__ src,
     std::size_t length)
 {
     for (unsigned p = 0; p < length; ++p)
@@ -51,4 +51,24 @@ inline void blend(
     }
 }
 
+inline void simple_multiply(
+    rgba_pixel * __restrict__ dst,
+    const rgba_pixel * __restrict__ src,
+    std::size_t length)
+{
+    for (unsigned p = 0; p < length; ++p)
+    {
+        std::uint8_t * __restrict__ c1 = dst->channels;
+        const std::uint8_t * __restrict__ c2 = src->channels;
+        std::uint8_t a = 255 - src->channels[3];
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            c1[i] = static_cast<std::uint8_t>(
+                (static_cast<unsigned short>(c2[i]) +
+                 ((static_cast<unsigned short>(c1[i]) * a + 255) >> 8)));
+        }
+        ++dst;
+        ++src;
+    }
+}
 } }
