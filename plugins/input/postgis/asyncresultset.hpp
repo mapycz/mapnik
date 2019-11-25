@@ -56,7 +56,6 @@ public:
         close();
     }
 
-
     void abort()
     {
         if(conn_handle_ && conn_handle_->get().isPending())
@@ -96,7 +95,6 @@ public:
         bool next_res = false;
         if (!rs_)
         {
-            Connection & conn = conn_handle_->get();
             // Ensure connection is valid
             if (conn_handle_ && conn_handle_->get().isOK())
             {
@@ -186,7 +184,6 @@ private:
     }
 
     void prepare_next();
-
 };
 
 

@@ -670,11 +670,10 @@ std::string postgis_datasource::populate_tokens(
 
 std::shared_ptr<IResultSet> postgis_datasource::get_resultset(conn_handle_ptr && conn_handle, std::string const& sql, CnxPool_ptr const& pool, processor_context_ptr ctx) const
 {
-    Connection & conn = conn_handle->get();
-
     if (!ctx)
     {
         // ! asynchronous_request_
+        Connection & conn = conn_handle->get();
         if (cursor_fetch_size_ > 0)
         {
             // cursor
@@ -701,9 +700,20 @@ std::shared_ptr<IResultSet> postgis_datasource::get_resultset(conn_handle_ptr &&
     else
     {   // asynchronous requests
         std::shared_ptr<postgis_processor_context> pgis_ctxt = std::static_pointer_cast<postgis_processor_context>(ctx);
-        // lauch async req & create asyncresult with conn
-        conn.executeAsyncQuery(sql, 1);
-        return std::make_shared<AsyncResultSet>(pgis_ctxt, pool, std::move(conn_handle), sql);
+        if (conn_handle)
+        {
+            // lauch async req & create asyncresult with conn
+            Connection & conn = conn_handle->get();
+            conn.executeAsyncQuery(sql, 1);
+            return std::make_shared<AsyncResultSet>(pgis_ctxt, pool, std::move(conn_handle), sql);
+        }
+        else
+        {
+            std::shared_ptr<AsyncResultSet> res = std::make_shared<AsyncResultSet>(
+                pgis_ctxt, pool, conn_handle_ptr(), sql);
+            pgis_ctxt->add_request(res);
+            return res;
+        }
     }
 }
 
@@ -741,11 +751,9 @@ featureset_ptr postgis_datasource::features(query const& q) const
 
 featureset_ptr postgis_datasource::features_with_context(query const& q,processor_context_ptr proc_ctx) const
 {
-
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "postgis_datasource::features_with_context");
 #endif
-
 
     box2d<double> const& box = q.get_bbox();
     double scale_denom = q.scale_denominator();
@@ -759,7 +767,8 @@ featureset_ptr postgis_datasource::features_with_context(query const& q,processo
         if ( asynchronous_request_ )
         {
             // limit use to num_async_request_ => if reached don't borrow the last connexion object
-            std::shared_ptr<postgis_processor_context> pgis_ctxt = std::static_pointer_cast<postgis_processor_context>(proc_ctx);
+            std::shared_ptr<postgis_processor_context> pgis_ctxt =
+                std::static_pointer_cast<postgis_processor_context>(proc_ctx);
             if ( pgis_ctxt->num_async_requests_ < max_async_connections_ )
             {
                 handle = pool->borrow();
