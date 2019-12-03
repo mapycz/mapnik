@@ -32,6 +32,7 @@ int main(int argc, char** argv)
     po::options_description desc("Lists fonts visible to Mapnik");
     desc.add_options()
         ("help,h", "produce usage message")
+        ("file-names,n", "prefix face name with font file path")
         ("font-dir", po::value<std::vector<std::string>>(), "font search dirs")
         ;
 
@@ -52,9 +53,19 @@ int main(int argc, char** argv)
         mapnik::freetype_engine::register_fonts(dir, true);
     }
 
-    for (auto const & face_name : mapnik::freetype_engine::face_names())
+    if (vm.count("file-names"))
     {
-        std::clog << face_name << std::endl;
+        for (auto const & pair : mapnik::freetype_engine::get_mapping())
+        {
+            std::clog << pair.second.second << ": " << pair.first << std::endl;
+        }
+    }
+    else
+    {
+        for (auto const & face_name : mapnik::freetype_engine::face_names())
+        {
+            std::clog << face_name << std::endl;
+        }
     }
 
     return 0;
