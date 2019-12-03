@@ -57,14 +57,14 @@ int main(int argc, char** argv)
     {
         for (auto const & pair : mapnik::freetype_engine::get_mapping())
         {
-            std::clog << pair.second.second << ": " << pair.first << std::endl;
+            std::cout << pair.second.second << ": " << pair.first << std::endl;
         }
     }
     else
     {
         for (auto const & face_name : mapnik::freetype_engine::face_names())
         {
-            std::clog << face_name << std::endl;
+            std::cout << face_name << std::endl;
         }
     }
 
