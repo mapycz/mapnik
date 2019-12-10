@@ -277,8 +277,8 @@ class label_collision_detector_boost : util::noncopyable
     using value_type = std::pair<box2d<double>, value_unicode_string>;
     using tree_type = boost::geometry::index::rtree<value_type, balancing>;
 
-    tree_type tree_;
     box2d<double> extent_;
+    tree_type tree_;
 
 public:
     explicit label_collision_detector_boost(box2d<double> const& extent)
