@@ -326,15 +326,26 @@ bool xml_node::has_attribute(std::string const& name) const
 }
 
 template <typename T>
-boost::optional<T> xml_node::get_opt_attr(std::string const& name) const
+boost::optional<T> xml_node::get_opt_attr(std::string const& name, bool * error) const
 {
-    if (attributes_.empty()) return boost::optional<T>();
+    if (attributes_.empty())
+    {
+        return boost::none;
+    }
     std::map<std::string, xml_attribute>::const_iterator itr = attributes_.find(name);
-    if (itr ==  attributes_.end()) return boost::optional<T>();
+    if (itr ==  attributes_.end())
+    {
+        return boost::none;
+    }
     itr->second.processed = true;
     boost::optional<T> result = xml_attribute_cast<T>(tree_, std::string(itr->second.value));
     if (!result)
     {
+        if (error)
+        {
+            *error = true;
+            return boost::optional<T>();
+        }
         throw config_error(std::string("Failed to parse attribute '") +
                            name + "'. Expected " + name_trait<T>::name() +
                            " but got '" + itr->second.value + "'", *this);
@@ -407,7 +418,7 @@ std::string xml_node::line_to_string() const
 }
 
 
-#define compile_get_opt_attr(T) template boost::optional<T> xml_node::get_opt_attr<T>(std::string const&) const
+#define compile_get_opt_attr(T) template boost::optional<T> xml_node::get_opt_attr<T>(std::string const&, bool * error) const
 #define compile_get_attr(T) template T xml_node::get_attr<T>(std::string const&) const; template T xml_node::get_attr<T>(std::string const&, T const&) const
 #define compile_get_value(T) template T xml_node::get_value<T>() const
 

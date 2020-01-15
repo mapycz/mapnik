@@ -34,7 +34,14 @@ namespace mapnik {
 
 color::color(std::string const& str, bool premultiplied)
 {
-    *this = parse_color(str);
+    if (boost::optional<color> c = parse_color(str))
+    {
+        *this = *c;
+    }
+    else
+    {
+        throw config_error("Failed to parse color: \"" + str + "\"");
+    }
     premultiplied_ = premultiplied;
 }
 

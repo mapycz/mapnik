@@ -201,16 +201,12 @@ struct key_value_sequence_ordered
 template <typename T>
 mapnik::color parse_color(T & err_handler, const char* str)
 {
-    mapnik::color c(100,100,100);
-    try
+    if (boost::optional<color> c = mapnik::parse_color(str))
     {
-        c = mapnik::parse_color(str);
+        return *c;
     }
-    catch (mapnik::config_error const& ex)
-    {
-        err_handler.on_error("SVG parse error: failed to parse <color> with value \"" + std::string(str) + "\"");
-    }
-    return c;
+    err_handler.on_error("SVG parse error: failed to parse <color> with value \"" + std::string(str) + "\"");
+    return mapnik::color(100, 100, 100);
 }
 
 template <typename T>

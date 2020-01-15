@@ -28,7 +28,7 @@
 
 namespace mapnik {
 
-color parse_color(std::string const& str)
+boost::optional<color> parse_color(std::string const& str)
 {
     // TODO - early return for @color?
     static const css_color_grammar<std::string::const_iterator> g;
@@ -43,10 +43,7 @@ color parse_color(std::string const& str)
     {
         return c;
     }
-    else
-    {
-        throw config_error("Failed to parse color: \"" + str + "\"");
-    }
+    return boost::none;
 }
 
 }

@@ -33,7 +33,7 @@
 namespace mapnik
 {
 
-expression_ptr parse_expression(std::string const& str)
+expression_ptr parse_expression(std::string const& str, bool * error)
 {
     static const expression_grammar<std::string::const_iterator> g;
     boost::spirit::standard_wide::space_type space;
@@ -61,6 +61,11 @@ expression_ptr parse_expression(std::string const& str)
     }
     else
     {
+        if (error)
+        {
+            *error = true;
+            return expression_ptr();
+        }
         throw config_error("Failed to parse expression: \"" + str + "\"");
     }
 }

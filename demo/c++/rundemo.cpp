@@ -58,7 +58,7 @@ int main ( int, char** )
         freetype_engine::register_font("fonts/dejavu-fonts-ttf-2.37/ttf/DejaVuSans.ttf");
 
         Map m(800,600);
-        m.set_background(parse_color("white"));
+        m.set_background(*parse_color("white"));
         m.set_srs(srs_merc);
         // create styles
 

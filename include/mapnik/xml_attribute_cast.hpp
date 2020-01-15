@@ -163,17 +163,14 @@ struct do_xml_attribute_cast<mapnik::enumeration<T,MAX> >
     static inline boost::optional<mapnik::enumeration<T,MAX> > xml_attribute_cast_impl(xml_tree const& /*tree*/, std::string const& source)
     {
         using result_type = typename boost::optional<mapnik::enumeration<T,MAX> >;
-        try
+        mapnik::enumeration<T,MAX> e;
+        if (e.from_string(source))
         {
-            mapnik::enumeration<T,MAX> e;
-            e.from_string(source);
             return result_type(e);
         }
-        catch (illegal_enum_value const& ex)
-        {
-            MAPNIK_LOG_ERROR(do_xml_attribute_cast) << ex.what();
-            return result_type();
-        }
+        MAPNIK_LOG_ERROR(do_xml_attribute_cast) <<
+            "Illegal enumeration value '" << source << "'";
+        return result_type();
     }
 };
 
@@ -210,7 +207,12 @@ struct do_xml_attribute_cast<mapnik::expression_ptr>
         }
         else
         {
-            mapnik::expression_ptr expr = parse_expression(source);
+            bool error = false;
+            mapnik::expression_ptr expr = parse_expression(source, &error);
+            if (error)
+            {
+                return boost::none;
+            }
             tree.expr_cache_.emplace(source,expr);
             return expr;
         }
@@ -223,7 +225,12 @@ struct do_xml_attribute_cast<mapnik::font_feature_settings>
 {
     static inline boost::optional<mapnik::font_feature_settings> xml_attribute_cast_impl(xml_tree const&, std::string const& source)
     {
-        return mapnik::font_feature_settings(source);
+        mapnik::font_feature_settings ffs;
+        if (ffs.from_string(source))
+        {
+            return ffs;
+        }
+        return boost::none;
     }
 };
 

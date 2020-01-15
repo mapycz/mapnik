@@ -34,28 +34,6 @@
 
 namespace mapnik {
 
-class illegal_enum_value : public std::exception
-{
-public:
-    illegal_enum_value():
-        what_() {}
-
-    illegal_enum_value( std::string const& _what ) :
-        what_( _what )
-    {
-    }
-    virtual ~illegal_enum_value() {}
-
-    virtual const char * what() const noexcept
-    {
-        return what_.c_str();
-    }
-
-protected:
-    std::string what_;
-};
-
-
 /** Slim wrapper for enumerations. It creates a new type from a native enum and
  * a char pointer array. It almost exactly behaves like a native enumeration
  * type. It supports string conversion through stream operators. This is useful
@@ -128,7 +106,7 @@ protected:
  *          cerr << i << " = " << fruit::get_string(i) << endl;
  *      }
  *
- *      f.from_string("elephant"); // throws illegal_enum_value
+ *      f.from_string("elephant");
  *
  *      return 0;
  * }
@@ -172,10 +150,7 @@ public:
         MAX = THE_MAX
     };
 
-    /** Converts @p str to an enum.
-     * @throw illegal_enum_value @p str is not a legal identifier.
-     * */
-    void from_string(std::string const& str)
+    bool from_string(std::string const& str)
     {
         // TODO: Enum value strings with underscore are deprecated in Mapnik 3.x
         // and support will be removed in Mapnik 4.x.
@@ -195,11 +170,10 @@ public:
                 {
                     MAPNIK_LOG_ERROR(enumerations) << "enumeration value (" << str << ") using \"_\" is deprecated and will be removed in Mapnik 4.x, use '" << str_copy << "' instead";
                 }
-                return;
+                return true;
             }
         }
-        throw illegal_enum_value(std::string("Illegal enumeration value '") +
-                                 str + "' for enum " + our_name_);
+        return false;
     }
 
     /** Returns the current value as a string identifier. */

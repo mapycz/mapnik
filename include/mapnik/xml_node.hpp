@@ -123,7 +123,7 @@ public:
     bool has_attribute(std::string const& name) const;
 
     template <typename T>
-    boost::optional<T> get_opt_attr(std::string const& name) const;
+    boost::optional<T> get_opt_attr(std::string const& name, bool * error=nullptr) const;
 
     template <typename T>
     T get_attr(std::string const& name, T const& default_opt_value) const;

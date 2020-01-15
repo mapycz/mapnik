@@ -43,35 +43,30 @@ namespace mapnik
 font_feature_settings::font_feature_settings(std::string const& features)
     : features_()
 {
-    from_string(features);
+    if (!from_string(features))
+    {
+        throw config_error("failed to parse font-feature-settings: '" + features + "'");
+    }
 }
 
 font_feature_settings::font_feature_settings()
     : features_() {}
 
-void font_feature_settings::from_string(std::string const& features)
+bool font_feature_settings::from_string(std::string const& features)
 {
     features_.clear();
 
-    if (std::all_of(features.begin(), features.end(), isspace)) return;
+    if (std::all_of(features.begin(), features.end(), isspace))
+    {
+        return true;
+    }
 
     namespace qi = boost::spirit::qi;
     qi::char_type char_;
     qi::as_string_type as_string;
 
-#if BOOST_VERSION <= 104800
-    // Call correct overload.
-    using std::placeholders::_1;
-    void (font_feature_settings::*append)(std::string const&) = &font_feature_settings::append;
-    if (!qi::parse(features.begin(), features.end(), as_string[+(char_ - ',')][std::bind(append, this, _1)] % ','))
-#else
-    auto app = [&](std::string const& s) { append(s); };
-    if (!qi::parse(features.begin(), features.end(), as_string[+(char_ - ',')][app] % ','))
-#endif
-
-    {
-        throw config_error("failed to parse font-feature-settings: '" + features + "'");
-    }
+    auto app = [&](std::string const& s, auto & context, bool & pass) { pass = append(s); };
+    return qi::parse(features.begin(), features.end(), as_string[+(char_ - ',')][app] % ',');
 }
 
 std::string font_feature_settings::to_string() const
@@ -95,7 +90,7 @@ std::string font_feature_settings::to_string() const
     return output.str();
 }
 
-void font_feature_settings::append(std::string const& feature)
+bool font_feature_settings::append(std::string const& feature)
 {
     features_.emplace_back();
     feature_iterator current_feature = features_.end() - 1;
@@ -103,8 +98,9 @@ void font_feature_settings::append(std::string const& feature)
     if (!hb_feature_from_string(feature.c_str(), feature.length(), &*current_feature))
     {
         features_.erase(current_feature);
-        throw config_error("failed to parse font-feature-settings: '" + feature + "'");
+        return false;
     }
+    return true;
 }
 
 }

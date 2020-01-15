@@ -59,10 +59,10 @@ public:
     font_feature_settings(std::string const& features);
     font_feature_settings();
 
-    void from_string(std::string const& features);
+    bool from_string(std::string const& features);
     std::string to_string() const;
 
-    void append(std::string const& feature);
+    bool append(std::string const& feature);
     void append(font_feature const& feature) { features_.push_back(feature); }
 
     const font_feature* get_features() const { return features_.data(); }

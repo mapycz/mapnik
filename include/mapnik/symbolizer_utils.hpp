@@ -279,7 +279,14 @@ struct set_property_impl<Symbolizer, std::integral_constant<property_types, prop
 {
     static void apply(Symbolizer & sym, mapnik::keys key, std::string const& val)
     {
-        put(sym, key, mapnik::parse_color(val));
+        if (boost::optional<color> c = mapnik::parse_color(val))
+        {
+            put(sym, key, *c);
+        }
+        else
+        {
+            throw config_error("Failed to parse color: \"" + val + "\"");
+        }
     }
 };
 
@@ -340,7 +347,14 @@ inline void set_property_from_value(Symbolizer & sym, mapnik::keys key, T const&
         put(sym, key, val.to_double());
         break;
     case property_types::target_color:
-        put(sym, key, mapnik::parse_color(val.to_string()));
+        if (boost::optional<color> c = mapnik::parse_color(val.to_string()))
+        {
+            put(sym, key, *c);
+        }
+        else
+        {
+            throw config_error("Failed to parse color: \"" + val.to_string() + "\"");
+        }
         break;
     default:
         break;

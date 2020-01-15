@@ -29,9 +29,11 @@
 //stl
 #include <string>
 
+#include <boost/optional/optional.hpp>
+
 namespace mapnik {
 
-MAPNIK_DECL mapnik::color parse_color(std::string const& str);
+MAPNIK_DECL boost::optional<mapnik::color> parse_color(std::string const& str);
 
 }
 

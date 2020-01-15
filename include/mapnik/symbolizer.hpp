@@ -158,15 +158,11 @@ template <> struct enum_traits<e> { \
     static result_type from_string(std::string const& str) \
     { \
         enumeration<e, e ## _MAX> enum_; \
-        try \
+        if (enum_.from_string(str)) \
         { \
-            enum_.from_string(str); \
             return result_type(e(enum_)); \
         } \
-        catch (...) \
-        { \
-            return result_type(); \
-        } \
+        return result_type(); \
     } \
 };\
 
