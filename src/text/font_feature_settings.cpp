@@ -65,7 +65,7 @@ bool font_feature_settings::from_string(std::string const& features)
     qi::char_type char_;
     qi::as_string_type as_string;
 
-    auto app = [&](std::string const& s, auto & context, bool & pass) { pass = append(s); };
+    auto app = [&, this](std::string const& s, auto & context, bool & pass) { pass = this->append(s); };
     return qi::parse(features.begin(), features.end(), as_string[+(char_ - ',')][app] % ',');
 }
 
