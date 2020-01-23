@@ -307,50 +307,6 @@ struct evaluate_expression<T, boost::none_t>
     }
 };
 
-struct assign_value
-{
-    template<typename Attributes>
-    static void apply(symbolizer_base::value_type & val, expression_ptr const& expr, Attributes const& attributes, property_types target )
-    {
-
-        switch (target)
-        {
-        case property_types::target_color:
-        {
-            // evaluate expression as a string then parse as css color
-            std::string str = *util::apply_visitor(mapnik::evaluate_expression<mapnik::value,
-                                               Attributes>(attributes),*expr).to_string();
-            if (boost::optional<color> c = mapnik::parse_color(str))
-            {
-                val = *c;
-            }
-            else
-            {
-                val = color(0,0,0);
-            }
-            break;
-        }
-        case property_types::target_double:
-        {
-            val = *util::apply_visitor(mapnik::evaluate_expression<mapnik::value, Attributes>(attributes),*expr).to_double();
-            break;
-        }
-        case property_types::target_integer:
-        {
-            val = *util::apply_visitor(mapnik::evaluate_expression<mapnik::value, Attributes>(attributes),*expr).to_int();
-            break;
-        }
-        case property_types::target_bool:
-        {
-            val = *util::apply_visitor(mapnik::evaluate_expression<mapnik::value, Attributes>(attributes),*expr).to_bool();
-            break;
-        }
-        default: // no-op
-            break;
-        }
-    }
-};
-
 }
 
 template <typename T>
@@ -362,63 +318,6 @@ std::tuple<T,bool> pre_evaluate_expression (expression_ptr const& expr)
     }
     return std::make_tuple(T(), false);
 }
-
-struct evaluate_global_attributes : util::noncopyable
-{
-    template <typename Attributes>
-    struct evaluator
-    {
-        evaluator(symbolizer_base::cont_type::value_type & prop, Attributes const& attributes)
-            : prop_(prop),
-              attributes_(attributes) {}
-
-        void operator() (expression_ptr const& expr) const
-        {
-            auto const& meta = get_meta(prop_.first);
-            assign_value::apply(prop_.second, expr, attributes_, std::get<2>(meta));
-        }
-
-        template <typename T>
-        void operator() (T const&) const
-        {
-            // no-op
-        }
-        symbolizer_base::cont_type::value_type & prop_;
-        Attributes const& attributes_;
-    };
-
-    template <typename Attributes>
-    struct extract_symbolizer
-    {
-        extract_symbolizer(Attributes const& attributes)
-            : attributes_(attributes) {}
-
-        template <typename Symbolizer>
-        void operator() (Symbolizer & sym) const
-        {
-            for (auto & prop : sym.properties)
-            {
-                util::apply_visitor(evaluator<Attributes>(prop, attributes_), prop.second);
-            }
-        }
-        Attributes const& attributes_;
-    };
-
-    template <typename Attributes>
-    static void apply(Map & m, Attributes const& attributes)
-    {
-        for ( auto & val :  m.styles() )
-        {
-            for (auto & rule : val.second.get_rules_nonconst())
-            {
-                for (auto & sym : rule)
-                {
-                    util::apply_visitor(extract_symbolizer<Attributes>(attributes), sym);
-                }
-            }
-        }
-    }
-};
 
 }
 
