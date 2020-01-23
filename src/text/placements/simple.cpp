@@ -250,18 +250,15 @@ text_placements_ptr text_placements_simple::from_xml(xml_node const& xml, fontse
         }
         else
         {
-            try
+            bool error = false;
+            // we don't use parse_expression(placements_string) directly here to benefit from the cache in the xml_node
+            if (boost::optional<expression_ptr> val = xml.get_opt_attr<expression_ptr>("placements", &error))
             {
-                // we don't use parse_expression(placements_string) directly here to benefit from the cache in the xml_node
-                boost::optional<expression_ptr> val = xml.get_opt_attr<expression_ptr>("placements");
-                if (val)
-                {
-                    text_placements_ptr ptr = std::make_shared<text_placements_simple>(*val, anchor_key);
-                    ptr->defaults.from_xml(xml, fontsets, is_shield);
-                    return ptr;
-                }
+                text_placements_ptr ptr = std::make_shared<text_placements_simple>(*val, anchor_key);
+                ptr->defaults.from_xml(xml, fontsets, is_shield);
+                return ptr;
             }
-            catch (std::exception const& ex)
+            if (error)
             {
                 // otherwise ensure it is valid
                 std::vector<directions_e> direction;
