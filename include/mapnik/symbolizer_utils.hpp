@@ -366,19 +366,19 @@ namespace detail {
 template <typename Symbolizer, typename T, bool is_enum = false>
 struct set_symbolizer_property_impl
 {
-    static void apply(Symbolizer & sym, keys key, std::string const& name, xml_node const& node)
+    static bool apply(Symbolizer & sym, keys key, std::string const& name, xml_node const& node)
     {
         using value_type = T;
-        try
+        bool error = false;
+        if (boost::optional<value_type> val = node.get_opt_attr<value_type>(name, &error))
         {
-            boost::optional<value_type> val = node.get_opt_attr<value_type>(name);
-            if (val) put(sym, key, *val);
+            put(sym, key, *val);
+            return true;
         }
-        catch (config_error const& ex)
+        if (error)
         {
             // try parsing as an expression
-            boost::optional<expression_ptr> val = node.get_opt_attr<expression_ptr>(name);
-            if (val)
+            if (boost::optional<expression_ptr> val = node.get_opt_attr<expression_ptr>(name, &error))
             {
                 // first try pre-evaluate expressions which don't have dynamic properties
                 auto result = pre_evaluate_expression<mapnik::value>(*val);
@@ -391,29 +391,29 @@ struct set_symbolizer_property_impl
                     // expression_ptr
                     put(sym, key, *val);
                 }
+                return true;
             }
-            else
-            {
-                throw;
-            }
+            return false;
         }
+        return true;
     }
 };
 
 template <typename Symbolizer>
 struct set_symbolizer_property_impl<Symbolizer,transform_type,false>
 {
-    static void apply(Symbolizer & sym, keys key, std::string const& name, xml_node const & node)
+    static bool apply(Symbolizer & sym, keys key, std::string const& name, xml_node const & node)
     {
         boost::optional<std::string> transform = node.get_opt_attr<std::string>(name);
         if (transform) put(sym, key, mapnik::parse_transform(*transform));
+        return true;
     }
 };
 
 template <typename Symbolizer>
 struct set_symbolizer_property_impl<Symbolizer,dash_array,false>
 {
-    static void apply(Symbolizer & sym, keys key, std::string const& name, xml_node const & node)
+    static bool apply(Symbolizer & sym, keys key, std::string const& name, xml_node const & node)
     {
         boost::optional<std::string> str = node.get_opt_attr<std::string>(name);
         if (str)
@@ -442,19 +442,21 @@ struct set_symbolizer_property_impl<Symbolizer,dash_array,false>
                 }
                 else
                 {
-                    throw config_error(std::string("Failed to parse dasharray ") +
-                                       "'. Expected a " +
-                                       "list of floats or 'none' but got '" + (*str) + "'");
+                    MAPNIK_LOG_ERROR(set_symbolizer_property_impl) <<
+                        std::string("Failed to parse dasharray ") + "'. Expected a " +
+                        "list of floats or 'none' but got '" + (*str) + "'";
+                    return false;
                 }
             }
         }
+        return true;
     }
 };
 
 template <typename Symbolizer, typename T>
 struct set_symbolizer_property_impl<Symbolizer, T, true>
 {
-    static void apply(Symbolizer & sym, keys key, std::string const& name, xml_node const & node)
+    static bool apply(Symbolizer & sym, keys key, std::string const& name, xml_node const & node)
     {
         using value_type = T;
         boost::optional<std::string> enum_str = node.get_opt_attr<std::string>(name);
@@ -482,7 +484,7 @@ struct set_symbolizer_property_impl<Symbolizer, T, true>
                         else
                         {
                             // can't evaluate
-                            throw config_error("failed to parse '" + name + "'");
+                            return false;
                         }
                     }
                     else
@@ -493,10 +495,11 @@ struct set_symbolizer_property_impl<Symbolizer, T, true>
                 }
                 else
                 {
-                    throw config_error("failed to parse '" + name + "'");
+                    return false;
                 }
             }
         }
+        return true;
     }
 };
 
@@ -506,8 +509,12 @@ template <typename Symbolizer, typename T>
 void set_symbolizer_property(Symbolizer & sym, keys key, xml_node const& node)
 {
     std::string const& name = std::get<0>(get_meta(key));
-    if (node.has_attribute(name)) {
-        detail::set_symbolizer_property_impl<Symbolizer,T, std::is_enum<T>::value>::apply(sym,key,name,node);
+    if (node.has_attribute(name))
+    {
+        if (!detail::set_symbolizer_property_impl<Symbolizer,T, std::is_enum<T>::value>::apply(sym,key,name,node))
+        {
+            throw config_error("set_symbolizer_property '" + name + "'");
+        }
     }
 }
 

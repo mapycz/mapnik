@@ -42,16 +42,18 @@ template <typename T, typename Attributes>
 struct evaluate_expression
 {
     using value_type = T;
+    using return_type = boost::optional<value_type>;
 
     explicit evaluate_expression(Attributes const& attributes)
         : attributes_(attributes) {}
 
-    value_type operator() (attribute const&) const
+    return_type operator() (attribute const&) const
     {
-        throw std::runtime_error("can't evaluate feature attributes in this context");
+        return boost::none;
+        //throw std::runtime_error("can't evaluate feature attributes in this context");
     }
 
-    value_type operator() (global_attribute const& attr) const
+    return_type operator() (global_attribute const& attr) const
     {
         auto itr = attributes_.find(attr.name);
         if (itr != attributes_.end())
@@ -61,72 +63,114 @@ struct evaluate_expression
         return value_type();// throw?
     }
 
-    value_type operator() (geometry_type_attribute const&) const
+    return_type operator() (geometry_type_attribute const&) const
     {
-        throw std::runtime_error("can't evaluate geometry_type attributes in this context");
+        return boost::none;
+        //throw std::runtime_error("can't evaluate geometry_type attributes in this context");
     }
 
-    value_type operator() (binary_node<tags::logical_and> const & x) const
+    return_type operator() (binary_node<tags::logical_and> const & x) const
     {
-        return (util::apply_visitor(*this, x.left).to_bool())
-            && (util::apply_visitor(*this, x.right).to_bool());
+        auto o1 = util::apply_visitor(*this, x.left);
+        auto o2 = util::apply_visitor(*this, x.right);
+        if (o1 && o2)
+        {
+            return o1->to_bool() && o2->to_bool();
+        }
+        return boost::none;
     }
 
-    value_type operator() (binary_node<tags::logical_or> const & x) const
+    return_type operator() (binary_node<tags::logical_or> const & x) const
     {
-        return (util::apply_visitor(*this,x.left).to_bool())
-            || (util::apply_visitor(*this,x.right).to_bool());
+        auto o1 = util::apply_visitor(*this,x.left);
+        auto o2 = util::apply_visitor(*this,x.right);
+        if (o1 && o2)
+        {
+            return o1->to_bool() || o2->to_bool();
+        }
+        return boost::none;
     }
 
     template <typename Tag>
-    value_type operator() (binary_node<Tag> const& x) const
+    return_type operator() (binary_node<Tag> const& x) const
     {
-        typename make_op<Tag>::type operation;
-        return operation(util::apply_visitor(*this, x.left),
-                         util::apply_visitor(*this, x.right));
+        auto o1 = util::apply_visitor(*this, x.left);
+        auto o2 = util::apply_visitor(*this, x.right);
+        if (o1 && o2)
+        {
+            typename make_op<Tag>::type operation;
+            return operation(*o1, *o2);
+        }
+        return boost::none;
     }
 
     template <typename Tag>
-    value_type operator() (unary_node<Tag> const& x) const
+    return_type operator() (unary_node<Tag> const& x) const
     {
-        typename make_op<Tag>::type func;
-        return func(util::apply_visitor(*this, x.expr));
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            typename make_op<Tag>::type func;
+            return func(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (unary_node<tags::logical_not> const& x) const
+    return_type operator() (unary_node<tags::logical_not> const& x) const
     {
-        return ! (util::apply_visitor(*this,x.expr).to_bool());
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            return ! (o->to_bool());
+        }
+        return boost::none;
     }
 
-    value_type operator() (regex_match_node const& x) const
+    return_type operator() (regex_match_node const& x) const
     {
-        value_type v = util::apply_visitor(*this, x.expr);
-        return x.apply(v);
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            return x.apply(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (regex_replace_node const& x) const
+    return_type operator() (regex_replace_node const& x) const
     {
-        value_type v = util::apply_visitor(*this, x.expr);
-        return x.apply(v);
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            return x.apply(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (unary_function_call const& call) const
+    return_type operator() (unary_function_call const& call) const
     {
-        value_type arg = util::apply_visitor(*this, call.arg);
-        return call.fun(arg);
+        auto o = util::apply_visitor(*this, call.arg);
+        if (o)
+        {
+            return call.fun(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (binary_function_call const& call) const
+    return_type operator() (binary_function_call const& call) const
     {
-        value_type arg1 = util::apply_visitor(*this, call.arg1);
-        value_type arg2 = util::apply_visitor(*this, call.arg2);
-        return call.fun(arg1, arg2);
+        auto o1 = util::apply_visitor(*this, call.arg1);
+        auto o2 = util::apply_visitor(*this, call.arg2);
+        if (o1 && o2)
+        {
+            return call.fun(*o1, *o2);
+        }
+        return boost::none;
     }
 
     template <typename ValueType>
-    value_type operator() (ValueType const& val) const
+    return_type operator() (ValueType const& val) const
     {
-        return value_type(val);
+        return return_type(value_type(val));
     }
 
     Attributes const& attributes_;
@@ -136,123 +180,130 @@ template <typename T>
 struct evaluate_expression<T, boost::none_t>
 {
     using value_type = T;
+    using return_type = boost::optional<value_type>;
 
     evaluate_expression(boost::none_t) {}
 
-    value_type operator() (attribute const&) const
+    return_type operator() (attribute const&) const
     {
-        throw std::runtime_error("can't evaluate feature attributes in this context");
+        return boost::none;
+        //throw std::runtime_error("can't evaluate feature attributes in this context");
     }
 
-    value_type operator() (global_attribute const&) const
+    return_type operator() (global_attribute const&) const
     {
-        throw std::runtime_error("can't evaluate feature attributes in this context");
+        return boost::none;
+        //throw std::runtime_error("can't evaluate feature attributes in this context");
     }
 
-    value_type operator() (geometry_type_attribute const&) const
+    return_type operator() (geometry_type_attribute const&) const
     {
-        throw std::runtime_error("can't evaluate geometry_type attributes in this context");
+        return boost::none;
+        //throw std::runtime_error("can't evaluate geometry_type attributes in this context");
     }
 
-    value_type operator() (binary_node<tags::logical_and> const & x) const
+    return_type operator() (binary_node<tags::logical_and> const & x) const
     {
-        return (util::apply_visitor(*this, x.left).to_bool())
-            && (util::apply_visitor(*this, x.right).to_bool());
+        auto o1 = util::apply_visitor(*this, x.left);
+        auto o2 = util::apply_visitor(*this, x.right);
+        if (o1 && o2)
+        {
+            return value_type(o1->to_bool() && o2->to_bool());
+        }
+        return boost::none;
     }
 
-    value_type operator() (binary_node<tags::logical_or> const & x) const
+    return_type operator() (binary_node<tags::logical_or> const & x) const
     {
-        return (util::apply_visitor(*this,x.left).to_bool())
-            || (util::apply_visitor(*this,x.right).to_bool());
+        auto o1 = util::apply_visitor(*this, x.left);
+        auto o2 = util::apply_visitor(*this, x.right);
+        if (o1 && o2)
+        {
+            return value_type(o1->to_bool() || o2->to_bool());
+        }
+        return boost::none;
     }
 
     template <typename Tag>
-    value_type operator() (binary_node<Tag> const& x) const
+    return_type operator() (binary_node<Tag> const& x) const
     {
-        typename make_op<Tag>::type operation;
-        return operation(util::apply_visitor(*this, x.left),
-                         util::apply_visitor(*this, x.right));
+        auto o1 = util::apply_visitor(*this, x.left);
+        auto o2 = util::apply_visitor(*this, x.right);
+        if (o1 && o2)
+        {
+            typename make_op<Tag>::type operation;
+            return value_type(operation(*o1, *o2));
+        }
+        return boost::none;
     }
 
     template <typename Tag>
-    value_type operator() (unary_node<Tag> const& x) const
+    return_type operator() (unary_node<Tag> const& x) const
     {
-        typename make_op<Tag>::type func;
-        return func(util::apply_visitor(*this, x.expr));
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            typename make_op<Tag>::type func;
+            return func(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (unary_node<tags::logical_not> const& x) const
+    return_type operator() (unary_node<tags::logical_not> const& x) const
     {
-        return ! (util::apply_visitor(*this,x.expr).to_bool());
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            return value_type(! o->to_bool());
+        }
+        return boost::none;
     }
 
-    value_type operator() (regex_match_node const& x) const
+    return_type operator() (regex_match_node const& x) const
     {
-        value_type v = util::apply_visitor(*this, x.expr);
-        return x.apply(v);
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            return x.apply(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (regex_replace_node const& x) const
+    return_type operator() (regex_replace_node const& x) const
     {
-        value_type v = util::apply_visitor(*this, x.expr);
-        return x.apply(v);
+        auto o = util::apply_visitor(*this, x.expr);
+        if (o)
+        {
+            return x.apply(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (unary_function_call const& call) const
+    return_type operator() (unary_function_call const& call) const
     {
-        value_type arg = util::apply_visitor(*this, call.arg);
-        return call.fun(arg);
+        auto o = util::apply_visitor(*this, call.arg);
+        if (o)
+        {
+            return call.fun(*o);
+        }
+        return boost::none;
     }
 
-    value_type operator() (binary_function_call const& call) const
+    return_type operator() (binary_function_call const& call) const
     {
-        value_type arg1 = util::apply_visitor(*this, call.arg1);
-        value_type arg2 = util::apply_visitor(*this, call.arg2);
-        return call.fun(arg1, arg2);
+        auto o1 = util::apply_visitor(*this, call.arg1);
+        auto o2 = util::apply_visitor(*this, call.arg2);
+        if (o1 && o2)
+        {
+            return call.fun(*o1, *o2);
+        }
+        return boost::none;
     }
 
     template <typename ValueType>
-    value_type operator() (ValueType const& val) const
+    return_type operator() (ValueType const& val) const
     {
-        return value_type(val);
-    }
-};
-
-struct assign_value
-{
-    template<typename Attributes>
-    static void apply(symbolizer_base::value_type & val, expression_ptr const& expr, Attributes const& attributes, property_types target )
-    {
-
-        switch (target)
-        {
-        case property_types::target_color:
-        {
-            // evaluate expression as a string then parse as css color
-            std::string str = util::apply_visitor(mapnik::evaluate_expression<mapnik::value,
-                                               Attributes>(attributes),*expr).to_string();
-            try { val = parse_color(str); }
-            catch (...) { val = color(0,0,0);}
-            break;
-        }
-        case property_types::target_double:
-        {
-            val = util::apply_visitor(mapnik::evaluate_expression<mapnik::value, Attributes>(attributes),*expr).to_double();
-            break;
-        }
-        case property_types::target_integer:
-        {
-            val = util::apply_visitor(mapnik::evaluate_expression<mapnik::value, Attributes>(attributes),*expr).to_int();
-            break;
-        }
-        case property_types::target_bool:
-        {
-            val = util::apply_visitor(mapnik::evaluate_expression<mapnik::value, Attributes>(attributes),*expr).to_bool();
-            break;
-        }
-        default: // no-op
-            break;
-        }
+        return return_type(value_type(val));
     }
 };
 
@@ -261,72 +312,12 @@ struct assign_value
 template <typename T>
 std::tuple<T,bool> pre_evaluate_expression (expression_ptr const& expr)
 {
-    try
+    if (boost::optional<T> val = util::apply_visitor(mapnik::evaluate_expression<T, boost::none_t>(boost::none), *expr))
     {
-        return std::make_tuple(util::apply_visitor(mapnik::evaluate_expression<T, boost::none_t>(boost::none),*expr), true);
+        return std::make_tuple(*val, true);
     }
-    catch (...)
-    {
-        return std::make_tuple(T(),false);
-    }
+    return std::make_tuple(T(), false);
 }
-
-struct evaluate_global_attributes : util::noncopyable
-{
-    template <typename Attributes>
-    struct evaluator
-    {
-        evaluator(symbolizer_base::cont_type::value_type & prop, Attributes const& attributes)
-            : prop_(prop),
-              attributes_(attributes) {}
-
-        void operator() (expression_ptr const& expr) const
-        {
-            auto const& meta = get_meta(prop_.first);
-            assign_value::apply(prop_.second, expr, attributes_, std::get<2>(meta));
-        }
-
-        template <typename T>
-        void operator() (T const&) const
-        {
-            // no-op
-        }
-        symbolizer_base::cont_type::value_type & prop_;
-        Attributes const& attributes_;
-    };
-
-    template <typename Attributes>
-    struct extract_symbolizer
-    {
-        extract_symbolizer(Attributes const& attributes)
-            : attributes_(attributes) {}
-
-        template <typename Symbolizer>
-        void operator() (Symbolizer & sym) const
-        {
-            for (auto & prop : sym.properties)
-            {
-                util::apply_visitor(evaluator<Attributes>(prop, attributes_), prop.second);
-            }
-        }
-        Attributes const& attributes_;
-    };
-
-    template <typename Attributes>
-    static void apply(Map & m, Attributes const& attributes)
-    {
-        for ( auto & val :  m.styles() )
-        {
-            for (auto & rule : val.second.get_rules_nonconst())
-            {
-                for (auto & sym : rule)
-                {
-                    util::apply_visitor(extract_symbolizer<Attributes>(attributes), sym);
-                }
-            }
-        }
-    }
-};
 
 }
 
