@@ -78,6 +78,17 @@ void mapnik_gdal_error_handler(CPLErr err_class, int err_no, const char *msg) {
 }
 } // anonymous namespace
 
+static boost::optional<bool> use_mmap()
+{
+    char const* value = std::getenv("MAPNIK_MMAP_TIFF");
+    if (value == nullptr)
+    {
+        return boost::none;
+    }
+    char p = tolower(*value);
+    return p != 'n' && p != 'f';
+}
+
 gdal_datasource::gdal_datasource(parameters const& params)
     : datasource(params),
       mmapped_dataset_(),
@@ -108,7 +119,15 @@ gdal_datasource::gdal_datasource(parameters const& params)
         dataset_name_ = *file;
     }
 
-    if (*params.get<bool>("mmap_tiff", true))
+    // ENV value has precedence
+    if (boost::optional<bool> um = use_mmap())
+    {
+        if (*um)
+        {
+            mmap_tiff();
+        }
+    }
+    else if (*params.get<bool>("mmap_tiff", true))
     {
         mmap_tiff();
     }
