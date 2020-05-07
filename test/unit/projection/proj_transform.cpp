@@ -141,8 +141,8 @@ SECTION("Test proj antimeridian bbox")
     //
     // wrong = mapnik.Box2d(-177.3145325044, -62.3337481525,
     //                       178.0277836332, -24.5845974912)
-    const mapnik::box2d<double> better(-180.0, -62.3337481525,
-                                        180.0, -24.5845974912);
+    const mapnik::box2d<double> better(-180.0, -62.3484257194,
+                                        180.0, -24.5845974911);
 
     {
         mapnik::box2d<double> ext(274000, 3087000, 3327000, 7173000);

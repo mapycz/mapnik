@@ -50,6 +50,6 @@
 #  endif
 #endif
 
-#define PROJ_ENVELOPE_POINTS 20
+#define PROJ_ENVELOPE_POINTS 1000
 
 #endif // MAPNIK_CONFIG_HPP
