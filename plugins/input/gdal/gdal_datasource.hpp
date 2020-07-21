@@ -58,6 +58,10 @@ public:
 private:
     void mmap_tiff();
 
+    void probe();
+    void probe_overviews(GDALRasterBand * band);
+    void probe_band(GDALRasterBand * band);
+
     std::unique_ptr<mmapped_tiff_dataset_register::handle> mmapped_dataset_;
     std::unique_ptr<GDALDataset, decltype(&GDALClose)> dataset_;
     mapnik::box2d<double> extent_;

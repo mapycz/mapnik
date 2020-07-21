@@ -236,6 +236,11 @@ gdal_datasource::gdal_datasource(parameters const& params)
         extent_.init(x0, y0, x1, y1);
     }
 
+    if (*params.get<bool>("probe", true))
+    {
+        probe();
+    }
+
     MAPNIK_LOG_DEBUG(gdal) << "gdal_datasource: Raster Size=" << width_ << "," << height_;
     MAPNIK_LOG_DEBUG(gdal) << "gdal_datasource: Raster Extent=" << extent_;
 
@@ -329,3 +334,47 @@ void gdal_datasource::mmap_tiff()
             << dataset_name_ << "': " << e.what();
     }
 }
+
+void gdal_datasource::probe_overviews(GDALRasterBand * band)
+{
+    int overviews = band->GetOverviewCount();
+    for (int b = 0; b < overviews; b++)
+    {
+        GDALRasterBand * overview = band->GetOverview(b);
+        probe_band(overview);
+    }
+}
+
+void gdal_datasource::probe()
+{
+    int min_band = band_, max_band = band_;
+    if (min_band < 1)
+    {
+        min_band = 1;
+    }
+    if (max_band < 1)
+    {
+        max_band = dataset_->GetRasterCount();
+    }
+    for (int band_num = min_band; band_num <= max_band; ++band_num)
+    {
+        GDALRasterBand * band = dataset_->GetRasterBand(band_num);
+        probe_band(band);
+        probe_overviews(band);
+    }
+}
+
+void gdal_datasource::probe_band(GDALRasterBand * band)
+{
+    CPLErr raster_io_error = CE_None;
+    float data;
+    raster_io_error = band->RasterIO(
+        GF_Read, 0, 0, band->GetXSize() / 2, band->GetYSize() / 2,
+        &data, 1, 1, GDT_Float32, 0, 0);
+    if (raster_io_error == CE_Failure)
+    {
+        MAPNIK_LOG_WARN(gdal) << "gdal_datasource: Cannot read band " << band->GetBand();
+    }
+}
+
+
