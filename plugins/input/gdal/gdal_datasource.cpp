@@ -236,6 +236,11 @@ gdal_datasource::gdal_datasource(parameters const& params)
         extent_.init(x0, y0, x1, y1);
     }
 
+    if (*params.get<bool>("probe", true))
+    {
+        probe();
+    }
+
     MAPNIK_LOG_DEBUG(gdal) << "gdal_datasource: Raster Size=" << width_ << "," << height_;
     MAPNIK_LOG_DEBUG(gdal) << "gdal_datasource: Raster Extent=" << extent_;
 
@@ -328,4 +333,22 @@ void gdal_datasource::mmap_tiff()
         MAPNIK_LOG_ERROR(gdal) << "gdal_datasource: Cannot mmap() '"
             << dataset_name_ << "': " << e.what();
     }
+}
+
+void gdal_datasource::probe()
+{
+    int min_band = _band, max_band = _band;
+    if (min_band < 1)
+    {
+        min_band = 1;
+    }
+    if (max_band < 1)
+    {
+        max_band = dataset_->GetRasterCount();
+    }
+    for (int band = min_band; band <= max_band; ++band)
+    {
+        GDALRasterBand * band = dataset_.GetRasterBand(band);
+    }
+
 }
