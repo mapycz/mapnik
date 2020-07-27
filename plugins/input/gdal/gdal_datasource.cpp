@@ -337,16 +337,18 @@ void gdal_datasource::mmap_tiff()
 
 void gdal_datasource::probe()
 {
+    probe_bands();
+    probe_overviews();
 }
 
 void gdal_datasource::probe_overviews()
 {
-    int band_overviews = band->GetOverviewCount();
-
-        for (int b = 0; b < band_overviews; b++)
-        {
-            GDALRasterBand * overview = band->GetOverview(b);
-        }
+    int overviews = band->GetOverviewCount();
+    for (int b = 0; b < overviews; b++)
+    {
+        GDALRasterBand * overview = band->GetOverview(b);
+        probe_band(overview)
+    }
 }
 
 void gdal_datasource::probe_bands()
