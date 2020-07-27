@@ -337,6 +337,20 @@ void gdal_datasource::mmap_tiff()
 
 void gdal_datasource::probe()
 {
+}
+
+void gdal_datasource::probe_overviews()
+{
+    int band_overviews = band->GetOverviewCount();
+
+        for (int b = 0; b < band_overviews; b++)
+        {
+            GDALRasterBand * overview = band->GetOverview(b);
+        }
+}
+
+void gdal_datasource::probe_bands()
+{
     int min_band = _band, max_band = _band;
     if (min_band < 1)
     {
@@ -346,9 +360,24 @@ void gdal_datasource::probe()
     {
         max_band = dataset_->GetRasterCount();
     }
-    for (int band = min_band; band <= max_band; ++band)
+    for (int band_num = min_band; band_num <= max_band; ++band_num)
     {
-        GDALRasterBand * band = dataset_.GetRasterBand(band);
+        GDALRasterBand * band = dataset_.GetRasterBand(band_num);
+        probe_band(band);
     }
-
 }
+
+void gdal_datasource::probe_band(GDALRasterBand * band)
+{
+    CPLErr raster_io_error = CE_None;
+    float data;
+    raster_io_error = band->RasterIO(
+        GF_Read, 0, 0, band->GetXSize() / 2, band->GetYSize() / 2,
+        &data, 1, 1, GDT_Float32, 0, 0);
+    if (raster_io_error == CE_Failure)
+    {
+        MAPNIK_LOG_WARN(gdal) << "gdal_datasource: Cannot read band " << band_num;
+    }
+}
+
+
