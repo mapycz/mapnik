@@ -335,25 +335,19 @@ void gdal_datasource::mmap_tiff()
     }
 }
 
-void gdal_datasource::probe()
-{
-    probe_bands();
-    probe_overviews();
-}
-
-void gdal_datasource::probe_overviews()
+void gdal_datasource::probe_overviews(GDALRasterBand * band)
 {
     int overviews = band->GetOverviewCount();
     for (int b = 0; b < overviews; b++)
     {
         GDALRasterBand * overview = band->GetOverview(b);
-        probe_band(overview)
+        probe_band(overview);
     }
 }
 
-void gdal_datasource::probe_bands()
+void gdal_datasource::probe()
 {
-    int min_band = _band, max_band = _band;
+    int min_band = band_, max_band = band_;
     if (min_band < 1)
     {
         min_band = 1;
@@ -364,8 +358,9 @@ void gdal_datasource::probe_bands()
     }
     for (int band_num = min_band; band_num <= max_band; ++band_num)
     {
-        GDALRasterBand * band = dataset_.GetRasterBand(band_num);
+        GDALRasterBand * band = dataset_->GetRasterBand(band_num);
         probe_band(band);
+        probe_overviews(band);
     }
 }
 
@@ -378,7 +373,7 @@ void gdal_datasource::probe_band(GDALRasterBand * band)
         &data, 1, 1, GDT_Float32, 0, 0);
     if (raster_io_error == CE_Failure)
     {
-        MAPNIK_LOG_WARN(gdal) << "gdal_datasource: Cannot read band " << band_num;
+        MAPNIK_LOG_WARN(gdal) << "gdal_datasource: Cannot read band " << band->GetBand();
     }
 }
 
