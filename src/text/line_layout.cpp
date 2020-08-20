@@ -90,6 +90,11 @@ bool single_line_layout::is_reachable(
     vertex_cache const & path,
     text_layout const & layout) const
 {
+    // We are not able to decide with haling=adjust
+    if (layout.horizontal_alignment() == H_ADJUST)
+    {
+        return true;
+    }
     double layout_max_dimension = std::max(layout.width(), layout.height());
     box2d<double> layout_max_box(0, 0, layout_max_dimension * 2, layout_max_dimension * 2);
     pixel_position pos = path.current_position();
