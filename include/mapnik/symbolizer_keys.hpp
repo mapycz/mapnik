@@ -113,6 +113,7 @@ enum class keys : std::uint8_t
     svg_stroke_width,
     svg_stroke_opacity,
     text_mode,
+    repeat_distance,
     MAX_SYMBOLIZER_KEY
 };
 

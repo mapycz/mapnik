@@ -465,6 +465,13 @@ struct symbolizer_default<text_mode_enum, keys::text_mode>
     static text_mode_enum value() { return TEXT_MODE_DEFAULT; }
 };
 
+// repeat_distance
+template <>
+struct symbolizer_default<value_double, keys::repeat_distance>
+{
+    static value_double value() { return 0.0; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP

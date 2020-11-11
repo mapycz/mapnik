@@ -71,6 +71,8 @@ protected:
     const value_bool avoid_edges_;
     const direction_enum direction_;
     const value_double margin_;
+    const value_double repeat_distance_;
+    const value_unicode_string repeat_key_;
     const std::vector<std::string> collision_cache_insert_;
     const std::vector<std::string> collision_cache_detect_;
 };

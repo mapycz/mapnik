@@ -39,6 +39,8 @@ marker_layout::marker_layout(params_type const & params)
       avoid_edges_(params.get<value_bool, keys::avoid_edges>()),
       direction_(params.get<direction_enum, keys::direction>()),
       margin_(params.get<value_double, keys::margin>() * params.scale_factor),
+      repeat_distance_(params.get<value_double, keys::repeat_distance>() * params.scale_factor),
+      repeat_key_(params.get<std::string, keys::file>().c_str()),
       collision_cache_insert_(parse_collision_detector_keys(
           params.get_optional<std::string, keys::collision_cache_insert>())),
       collision_cache_detect_(parse_collision_detector_keys(
@@ -91,13 +93,19 @@ bool marker_layout::push_to_detector(
     {
         return false;
     }
-    if (!allow_overlap_ && !detector.has_placement(box, margin_, collision_cache_detect_))
+    if (!allow_overlap_ && (
+        (repeat_key_.length() == 0 && !detector.has_placement(
+            box, margin_, collision_cache_detect_))
+        ||
+        (repeat_key_.length() > 0 && !detector.has_placement(
+            box, margin_, repeat_key_, repeat_distance_, collision_cache_detect_))
+        ))
     {
         return false;
     }
     if (!ignore_placement_)
     {
-        detector.insert(box, collision_cache_insert_);
+        detector.insert(box, repeat_key_, collision_cache_insert_);
     }
     lg.placements_.emplace_back(pos, angle, box);
     return true;
