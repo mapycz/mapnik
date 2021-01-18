@@ -22,6 +22,8 @@
 Import ('plugin_base')
 Import ('env')
 from copy import copy
+from glob import glob
+import os
 
 PLUGIN_NAME = 'postgis'
 
@@ -70,6 +72,11 @@ if env['PLUGIN_LINKING'] == 'shared':
     if 'uninstall' not in COMMAND_LINE_TARGETS:
         env.Install(env['MAPNIK_INPUT_PLUGINS_DEST'], TARGET)
         env.Alias('install', env['MAPNIK_INPUT_PLUGINS_DEST'])
+
+if 'install' in COMMAND_LINE_TARGETS:
+    includes = glob('./*.hpp')
+    inc_target = os.path.normpath(env['INSTALL_PREFIX'] + '/include/mapnik/plugins/input/')
+    env.Alias(target='install', source=env.Install(inc_target, includes))
 
 plugin_obj = {
   'LIBS': libraries,
