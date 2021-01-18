@@ -205,6 +205,14 @@ public:
             grow(size);
         }
     }
+
+    void close()
+    {
+        for (auto & hold : holders_)
+        {
+            hold.connection->close();
+        }
+    }
 };
 
 }

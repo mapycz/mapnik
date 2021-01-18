@@ -148,10 +148,23 @@ public:
         return emptyPool;
     }
 
+    static void close()
+    {
+        instance().close_impl();
+    }
+
     ConnectionManager() {}
 private:
     ConnectionManager(const ConnectionManager&);
     ConnectionManager& operator=(const ConnectionManager);
+
+    void close_impl()
+    {
+        for (auto & pool : pools_)
+        {
+            pool.second->close();
+        }
+    }
 };
 
 using conn_handle_ptr = std::unique_ptr<ConnectionManager::PoolType::handle>;
