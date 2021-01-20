@@ -97,7 +97,7 @@ private:
     boost::optional<std::string> connect_timeout_;
 };
 
-class ConnectionManager : public singleton <ConnectionManager,CreateStatic>
+class MAPNIK_DECL ConnectionManager : public singleton <ConnectionManager,CreateStatic>
 {
 
 public:
