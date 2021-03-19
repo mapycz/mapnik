@@ -117,6 +117,14 @@ void apply_multi_policy(
     }
 }
 
+enum placement_result
+{
+    success,
+    collision,
+    skip,
+    stop,
+};
+
 }
 
 struct point_position

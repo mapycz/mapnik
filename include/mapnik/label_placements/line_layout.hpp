@@ -93,6 +93,20 @@ bool line_layout<SubLayout>::try_placement(
             while (tolerance_offset.next())
             {
                 vertex_cache::scoped_state state(path);
+                if (!policy.move(tolerance_offset.get()))
+                {
+                    continue;
+                }
+                placement_result result = sublayout_.try_placement(
+                    layout_generator, position_accessor<SubLayout>::get(path));
+                switch (result)
+                {
+                    case success:
+                    case collision:
+                    case skip:
+                    case stop:
+                        return success;
+                }
                 if (policy.move(tolerance_offset.get()) &&
                     sublayout_.try_placement(layout_generator,
                         position_accessor<SubLayout>::get(path)))
