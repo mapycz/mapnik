@@ -71,6 +71,10 @@ protected:
         layout_container & layouts,
         glyph_positions_ptr & glyphs);
 
+    bool avoid_edges_skip_placement(
+        evaluated_text_properties const & text_props,
+        const box2d<double> &box) const;
+
     bool collision(
         detector_type & detector,
         evaluated_text_properties const & text_props,
