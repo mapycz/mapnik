@@ -119,6 +119,10 @@ bool point_layout::try_placement(
                 pixel_position glyph_pos(x, y);
                 glyph_pos = glyph_pos.rotate(orientation);
                 box2d<double> bbox(get_bbox(layout, glyph, glyph_pos + layout_center, orientation));
+                if (avoid_edges_skip_placement(text_props, bbox))
+                {
+                    return true;
+                }
                 if (collision(detector, text_props, bbox, layouts.text()))
                 {
                     return false;
@@ -166,6 +170,15 @@ bool point_layout::process_bboxes(
     }
 
     return in_canvas;
+}
+
+bool point_layout::avoid_edges_skip_placement(
+    evaluated_text_properties const & text_props,
+    const box2d<double> &box) const
+{
+    return text_props.avoid_edges &&
+        (box.maxx() > params_.dims.maxx() ||
+         box.maxy() > params_.dims.maxy() );
 }
 
 bool point_layout::collision(
@@ -262,6 +275,7 @@ bool shield_layout::add_marker(
         glyphs.get_base_point()) + marker_displacement_;
     box2d<double> bbox(marker_->bbox);
     bbox.move(real_pos.x, real_pos.y);
+    if (avoid_edges_skip_placement(text_props, bbox)) return true;
     if (collision(detector, text_props, bbox, layouts.text())) return false;
     detector.insert(bbox, this->collision_cache_insert_);
     glyphs.set_marker(marker_, real_pos);
