@@ -103,7 +103,8 @@ postgis_datasource::postgis_datasource(parameters const& params)
       // params below are for testing purposes only and may be removed at any time
       intersect_min_scale_(*params.get<mapnik::value_integer>("intersect_min_scale", 0)),
       intersect_max_scale_(*params.get<mapnik::value_integer>("intersect_max_scale", 0)),
-      key_field_as_attribute_(*params.get<mapnik::boolean_type>("key_field_as_attribute", true))
+      key_field_as_attribute_(*params.get<mapnik::boolean_type>("key_field_as_attribute", true)),
+      preping_(*params.get<mapnik::boolean_type>("preping", true))
 {
 #ifdef MAPNIK_STATS
     mapnik::progress_timer __stats__(std::clog, "postgis_datasource::init");
@@ -150,7 +151,7 @@ postgis_datasource::postgis_datasource(parameters const& params)
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
     if (pool)
     {
-        conn_handle_ptr handle = pool->borrow();
+        conn_handle_ptr handle = pool->borrow(preping_);
         Connection & conn = handle->get();
 
         if (conn.isOK())
@@ -771,14 +772,14 @@ featureset_ptr postgis_datasource::features_with_context(query const& q,processo
                 std::static_pointer_cast<postgis_processor_context>(proc_ctx);
             if ( pgis_ctxt->num_async_requests_ < max_async_connections_ )
             {
-                handle = pool->borrow();
+                handle = pool->borrow(preping_);
                 pgis_ctxt->num_async_requests_++;
             }
         }
         else
         {
             // Always get a connection in synchronous mode
-            handle = pool->borrow();
+            handle = pool->borrow(preping_);
             if (!handle)
             {
                 throw mapnik::datasource_exception("Postgis Plugin: "
@@ -956,7 +957,7 @@ featureset_ptr postgis_datasource::features_at_point(coord2d const& pt, double t
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
     if (pool)
     {
-        conn_handle_ptr handle = pool->borrow();
+        conn_handle_ptr handle = pool->borrow(preping_);
         Connection & conn = handle->get();
 
         if (conn.isOK())
@@ -1045,7 +1046,7 @@ box2d<double> postgis_datasource::envelope() const
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
     if (pool)
     {
-        conn_handle_ptr handle = pool->borrow();
+        conn_handle_ptr handle = pool->borrow(preping_);
         Connection & conn = handle->get();
         if (conn.isOK())
         {
@@ -1136,7 +1137,7 @@ boost::optional<mapnik::datasource_geometry_t> postgis_datasource::get_geometry_
     CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
     if (pool)
     {
-        conn_handle_ptr handle = pool->borrow();
+        conn_handle_ptr handle = pool->borrow(preping_);
         Connection & conn = handle->get();
         if (conn.isOK())
         {

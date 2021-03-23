@@ -127,13 +127,13 @@ public:
         grow(initial_size_);
     }
 
-    std::unique_ptr<handle> try_borrow()
+    std::unique_ptr<handle> try_borrow(bool ping=false)
     {
         std::lock_guard<std::mutex> lock(mutex_);
 
         if (holder *hold = find_free())
         {
-            if (!hold->connection->isOK())
+            if (!hold->connection->isOK(ping))
             {
                 hold->connection.reset(creator_());
             }
@@ -151,7 +151,7 @@ public:
         return nullptr;
     }
 
-    std::unique_ptr<handle> borrow()
+    std::unique_ptr<handle> borrow(bool ping=false)
     {
         if (std::unique_ptr<handle> h = try_borrow())
         {
@@ -165,7 +165,7 @@ public:
 
         assert(hold);
 
-        if (!hold->connection->isOK())
+        if (!hold->connection->isOK(ping))
         {
             hold->connection.reset(creator_());
         }

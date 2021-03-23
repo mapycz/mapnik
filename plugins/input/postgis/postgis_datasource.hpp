@@ -130,6 +130,7 @@ private:
     int intersect_min_scale_;
     int intersect_max_scale_;
     bool key_field_as_attribute_;
+    bool preping_;
 };
 
 #endif // POSTGIS_DATASOURCE_HPP

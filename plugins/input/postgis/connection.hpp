@@ -108,6 +108,11 @@ public:
         return ok;
     }
 
+    bool ping()
+    {
+        return execute("SELECT 1");
+    }
+
     std::shared_ptr<ResultSet> executeQuery(std::string const& sql, int type = 0)
     {
 #ifdef MAPNIK_STATS
@@ -230,9 +235,10 @@ public:
         return PQparameterStatus(conn_, "client_encoding");
     }
 
-    bool isOK() const
+    bool isOK(bool ping=false)
     {
-        return (!closed_) && (PQstatus(conn_) != CONNECTION_BAD);
+        return (!closed_) && (PQstatus(conn_) != CONNECTION_BAD) &&
+            (!ping || this->ping());
     }
 
     bool isPending() const
