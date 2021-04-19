@@ -179,7 +179,9 @@ bool point_layout::avoid_edges_skip_placement(
 {
     return text_props.avoid_edges &&
         (box.maxx() > params_.dims.maxx() ||
-         box.maxy() > params_.dims.maxy() );
+         box.maxy() > params_.dims.maxy() ||
+         box.maxx() < 0 ||
+         box.maxy() < 0);
 }
 
 bool point_layout::collision(
